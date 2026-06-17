@@ -62,8 +62,6 @@
                     <field name="user_id"/>
                     <filter string="Blokkert" name="blocked" domain="[('action', '=', 'block')]"/>
                     <filter string="Avmeldt" name="unsubscribed" domain="[('action', '=', 'unsubscribe')]"/>
-                    <separator/>
-                    <filter string="Dato" name="filter_date" date="date"/>
                     <group expand="0" string="Grupper etter">
                         <filter string="Handling" name="group_action" context="{'group_by': 'action'}"/>
                         <filter string="Kilde" name="group_source" context="{'group_by': 'source'}"/>
