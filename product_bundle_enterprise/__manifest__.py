@@ -1,10 +1,12 @@
 {
     "name": "Enterprise Bundle Engine",
     "version": "19.0.2.0",
-    "depends": ["sale","stock","mrp","uom","website"],
+    "author": "Vidir",
+    "license": "LGPL-3",
+    "depends": ["sale", "stock", "mrp", "uom", "website"],
     "data": [
         "security/ir.model.access.csv",
-        "views/product_views.xml"
+        "views/product_views.xml",
     ],
-    "installable": True
+    "installable": True,
 }
