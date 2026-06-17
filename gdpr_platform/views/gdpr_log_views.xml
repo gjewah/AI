@@ -61,7 +61,7 @@
                     <field name="source"/>
                     <field name="user_id"/>
                     <filter string="Siste 30 dager" name="last_30_days"
-                            domain="[('date', '&gt;=', (context_today() - timedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                            domain="[('date', '&gt;=', (context_today() - datetime.timedelta(days=30)).strftime('%Y-%m-%d'))]"/>
                     <filter string="Blokkert" name="blocked" domain="[('action', '=', 'block')]"/>
                     <filter string="Avmeldt" name="unsubscribed" domain="[('action', '=', 'unsubscribe')]"/>
                     <group expand="0" string="Grupper etter">
