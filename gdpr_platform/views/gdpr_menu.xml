@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Top-level GDPR menu -->
+        <menuitem id="menu_gdpr_root"
+                  name="GDPR"
+                  sequence="99"
+                  web_icon="gdpr_platform,static/src/img/gdpr_icon.png"
+                  groups="gdpr_platform.group_gdpr_user"/>
+
+        <menuitem id="menu_gdpr_dashboard"
+                  name="Dashboard"
+                  parent="menu_gdpr_root"
+                  action="action_gdpr_dashboard"
+                  sequence="10"
+                  groups="gdpr_platform.group_gdpr_user"/>
+
+        <menuitem id="menu_gdpr_log"
+                  name="Logg"
+                  parent="menu_gdpr_root"
+                  action="action_gdpr_log"
+                  sequence="20"
+                  groups="gdpr_platform.group_gdpr_user"/>
+
+        <menuitem id="menu_gdpr_blocked_partners"
+                  name="Blokkerte kontakter"
+                  parent="menu_gdpr_root"
+                  sequence="30"
+                  action="action_gdpr_blocked_partners"
+                  groups="gdpr_platform.group_gdpr_user"/>
+
+    </data>
+</odoo>

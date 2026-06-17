@@ -1,0 +1,37 @@
+# Translation of gdpr_platform to Norwegian Bokmål
+# Copyright (C) 2024 Vidir
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo GDPR Platform\n"
+"Language: nb\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "GDPR – Ikke kontakt"
+msgstr "GDPR – Ikke kontakt"
+
+msgid "GDPR Begrunnelse"
+msgstr "GDPR Begrunnelse"
+
+msgid "GDPR Dato"
+msgstr "GDPR Dato"
+
+msgid "GDPR Ansvarlig"
+msgstr "GDPR Ansvarlig"
+
+msgid "GDPR Kilde"
+msgstr "GDPR Kilde"
+
+msgid "Manuell"
+msgstr "Manuell"
+
+msgid "Avregistrering"
+msgstr "Avregistrering"
+
+msgid "API"
+msgstr "API"
+
+msgid "Import"
+msgstr "Import"
+
+msgid "⚠️ GDPR BLOKKERT: Denne kontakten kan ikke kontaktes"
+msgstr "⚠️ GDPR BLOKKERT: Denne kontakten kan ikke kontaktes"

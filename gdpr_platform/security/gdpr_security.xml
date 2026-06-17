@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <record id="module_gdpr_platform" model="ir.module.category">
+            <field name="name">GDPR</field>
+            <field name="sequence">100</field>
+        </record>
+
+        <record id="group_gdpr_user" model="res.groups">
+            <field name="name">GDPR Bruker</field>
+            <field name="category_id" ref="module_gdpr_platform"/>
+        </record>
+
+        <record id="group_gdpr_manager" model="res.groups">
+            <field name="name">GDPR Administrator</field>
+            <field name="category_id" ref="module_gdpr_platform"/>
+            <field name="implied_ids" eval="[(4, ref('group_gdpr_user'))]"/>
+            <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Add GDPR fields and warning banner to partner form -->
+        <record id="view_partner_form_gdpr" model="ir.ui.view">
+            <field name="name">res.partner.form.gdpr</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+
+                <!-- GDPR warning banner -->
+                <xpath expr="//sheet" position="before">
+                    <div class="alert alert-danger o_gdpr_block_banner" role="alert"
+                         attrs="{'invisible': [('x_gdpr_blocked', '=', False)]}">
+                        <i class="fa fa-ban me-2"/>
+                        <strong>⚠️ GDPR BLOKKERT: Denne kontakten kan ikke kontaktes</strong>
+                        <span class="ms-2 text-muted" attrs="{'invisible': [('x_gdpr_reason', '=', False)]}">
+                            — <field name="x_gdpr_reason" readonly="1" nolabel="1" class="d-inline"/>
+                        </span>
+                    </div>
+                </xpath>
+
+                <!-- GDPR Tab -->
+                <xpath expr="//page[last()]" position="after">
+                    <page string="GDPR" name="gdpr_tab">
+                        <group>
+                            <group string="Status">
+                                <field name="x_gdpr_blocked" widget="boolean_toggle"/>
+                                <field name="x_gdpr_source" attrs="{'invisible': [('x_gdpr_blocked', '=', False)]}"/>
+                                <field name="x_gdpr_date" attrs="{'invisible': [('x_gdpr_blocked', '=', False)]}"/>
+                                <field name="x_gdpr_user_id" attrs="{'invisible': [('x_gdpr_blocked', '=', False)]}"/>
+                            </group>
+                            <group string="Begrunnelse">
+                                <field name="x_gdpr_reason" nolabel="1" widget="text"
+                                       placeholder="Begrunnelse for blokkering…"/>
+                            </group>
+                        </group>
+                        <group string="Hurtighandlinger" attrs="{'invisible': [('id', '=', False)]}">
+                            <div class="d-flex gap-2 mt-2">
+                                <button type="object" name="apply_gdpr_block" string="🔴 Blokker kontakt"
+                                        class="btn btn-danger"
+                                        attrs="{'invisible': [('x_gdpr_blocked', '=', True)]}"
+                                        confirm="Er du sikker på at du vil blokkere all kontakt med denne personen?"/>
+                                <button type="object" name="remove_gdpr_block" string="🟢 Fjern blokkering"
+                                        class="btn btn-success"
+                                        attrs="{'invisible': [('x_gdpr_blocked', '=', False)]}"
+                                        confirm="Fjern GDPR-blokkering for denne kontakten?"/>
+                            </div>
+                        </group>
+                    </page>
+                </xpath>
+
+            </field>
+        </record>
+
+        <!-- Partner list: add GDPR column and default filter -->
+        <record id="view_partner_list_gdpr" model="ir.ui.view">
+            <field name="name">res.partner.list.gdpr</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//list" position="attributes">
+                    <attribute name="decoration-danger">x_gdpr_blocked == True</attribute>
+                </xpath>
+                <xpath expr="//field[@name='email']" position="after">
+                    <field name="x_gdpr_blocked" string="GDPR" optional="show" widget="boolean"/>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Partner search: add GDPR filters -->
+        <record id="view_partner_search_gdpr" model="ir.ui.view">
+            <field name="name">res.partner.search.gdpr</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_res_partner_filter"/>
+            <field name="arch" type="xml">
+                <xpath expr="//filter[last()]" position="after">
+                    <separator/>
+                    <filter string="GDPR Blokkert" name="gdpr_blocked"
+                            domain="[('x_gdpr_blocked', '=', True)]"/>
+                    <filter string="Ikke GDPR Blokkert" name="gdpr_not_blocked"
+                            domain="[('x_gdpr_blocked', '=', False)]"/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

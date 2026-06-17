@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_gdpr_dashboard" model="ir.ui.view">
+            <field name="name">gdpr.dashboard</field>
+            <field name="model">gdpr.log</field>
+            <field name="arch" type="xml">
+                <form string="GDPR Dashboard" js_class="gdpr_dashboard">
+                    <div class="o_dashboard_header">
+                        <h2 class="gdpr-dashboard-title">GDPR Oversikt</h2>
+                    </div>
+                    <div class="o_gdpr_dashboard_wrapper">
+
+                        <!-- KPI Row -->
+                        <div class="o_gdpr_kpi_row row">
+
+                            <div class="col-md-3">
+                                <div class="o_gdpr_kpi_card bg-danger text-white">
+                                    <div class="kpi-label">Blokkerte kontakter</div>
+                                    <div class="kpi-value">
+                                        <field name="partner_id" widget="statinfo"
+                                               string="Blokkert"
+                                               domain="[('action','=','block')]"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="o_gdpr_kpi_card bg-warning text-dark">
+                                    <div class="kpi-label">Avmeldinger (30 dager)</div>
+                                    <div class="kpi-value">
+                                        <field name="partner_id" widget="statinfo" string="Avmeldt"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="o_gdpr_kpi_card bg-info text-white">
+                                    <div class="kpi-label">Hendelser i dag</div>
+                                    <div class="kpi-value">
+                                        <field name="partner_id" widget="statinfo" string="I dag"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="o_gdpr_kpi_card bg-success text-white">
+                                    <div class="kpi-label">Opphevede blokkeringer</div>
+                                    <div class="kpi-value">
+                                        <field name="partner_id" widget="statinfo" string="Opphevet"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Charts Row -->
+                        <div class="row mt-4">
+                            <div class="col-md-8">
+                                <h5>GDPR hendelser over tid</h5>
+                                <graph type="bar" string="Tidslinje">
+                                    <field name="date" type="row" interval="month"/>
+                                    <field name="action" type="col"/>
+                                </graph>
+                            </div>
+                            <div class="col-md-4">
+                                <h5>Blokkering per kilde</h5>
+                                <graph type="pie" string="Kilder">
+                                    <field name="source" type="row"/>
+                                </graph>
+                            </div>
+                        </div>
+
+                    </div>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_gdpr_dashboard" model="ir.actions.act_window">
+            <field name="name">GDPR Dashboard</field>
+            <field name="res_model">gdpr.log</field>
+            <field name="view_mode">graph,pivot,list</field>
+            <field name="context">{'search_default_last_30_days': 1}</field>
+        </record>
+
+    </data>
+</odoo>

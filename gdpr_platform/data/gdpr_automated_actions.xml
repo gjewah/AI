@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- When x_gdpr_blocked is set True on a partner, fire apply_gdpr_block side-effects -->
+        <record id="gdpr_action_on_partner_block" model="base.automation">
+            <field name="name">GDPR: Kjør blokkering ved flaggsetting</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="trigger">on_write</field>
+            <field name="filter_pre_domain">[('x_gdpr_blocked', '=', False)]</field>
+            <field name="filter_domain">[('x_gdpr_blocked', '=', True)]</field>
+            <field name="action_server_ids" eval="[(4, ref('gdpr_server_action_apply_block'))]"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Cancel marketing participants for blocked partners daily -->
+        <record id="gdpr_action_daily_cleanup" model="base.automation">
+            <field name="name">GDPR: Daglig rydding av blokkerte i marketing</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="trigger">on_time</field>
+            <field name="trg_date_id" ref="base.field_res_partner__write_date"/>
+            <field name="trg_date_range">0</field>
+            <field name="trg_date_range_type">days</field>
+            <field name="filter_domain">[('x_gdpr_blocked', '=', True)]</field>
+            <field name="action_server_ids" eval="[(4, ref('gdpr_server_action_cleanup'))]"/>
+            <field name="active" eval="True"/>
+        </record>
+
+    </data>
+</odoo>

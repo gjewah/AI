@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_helpdesk_ticket_form_gdpr" model="ir.ui.view">
+            <field name="name">helpdesk.ticket.form.gdpr</field>
+            <field name="model">helpdesk.ticket</field>
+            <field name="inherit_id" ref="helpdesk.helpdesk_ticket_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//sheet" position="before">
+                    <div class="alert alert-danger o_gdpr_block_banner" role="alert"
+                         attrs="{'invisible': [('partner_id.x_gdpr_blocked', '=', False)]}">
+                        <i class="fa fa-ban me-2"/>
+                        <strong>⚠️ GDPR BLOKKERT: Denne kontakten kan ikke kontaktes</strong>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

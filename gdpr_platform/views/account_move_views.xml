@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_account_move_form_gdpr" model="ir.ui.view">
+            <field name="name">account.move.form.gdpr</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_move_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//sheet" position="before">
+                    <div class="alert alert-danger o_gdpr_block_banner" role="alert"
+                         attrs="{'invisible': [('partner_id.x_gdpr_blocked', '=', False)]}">
+                        <i class="fa fa-ban me-2"/>
+                        <strong>⚠️ GDPR BLOKKERT: Faktura kan ikke sendes elektronisk til denne kontakten</strong>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

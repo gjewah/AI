@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_crm_lead_form_gdpr" model="ir.ui.view">
+            <field name="name">crm.lead.form.gdpr</field>
+            <field name="model">crm.lead</field>
+            <field name="inherit_id" ref="crm.crm_lead_all_leads"/>
+            <field name="arch" type="xml">
+                <xpath expr="//sheet" position="before">
+                    <div class="alert alert-danger o_gdpr_block_banner" role="alert"
+                         attrs="{'invisible': [('x_gdpr_blocked', '=', False)]}">
+                        <i class="fa fa-ban me-2"/>
+                        <strong>⚠️ GDPR BLOKKERT: Denne kontakten kan ikke kontaktes</strong>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_crm_lead_list_gdpr" model="ir.ui.view">
+            <field name="name">crm.lead.list.gdpr</field>
+            <field name="model">crm.lead</field>
+            <field name="inherit_id" ref="crm.crm_case_tree_view_leads"/>
+            <field name="arch" type="xml">
+                <xpath expr="//list" position="attributes">
+                    <attribute name="decoration-danger">x_gdpr_blocked == True</attribute>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>
