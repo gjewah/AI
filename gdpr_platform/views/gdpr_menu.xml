@@ -2,11 +2,9 @@
 <odoo>
     <data>
 
-        <!-- Top-level GDPR menu -->
         <menuitem id="menu_gdpr_root"
                   name="GDPR"
                   sequence="99"
-                  web_icon="gdpr_platform,static/src/img/gdpr_icon.png"
                   groups="gdpr_platform.group_gdpr_user"/>
 
         <menuitem id="menu_gdpr_dashboard"

@@ -9,9 +9,9 @@
             <field name="arch" type="xml">
                 <xpath expr="//sheet" position="before">
                     <div class="alert alert-danger o_gdpr_block_banner" role="alert"
-                         attrs="{'invisible': [('partner_id.x_gdpr_blocked', '=', False)]}">
+                         invisible="not partner_id or not partner_id.x_gdpr_blocked">
                         <i class="fa fa-ban me-2"/>
-                        <strong>⚠️ GDPR BLOKKERT: Faktura kan ikke sendes elektronisk til denne kontakten</strong>
+                        <strong>GDPR BLOKKERT: Faktura kan ikke sendes elektronisk til denne kontakten</strong>
                     </div>
                 </xpath>
             </field>

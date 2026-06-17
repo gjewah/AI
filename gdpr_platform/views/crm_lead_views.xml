@@ -9,9 +9,9 @@
             <field name="arch" type="xml">
                 <xpath expr="//sheet" position="before">
                     <div class="alert alert-danger o_gdpr_block_banner" role="alert"
-                         attrs="{'invisible': [('x_gdpr_blocked', '=', False)]}">
+                         invisible="not x_gdpr_blocked">
                         <i class="fa fa-ban me-2"/>
-                        <strong>⚠️ GDPR BLOKKERT: Denne kontakten kan ikke kontaktes</strong>
+                        <strong>GDPR BLOKKERT: Denne kontakten kan ikke kontaktes</strong>
                     </div>
                 </xpath>
             </field>
