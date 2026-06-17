@@ -50,28 +50,7 @@
             </field>
         </record>
 
-        <record id="view_gdpr_log_search" model="ir.ui.view">
-            <field name="name">gdpr.log.search</field>
-            <field name="model">gdpr.log</field>
-            <field name="arch" type="xml">
-                <search string="GDPR Log">
-                    <field name="partner_id"/>
-                    <field name="partner_email"/>
-                    <field name="action"/>
-                    <field name="source"/>
-                    <field name="user_id"/>
-                    <filter string="Blokkert" name="blocked" domain="[('action', '=', 'block')]"/>
-                    <filter string="Avmeldt" name="unsubscribed" domain="[('action', '=', 'unsubscribe')]"/>
-                    <group expand="0" string="Grupper etter">
-                        <filter string="Handling" name="group_action" context="{'group_by': 'action'}"/>
-                        <filter string="Kilde" name="group_source" context="{'group_by': 'source'}"/>
-                        <filter string="Dato" name="group_date" context="{'group_by': 'date:month'}"/>
-                    </group>
-                </search>
-            </field>
-        </record>
-
-        <record id="view_gdpr_log_pivot" model="ir.ui.view">
+<record id="view_gdpr_log_pivot" model="ir.ui.view">
             <field name="name">gdpr.log.pivot</field>
             <field name="model">gdpr.log</field>
             <field name="arch" type="xml">
