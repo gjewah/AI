@@ -241,3 +241,24 @@ class ResPartner(models.Model):
         token = self._gdpr_compute_token()
         base = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
         return f"{base}/gdpr/block/{token}?pid={self.id}"
+
+    @api.model
+    def _gdpr_cron_cleanup(self):
+        """Daglig cron: rydd marketing-deltakere for GDPR-blokkerte partnere."""
+        blocked = self.search([('x_gdpr_blocked', '=', True)])
+        for partner in blocked:
+            try:
+                self.env['marketing.participant'].sudo().search([
+                    ('partner_id', '=', partner.id),
+                    ('state', 'not in', ['completed', 'canceled']),
+                ]).write({'state': 'canceled'})
+            except Exception:
+                pass
+            try:
+                if partner.email:
+                    self.env['mailing.contact'].sudo().search([
+                        ('email', '=ilike', partner.email),
+                        ('opt_out', '=', False),
+                    ]).write({'opt_out': True})
+            except Exception:
+                pass
