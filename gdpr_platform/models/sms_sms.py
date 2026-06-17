@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+# Copyright 2024 FIQ AS
+# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0).
+"""sms.sms – block SMS creation and sending to GDPR-blocked contacts."""
 import logging
 from odoo import api, models, _
 from odoo.exceptions import UserError
@@ -7,6 +10,8 @@ _logger = logging.getLogger(__name__)
 
 
 class SmsSms(models.Model):
+    """sms.sms GDPR guard: raises UserError on create and cancels send for blocked partners."""
+
     _inherit = 'sms.sms'
 
     @api.model_create_multi

@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
+# Copyright 2024 FIQ AS
+# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0).
+"""sale.order – block order creation for GDPR-blocked contacts."""
 from odoo import api, models, _
 from odoo.exceptions import UserError
 
 
 class SaleOrder(models.Model):
+    """sale.order ORM guard: raises UserError when creating a quotation for a blocked partner."""
+
     _inherit = 'sale.order'
 
     @api.model_create_multi

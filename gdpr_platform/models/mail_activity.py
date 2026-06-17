@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
+# Copyright 2024 FIQ AS
+# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0).
+"""mail.activity – block activity creation for GDPR-blocked contacts."""
 from odoo import api, models, _
 from odoo.exceptions import UserError
 
 
 class MailActivity(models.Model):
+    """mail.activity ORM guard: raises UserError if the linked contact is GDPR-blocked."""
+
     _inherit = 'mail.activity'
 
     @api.model_create_multi
@@ -13,6 +18,7 @@ class MailActivity(models.Model):
         return super().create(vals_list)
 
     def _gdpr_check_activity(self, vals):
+        """Raise UserError if the activity target is a GDPR-blocked partner."""
         res_model = vals.get('res_model') or vals.get('res_model_id')
         res_id = vals.get('res_id')
         if not res_id:
@@ -33,6 +39,7 @@ class MailActivity(models.Model):
             )
 
     def _gdpr_resolve_partner(self, res_model, res_id):
+        """Return the res.partner linked to any supported model record, or None."""
         try:
             record = self.env[res_model].sudo().browse(res_id)
             if not record.exists():

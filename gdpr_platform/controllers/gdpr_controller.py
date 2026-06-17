@@ -1,4 +1,15 @@
 # -*- coding: utf-8 -*-
+# Copyright 2024 FIQ AS
+# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0).
+"""GDPR self-service controller – public unsubscribe and full-block URLs.
+
+Routes:
+  /gdpr/unsubscribe/<token>?pid=<id>  – opt-out from mailings
+  /gdpr/block/<token>?pid=<id>        – full GDPR block
+
+Tokens are SHA-256 digests tied to partner id + email + system secret.
+Token verification uses hmac.compare_digest to prevent timing attacks.
+"""
 import hashlib
 import logging
 
@@ -9,6 +20,7 @@ _logger = logging.getLogger(__name__)
 
 
 def _verify_token(partner, token):
+    """Return True if *token* matches the expected SHA-256 digest for *partner*."""
     secret = request.env['ir.config_parameter'].sudo().get_param(
         'gdpr_platform.token_secret', default='gdpr-secret-change-me'
     )
@@ -19,6 +31,7 @@ def _verify_token(partner, token):
 
 
 class GdprController(http.Controller):
+    """Public HTTP controller for GDPR self-service actions."""
 
     # ------------------------------------------------------------------ #
     #  Unsubscribe                                                         #
@@ -96,6 +109,7 @@ class GdprController(http.Controller):
     # ------------------------------------------------------------------ #
 
     def _resolve_partner(self, pid, token):
+        """Return partner if pid and token are valid; log and return None otherwise."""
         if not pid or not token:
             return None
         try:
@@ -111,6 +125,7 @@ class GdprController(http.Controller):
             return None
 
     def _send_confirmation_email(self, partner, subject, body):
+        """Send a transient confirmation mail and suppress any send errors."""
         if not partner.email:
             return
         try:

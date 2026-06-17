@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+# Copyright 2024 FIQ AS
+# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0).
+"""mail.mail – block outgoing email to GDPR-blocked recipients."""
 import logging
 from odoo import api, models, _
 from odoo.exceptions import UserError
@@ -7,6 +10,8 @@ _logger = logging.getLogger(__name__)
 
 
 class MailMail(models.Model):
+    """mail.mail GDPR guard: cancels outbound mail when any recipient is blocked."""
+
     _inherit = 'mail.mail'
 
     @api.model_create_multi

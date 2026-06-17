@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
+# Copyright 2024 FIQ AS
+# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0).
+"""account.move – block invoice sending to GDPR-blocked contacts."""
 from odoo import api, models, _
 from odoo.exceptions import UserError
 
 
 class AccountMove(models.Model):
+    """account.move GDPR guard: prevents sending invoices to blocked partners."""
+
     _inherit = 'account.move'
 
     def action_send_and_print(self, **kwargs):

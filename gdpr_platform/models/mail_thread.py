@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+# Copyright 2024 FIQ AS
+# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0).
+"""mail.thread – block outbound messages and handle inbound for blocked contacts.
+
+Overrides message_post to block email sends to GDPR-blocked contacts.
+Overrides message_process to reject inbound mail and send an auto-response.
+Use context key 'gdpr_bypass' to skip the guard (e.g., for chatter notes).
+"""
 import logging
 from odoo import api, models, _
 from odoo.exceptions import UserError
@@ -9,6 +17,8 @@ _GDPR_BYPASS_CTX = 'gdpr_bypass'
 
 
 class MailThread(models.AbstractModel):
+    """mail.thread GDPR guard for outbound and inbound message enforcement."""
+
     _inherit = 'mail.thread'
 
     def message_post(self, **kwargs):
@@ -18,6 +28,7 @@ class MailThread(models.AbstractModel):
         return super().message_post(**kwargs)
 
     def _gdpr_guard_message(self):
+        """Raise UserError if this thread's partner is GDPR-blocked for email."""
         partner = self._gdpr_get_self_partner()
         if partner and partner.x_gdpr_blocked:
             # Allow internal notes (subtype mt_note) from Odoo system/admin
@@ -30,6 +41,7 @@ class MailThread(models.AbstractModel):
                 ))
 
     def _gdpr_get_self_partner(self):
+        """Return the res.partner linked to self, or None."""
         try:
             if self._name == 'res.partner':
                 return self
@@ -66,6 +78,7 @@ class MailThread(models.AbstractModel):
         )
 
     def _gdpr_resolve_inbound_partner(self, message):
+        """Parse the From header and return the matching res.partner, or None."""
         try:
             from email.utils import parseaddr
             raw_from = message.get('from', '') if hasattr(message, 'get') else ''
@@ -79,6 +92,7 @@ class MailThread(models.AbstractModel):
         return None
 
     def _gdpr_send_blocked_autoresponse(self, partner, original_message):
+        """Send a polite rejection notice back to the inbound sender."""
         try:
             from email.utils import parseaddr
             raw_from = original_message.get('from', '') if hasattr(original_message, 'get') else ''
@@ -98,6 +112,7 @@ class MailThread(models.AbstractModel):
             _logger.warning("GDPR autoresponse failed: %s", e)
 
     def _gdpr_send_optout_autoresponse(self, partner, original_message):
+        """Notify inbound sender that this contact has opted out of communication."""
         try:
             from email.utils import parseaddr
             raw_from = original_message.get('from', '') if hasattr(original_message, 'get') else ''

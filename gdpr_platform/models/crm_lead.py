@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
+# Copyright 2024 FIQ AS
+# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0).
+"""crm.lead – mirror GDPR fields and block lead creation for blocked contacts."""
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
 
 class CrmLead(models.Model):
+    """crm.lead GDPR guard: mirrors x_gdpr_blocked from partner and blocks new leads."""
+
     _inherit = 'crm.lead'
 
     x_gdpr_blocked = fields.Boolean(

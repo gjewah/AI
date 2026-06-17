@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
+# Copyright 2024 FIQ AS
+# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0).
+"""social.post – filter GDPR-blocked partners from social post targeting."""
 from odoo import api, models
 
 
 class SocialPost(models.Model):
+    """social.post GDPR helper: removes blocked partners from audience targeting lists."""
+
     _inherit = 'social.post'
 
     def _filter_gdpr_audience(self, partner_ids):

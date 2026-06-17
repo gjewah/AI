@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
+# Copyright 2024 FIQ AS
+# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0).
+"""mailing.contact / mailing.mailing – exclude blocked contacts from mass mailings."""
 from odoo import api, models, _
 from odoo.exceptions import UserError
 
 
 class MailingContact(models.Model):
+    """mailing.contact ORM guard: blocks adding a GDPR-blocked email to any mailing list."""
+
     _inherit = 'mailing.contact'
 
     @api.model_create_multi
@@ -23,9 +28,12 @@ class MailingContact(models.Model):
 
 
 class MassMailing(models.Model):
+    """mailing.mailing override: strip GDPR-blocked emails from every send."""
+
     _inherit = 'mailing.mailing'
 
     def _get_recipients(self):
+        """Return recipients dict with GDPR-blocked email addresses removed."""
         res = super()._get_recipients()
         if not res:
             return res

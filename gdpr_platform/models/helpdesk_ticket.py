@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
+# Copyright 2024 FIQ AS
+# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0).
+"""helpdesk.ticket – block ticket creation for GDPR-blocked contacts."""
 from odoo import api, models, _
 from odoo.exceptions import UserError
 
 
 class HelpdeskTicket(models.Model):
+    """helpdesk.ticket ORM guard: raises UserError for blocked partners on create and write."""
+
     _inherit = 'helpdesk.ticket'
 
     @api.model_create_multi

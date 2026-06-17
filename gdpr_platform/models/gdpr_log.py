@@ -1,8 +1,18 @@
 # -*- coding: utf-8 -*-
+# Copyright 2024 FIQ AS
+# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0).
+"""gdpr.log – immutable GDPR audit trail.
+
+Stores one record per GDPR action (block, unblock, blacklist, etc.).
+partner_name and partner_email are snapshotted at creation time so
+the audit trail survives even if the contact is later deleted.
+"""
 from odoo import api, fields, models
 
 
 class GdprLog(models.Model):
+    """Immutable GDPR audit log entry."""
+
     _name = 'gdpr.log'
     _description = 'GDPR Audit Log'
     _order = 'date desc'
@@ -38,6 +48,7 @@ class GdprLog(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        """Snapshot partner_name and partner_email at creation time."""
         for vals in vals_list:
             partner = self.env['res.partner'].browse(vals.get('partner_id'))
             if partner.exists():

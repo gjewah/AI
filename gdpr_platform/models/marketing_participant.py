@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
+# Copyright 2024 FIQ AS
+# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0).
+"""marketing.participant – prevent and cancel participation for GDPR-blocked contacts."""
 from odoo import api, models, _
 from odoo.exceptions import UserError
 
 
 class MarketingParticipant(models.Model):
+    """marketing.participant guard: blocks enrollment and cancels execution for blocked partners."""
+
     _inherit = 'marketing.participant'
 
     @api.model_create_multi
