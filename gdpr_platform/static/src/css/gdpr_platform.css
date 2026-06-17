@@ -1,49 +1,19 @@
-/* GDPR Platform – Backend styles */
+/* GDPR Platform – UI styles */
 
-.o_gdpr_block_banner {
-    border-left: 5px solid #dc3545;
-    font-size: 14px;
-}
-
-.o_gdpr_block_banner i {
-    font-size: 16px;
-}
-
-/* Dashboard KPI cards */
-.o_gdpr_kpi_row {
-    gap: 16px;
-    flex-wrap: wrap;
-}
-
-.o_gdpr_kpi_card {
-    border-radius: 8px;
-    padding: 20px 24px;
-    margin-bottom: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-}
-
-.o_gdpr_kpi_card .kpi-label {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    opacity: 0.85;
+.gdpr_blocked_banner {
+    background-color: #dc3545;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: bold;
     margin-bottom: 8px;
 }
 
-.o_gdpr_kpi_card .kpi-value {
-    font-size: 32px;
-    font-weight: 700;
-    line-height: 1;
+.gdpr_blocked_banner .fa {
+    margin-right: 6px;
 }
 
-.gdpr-dashboard-title {
-    font-size: 22px;
-    font-weight: 600;
-    margin-bottom: 24px;
-    color: #333;
-}
-
-/* List view: highlight blocked rows */
-.o_data_row.o_red_row td {
-    background-color: rgba(220, 53, 69, 0.08) !important;
+.o_field_widget.gdpr_blocked {
+    color: #dc3545;
+    font-weight: bold;
 }
