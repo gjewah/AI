@@ -21,6 +21,7 @@
         'website',
         'portal',
         'sale_subscription',
+        'base_automation',
     ],
     'data': [
         'security/gdpr_security.xml',
