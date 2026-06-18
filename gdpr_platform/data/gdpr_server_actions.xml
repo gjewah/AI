@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data noupdate="1">
+    <data noupdate="0">
 
         <record id="gdpr_server_action_apply_block" model="ir.actions.server">
             <field name="name">GDPR: Anvend blokkering</field>
@@ -10,18 +10,14 @@
             <field name="code"><![CDATA[
 for partner in records:
     if partner.x_gdpr_blocked and partner.email:
-        # Ensure blacklist
         Blacklist = env['mail.blacklist'].sudo()
         if not Blacklist.search([('email', '=ilike', partner.email)], limit=1):
             Blacklist.create({'email': partner.email.lower().strip()})
-    # Ensure opt_out
     if partner.x_gdpr_blocked:
-        partner.write({'opt_out': True})
-    # Kill pending activities
-    env['mail.activity'].sudo().search([
-        ('res_model', '=', 'res.partner'),
-        ('res_id', '=', partner.id),
-    ]).unlink()
+        env['mail.activity'].sudo().search([
+            ('res_model', '=', 'res.partner'),
+            ('res_id', '=', partner.id),
+        ]).unlink()
             ]]></field>
         </record>
 
@@ -31,7 +27,6 @@ for partner in records:
             <field name="state">code</field>
             <field name="code"><![CDATA[
 for partner in records:
-    # Cancel marketing automation participants
     try:
         env['marketing.participant'].sudo().search([
             ('partner_id', '=', partner.id),
@@ -39,7 +34,6 @@ for partner in records:
         ]).write({'state': 'canceled'})
     except Exception:
         pass
-    # Opt-out mailing contacts
     try:
         if partner.email:
             contacts = env['mailing.contact'].sudo().search([
@@ -52,7 +46,7 @@ for partner in records:
             ]]></field>
         </record>
 
-        <!-- Wizard action: Block contact from form view -->
+        <!-- Block contact from form/list view -->
         <record id="gdpr_server_action_block_partner" model="ir.actions.server">
             <field name="name">GDPR: Blokker kontakt</field>
             <field name="model_id" ref="base.model_res_partner"/>
@@ -65,7 +59,7 @@ for partner in records:
             ]]></field>
         </record>
 
-        <!-- Wizard action: Unblock contact -->
+        <!-- Unblock contact -->
         <record id="gdpr_server_action_unblock_partner" model="ir.actions.server">
             <field name="name">GDPR: Fjern blokkering</field>
             <field name="model_id" ref="base.model_res_partner"/>
