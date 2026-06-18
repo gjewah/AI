@@ -27,6 +27,7 @@
     'data': [
         'security/gdpr_security.xml',
         'security/ir.model.access.csv',
+        'data/gdpr_icon.xml',
         'data/gdpr_mail_templates.xml',
         'data/gdpr_server_actions.xml',
         'data/gdpr_automated_actions.xml',
@@ -50,4 +51,5 @@
     'installable': True,
     'auto_install': False,
     'application': True,
+    'post_init_hook': 'post_init_hook',
 }
