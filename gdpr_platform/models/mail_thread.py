@@ -56,20 +56,16 @@ class MailThread(models.AbstractModel):
                         strip_attachments=False, thread_id=None):
         """Block inbound messages to GDPR-blocked contacts."""
         partner = self._gdpr_resolve_inbound_partner(message)
-        if partner:
-            if partner.x_gdpr_blocked:
-                _logger.info("GDPR: Inbound email blocked for partner %s (%s)", partner.id, partner.email)
-                self.env['gdpr.log'].sudo().create({
-                    'partner_id': partner.id,
-                    'action': 'inbound_blocked',
-                    'source': 'inbound_email',
-                    'note': 'Inbound email rejected – partner is GDPR blocked',
-                })
-                self._gdpr_send_blocked_autoresponse(partner, message)
-                return False
-            if partner.opt_out:
-                _logger.info("GDPR: Inbound email from opt-out partner %s (%s)", partner.id, partner.email)
-                self._gdpr_send_optout_autoresponse(partner, message)
+        if partner and partner.x_gdpr_blocked:
+            _logger.info("GDPR: Inbound email blocked for partner %s (%s)", partner.id, partner.email)
+            self.env['gdpr.log'].sudo().create({
+                'partner_id': partner.id,
+                'action': 'inbound_blocked',
+                'source': 'inbound_email',
+                'note': 'Inbound email rejected – partner is GDPR blocked',
+            })
+            self._gdpr_send_blocked_autoresponse(partner, message)
+            return False
 
         return super().message_process(
             model, message, custom_values=custom_values,
@@ -111,22 +107,3 @@ class MailThread(models.AbstractModel):
         except Exception as e:
             _logger.warning("GDPR autoresponse failed: %s", e)
 
-    def _gdpr_send_optout_autoresponse(self, partner, original_message):
-        """Notify inbound sender that this contact has opted out of communication."""
-        try:
-            from email.utils import parseaddr
-            raw_from = original_message.get('from', '') if hasattr(original_message, 'get') else ''
-            _, reply_to = parseaddr(raw_from)
-            if not reply_to:
-                return
-            self.env['mail.mail'].sudo().create({
-                'subject': _('Du er avmeldt kommunikasjon'),
-                'body_html': _(
-                    "<p>Du er registrert som avmeldt fra vår kommunikasjon.<br/>"
-                    "Kontakt oss direkte hvis du ønsker å endre dette.</p>"
-                ),
-                'email_to': reply_to,
-                'auto_delete': True,
-            }).send()
-        except Exception as e:
-            _logger.warning("GDPR opt-out autoresponse failed: %s", e)

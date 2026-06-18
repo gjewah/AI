@@ -236,9 +236,7 @@ class ResPartner(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Ensure opt_out and blacklist are enforced when creating blocked partners."""
-        for vals in vals_list:
-            if vals.get('x_gdpr_blocked'):
+        """Enforce blacklist for blocked partners on create."""
         partners = super().create(vals_list)
         for partner in partners:
             if partner.x_gdpr_blocked:

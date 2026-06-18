@@ -27,22 +27,3 @@ class MailingContact(models.Model):
         return super().create(vals_list)
 
 
-class MassMailing(models.Model):
-    """mailing.mailing override: strip GDPR-blocked emails from every send."""
-
-    _inherit = 'mailing.mailing'
-
-    def _get_recipients(self):
-        """Return recipients dict with GDPR-blocked email addresses removed."""
-        res = super()._get_recipients()
-        if not res:
-            return res
-        # Exclude GDPR-blocked partners
-        blocked = self.env['res.partner'].sudo().search([
-            ('x_gdpr_blocked', '=', True),
-            ('email', '!=', False),
-        ])
-        blocked_emails = set(e.lower() for e in blocked.mapped('email') if e)
-        filtered = {rid: email for rid, email in res.items()
-                    if email.lower() not in blocked_emails}
-        return filtered

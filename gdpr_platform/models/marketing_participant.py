@@ -24,10 +24,3 @@ class MarketingParticipant(models.Model):
                     ))
         return super().create(vals_list)
 
-    def _execute_action(self):
-        """Skip execution for GDPR-blocked participants."""
-        for participant in self:
-            if participant.partner_id and participant.partner_id.x_gdpr_blocked:
-                participant.write({'state': 'canceled'})
-                continue
-        return super()._execute_action()

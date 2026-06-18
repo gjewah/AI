@@ -44,7 +44,6 @@ class GdprController(http.Controller):
             return request.render('gdpr_platform.gdpr_invalid_token', {})
 
         ip = request.httprequest.remote_addr
-        partner.sudo().write({'opt_out': True})
         if partner.email:
             Blacklist = request.env['mail.blacklist'].sudo()
             if not Blacklist.search([('email', '=ilike', partner.email)], limit=1):
