@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 # Copyright 2024 FIQ AS
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0).
-"""mailing.contact / mailing.mailing – exclude blocked contacts from mass mailings."""
 from odoo import api, models, _
 from odoo.exceptions import UserError
 
 
 class MailingContact(models.Model):
-    """mailing.contact ORM guard: blocks adding a GDPR-blocked email to any mailing list."""
-
     _inherit = 'mailing.contact'
 
     @api.model_create_multi
@@ -21,9 +18,7 @@ class MailingContact(models.Model):
                 )
                 if partner and partner.x_gdpr_blocked:
                     raise UserError(_(
-                        "⚠️ GDPR BLOKKERT: %(email)s er blokkert og kan ikke legges til mailing list.",
+                        "⚠️ GDPR BLOCKED: %(email)s is blocked and cannot be added to a mailing list.",
                         email=email,
                     ))
         return super().create(vals_list)
-
-

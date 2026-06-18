@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright 2024 FIQ AS
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0).
-"""sms.sms – block SMS creation and sending to GDPR-blocked contacts."""
 import logging
 from odoo import api, models, _
 from odoo.exceptions import UserError
@@ -10,8 +9,6 @@ _logger = logging.getLogger(__name__)
 
 
 class SmsSms(models.Model):
-    """sms.sms GDPR guard: raises UserError on create and cancels send for blocked partners."""
-
     _inherit = 'sms.sms'
 
     @api.model_create_multi
@@ -22,7 +19,7 @@ class SmsSms(models.Model):
                 partner = self.env['res.partner'].sudo().browse(partner_id)
                 if partner.exists() and partner.x_gdpr_blocked:
                     raise UserError(_(
-                        "⚠️ GDPR BLOKKERT: SMS kan ikke sendes til %(name)s.",
+                        "⚠️ GDPR BLOCKED: SMS cannot be sent to %(name)s.",
                         name=partner.display_name,
                     ))
         return super().create(vals_list)

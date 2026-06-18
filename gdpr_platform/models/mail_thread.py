@@ -1,12 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright 2024 FIQ AS
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0).
-"""mail.thread – block outbound messages and handle inbound for blocked contacts.
-
-Overrides message_post to block email sends to GDPR-blocked contacts.
-Overrides message_process to reject inbound mail and send an auto-response.
-Use context key 'gdpr_bypass' to skip the guard (e.g., for chatter notes).
-"""
 import logging
 from odoo import api, models, _
 from odoo.exceptions import UserError
@@ -17,31 +11,25 @@ _GDPR_BYPASS_CTX = 'gdpr_bypass'
 
 
 class MailThread(models.AbstractModel):
-    """mail.thread GDPR guard for outbound and inbound message enforcement."""
-
     _inherit = 'mail.thread'
 
     def message_post(self, **kwargs):
         if self.env.context.get(_GDPR_BYPASS_CTX):
             return super().message_post(**kwargs)
-        self._gdpr_guard_message()
+        # Only block emails — never block internal notes or system messages
+        message_type = kwargs.get('message_type', 'comment')
+        subtype_xmlid = kwargs.get('subtype_xmlid', '')
+        is_note = subtype_xmlid == 'mail.mt_note' or message_type not in ('email', 'comment')
+        if not is_note:
+            partner = self._gdpr_get_self_partner()
+            if partner and partner.x_gdpr_blocked:
+                raise UserError(_(
+                    "⚠️ GDPR BLOCKED: Email cannot be sent to %(name)s.",
+                    name=partner.display_name,
+                ))
         return super().message_post(**kwargs)
 
-    def _gdpr_guard_message(self):
-        """Raise UserError if this thread's partner is GDPR-blocked for email."""
-        partner = self._gdpr_get_self_partner()
-        if partner and partner.x_gdpr_blocked:
-            # Allow internal notes (subtype mt_note) from Odoo system/admin
-            subtype = self.env.context.get('mail_post_autofollow', False)
-            message_type = self.env.context.get('default_message_type', 'email')
-            if message_type == 'email':
-                raise UserError(_(
-                    "⚠️ GDPR BLOKKERT: E-post kan ikke sendes til %(name)s.",
-                    name=partner.display_name
-                ))
-
     def _gdpr_get_self_partner(self):
-        """Return the res.partner linked to self, or None."""
         try:
             if self._name == 'res.partner':
                 return self
@@ -54,7 +42,6 @@ class MailThread(models.AbstractModel):
     @api.model
     def message_process(self, model, message, custom_values=None, save_original=False,
                         strip_attachments=False, thread_id=None):
-        """Block inbound messages to GDPR-blocked contacts."""
         partner = self._gdpr_resolve_inbound_partner(message)
         if partner and partner.x_gdpr_blocked:
             _logger.info("GDPR: Inbound email blocked for partner %s (%s)", partner.id, partner.email)
@@ -66,7 +53,6 @@ class MailThread(models.AbstractModel):
             })
             self._gdpr_send_blocked_autoresponse(partner, message)
             return False
-
         return super().message_process(
             model, message, custom_values=custom_values,
             save_original=save_original, strip_attachments=strip_attachments,
@@ -74,7 +60,6 @@ class MailThread(models.AbstractModel):
         )
 
     def _gdpr_resolve_inbound_partner(self, message):
-        """Parse the From header and return the matching res.partner, or None."""
         try:
             from email.utils import parseaddr
             raw_from = message.get('from', '') if hasattr(message, 'get') else ''
@@ -88,7 +73,6 @@ class MailThread(models.AbstractModel):
         return None
 
     def _gdpr_send_blocked_autoresponse(self, partner, original_message):
-        """Send a polite rejection notice back to the inbound sender."""
         try:
             from email.utils import parseaddr
             raw_from = original_message.get('from', '') if hasattr(original_message, 'get') else ''
@@ -96,14 +80,13 @@ class MailThread(models.AbstractModel):
             if not reply_to:
                 return
             self.env['mail.mail'].sudo().create({
-                'subject': _('GDPR – Kontakt blokkert'),
+                'subject': _('GDPR – Contact blocked'),
                 'body_html': _(
-                    "<p>Din e-post ble mottatt, men kontakten er blokkert iht. GDPR.<br/>"
-                    "Vi kan ikke behandle din henvendelse elektronisk.</p>"
+                    "<p>Your email was received, but this contact is GDPR-blocked.<br/>"
+                    "We cannot process your request electronically.</p>"
                 ),
                 'email_to': reply_to,
                 'auto_delete': True,
             }).send()
         except Exception as e:
             _logger.warning("GDPR autoresponse failed: %s", e)
-
