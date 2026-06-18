@@ -9,7 +9,7 @@ from odoo.exceptions import UserError
 class AccountMove(models.Model):
     """account.move GDPR guard: prevents sending invoices to blocked partners."""
 
-    _inherit = 'account.move'
+    _inherit = ['account.move', 'gdpr.partner.mixin']
 
     def action_send_and_print(self, **kwargs):
         for move in self:

@@ -9,7 +9,7 @@ from odoo.exceptions import UserError
 class HelpdeskTicket(models.Model):
     """helpdesk.ticket ORM guard: raises UserError for blocked partners on create and write."""
 
-    _inherit = 'helpdesk.ticket'
+    _inherit = ['helpdesk.ticket', 'gdpr.partner.mixin']
 
     @api.model_create_multi
     def create(self, vals_list):

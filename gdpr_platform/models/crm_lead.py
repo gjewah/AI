@@ -9,7 +9,7 @@ from odoo.exceptions import UserError
 class CrmLead(models.Model):
     """crm.lead GDPR guard: mirrors x_gdpr_blocked from partner and blocks new leads."""
 
-    _inherit = 'crm.lead'
+    _inherit = ['crm.lead', 'gdpr.partner.mixin']
 
     x_gdpr_blocked = fields.Boolean(
         string='GDPR Blokkert',

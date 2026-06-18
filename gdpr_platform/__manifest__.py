@@ -22,6 +22,7 @@
         'portal',
         'sale_subscription',
         'base_automation',
+        'project',
     ],
     'data': [
         'security/gdpr_security.xml',
@@ -30,6 +31,7 @@
         'data/gdpr_server_actions.xml',
         'data/gdpr_automated_actions.xml',
         'views/gdpr_log_views.xml',
+        'views/project_task_views.xml',
         'views/gdpr_dashboard_views.xml',
         'views/res_partner_views.xml',
         'views/crm_lead_views.xml',

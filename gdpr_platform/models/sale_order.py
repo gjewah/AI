@@ -9,7 +9,7 @@ from odoo.exceptions import UserError
 class SaleOrder(models.Model):
     """sale.order ORM guard: raises UserError when creating a quotation for a blocked partner."""
 
-    _inherit = 'sale.order'
+    _inherit = ['sale.order', 'gdpr.partner.mixin']
 
     @api.model_create_multi
     def create(self, vals_list):
