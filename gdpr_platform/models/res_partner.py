@@ -145,11 +145,9 @@ class ResPartner(models.Model):
                 'x_gdpr_blocked': False,
             })
 
-            # Remove from blacklist
+            # Remove from blacklist (Odoo 19: use _remove instead of action_unblacklist)
             if partner.email:
-                self.env['mail.blacklist'].sudo().search([
-                    ('email', '=ilike', partner.email),
-                ]).action_unblacklist()
+                self.env['mail.blacklist'].sudo()._remove(partner.email)
 
             self.env['gdpr.log'].sudo().create({
                 'partner_id': partner.id,
