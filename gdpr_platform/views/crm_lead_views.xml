@@ -5,9 +5,9 @@
         <record id="view_crm_lead_form_gdpr" model="ir.ui.view">
             <field name="name">crm.lead.form.gdpr</field>
             <field name="model">crm.lead</field>
-            <field name="inherit_id" ref="crm.crm_lead_all_leads"/>
+            <field name="inherit_id" ref="crm.crm_lead_view_form"/>
             <field name="arch" type="xml">
-                <xpath expr="//header" position="after">
+                <xpath expr="//sheet" position="before">
                     <div class="alert alert-danger o_gdpr_block_banner" role="alert"
                          invisible="not x_gdpr_blocked">
                         <i class="fa fa-ban me-2"/>

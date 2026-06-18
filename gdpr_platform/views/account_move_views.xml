@@ -7,7 +7,7 @@
             <field name="model">account.move</field>
             <field name="inherit_id" ref="account.view_move_form"/>
             <field name="arch" type="xml">
-                <xpath expr="//sheet" position="before">
+                <xpath expr="//header" position="after">
                     <div class="alert alert-danger o_gdpr_block_banner" role="alert"
                          invisible="not partner_id or not partner_id.x_gdpr_blocked">
                         <i class="fa fa-ban me-2"/>
