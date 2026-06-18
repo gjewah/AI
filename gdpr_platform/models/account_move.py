@@ -10,11 +10,14 @@ class AccountMove(models.Model):
 
     x_gdpr_blocked = fields.Boolean(
         string='GDPR Blocked',
-        related='partner_id.x_gdpr_blocked',
-        store=True,
-        readonly=True,
-        index=True,
+        compute='_compute_gdpr_blocked',
+        store=False,
     )
+
+    @api.depends('partner_id', 'partner_id.x_gdpr_blocked')
+    def _compute_gdpr_blocked(self):
+        for rec in self:
+            rec.x_gdpr_blocked = rec.partner_id.x_gdpr_blocked if rec.partner_id else False
 
     def action_send_and_print(self, **kwargs):
         for move in self:
