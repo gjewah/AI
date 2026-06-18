@@ -85,7 +85,6 @@ class ResPartner(models.Model):
                 'x_gdpr_user_id': self.env.uid,
                 'x_gdpr_source': source,
                 'x_gdpr_token': token,
-                'opt_out': True,
             })
 
             # Blacklist email
@@ -144,7 +143,6 @@ class ResPartner(models.Model):
             partner = partner.sudo()
             partner.write({
                 'x_gdpr_blocked': False,
-                'opt_out': False,
             })
 
             # Remove from blacklist
@@ -241,7 +239,6 @@ class ResPartner(models.Model):
         """Ensure opt_out and blacklist are enforced when creating blocked partners."""
         for vals in vals_list:
             if vals.get('x_gdpr_blocked'):
-                vals.setdefault('opt_out', True)
         partners = super().create(vals_list)
         for partner in partners:
             if partner.x_gdpr_blocked:
@@ -255,7 +252,6 @@ class ResPartner(models.Model):
         if blocking:
             for partner in self:
                 partner.sudo()._gdpr_add_to_blacklist()
-                partner.sudo().write({'opt_out': True})
         return result
 
     # ------------------------------------------------------------------ #
