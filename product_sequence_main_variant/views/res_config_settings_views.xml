@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+        <record id="res_config_settings_view_form" model="ir.ui.view">
+            <field name="name">res.config.settings.view.form.inherit.product_sequence_main_variant</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="product.res_config_settings_view_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//block[@id='product_general_settings']" position="inside">
+                    <setting string="Get Product Template No. from Main Variant">
+                        <field name="product_template_sequence_number_from_main_variant"/>
+                    </setting>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
