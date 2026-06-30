@@ -2,17 +2,17 @@
 from odoo.tests.common import TransactionCase, new_test_user
 
 
-class TestFiqHovedmeny(TransactionCase):
+class TestFiqControlRoom(TransactionCase):
 
     def setUp(self):
         super().setUp()
-        self.Config = self.env["fiq.gui.hoved.config"]
-        self.action = self.env.ref("fiq_gui_hoved.action_fiq_gui_hoved")
+        self.Config = self.env["fiq.gui.control.config"]
+        self.action = self.env.ref("fiq_gui_control.action_fiq_gui_control")
 
     def test_groups_exist_and_hierarchy(self):
-        gu = self.env.ref("fiq_gui_hoved.group_user")
-        gm = self.env.ref("fiq_gui_hoved.group_manager")
-        ga = self.env.ref("fiq_gui_hoved.group_admin")
+        gu = self.env.ref("fiq_gui_control.group_user")
+        gm = self.env.ref("fiq_gui_control.group_manager")
+        ga = self.env.ref("fiq_gui_control.group_admin")
         self.assertTrue(gu and gm and ga)
         # Leder arver Bruker; Admin arver Leder
         self.assertIn(gu, gm.implied_ids)
@@ -22,7 +22,7 @@ class TestFiqHovedmeny(TransactionCase):
 
     def test_get_my_config_creates_and_returns(self):
         cfg = self.Config.get_my_config()
-        for key in ("show", "level", "is_admin", "company_name", "accent"):
+        for key in ("show", "level", "is_admin", "company_name", "accent", "company_id", "companies"):
             self.assertIn(key, cfg)
         self.assertEqual(set(cfg["show"].keys()),
                          {"kpis", "projects", "kommunikasjon", "activity", "tasks", "chart", "copilot", "quick"})
@@ -48,8 +48,8 @@ class TestFiqHovedmeny(TransactionCase):
                 [("user_id", "=", self.env.uid), ("company_id", "=", self.env.company.id)]), n)
 
     def test_record_rule_isolation(self):
-        userA = new_test_user(self.env, login="hm_a", groups="fiq_gui_hoved.group_user")
-        userB = new_test_user(self.env, login="hm_b", groups="fiq_gui_hoved.group_user")
+        userA = new_test_user(self.env, login="hm_a", groups="fiq_gui_control.group_user")
+        userB = new_test_user(self.env, login="hm_b", groups="fiq_gui_control.group_user")
         self.Config.with_user(userA).get_my_config()
         # B skal ikke se A sitt oppsett
         seen_by_b = self.Config.with_user(userB).search([])
@@ -78,17 +78,17 @@ class TestFiqHovedmeny(TransactionCase):
             self.assertTrue(self.env.ref(r["xmlid"], raise_if_not_found=False))
 
     def test_company_branding_fields(self):
-        for f in ("fiq_hoved_accent", "fiq_hoved_logo", "fiq_hoved_as_home"):
+        for f in ("fiq_control_accent", "fiq_control_logo", "fiq_control_as_home"):
             self.assertIn(f, self.env.company._fields)
 
     def test_set_home_admin_controlled(self):
-        u = new_test_user(self.env, login="hm_home", groups="fiq_gui_hoved.group_user")
+        u = new_test_user(self.env, login="hm_home", groups="fiq_gui_control.group_user")
         self.assertEqual(u.company_id, self.env.company)
         # Flag AV → lås opp (ingen påtvunget home)
-        self.env.company.fiq_hoved_as_home = False
+        self.env.company.fiq_control_as_home = False
         self.Config._action_set_home_all()
         # Flag PÅ → home settes til Hovedmeny for interne brukere i firmaet
-        self.env.company.fiq_hoved_as_home = True
+        self.env.company.fiq_control_as_home = True
         self.Config._action_set_home_all()
         u.invalidate_recordset(["action_id"])
         self.assertEqual(u.action_id.id, self.action.id)

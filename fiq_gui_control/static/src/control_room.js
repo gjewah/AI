@@ -4,11 +4,12 @@ import { Component, useState, onWillStart } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { user } from "@web/core/user";
+import { _t } from "@web/core/l10n/translation";
 
 const WIDGETS = ["kpis", "projects", "kommunikasjon", "activity", "tasks", "chart", "copilot", "quick"];
 
-export class FiqHovedmeny extends Component {
-    static template = "fiq_gui_hoved.Hovedmeny";
+export class FiqControlRoom extends Component {
+    static template = "fiq_gui_control.ControlRoom";
     static props = ["*"];
 
     setup() {
@@ -23,6 +24,9 @@ export class FiqHovedmeny extends Component {
             accent: "#38B44A",
             logo: null,
             companyName: "",
+            companies: [],         // selectable companies (company picker)
+            companyId: false,      // current active company
+            mode: "total",         // Simple/Full: "enkel" (simple) | "total" (full)
             customize: false,
             isAdmin: false,
             level: "balansert",
@@ -33,35 +37,37 @@ export class FiqHovedmeny extends Component {
             komm: [],
             kommPeriod: "uke",
             kommQuery: "",
-            kommDir: "alle",      // alle | mottatt | sendt (retning «sendt fra»)
-            kommSender: null,     // {id, name} – filtrer på én avsender
-            dashboards: [],       // Odoos native dashboards/analyser (kun de som finnes)
-            view: "oversikt",     // hovedinnhold: oversikt | kommunikasjon
+            kommDir: "alle",      // alle | mottatt | sendt (direction "sent from")
+            kommSender: null,     // {id, name} – filter on a single sender
+            dashboards: [],       // Odoo native dashboards/analyses (only the ones that exist)
+            view: "oversikt",     // main content: oversikt (overview) | kommunikasjon (communication)
             loading: true,
         });
 
         onWillStart(async () => {
-            await this.loadConfig();   // FIQ rettighets-/oppsett-lag (per bruker, server-persistert)
+            await this.loadConfig();   // FIQ access/setup layer (per user, server-persisted)
             await this.loadData();
         });
     }
 
     async loadConfig() {
         try {
-            const cfg = await this.orm.call("fiq.gui.hoved.config", "get_my_config", []);
+            const cfg = await this.orm.call("fiq.gui.control.config", "get_my_config", []);
             this.state.show = cfg.show;
             this.state.level = cfg.level;
             this.state.isAdmin = cfg.is_admin;
             this.state.companyName = cfg.company_name || "";
+            this.state.companies = cfg.companies || [];
+            this.state.companyId = cfg.company_id || false;
             if (cfg.accent) this.state.accent = cfg.accent;
             if (cfg.logo) this.state.logo = cfg.logo;
         } catch (e) {
-            // behold standard (alt synlig) hvis modellen ikke er klar
+            // keep defaults (everything visible) if the model is not ready
         }
     }
 
     async _read(model, domain, fields, opts) {
-        // Defensiv lesing: faller tilbake uten valgfrie felt hvis de ikke finnes i kundens DB
+        // Defensive read: falls back without optional fields if they do not exist in the customer DB
         try {
             return await this.orm.searchRead(model, domain, fields, opts);
         } catch (e) {
@@ -74,16 +80,16 @@ export class FiqHovedmeny extends Component {
         let active = 0, openTasks = 0;
         try { active = await this.orm.searchCount("project.project", [["active", "=", true]]); } catch (e) {}
 
-        // Prosjekter med ekte nummer (sequence_code = «Project No.») – menneskelig syntaks
+        // Projects with their real number (sequence_code = "Project No.") – human syntax
         const precs = await this._read("project.project", [["active", "=", true]],
             ["name", "sequence_code", "task_count"], { limit: 8, order: "create_date desc" });
         const projects = precs.map((p) => ({
             id: p.id, no: p.sequence_code || "", name: p.name,
             taskCount: p.task_count || 0,
-            progress: Math.min(100, (p.task_count || 0) * 8), status: "Pågår",
+            progress: Math.min(100, (p.task_count || 0) * 8), status: _t("In progress"),
         }));
 
-        // Mine åpne oppgaver med ekte oppgavenr (code = «T0001») + frist-varsel
+        // My open tasks with their real number (code = "T0001") + deadline warning
         const today = new Date().toISOString().slice(0, 10);
         const trecs = await this._read("project.task",
             [["user_ids", "in", [user.userId]]],
@@ -97,18 +103,18 @@ export class FiqHovedmeny extends Component {
         try { openTasks = await this.orm.searchCount("project.task", [["user_ids", "in", [user.userId]]]); } catch (e) {}
 
         this.state.kpis = [
-            { v: String(active), l: "Aktive prosjekter" },
-            { v: String(openTasks), l: "Mine oppgaver" },
-            { v: String(myTasks.filter((t) => t.overdue).length), l: "Forsinket" },
-            { v: "—", l: "ROI (kommer)" },
+            { v: String(active), l: _t("Active projects") },
+            { v: String(openTasks), l: _t("My tasks") },
+            { v: String(myTasks.filter((t) => t.overdue).length), l: _t("Overdue") },
+            { v: "—", l: _t("ROI (soon)") },
         ];
-        // Kommunikasjon-flate (e-post/meldinger på elementer) – filtrert på periode
+        // Communication view (email/messages on records) – filtered by period
         let komm = [];
-        try { komm = await this.orm.call("fiq.gui.hoved.config", "get_kommunikasjon", [this.state.kommPeriod]); } catch (e) {}
+        try { komm = await this.orm.call("fiq.gui.control.config", "get_kommunikasjon", [this.state.kommPeriod]); } catch (e) {}
 
-        // Native dashboards/analyser (kun de som faktisk finnes i DB-en)
+        // Native dashboards/analyses (only the ones that actually exist in the DB)
         let dashboards = [];
-        try { dashboards = await this.orm.call("fiq.gui.hoved.config", "get_dashboards", []); } catch (e) {}
+        try { dashboards = await this.orm.call("fiq.gui.control.config", "get_dashboards", []); } catch (e) {}
 
         this.state.projects = projects;
         this.state.myTasks = myTasks;
@@ -129,11 +135,25 @@ export class FiqHovedmeny extends Component {
         });
     }
 
+    // Company picker: reload the shell in the selected company (version-independent via cids)
+    setCompany(id) {
+        const cid = parseInt(id, 10);
+        if (!cid || cid === this.state.companyId) return;
+        const url = new URL(window.location.href);
+        url.searchParams.set("cids", cid);
+        window.location.href = url.toString();
+    }
+
+    // Simple/Full mode: "enkel" shows the essentials, "total" shows advanced widgets too
+    setMode(m) {
+        this.state.mode = m;
+    }
+
     setKommDir(d) {
         this.state.kommDir = d;
     }
 
-    // Klikk på avsender → vis kun denne avsenderens kommunikasjon (toggle av/på)
+    // Click a sender → show only that sender's communication (toggle on/off)
     filterSender(k) {
         const cur = this.state.kommSender;
         if (cur && (k.author_id ? cur.id === k.author_id : cur.name === k.author)) {
@@ -150,12 +170,12 @@ export class FiqHovedmeny extends Component {
     async setKommPeriod(p) {
         this.state.kommPeriod = p;
         try {
-            this.state.komm = await this.orm.call("fiq.gui.hoved.config", "get_kommunikasjon", [p]);
+            this.state.komm = await this.orm.call("fiq.gui.control.config", "get_kommunikasjon", [p]);
         } catch (e) { this.state.komm = []; }
     }
 
     async replyTo(messageId, replyAll) {
-        const act = await this.orm.call("fiq.gui.hoved.config", "action_reply", [messageId, !!replyAll]);
+        const act = await this.orm.call("fiq.gui.control.config", "action_reply", [messageId, !!replyAll]);
         this.action.doAction(act);
     }
 
@@ -165,15 +185,15 @@ export class FiqHovedmeny extends Component {
 
     toggleWidget(w) {
         this.state.show[w] = !this.state.show[w];
-        // Lagre per bruker på serveren (governert av rettighetsgrupper + record rule)
-        this.orm.call("fiq.gui.hoved.config", "set_widget", [w, this.state.show[w]]).catch(() => {});
+        // Persist per user on the server (governed by access groups + record rule)
+        this.orm.call("fiq.gui.control.config", "set_widget", [w, this.state.show[w]]).catch(() => {});
     }
 
     openProjects() {
         this.action.doAction("project.open_view_project_all");
     }
 
-    // Ekte klikk-gjennom: åpne et element (record) i Odoo
+    // Real click-through: open a record in Odoo
     openRecord(model, id) {
         this.action.doAction({
             type: "ir.actions.act_window",
@@ -184,14 +204,14 @@ export class FiqHovedmeny extends Component {
         });
     }
 
-    // Klikk prosjekt → oppgavene for det prosjektet. mode="gantt" åpner Gantt-visning.
+    // Click a project → its tasks. mode="gantt" opens the Gantt view.
     openProjectTasks(pid, mode) {
         const views = mode === "gantt"
             ? [[false, "gantt"], [false, "list"], [false, "form"]]
             : [[false, "list"], [false, "form"]];
         this.action.doAction({
             type: "ir.actions.act_window",
-            name: "Oppgaver",
+            name: _t("Tasks"),
             res_model: "project.task",
             domain: [["project_id", "=", pid]],
             views: views,
@@ -199,12 +219,12 @@ export class FiqHovedmeny extends Component {
         });
     }
 
-    // Åpne en av Odoos native dashboards/analyser in-page (SSOT)
+    // Open one of Odoo's native dashboards/analyses in-page (SSOT)
     openDashboard(xmlid) {
         this.action.doAction(xmlid);
     }
 
-    // Åpne en av FIQ-familieflatene (Prosjekt/Kommunikasjon/CRM/…) in-page via klient-handling
+    // Open one of the FIQ family views (Project/Communication/CRM/…) in-page via client action
     openFlate(xmlid) {
         this.action.doAction(xmlid);
     }
@@ -213,15 +233,10 @@ export class FiqHovedmeny extends Component {
         this.state.view = v;
     }
 
-    // Inngang til FIQ Kontrollrom – placeholder inntil selve Kontrollrommet er bygd
-    openKontrollrom() {
-        this.notification.add("Kontrollrom – kommer", { type: "info" });
-    }
-
     openOdoo() {
-        // Snarvei til Odoos native app-meny
+        // Shortcut to Odoo's native app menu
         window.location.href = "/odoo";
     }
 }
 
-registry.category("actions").add("fiq_gui_hoved_dashboard", FiqHovedmeny);
+registry.category("actions").add("fiq_gui_control_dashboard", FiqControlRoom);

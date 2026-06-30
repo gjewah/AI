@@ -80,6 +80,11 @@
         strong { color: var(--fiq-side); }
         .fiq_hm_footlogo { height: 14px; vertical-align: middle; margin: 0 3px; } }
     .fiq_hm_odoo { font-size: 12px; }
+    // Company picker + Simple/Full mode (top bar)
+    .fiq_hm_company { padding: 5px 9px; border: 1px solid var(--fiq-bd); border-radius: 8px; font: inherit; font-size: 12px; background: #fff; max-width: 190px; cursor: pointer; }
+    .fiq_hm_modeseg { display: inline-flex; border: 1px solid var(--fiq-bd); border-radius: 8px; overflow: hidden;
+        button { border: 0; background: #fff; color: var(--fiq-mut); padding: 4px 12px; cursor: pointer; font: inherit; font-size: 11.5px;
+            &.on { background: var(--fiq-accent); color: #fff; } } }
     // Kommunikasjon-flate
     .fiq_hm_komm { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; font-size: 12px;
         &:hover { background: #f7f8f9; }

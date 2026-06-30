@@ -1,0 +1,354 @@
+# Translation of FIQ Control room (fiq_gui_control) into Norwegian Bokmål.
+# This file is part of the fiq_gui_control module.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: fiq_gui_control 19.0\n"
+"Report-Msgid-Bugs-To: \n"
+"Last-Translator: FIQ AS\n"
+"Language-Team: Norwegian Bokmål\n"
+"Language: nb_NO\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: fiq_gui_control
+msgid "Control room"
+msgstr "Kontrollrommet"
+
+#. module: fiq_gui_control
+msgid "Company"
+msgstr "Firma"
+
+#. module: fiq_gui_control
+msgid "Simple"
+msgstr "Enkel"
+
+#. module: fiq_gui_control
+msgid "Full"
+msgstr "Total"
+
+#. module: fiq_gui_control
+msgid "Open Odoo's standard app menu"
+msgstr "Åpne Odoos vanlige app-meny"
+
+#. module: fiq_gui_control
+msgid "⊞ Odoo menu"
+msgstr "⊞ Odoo-meny"
+
+#. module: fiq_gui_control
+msgid "⚙ Customize"
+msgstr "⚙ Tilpass"
+
+#. module: fiq_gui_control
+msgid "Customize dashboard – choose widgets"
+msgstr "Tilpass dashbord – velg widgets"
+
+#. module: fiq_gui_control
+msgid "Areas"
+msgstr "Fagområder"
+
+#. module: fiq_gui_control
+msgid "Home (overview)"
+msgstr "Hjem (oversikt)"
+
+#. module: fiq_gui_control
+msgid "Projects"
+msgstr "Prosjekt"
+
+#. module: fiq_gui_control
+msgid "Communication"
+msgstr "Kommunikasjon"
+
+#. module: fiq_gui_control
+msgid "Opportunities"
+msgstr "Salgsmuligheter"
+
+#. module: fiq_gui_control
+msgid "Sales orders"
+msgstr "Salgsordre"
+
+#. module: fiq_gui_control
+msgid "Accounting"
+msgstr "Regnskap"
+
+#. module: fiq_gui_control
+msgid "Loading …"
+msgstr "Laster …"
+
+#. module: fiq_gui_control
+msgid "Day"
+msgstr "Dag"
+
+#. module: fiq_gui_control
+msgid "Week"
+msgstr "Uke"
+
+#. module: fiq_gui_control
+msgid "Month"
+msgstr "Måned"
+
+#. module: fiq_gui_control
+msgid "All"
+msgstr "Alle"
+
+#. module: fiq_gui_control
+msgid "Received"
+msgstr "Mottatt"
+
+#. module: fiq_gui_control
+msgid "Sent"
+msgstr "Sendt"
+
+#. module: fiq_gui_control
+msgid "Search company, person, project, task…"
+msgstr "Søk firma, person, prosjekt, oppgave…"
+
+#. module: fiq_gui_control
+msgid "Sender:"
+msgstr "Avsender:"
+
+#. module: fiq_gui_control
+msgid "Remove sender filter"
+msgstr "Fjern avsenderfilter"
+
+#. module: fiq_gui_control
+msgid "Sent from us"
+msgstr "Sendt fra oss"
+
+#. module: fiq_gui_control
+msgid "↑ Sent"
+msgstr "↑ Sendt"
+
+#. module: fiq_gui_control
+msgid "↓ Received"
+msgstr "↓ Mottatt"
+
+#. module: fiq_gui_control
+msgid "Filter on this sender"
+msgstr "Filtrer på denne avsenderen"
+
+#. module: fiq_gui_control
+msgid "Reply"
+msgstr "Svar"
+
+#. module: fiq_gui_control
+msgid "Reply all (CC/BCC in composer)"
+msgstr "Svar alle (CC/BCC i komponist)"
+
+#. module: fiq_gui_control
+msgid "Reply all"
+msgstr "Svar alle"
+
+#. module: fiq_gui_control
+msgid "No communication in the selected period."
+msgstr "Ingen kommunikasjon i valgt periode."
+
+#. module: fiq_gui_control
+msgid "Project overview"
+msgstr "Prosjektoversikt"
+
+#. module: fiq_gui_control
+msgid "No."
+msgstr "Nr"
+
+#. module: fiq_gui_control
+msgid "Project"
+msgstr "Prosjekt"
+
+#. module: fiq_gui_control
+msgid "Tasks"
+msgstr "Oppgaver"
+
+#. module: fiq_gui_control
+msgid "Progress"
+msgstr "Fremdrift"
+
+#. module: fiq_gui_control
+msgid "Open the tasks in Gantt view"
+msgstr "Åpne oppgavene i Gantt-visning"
+
+#. module: fiq_gui_control
+msgid "No active projects yet."
+msgstr "Ingen aktive prosjekter ennå."
+
+#. module: fiq_gui_control
+msgid "My tasks"
+msgstr "Mine oppgaver"
+
+#. module: fiq_gui_control
+msgid "⚠ overdue"
+msgstr "⚠ frist ute"
+
+#. module: fiq_gui_control
+msgid "No open tasks assigned to you."
+msgstr "Ingen åpne oppgaver tildelt deg."
+
+#. module: fiq_gui_control
+msgid "Progress by project"
+msgstr "Fremdrift per prosjekt"
+
+#. module: fiq_gui_control
+msgid "Summarize status"
+msgstr "Oppsummer status"
+
+#. module: fiq_gui_control
+msgid "Weekly report"
+msgstr "Lag ukesrapport"
+
+#. module: fiq_gui_control
+msgid "What is behind schedule?"
+msgstr "Hva henger etter?"
+
+#. module: fiq_gui_control
+msgid "Quick actions"
+msgstr "Hurtigvalg"
+
+#. module: fiq_gui_control
+msgid "＋ New project"
+msgstr "＋ Nytt prosjekt"
+
+#. module: fiq_gui_control
+msgid "🗎 Document"
+msgstr "🗎 Dokument"
+
+#. module: fiq_gui_control
+msgid "✓ Task"
+msgstr "✓ Oppgave"
+
+#. module: fiq_gui_control
+msgid "📄 Report"
+msgstr "📄 Rapport"
+
+#. module: fiq_gui_control
+msgid "Powered by"
+msgstr "Drevet av"
+
+#. module: fiq_gui_control
+msgid "In progress"
+msgstr "Pågår"
+
+#. module: fiq_gui_control
+msgid "Active projects"
+msgstr "Aktive prosjekter"
+
+#. module: fiq_gui_control
+msgid "Overdue"
+msgstr "Forsinket"
+
+#. module: fiq_gui_control
+msgid "ROI (soon)"
+msgstr "ROI (kommer)"
+
+#. module: fiq_gui_control
+msgid "Email"
+msgstr "E-post"
+
+#. module: fiq_gui_control
+msgid "Message"
+msgstr "Melding"
+
+#. module: fiq_gui_control
+msgid "(no subject)"
+msgstr "(uten emne)"
+
+#. module: fiq_gui_control
+msgid "Sales analysis"
+msgstr "Salgsanalyse"
+
+#. module: fiq_gui_control
+msgid "Invoice analysis"
+msgstr "Fakturaanalyse"
+
+#. module: fiq_gui_control
+msgid "Purchase analysis"
+msgstr "Innkjøpsanalyse"
+
+#. module: fiq_gui_control
+msgid "Pipeline analysis"
+msgstr "Pipeline-analyse"
+
+#. module: fiq_gui_control
+msgid "Timesheet analysis"
+msgstr "Timeanalyse"
+
+#. module: fiq_gui_control
+msgid "User"
+msgstr "Bruker"
+
+#. module: fiq_gui_control
+msgid "Detail level"
+msgstr "Detaljnivå"
+
+#. module: fiq_gui_control
+msgid "Pulse (summary)"
+msgstr "Pulse (sammendrag)"
+
+#. module: fiq_gui_control
+msgid "Balanced"
+msgstr "Balansert"
+
+#. module: fiq_gui_control
+msgid "Detailed"
+msgstr "Detaljert"
+
+#. module: fiq_gui_control
+msgid "KPI row"
+msgstr "KPI-rad"
+
+#. module: fiq_gui_control
+msgid "Activity"
+msgstr "Aktivitet"
+
+#. module: fiq_gui_control
+msgid "Progress chart"
+msgstr "Fremdriftsdiagram"
+
+#. module: fiq_gui_control
+msgid "Visible widgets"
+msgstr "Synlige widgets"
+
+#. module: fiq_gui_control
+msgid "User setup (Control room)"
+msgstr "Brukeroppsett (Kontrollrommet)"
+
+#. module: fiq_gui_control
+msgid "Company branding"
+msgstr "Firma-branding"
+
+#. module: fiq_gui_control
+msgid "Control room Admin"
+msgstr "Kontrollrom Admin"
+
+#. module: fiq_gui_control
+msgid "User setup"
+msgstr "Brukeroppsett"
+
+#. module: fiq_gui_control
+msgid "Users & access"
+msgstr "Brukere & tilgang"
+
+#. module: fiq_gui_control
+msgid "Control room / User"
+msgstr "Kontrollrom / Bruker"
+
+#. module: fiq_gui_control
+msgid "Control room / Manager"
+msgstr "Kontrollrom / Leder"
+
+#. module: fiq_gui_control
+msgid "Control room / Administrator"
+msgstr "Kontrollrom / Administrator"
+
+#. module: fiq_gui_control
+msgid "Control room accent color"
+msgstr "Kontrollrom aksentfarge"
+
+#. module: fiq_gui_control
+msgid "Control room logo (light variant)"
+msgstr "Kontrollrom logo (lys variant)"
+
+#. module: fiq_gui_control
+msgid "Start in Control room"
+msgstr "Start i Kontrollrommet"

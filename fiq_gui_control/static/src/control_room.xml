@@ -1,22 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-    <t t-name="fiq_gui_hoved.Hovedmeny">
+    <t t-name="fiq_gui_control.ControlRoom">
         <div class="fiq_hm" t-att-style="'--fiq-accent:' + state.accent + ';'">
-            <!-- Topplinje -->
+            <!-- Top bar -->
             <div class="fiq_hm_top">
                 <div class="fiq_hm_brand">
                     <img t-if="state.logo" t-att-src="state.logo" class="fiq_hm_logo"/>
                     <span t-else="" class="fiq_hm_mark" t-esc="state.companyName.slice(0,1)"/>
-                    <span class="fiq_hm_name" t-esc="state.companyName"/>
+                    <span class="fiq_hm_name">Control room</span>
                 </div>
-                <span class="fiq_hm_greet">Hovedmeny</span>
-                <button class="btn fiq_hm_odoo" t-on-click="() => this.openOdoo()" title="Åpne Odoos vanlige app-meny">⊞ Odoo-meny</button>
-                <button class="btn fiq_hm_gear" t-on-click="() => this.toggleCustomize()">⚙ Tilpass</button>
+
+                <!-- Company picker -->
+                <select t-if="state.companies.length" class="fiq_hm_company"
+                        t-on-change="(ev) => this.setCompany(ev.target.value)"
+                        title="Company">
+                    <option t-foreach="state.companies" t-as="c" t-key="c.id"
+                            t-att-value="c.id" t-att-selected="c.id === state.companyId" t-esc="c.name"/>
+                </select>
+
+                <!-- Simple / Full mode -->
+                <div class="fiq_hm_pseg fiq_hm_modeseg">
+                    <button t-att-class="state.mode === 'enkel' ? 'on' : ''" t-on-click="() => this.setMode('enkel')">Simple</button>
+                    <button t-att-class="state.mode === 'total' ? 'on' : ''" t-on-click="() => this.setMode('total')">Full</button>
+                </div>
+
+                <span class="fiq_hm_greet"/>
+                <button class="btn fiq_hm_odoo" t-on-click="() => this.openOdoo()" title="Open Odoo's standard app menu">⊞ Odoo menu</button>
+                <button class="btn fiq_hm_gear" t-on-click="() => this.toggleCustomize()">⚙ Customize</button>
             </div>
 
-            <!-- Tilpass-panel: dynamisk vis/skjul -->
+            <!-- Customize panel: dynamic show/hide -->
             <div t-if="state.customize" class="fiq_hm_cust">
-                <strong>Tilpass dashbord – velg widgets</strong>
+                <strong>Customize dashboard – choose widgets</strong>
                 <div class="fiq_hm_toggles">
                     <t t-foreach="['kpis','projects','kommunikasjon','activity','tasks','chart','copilot','quick']" t-as="w" t-key="w">
                         <label>
@@ -28,20 +43,20 @@
             </div>
 
             <div class="fiq_hm_wrap">
-                <!-- Svartgrå sidemeny -->
+                <!-- Dark-grey sidebar -->
                 <aside class="fiq_hm_side">
                     <div class="fiq_hm_side_brand">
                         <img t-if="state.logo" t-att-src="state.logo" class="fiq_hm_side_logo"/>
                         <span t-esc="state.companyName"/>
                     </div>
-                    <div class="fiq_hm_glbl">Fagområder</div>
-                    <div t-att-class="state.view === 'oversikt' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('oversikt')"><span class="b"/>Hjem (oversikt)</div>
-                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_prj.action_fiq_gui_prj')"><img class="fiq_hm_navico" src="/fiq_gui_hoved/static/img/prj.png"/>Prosjekt</div>
-                    <div t-att-class="state.view === 'kommunikasjon' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('kommunikasjon')"><img class="fiq_hm_navico" src="/fiq_gui_hoved/static/img/epost.png"/>Kommunikasjon</div>
-                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_crm.action_fiq_gui_crm')"><img class="fiq_hm_navico" src="/fiq_gui_hoved/static/img/crm.png"/>CRM</div>
-                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_crm_leads.action_fiq_gui_crm_leads')"><img class="fiq_hm_navico" src="/fiq_gui_hoved/static/img/crm_leads.png"/>Salgsmuligheter</div>
-                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_crm_so.action_fiq_gui_crm_so')"><img class="fiq_hm_navico" src="/fiq_gui_hoved/static/img/crm_so.png"/>Salgsordre</div>
-                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_rgs.action_fiq_gui_rgs')"><img class="fiq_hm_navico" src="/fiq_gui_hoved/static/img/rgs.png"/>Regnskap</div>
+                    <div class="fiq_hm_glbl">Areas</div>
+                    <div t-att-class="state.view === 'oversikt' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('oversikt')"><span class="b"/>Home (overview)</div>
+                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_prj.action_fiq_gui_prj')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/prj.png"/>Projects</div>
+                    <div t-att-class="state.view === 'kommunikasjon' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('kommunikasjon')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/epost.png"/>Communication</div>
+                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_crm.action_fiq_gui_crm')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/crm.png"/>CRM</div>
+                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_crm_leads.action_fiq_gui_crm_leads')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/crm_leads.png"/>Opportunities</div>
+                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_crm_so.action_fiq_gui_crm_so')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/crm_so.png"/>Sales orders</div>
+                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_rgs.action_fiq_gui_rgs')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/rgs.png"/>Accounting</div>
 
                     <t t-if="state.dashboards.length">
                         <div class="fiq_hm_glbl">Dashboards</div>
@@ -49,13 +64,10 @@
                             <div class="fiq_hm_nav" t-on-click="() => this.openDashboard(d.xmlid)"><span class="b"/><t t-esc="d.label"/></div>
                         </t>
                     </t>
-
-                    <div class="fiq_hm_glbl">Styring</div>
-                    <div class="fiq_hm_nav" t-on-click="() => this.openKontrollrom()"><span class="b"/>Kontrollrom</div>
                 </aside>
 
                 <section class="fiq_hm_main">
-                    <div t-if="state.loading" class="fiq_hm_loading">Laster …</div>
+                    <div t-if="state.loading" class="fiq_hm_loading">Loading …</div>
 
                     <div t-if="!state.loading and state.show.kpis and state.view === 'oversikt'" class="fiq_hm_kpis">
                         <t t-foreach="state.kpis" t-as="k" t-key="k.l">
@@ -66,46 +78,46 @@
                     <div class="fiq_hm_cols">
                         <div class="fiq_hm_colL">
                             <div t-if="state.show.kommunikasjon and state.view === 'kommunikasjon'" class="fiq_hm_card">
-                                <h4>Kommunikasjon</h4>
+                                <h4>Communication</h4>
                                 <div class="fiq_hm_komm_bar">
                                     <div class="fiq_hm_pseg">
-                                        <button t-foreach="[['dag','Dag'],['uke','Uke'],['maaned','Måned'],['alle','Alle']]" t-as="pp" t-key="pp[0]"
+                                        <button t-foreach="[['dag','Day'],['uke','Week'],['maaned','Month'],['alle','All']]" t-as="pp" t-key="pp[0]"
                                                 t-att-class="state.kommPeriod === pp[0] ? 'on' : ''"
                                                 t-on-click="() => this.setKommPeriod(pp[0])" t-esc="pp[1]"/>
                                     </div>
                                     <div class="fiq_hm_pseg fiq_hm_dseg">
-                                        <button t-foreach="[['alle','Alle'],['mottatt','Mottatt'],['sendt','Sendt']]" t-as="dd" t-key="dd[0]"
+                                        <button t-foreach="[['alle','All'],['mottatt','Received'],['sendt','Sent']]" t-as="dd" t-key="dd[0]"
                                                 t-att-class="state.kommDir === dd[0] ? 'on' : ''"
                                                 t-on-click="() => this.setKommDir(dd[0])" t-esc="dd[1]"/>
                                     </div>
-                                    <input class="fiq_hm_ksearch" placeholder="Søk firma, person, prosjekt, oppgave…"
+                                    <input class="fiq_hm_ksearch" placeholder="Search company, person, project, task…"
                                            t-att-value="state.kommQuery" t-on-input="(ev) => state.kommQuery = ev.target.value"/>
                                 </div>
                                 <div t-if="state.kommSender" class="fiq_hm_chip">
-                                    Avsender: <strong t-esc="state.kommSender.name"/>
-                                    <span class="fiq_hm_chip_x" t-on-click="() => this.clearSender()" title="Fjern avsenderfilter">✕</span>
+                                    Sender: <strong t-esc="state.kommSender.name"/>
+                                    <span class="fiq_hm_chip_x" t-on-click="() => this.clearSender()" title="Remove sender filter">✕</span>
                                 </div>
                                 <t t-if="filteredKomm.length">
                                     <t t-foreach="filteredKomm" t-as="k" t-key="k.id">
                                         <div class="fiq_hm_komm">
-                                            <span t-att-class="k.kind === 'E-post' ? 'fiq_hm_kk mail' : 'fiq_hm_kk msg'" t-esc="k.kind"/>
-                                            <span t-att-class="'fiq_hm_dir ' + k.direction" t-att-title="k.direction === 'sendt' ? 'Sendt fra oss' : 'Mottatt'" t-esc="k.direction === 'sendt' ? '↑ Sendt' : '↓ Mottatt'"/>
-                                            <span class="fiq_hm_komm_a" t-on-click="() => this.filterSender(k)" title="Filtrer på denne avsenderen" t-esc="k.author"/>
+                                            <span t-att-class="'fiq_hm_kk ' + k.ktype" t-esc="k.kind"/>
+                                            <span t-att-class="'fiq_hm_dir ' + k.direction" t-att-title="k.direction === 'sendt' ? 'Sent from us' : 'Received'" t-esc="k.direction === 'sendt' ? '↑ Sent' : '↓ Received'"/>
+                                            <span class="fiq_hm_komm_a" t-on-click="() => this.filterSender(k)" title="Filter on this sender" t-esc="k.author"/>
                                             <span class="fiq_hm_komm_s" t-on-click="() => this.openRecord(k.model, k.res_id)" t-esc="k.subject"/>
                                             <span class="fiq_hm_komm_e" t-on-click="() => this.openRecord(k.model, k.res_id)" t-esc="k.element"/>
                                             <span class="fiq_hm_komm_d" t-esc="k.date"/>
-                                            <span class="fiq_hm_kbtn" t-on-click="() => this.replyTo(k.id, false)" title="Svar">↩</span>
-                                            <span class="fiq_hm_kbtn" t-on-click="() => this.replyTo(k.id, true)" title="Svar alle (CC/BCC i komponist)">↩↩</span>
+                                            <span class="fiq_hm_kbtn" t-on-click="() => this.replyTo(k.id, false)" title="Reply">↩</span>
+                                            <span class="fiq_hm_kbtn" t-on-click="() => this.replyTo(k.id, true)" title="Reply all (CC/BCC in composer)">↩↩</span>
                                         </div>
                                     </t>
                                 </t>
-                                <t t-else=""><div class="fiq_hm_empty">Ingen kommunikasjon i valgt periode.</div></t>
+                                <t t-else=""><div class="fiq_hm_empty">No communication in the selected period.</div></t>
                             </div>
                             <div t-if="state.show.projects and state.view === 'oversikt'" class="fiq_hm_card">
-                                <h4>Prosjektoversikt</h4>
+                                <h4>Project overview</h4>
                                 <t t-if="state.projects.length">
                                     <table>
-                                        <thead><tr><th>Nr</th><th>Prosjekt</th><th>Oppg.</th><th>Fremdrift</th><th></th></tr></thead>
+                                        <thead><tr><th>No.</th><th>Project</th><th>Tasks</th><th>Progress</th><th></th></tr></thead>
                                         <tbody>
                                             <t t-foreach="state.projects" t-as="p" t-key="p.id">
                                                 <tr>
@@ -113,15 +125,15 @@
                                                     <td t-on-click="() => this.openProjectTasks(p.id)" t-esc="p.name"/>
                                                     <td t-on-click="() => this.openProjectTasks(p.id)" t-esc="p.taskCount"/>
                                                     <td t-on-click="() => this.openProjectTasks(p.id)"><div class="prog"><i t-att-style="'width:' + p.progress + '%'"/></div></td>
-                                                    <td><span class="fiq_hm_gantt" t-on-click="() => this.openProjectTasks(p.id, 'gantt')" title="Åpne oppgavene i Gantt-visning">📊 Gantt</span></td>
+                                                    <td><span class="fiq_hm_gantt" t-on-click="() => this.openProjectTasks(p.id, 'gantt')" title="Open the tasks in Gantt view">📊 Gantt</span></td>
                                                 </tr>
                                             </t>
                                         </tbody>
                                     </table>
                                 </t>
-                                <t t-else=""><div class="fiq_hm_empty">Ingen aktive prosjekter ennå.</div></t>
+                                <t t-else=""><div class="fiq_hm_empty">No active projects yet.</div></t>
                             </div>
-                            <div t-if="state.show.tasks and state.view === 'oversikt'" class="fiq_hm_card"><h4>Mine oppgaver</h4>
+                            <div t-if="state.show.tasks and state.view === 'oversikt'" class="fiq_hm_card"><h4>My tasks</h4>
                                 <t t-if="state.myTasks.length">
                                     <t t-foreach="state.myTasks" t-as="t" t-key="t.id">
                                         <div class="fiq_hm_task" t-on-click="() => this.openRecord('project.task', t.id)">
@@ -129,31 +141,31 @@
                                             <span class="fiq_hm_task_n" t-esc="t.name"/>
                                             <span class="fiq_hm_task_p" t-esc="t.project"/>
                                             <span t-if="t.deadline" t-att-class="t.overdue ? 'fiq_hm_dl over' : 'fiq_hm_dl'" t-esc="t.deadline"/>
-                                            <span t-if="t.overdue" class="fiq_hm_warn">⚠ frist ute</span>
+                                            <span t-if="t.overdue" class="fiq_hm_warn">⚠ overdue</span>
                                         </div>
                                     </t>
                                 </t>
-                                <t t-else=""><div class="fiq_hm_empty">Ingen åpne oppgaver tildelt deg.</div></t>
+                                <t t-else=""><div class="fiq_hm_empty">No open tasks assigned to you.</div></t>
                             </div>
                         </div>
                         <div class="fiq_hm_colR">
-                            <div t-if="state.show.chart and state.view === 'oversikt'" class="fiq_hm_card"><h4>Fremdrift per prosjekt</h4>
+                            <div t-if="state.show.chart and state.view === 'oversikt' and state.mode === 'total'" class="fiq_hm_card"><h4>Progress by project</h4>
                                 <t t-foreach="state.projects" t-as="p" t-key="p.name">
                                     <div class="fiq_hm_bar"><span class="lbl" t-esc="p.name"/><span class="track"><i t-att-style="'width:' + p.progress + '%'"/></span></div>
                                 </t>
                             </div>
-                            <div t-if="state.show.copilot and state.view === 'oversikt'" class="fiq_hm_card fiq_hm_cop"><h4>✨ AI Copilot</h4>
-                                <div class="sug">Oppsummer status</div>
-                                <div class="sug">Lag ukesrapport</div>
-                                <div class="sug">Hva henger etter?</div>
+                            <div t-if="state.show.copilot and state.view === 'oversikt' and state.mode === 'total'" class="fiq_hm_card fiq_hm_cop"><h4>✨ AI Copilot</h4>
+                                <div class="sug">Summarize status</div>
+                                <div class="sug">Weekly report</div>
+                                <div class="sug">What is behind schedule?</div>
                             </div>
                         </div>
                     </div>
 
-                    <div t-if="state.show.quick" class="fiq_hm_card"><h4>Hurtigvalg</h4>
-                        <div class="fiq_hm_qa"><span>＋ Nytt prosjekt</span><span>🗎 Dokument</span><span>✓ Oppgave</span><span>📄 Rapport</span></div>
+                    <div t-if="state.show.quick and state.view === 'oversikt' and state.mode === 'total'" class="fiq_hm_card"><h4>Quick actions</h4>
+                        <div class="fiq_hm_qa"><span>＋ New project</span><span>🗎 Document</span><span>✓ Task</span><span>📄 Report</span></div>
                     </div>
-                    <div class="fiq_hm_foot">Drevet av <img class="fiq_hm_footlogo" src="/fiq_gui_hoved/static/img/fiq_logo.png" alt="FIQ"/> <strong>FIQ</strong> · Hovedmeny</div>
+                    <div class="fiq_hm_foot">Powered by <img class="fiq_hm_footlogo" src="/fiq_gui_control/static/img/fiq_logo.png" alt="FIQ"/> <strong>FIQ</strong> · Control room</div>
                 </section>
             </div>
         </div>
