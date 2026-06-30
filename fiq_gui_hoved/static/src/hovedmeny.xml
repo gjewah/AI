@@ -35,8 +35,9 @@
                         <span t-esc="state.companyName"/>
                     </div>
                     <div class="fiq_hm_glbl">Fagområder</div>
+                    <div t-att-class="state.view === 'oversikt' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('oversikt')"><span class="b"/>Hjem (oversikt)</div>
                     <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_prj.action_fiq_gui_prj')"><img class="fiq_hm_navico" src="/fiq_gui_hoved/static/img/prj.png"/>Prosjekt</div>
-                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_epost.action_fiq_gui_epost')"><img class="fiq_hm_navico" src="/fiq_gui_hoved/static/img/epost.png"/>Kommunikasjon</div>
+                    <div t-att-class="state.view === 'kommunikasjon' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('kommunikasjon')"><img class="fiq_hm_navico" src="/fiq_gui_hoved/static/img/epost.png"/>Kommunikasjon</div>
                     <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_crm.action_fiq_gui_crm')"><img class="fiq_hm_navico" src="/fiq_gui_hoved/static/img/crm.png"/>CRM</div>
                     <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_crm_leads.action_fiq_gui_crm_leads')"><img class="fiq_hm_navico" src="/fiq_gui_hoved/static/img/crm_leads.png"/>Salgsmuligheter</div>
                     <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_crm_so.action_fiq_gui_crm_so')"><img class="fiq_hm_navico" src="/fiq_gui_hoved/static/img/crm_so.png"/>Salgsordre</div>
@@ -56,7 +57,7 @@
                 <section class="fiq_hm_main">
                     <div t-if="state.loading" class="fiq_hm_loading">Laster …</div>
 
-                    <div t-if="!state.loading and state.show.kpis" class="fiq_hm_kpis">
+                    <div t-if="!state.loading and state.show.kpis and state.view === 'oversikt'" class="fiq_hm_kpis">
                         <t t-foreach="state.kpis" t-as="k" t-key="k.l">
                             <div class="fiq_hm_kpi"><div class="v" t-esc="k.v"/><div class="l" t-esc="k.l"/></div>
                         </t>
@@ -64,7 +65,7 @@
 
                     <div class="fiq_hm_cols">
                         <div class="fiq_hm_colL">
-                            <div t-if="state.show.kommunikasjon" class="fiq_hm_card">
+                            <div t-if="state.show.kommunikasjon and state.view === 'kommunikasjon'" class="fiq_hm_card">
                                 <h4>Kommunikasjon</h4>
                                 <div class="fiq_hm_komm_bar">
                                     <div class="fiq_hm_pseg">
@@ -100,7 +101,7 @@
                                 </t>
                                 <t t-else=""><div class="fiq_hm_empty">Ingen kommunikasjon i valgt periode.</div></t>
                             </div>
-                            <div t-if="state.show.projects" class="fiq_hm_card">
+                            <div t-if="state.show.projects and state.view === 'oversikt'" class="fiq_hm_card">
                                 <h4>Prosjektoversikt</h4>
                                 <t t-if="state.projects.length">
                                     <table>
@@ -120,7 +121,7 @@
                                 </t>
                                 <t t-else=""><div class="fiq_hm_empty">Ingen aktive prosjekter ennå.</div></t>
                             </div>
-                            <div t-if="state.show.tasks" class="fiq_hm_card"><h4>Mine oppgaver</h4>
+                            <div t-if="state.show.tasks and state.view === 'oversikt'" class="fiq_hm_card"><h4>Mine oppgaver</h4>
                                 <t t-if="state.myTasks.length">
                                     <t t-foreach="state.myTasks" t-as="t" t-key="t.id">
                                         <div class="fiq_hm_task" t-on-click="() => this.openRecord('project.task', t.id)">
@@ -136,12 +137,12 @@
                             </div>
                         </div>
                         <div class="fiq_hm_colR">
-                            <div t-if="state.show.chart" class="fiq_hm_card"><h4>Fremdrift per prosjekt</h4>
+                            <div t-if="state.show.chart and state.view === 'oversikt'" class="fiq_hm_card"><h4>Fremdrift per prosjekt</h4>
                                 <t t-foreach="state.projects" t-as="p" t-key="p.name">
                                     <div class="fiq_hm_bar"><span class="lbl" t-esc="p.name"/><span class="track"><i t-att-style="'width:' + p.progress + '%'"/></span></div>
                                 </t>
                             </div>
-                            <div t-if="state.show.copilot" class="fiq_hm_card fiq_hm_cop"><h4>✨ AI Copilot</h4>
+                            <div t-if="state.show.copilot and state.view === 'oversikt'" class="fiq_hm_card fiq_hm_cop"><h4>✨ AI Copilot</h4>
                                 <div class="sug">Oppsummer status</div>
                                 <div class="sug">Lag ukesrapport</div>
                                 <div class="sug">Hva henger etter?</div>

@@ -36,6 +36,7 @@ export class FiqHovedmeny extends Component {
             kommDir: "alle",      // alle | mottatt | sendt (retning «sendt fra»)
             kommSender: null,     // {id, name} – filtrer på én avsender
             dashboards: [],       // Odoos native dashboards/analyser (kun de som finnes)
+            view: "oversikt",     // hovedinnhold: oversikt | kommunikasjon
             loading: true,
         });
 
@@ -206,6 +207,10 @@ export class FiqHovedmeny extends Component {
     // Åpne en av FIQ-familieflatene (Prosjekt/Kommunikasjon/CRM/…) in-page via klient-handling
     openFlate(xmlid) {
         this.action.doAction(xmlid);
+    }
+
+    setView(v) {
+        this.state.view = v;
     }
 
     // Inngang til FIQ Kontrollrom – placeholder inntil selve Kontrollrommet er bygd
