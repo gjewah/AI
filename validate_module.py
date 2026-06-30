@@ -127,6 +127,10 @@ def check_refs(module_path, manifest):
                     if local_id not in all_available and ref_id not in all_available:
                         err(f"{data_file}:{lineno} — ref '{ref_id}' ikke definert (mangler i modul?)")
                 # Ekstern ref – stoler på at den finnes i avhengig modul
+            elif ref_id.startswith("model_"):
+                # Auto-generert modell-ref (Odoo lager ir.model.data 'model_<modell>'
+                # fra Python-modellen ved registrering) – finnes alltid ved kjøretid.
+                pass
             else:
                 if ref_id not in all_available:
                     err(f"{data_file}:{lineno} — ref '{ref_id}' ikke definert ennå (lasterekkefølge?)")
