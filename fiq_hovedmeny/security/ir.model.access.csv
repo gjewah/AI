@@ -1,3 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_fiq_hovedmeny_config_user,fiq.hovedmeny.config.user,model_fiq_hovedmeny_config,fiq_hovedmeny.group_user,1,1,1,0
-access_fiq_hovedmeny_config_admin,fiq.hovedmeny.config.admin,model_fiq_hovedmeny_config,fiq_hovedmeny.group_admin,1,1,1,1

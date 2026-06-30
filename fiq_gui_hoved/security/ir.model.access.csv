@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_fiq_gui_hoved_config_user,fiq.gui.hoved.config.user,model_fiq_gui_hoved_config,fiq_gui_hoved.group_user,1,1,1,0
+access_fiq_gui_hoved_config_admin,fiq.gui.hoved.config.admin,model_fiq_gui_hoved_config,fiq_gui_hoved.group_admin,1,1,1,1

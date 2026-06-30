@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 from . import res_company
-from . import fiq_hovedmeny_config
+from . import fiq_gui_hoved_config

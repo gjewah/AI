@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 {
-    "name": "FIQ Hovedmeny Total",
-    "version": "19.0.1.10.0",
-    "summary": "Hovedmeny Total – dashbord/landingsside (OWL) med svartgrå sidemeny, "
+    "name": "FIQ Hovedmeny",
+    "version": "19.0.2.0.0",
+    "summary": "Hovedmeny – dashbord/landingsside (OWL) med svartgrå sidemeny, "
                "per-firma aksent/logo, KPI-er fra Odoo-data og dynamisk vis/skjul av widgets.",
     "description": """
-FIQ Hovedmeny Total
+FIQ Hovedmeny
 ===================
 Generisk dashbord-/landingsside som klient-handling (OWL), per FIQ-konvensjon:
  * Svartgrå (#1f2228) sidemeny – standard for alle firma; kun aksentfargen varierer per firma.
@@ -20,15 +20,15 @@ Generisk dashbord-/landingsside som klient-handling (OWL), per FIQ-konvensjon:
     "license": "LGPL-3",
     "depends": ["web", "project"],
     "data": [
-        "security/fiq_hovedmeny_groups.xml",
+        "security/fiq_gui_hoved_groups.xml",
         "security/ir.model.access.csv",
         "views/res_company_views.xml",
-        "views/fiq_hovedmeny_admin.xml",
+        "views/fiq_gui_hoved_admin.xml",
         "views/hovedmeny_action.xml",
     ],
     "assets": {
         "web.assets_backend": [
-            "fiq_hovedmeny/static/src/**/*",
+            "fiq_gui_hoved/static/src/**/*",
         ],
     },
     "application": True,

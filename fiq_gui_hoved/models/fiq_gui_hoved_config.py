@@ -9,7 +9,7 @@ class FiqHovedmenyConfig(models.Model):
     """Per-bruker/per-firma oppsett for Hovedmeny (FIQs egenutviklede styringslag
     oppå res.groups): nivå + hvilke widgets som vises. Governert av rettighetsgrupper
     + record rules (bruker ser kun sitt eget)."""
-    _name = "fiq.hovedmeny.config"
+    _name = "fiq.gui.hoved.config"
     _description = "FIQ Hovedmeny – brukeroppsett"
     _rec_name = "user_id"
 
@@ -53,17 +53,17 @@ class FiqHovedmenyConfig(models.Model):
     def get_my_config(self):
         rec = self._get_or_create_current()
         comp = self.env.company
-        logo = comp.fiq_hovedmeny_logo
+        logo = comp.fiq_hoved_logo
         if logo:
             logo = logo.decode() if isinstance(logo, bytes) else logo
         return {
             "id": rec.id,
             "level": rec.level,
             "show": {w: bool(rec["show_" + w]) for w in WIDGETS},
-            "is_admin": self.env.user.has_group("fiq_hovedmeny.group_admin"),
+            "is_admin": self.env.user.has_group("fiq_gui_hoved.group_admin"),
             # Firma/branding hentes server-side (ingen avhengighet av company-service i OWL)
             "company_name": comp.name or "",
-            "accent": comp.fiq_hovedmeny_accent or "#38B44A",
+            "accent": comp.fiq_hoved_accent or "#38B44A",
             "logo": ("data:image/png;base64,%s" % logo) if logo else False,
         }
 
@@ -171,15 +171,15 @@ class FiqHovedmenyConfig(models.Model):
     @api.model
     def _action_set_home_all(self):
         """Admin-styrt: sett Hovedmeny som oppstart KUN for firma der
-        `fiq_hovedmeny_as_home` er PÅ; ellers lås opp (nullstill vår home-action).
+        `fiq_hoved_as_home` er PÅ; ellers lås opp (nullstill vår home-action).
         Kalles via <function> ved install OG oppgradering. Aldri tvungen på alle."""
-        action = self.env.ref("fiq_hovedmeny.action_fiq_hovedmeny", raise_if_not_found=False)
+        action = self.env.ref("fiq_gui_hoved.action_fiq_gui_hoved", raise_if_not_found=False)
         if not action:
             return True
         Users = self.env["res.users"]
         for comp in self.env["res.company"].search([]):
             users = Users.search([("share", "=", False), ("company_id", "=", comp.id)])
-            if comp.fiq_hovedmeny_as_home:
+            if comp.fiq_hoved_as_home:
                 users.write({"action_id": action.id})
             else:
                 # Lås opp: nullstill kun de som faktisk peker på Hovedmeny

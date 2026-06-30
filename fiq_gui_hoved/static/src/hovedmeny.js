@@ -8,7 +8,7 @@ import { user } from "@web/core/user";
 const WIDGETS = ["kpis", "projects", "kommunikasjon", "activity", "tasks", "chart", "copilot", "quick"];
 
 export class FiqHovedmeny extends Component {
-    static template = "fiq_hovedmeny.Hovedmeny";
+    static template = "fiq_gui_hoved.Hovedmeny";
     static props = ["*"];
 
     setup() {
@@ -46,7 +46,7 @@ export class FiqHovedmeny extends Component {
 
     async loadConfig() {
         try {
-            const cfg = await this.orm.call("fiq.hovedmeny.config", "get_my_config", []);
+            const cfg = await this.orm.call("fiq.gui.hoved.config", "get_my_config", []);
             this.state.show = cfg.show;
             this.state.level = cfg.level;
             this.state.isAdmin = cfg.is_admin;
@@ -102,11 +102,11 @@ export class FiqHovedmeny extends Component {
         ];
         // Kommunikasjon-flate (e-post/meldinger på elementer) – filtrert på periode
         let komm = [];
-        try { komm = await this.orm.call("fiq.hovedmeny.config", "get_kommunikasjon", [this.state.kommPeriod]); } catch (e) {}
+        try { komm = await this.orm.call("fiq.gui.hoved.config", "get_kommunikasjon", [this.state.kommPeriod]); } catch (e) {}
 
         // Native dashboards/analyser (kun de som faktisk finnes i DB-en)
         let dashboards = [];
-        try { dashboards = await this.orm.call("fiq.hovedmeny.config", "get_dashboards", []); } catch (e) {}
+        try { dashboards = await this.orm.call("fiq.gui.hoved.config", "get_dashboards", []); } catch (e) {}
 
         this.state.projects = projects;
         this.state.myTasks = myTasks;
@@ -148,12 +148,12 @@ export class FiqHovedmeny extends Component {
     async setKommPeriod(p) {
         this.state.kommPeriod = p;
         try {
-            this.state.komm = await this.orm.call("fiq.hovedmeny.config", "get_kommunikasjon", [p]);
+            this.state.komm = await this.orm.call("fiq.gui.hoved.config", "get_kommunikasjon", [p]);
         } catch (e) { this.state.komm = []; }
     }
 
     async replyTo(messageId, replyAll) {
-        const act = await this.orm.call("fiq.hovedmeny.config", "action_reply", [messageId, !!replyAll]);
+        const act = await this.orm.call("fiq.gui.hoved.config", "action_reply", [messageId, !!replyAll]);
         this.action.doAction(act);
     }
 
@@ -164,7 +164,7 @@ export class FiqHovedmeny extends Component {
     toggleWidget(w) {
         this.state.show[w] = !this.state.show[w];
         // Lagre per bruker på serveren (governert av rettighetsgrupper + record rule)
-        this.orm.call("fiq.hovedmeny.config", "set_widget", [w, this.state.show[w]]).catch(() => {});
+        this.orm.call("fiq.gui.hoved.config", "set_widget", [w, this.state.show[w]]).catch(() => {});
     }
 
     openProjects() {
@@ -208,4 +208,4 @@ export class FiqHovedmeny extends Component {
     }
 }
 
-registry.category("actions").add("fiq_hovedmeny_dashboard", FiqHovedmeny);
+registry.category("actions").add("fiq_gui_hoved_dashboard", FiqHovedmeny);

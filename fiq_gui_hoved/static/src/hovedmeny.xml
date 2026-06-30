@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-    <t t-name="fiq_hovedmeny.Hovedmeny">
+    <t t-name="fiq_gui_hoved.Hovedmeny">
         <div class="fiq_hm" t-att-style="'--fiq-accent:' + state.accent + ';'">
             <!-- Topplinje -->
             <div class="fiq_hm_top">
@@ -9,7 +9,7 @@
                     <span t-else="" class="fiq_hm_mark" t-esc="state.companyName.slice(0,1)"/>
                     <span class="fiq_hm_name" t-esc="state.companyName"/>
                 </div>
-                <span class="fiq_hm_greet">Hovedmeny Total</span>
+                <span class="fiq_hm_greet">Hovedmeny</span>
                 <button class="btn fiq_hm_odoo" t-on-click="() => this.openOdoo()" title="Åpne Odoos vanlige app-meny">⊞ Odoo-meny</button>
                 <button class="btn fiq_hm_gear" t-on-click="() => this.toggleCustomize()">⚙ Tilpass</button>
             </div>
@@ -148,7 +148,7 @@
                     <div t-if="state.show.quick" class="fiq_hm_card"><h4>Hurtigvalg</h4>
                         <div class="fiq_hm_qa"><span>＋ Nytt prosjekt</span><span>🗎 Dokument</span><span>✓ Oppgave</span><span>📄 Rapport</span></div>
                     </div>
-                    <div class="fiq_hm_foot">Drevet av <strong>FIQ</strong> · Hovedmeny Total</div>
+                    <div class="fiq_hm_foot">Drevet av <strong>FIQ</strong> · Hovedmeny</div>
                 </section>
             </div>
         </div>
