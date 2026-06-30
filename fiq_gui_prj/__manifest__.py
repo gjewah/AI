@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
-    "name": "FIQ GUI Prosjekt",
-    "version": "19.0.1.0.0",
+    "name": "FIQ Prosjekt",
+    "version": "19.0.1.1.0",
     "summary": "FIQ GUI-skjelett for flaten Prosjekt – OWL klient-handling "
                "(placeholder-dashbord), menuitem og rettighetsgruppe. Klar for ekte funksjonalitet.",
     "description": """

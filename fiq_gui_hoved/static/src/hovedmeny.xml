@@ -35,11 +35,12 @@
                         <span t-esc="state.companyName"/>
                     </div>
                     <div class="fiq_hm_glbl">Fagområder</div>
-                    <div class="fiq_hm_nav on" t-on-click="() => this.openProjects()"><span class="b"/>Prosjekter</div>
-                    <div class="fiq_hm_nav"><span class="b"/>Dokumenter</div>
-                    <div class="fiq_hm_nav"><span class="b"/>Oppgaver</div>
-                    <div class="fiq_hm_nav"><span class="b"/>Rapporter</div>
-                    <div class="fiq_hm_nav"><span class="b"/>Kunnskap</div>
+                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_prj.action_fiq_gui_prj')"><img class="fiq_hm_navico" src="/fiq_gui_hoved/static/img/prj.png"/>Prosjekt</div>
+                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_epost.action_fiq_gui_epost')"><img class="fiq_hm_navico" src="/fiq_gui_hoved/static/img/epost.png"/>Kommunikasjon</div>
+                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_crm.action_fiq_gui_crm')"><img class="fiq_hm_navico" src="/fiq_gui_hoved/static/img/crm.png"/>CRM</div>
+                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_crm_leads.action_fiq_gui_crm_leads')"><img class="fiq_hm_navico" src="/fiq_gui_hoved/static/img/crm_leads.png"/>Salgsmuligheter</div>
+                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_crm_so.action_fiq_gui_crm_so')"><img class="fiq_hm_navico" src="/fiq_gui_hoved/static/img/crm_so.png"/>Salgsordre</div>
+                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_rgs.action_fiq_gui_rgs')"><img class="fiq_hm_navico" src="/fiq_gui_hoved/static/img/rgs.png"/>Regnskap</div>
 
                     <t t-if="state.dashboards.length">
                         <div class="fiq_hm_glbl">Dashboards</div>
@@ -47,6 +48,9 @@
                             <div class="fiq_hm_nav" t-on-click="() => this.openDashboard(d.xmlid)"><span class="b"/><t t-esc="d.label"/></div>
                         </t>
                     </t>
+
+                    <div class="fiq_hm_glbl">Styring</div>
+                    <div class="fiq_hm_nav" t-on-click="() => this.openKontrollrom()"><span class="b"/>Kontrollrom</div>
                 </aside>
 
                 <section class="fiq_hm_main">
@@ -148,7 +152,7 @@
                     <div t-if="state.show.quick" class="fiq_hm_card"><h4>Hurtigvalg</h4>
                         <div class="fiq_hm_qa"><span>＋ Nytt prosjekt</span><span>🗎 Dokument</span><span>✓ Oppgave</span><span>📄 Rapport</span></div>
                     </div>
-                    <div class="fiq_hm_foot">Drevet av <strong>FIQ</strong> · Hovedmeny</div>
+                    <div class="fiq_hm_foot">Drevet av <img class="fiq_hm_footlogo" src="/fiq_gui_hoved/static/img/fiq_logo.png" alt="FIQ"/> <strong>FIQ</strong> · Hovedmeny</div>
                 </section>
             </div>
         </div>

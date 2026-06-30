@@ -40,6 +40,7 @@
             display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 8px;
             cursor: pointer; color: #aeb7c0;
             .b { width: 4px; height: 16px; border-radius: 2px; background: var(--fiq-accent); }
+            .fiq_hm_navico { width: 18px; height: 18px; object-fit: contain; flex: 0 0 auto; }
             &:hover { background: #262f37; color: #e8edf1; }
             &.on { background: #262f37; color: #fff; }
         }
@@ -76,7 +77,8 @@
     .fiq_hm_qa { display: flex; gap: 9px; flex-wrap: wrap;
         span { border: 1px solid var(--fiq-bd); border-radius: 8px; padding: 8px 12px; background: #f0f1f3; } }
     .fiq_hm_foot { text-align: center; color: var(--fiq-mut); font-size: 11px; padding: 6px 0 2px;
-        strong { color: var(--fiq-side); } }
+        strong { color: var(--fiq-side); }
+        .fiq_hm_footlogo { height: 14px; vertical-align: middle; margin: 0 3px; } }
     .fiq_hm_odoo { font-size: 12px; }
     // Kommunikasjon-flate
     .fiq_hm_komm { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; font-size: 12px;

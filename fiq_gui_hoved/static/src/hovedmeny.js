@@ -14,6 +14,7 @@ export class FiqHovedmeny extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+        this.notification = useService("notification");
 
         const show = {};
         WIDGETS.forEach((w) => (show[w] = true));
@@ -200,6 +201,16 @@ export class FiqHovedmeny extends Component {
     // Åpne en av Odoos native dashboards/analyser in-page (SSOT)
     openDashboard(xmlid) {
         this.action.doAction(xmlid);
+    }
+
+    // Åpne en av FIQ-familieflatene (Prosjekt/Kommunikasjon/CRM/…) in-page via klient-handling
+    openFlate(xmlid) {
+        this.action.doAction(xmlid);
+    }
+
+    // Inngang til FIQ Kontrollrom – placeholder inntil selve Kontrollrommet er bygd
+    openKontrollrom() {
+        this.notification.add("Kontrollrom – kommer", { type: "info" });
     }
 
     openOdoo() {

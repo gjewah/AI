@@ -9,7 +9,7 @@ export class FiqGuiEpost extends Component {
     static props = ["*"];
 
     setup() {
-        this.flate = "E-post/Kommunikasjon";
+        this.flate = "Kommunikasjon";
     }
 }
 

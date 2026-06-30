@@ -9,7 +9,7 @@ export class FiqGuiCrmLeads extends Component {
     static props = ["*"];
 
     setup() {
-        this.flate = "CRM salgsmuligheter";
+        this.flate = "Salgsmuligheter";
     }
 }
 

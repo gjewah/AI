@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Hovedmeny",
-    "version": "19.0.2.0.0",
+    "version": "19.0.2.1.0",
     "summary": "Hovedmeny – dashbord/landingsside (OWL) med svartgrå sidemeny, "
                "per-firma aksent/logo, KPI-er fra Odoo-data og dynamisk vis/skjul av widgets.",
     "description": """

@@ -9,7 +9,7 @@ export class FiqGuiCrmSo extends Component {
     static props = ["*"];
 
     setup() {
-        this.flate = "CRM salgsordre";
+        this.flate = "Salgsordre";
     }
 }
 
