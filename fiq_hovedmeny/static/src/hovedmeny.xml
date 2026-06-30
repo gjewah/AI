@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="fiq_hovedmeny.Hovedmeny">
+        <div class="fiq_hm" t-att-style="'--fiq-accent:' + state.accent + ';'">
+            <!-- Topplinje -->
+            <div class="fiq_hm_top">
+                <div class="fiq_hm_brand">
+                    <img t-if="state.logo" t-att-src="state.logo" class="fiq_hm_logo"/>
+                    <span t-else="" class="fiq_hm_mark" t-esc="state.companyName.slice(0,1)"/>
+                    <span class="fiq_hm_name" t-esc="state.companyName"/>
+                </div>
+                <span class="fiq_hm_greet">Hovedmeny Total</span>
+                <button class="btn fiq_hm_odoo" t-on-click="() => this.openOdoo()" title="Åpne Odoos vanlige app-meny">⊞ Odoo-meny</button>
+                <button class="btn fiq_hm_gear" t-on-click="() => this.toggleCustomize()">⚙ Tilpass</button>
+            </div>
+
+            <!-- Tilpass-panel: dynamisk vis/skjul -->
+            <div t-if="state.customize" class="fiq_hm_cust">
+                <strong>Tilpass dashbord – velg widgets</strong>
+                <div class="fiq_hm_toggles">
+                    <t t-foreach="['kpis','projects','kommunikasjon','activity','tasks','chart','copilot','quick']" t-as="w" t-key="w">
+                        <label>
+                            <input type="checkbox" t-att-checked="state.show[w]" t-on-change="() => this.toggleWidget(w)"/>
+                            <span t-esc="w"/>
+                        </label>
+                    </t>
+                </div>
+            </div>
+
+            <div class="fiq_hm_wrap">
+                <!-- Svartgrå sidemeny -->
+                <aside class="fiq_hm_side">
+                    <div class="fiq_hm_side_brand">
+                        <img t-if="state.logo" t-att-src="state.logo" class="fiq_hm_side_logo"/>
+                        <span t-esc="state.companyName"/>
+                    </div>
+                    <div class="fiq_hm_glbl">Fagområder</div>
+                    <div class="fiq_hm_nav on" t-on-click="() => this.openProjects()"><span class="b"/>Prosjekter</div>
+                    <div class="fiq_hm_nav"><span class="b"/>Dokumenter</div>
+                    <div class="fiq_hm_nav"><span class="b"/>Oppgaver</div>
+                    <div class="fiq_hm_nav"><span class="b"/>Rapporter</div>
+                    <div class="fiq_hm_nav"><span class="b"/>Kunnskap</div>
+
+                    <t t-if="state.dashboards.length">
+                        <div class="fiq_hm_glbl">Dashboards</div>
+                        <t t-foreach="state.dashboards" t-as="d" t-key="d.xmlid">
+                            <div class="fiq_hm_nav" t-on-click="() => this.openDashboard(d.xmlid)"><span class="b"/><t t-esc="d.label"/></div>
+                        </t>
+                    </t>
+                </aside>
+
+                <section class="fiq_hm_main">
+                    <div t-if="state.loading" class="fiq_hm_loading">Laster …</div>
+
+                    <div t-if="!state.loading and state.show.kpis" class="fiq_hm_kpis">
+                        <t t-foreach="state.kpis" t-as="k" t-key="k.l">
+                            <div class="fiq_hm_kpi"><div class="v" t-esc="k.v"/><div class="l" t-esc="k.l"/></div>
+                        </t>
+                    </div>
+
+                    <div class="fiq_hm_cols">
+                        <div class="fiq_hm_colL">
+                            <div t-if="state.show.kommunikasjon" class="fiq_hm_card">
+                                <h4>Kommunikasjon</h4>
+                                <div class="fiq_hm_komm_bar">
+                                    <div class="fiq_hm_pseg">
+                                        <button t-foreach="[['dag','Dag'],['uke','Uke'],['maaned','Måned'],['alle','Alle']]" t-as="pp" t-key="pp[0]"
+                                                t-att-class="state.kommPeriod === pp[0] ? 'on' : ''"
+                                                t-on-click="() => this.setKommPeriod(pp[0])" t-esc="pp[1]"/>
+                                    </div>
+                                    <div class="fiq_hm_pseg fiq_hm_dseg">
+                                        <button t-foreach="[['alle','Alle'],['mottatt','Mottatt'],['sendt','Sendt']]" t-as="dd" t-key="dd[0]"
+                                                t-att-class="state.kommDir === dd[0] ? 'on' : ''"
+                                                t-on-click="() => this.setKommDir(dd[0])" t-esc="dd[1]"/>
+                                    </div>
+                                    <input class="fiq_hm_ksearch" placeholder="Søk firma, person, prosjekt, oppgave…"
+                                           t-att-value="state.kommQuery" t-on-input="(ev) => state.kommQuery = ev.target.value"/>
+                                </div>
+                                <div t-if="state.kommSender" class="fiq_hm_chip">
+                                    Avsender: <strong t-esc="state.kommSender.name"/>
+                                    <span class="fiq_hm_chip_x" t-on-click="() => this.clearSender()" title="Fjern avsenderfilter">✕</span>
+                                </div>
+                                <t t-if="filteredKomm.length">
+                                    <t t-foreach="filteredKomm" t-as="k" t-key="k.id">
+                                        <div class="fiq_hm_komm">
+                                            <span t-att-class="k.kind === 'E-post' ? 'fiq_hm_kk mail' : 'fiq_hm_kk msg'" t-esc="k.kind"/>
+                                            <span t-att-class="'fiq_hm_dir ' + k.direction" t-att-title="k.direction === 'sendt' ? 'Sendt fra oss' : 'Mottatt'" t-esc="k.direction === 'sendt' ? '↑ Sendt' : '↓ Mottatt'"/>
+                                            <span class="fiq_hm_komm_a" t-on-click="() => this.filterSender(k)" title="Filtrer på denne avsenderen" t-esc="k.author"/>
+                                            <span class="fiq_hm_komm_s" t-on-click="() => this.openRecord(k.model, k.res_id)" t-esc="k.subject"/>
+                                            <span class="fiq_hm_komm_e" t-on-click="() => this.openRecord(k.model, k.res_id)" t-esc="k.element"/>
+                                            <span class="fiq_hm_komm_d" t-esc="k.date"/>
+                                            <span class="fiq_hm_kbtn" t-on-click="() => this.replyTo(k.id, false)" title="Svar">↩</span>
+                                            <span class="fiq_hm_kbtn" t-on-click="() => this.replyTo(k.id, true)" title="Svar alle (CC/BCC i komponist)">↩↩</span>
+                                        </div>
+                                    </t>
+                                </t>
+                                <t t-else=""><div class="fiq_hm_empty">Ingen kommunikasjon i valgt periode.</div></t>
+                            </div>
+                            <div t-if="state.show.projects" class="fiq_hm_card">
+                                <h4>Prosjektoversikt</h4>
+                                <t t-if="state.projects.length">
+                                    <table>
+                                        <thead><tr><th>Nr</th><th>Prosjekt</th><th>Oppg.</th><th>Fremdrift</th><th></th></tr></thead>
+                                        <tbody>
+                                            <t t-foreach="state.projects" t-as="p" t-key="p.id">
+                                                <tr>
+                                                    <td t-on-click="() => this.openProjectTasks(p.id)"><span class="fiq_hm_no" t-esc="p.no"/></td>
+                                                    <td t-on-click="() => this.openProjectTasks(p.id)" t-esc="p.name"/>
+                                                    <td t-on-click="() => this.openProjectTasks(p.id)" t-esc="p.taskCount"/>
+                                                    <td t-on-click="() => this.openProjectTasks(p.id)"><div class="prog"><i t-att-style="'width:' + p.progress + '%'"/></div></td>
+                                                    <td><span class="fiq_hm_gantt" t-on-click="() => this.openProjectTasks(p.id, 'gantt')" title="Åpne oppgavene i Gantt-visning">📊 Gantt</span></td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </t>
+                                <t t-else=""><div class="fiq_hm_empty">Ingen aktive prosjekter ennå.</div></t>
+                            </div>
+                            <div t-if="state.show.tasks" class="fiq_hm_card"><h4>Mine oppgaver</h4>
+                                <t t-if="state.myTasks.length">
+                                    <t t-foreach="state.myTasks" t-as="t" t-key="t.id">
+                                        <div class="fiq_hm_task" t-on-click="() => this.openRecord('project.task', t.id)">
+                                            <span class="fiq_hm_no" t-esc="t.no"/>
+                                            <span class="fiq_hm_task_n" t-esc="t.name"/>
+                                            <span class="fiq_hm_task_p" t-esc="t.project"/>
+                                            <span t-if="t.deadline" t-att-class="t.overdue ? 'fiq_hm_dl over' : 'fiq_hm_dl'" t-esc="t.deadline"/>
+                                            <span t-if="t.overdue" class="fiq_hm_warn">⚠ frist ute</span>
+                                        </div>
+                                    </t>
+                                </t>
+                                <t t-else=""><div class="fiq_hm_empty">Ingen åpne oppgaver tildelt deg.</div></t>
+                            </div>
+                        </div>
+                        <div class="fiq_hm_colR">
+                            <div t-if="state.show.chart" class="fiq_hm_card"><h4>Fremdrift per prosjekt</h4>
+                                <t t-foreach="state.projects" t-as="p" t-key="p.name">
+                                    <div class="fiq_hm_bar"><span class="lbl" t-esc="p.name"/><span class="track"><i t-att-style="'width:' + p.progress + '%'"/></span></div>
+                                </t>
+                            </div>
+                            <div t-if="state.show.copilot" class="fiq_hm_card fiq_hm_cop"><h4>✨ AI Copilot</h4>
+                                <div class="sug">Oppsummer status</div>
+                                <div class="sug">Lag ukesrapport</div>
+                                <div class="sug">Hva henger etter?</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div t-if="state.show.quick" class="fiq_hm_card"><h4>Hurtigvalg</h4>
+                        <div class="fiq_hm_qa"><span>＋ Nytt prosjekt</span><span>🗎 Dokument</span><span>✓ Oppgave</span><span>📄 Rapport</span></div>
+                    </div>
+                    <div class="fiq_hm_foot">Drevet av <strong>FIQ</strong> · Hovedmeny Total</div>
+                </section>
+            </div>
+        </div>
+    </t>
+</templates>

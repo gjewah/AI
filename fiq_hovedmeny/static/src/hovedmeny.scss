@@ -1,0 +1,115 @@
+.fiq_hm {
+    --fiq-side: #1f2228;          // svartgrå sidemeny (standard alle firma)
+    --fiq-bd: #e3e5e9;
+    --fiq-mut: #6b7280;
+    font-size: 13px;
+    padding: 14px;
+    background: #f4f5f7;
+    min-height: 100%;
+
+    .fiq_hm_top {
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        background: #fff; border: 1px solid var(--fiq-bd); border-radius: 12px;
+        padding: 9px 12px; margin-bottom: 12px;
+    }
+    .fiq_hm_brand { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+    .fiq_hm_logo { height: 28px; }
+    .fiq_hm_side_logo { height: 22px; margin-right: 6px; }
+    .fiq_hm_mark {
+        width: 24px; height: 24px; border-radius: 6px; color: #fff; font-weight: 700;
+        display: flex; align-items: center; justify-content: center; background: var(--fiq-accent);
+    }
+    .fiq_hm_greet { color: var(--fiq-mut); margin-right: auto; }
+    .fiq_hm_gear { font-size: 12px; }
+
+    .fiq_hm_cust {
+        background: #f0f1f3; border: 1px dashed #cfd3da; border-radius: 10px;
+        padding: 11px; margin-bottom: 12px;
+        .fiq_hm_toggles { margin-top: 6px; }
+        label { display: inline-flex; align-items: center; gap: 6px; margin: 4px 14px 4px 0; text-transform: capitalize; cursor: pointer; }
+    }
+
+    .fiq_hm_wrap { display: grid; grid-template-columns: 190px 1fr; gap: 12px; }
+    @media (max-width: 760px) { .fiq_hm_wrap { grid-template-columns: 1fr; } }
+
+    .fiq_hm_side {
+        background: var(--fiq-side); border-radius: 12px; padding: 10px; color: #c4ccd4; min-height: 520px;
+        .fiq_hm_side_brand { display: flex; align-items: center; color: #fff; font-weight: 600; padding: 5px 6px 12px; }
+        .fiq_hm_glbl { font-size: 10px; letter-spacing: .07em; text-transform: uppercase; opacity: .55; padding: 8px; }
+        .fiq_hm_nav {
+            display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 8px;
+            cursor: pointer; color: #aeb7c0;
+            .b { width: 4px; height: 16px; border-radius: 2px; background: var(--fiq-accent); }
+            &:hover { background: #262f37; color: #e8edf1; }
+            &.on { background: #262f37; color: #fff; }
+        }
+    }
+
+    .fiq_hm_main { display: flex; flex-direction: column; gap: 12px; }
+    .fiq_hm_loading, .fiq_hm_empty { color: var(--fiq-mut); padding: 10px; }
+    .fiq_hm_kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 11px; }
+    @media (max-width: 760px) { .fiq_hm_kpis { grid-template-columns: repeat(2, 1fr); } }
+    .fiq_hm_kpi { background: #fff; border: 1px solid var(--fiq-bd); border-radius: 11px; padding: 11px;
+        .v { font-size: 20px; font-weight: 600; } .l { font-size: 11.5px; color: var(--fiq-mut); } }
+
+    .fiq_hm_cols { display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; }
+    @media (max-width: 760px) { .fiq_hm_cols { grid-template-columns: 1fr; } }
+    .fiq_hm_colL, .fiq_hm_colR { display: flex; flex-direction: column; gap: 12px; }
+
+    .fiq_hm_card { background: #fff; border: 1px solid var(--fiq-bd); border-radius: 11px; padding: 12px;
+        h4 { margin: 0 0 10px; font-size: 13px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { text-align: left; color: var(--fiq-mut); font-weight: 400; padding: 6px 5px; border-bottom: 1px solid var(--fiq-bd); }
+        td { padding: 7px 5px; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; }
+        .prog { height: 7px; border-radius: 4px; background: #f0f1f3; overflow: hidden; min-width: 60px;
+            i { display: block; height: 100%; background: var(--fiq-accent); } }
+        .pill { font-size: 10.5px; padding: 2px 8px; border-radius: 12px; border: 1px solid var(--fiq-bd); color: var(--fiq-mut); }
+    }
+    .fiq_hm_act { display: flex; gap: 8px; padding: 7px 0; color: var(--fiq-mut);
+        .d { width: 7px; height: 7px; border-radius: 50%; margin-top: 5px; background: var(--fiq-accent); } }
+    .fiq_hm_bar { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 11px;
+        .lbl { width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .track { flex: 1; height: 14px; background: #f0f1f3; border-radius: 4px; overflow: hidden;
+            i { display: block; height: 100%; background: var(--fiq-accent); } } }
+    .fiq_hm_cop .sug { border: 1px solid var(--fiq-bd); border-radius: 9px; padding: 8px 10px; margin-bottom: 7px; cursor: pointer;
+        &:hover { border-color: var(--fiq-accent); } }
+    .fiq_hm_qa { display: flex; gap: 9px; flex-wrap: wrap;
+        span { border: 1px solid var(--fiq-bd); border-radius: 8px; padding: 8px 12px; background: #f0f1f3; } }
+    .fiq_hm_foot { text-align: center; color: var(--fiq-mut); font-size: 11px; padding: 6px 0 2px;
+        strong { color: var(--fiq-side); } }
+    .fiq_hm_odoo { font-size: 12px; }
+    // Kommunikasjon-flate
+    .fiq_hm_komm { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; font-size: 12px;
+        &:hover { background: #f7f8f9; }
+        .fiq_hm_kk { font-size: 10px; padding: 1px 7px; border-radius: 10px; white-space: nowrap;
+            &.mail { background: #e7eefc; color: #2456c4; } &.msg { background: #eef0f2; color: #555; } }
+        .fiq_hm_dir { font-size: 10px; padding: 1px 6px; border-radius: 10px; white-space: nowrap; cursor: default;
+            &.mottatt { background: #fdf0e3; color: #b8651b; } &.sendt { background: #e6f4ea; color: #1e7a3a; } }
+        .fiq_hm_komm_a { font-weight: 500; white-space: nowrap; cursor: pointer;
+            &:hover { color: var(--fiq-accent); text-decoration: underline; } }
+        .fiq_hm_komm_s { flex: 1; color: var(--fiq-mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .fiq_hm_komm_e { font-size: 11px; color: var(--fiq-side); background: #f0f1f3; border: 1px solid var(--fiq-bd); border-radius: 5px; padding: 1px 6px; white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+        .fiq_hm_komm_d { font-size: 10.5px; color: var(--fiq-mut); white-space: nowrap; }
+        .fiq_hm_kbtn { cursor: pointer; color: var(--fiq-mut); border: 1px solid var(--fiq-bd); border-radius: 6px; padding: 1px 6px; font-size: 12px;
+            &:hover { color: var(--fiq-accent); border-color: var(--fiq-accent); } } }
+    .fiq_hm_komm_s, .fiq_hm_komm_e { cursor: pointer; }
+    .fiq_hm_komm_bar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
+        .fiq_hm_pseg { display: inline-flex; border: 1px solid var(--fiq-bd); border-radius: 8px; overflow: hidden;
+            button { border: 0; background: #fff; color: var(--fiq-mut); padding: 4px 10px; cursor: pointer; font: inherit; font-size: 11.5px;
+                &.on { background: var(--fiq-accent); color: #fff; } } }
+        .fiq_hm_ksearch { flex: 1; min-width: 140px; padding: 5px 9px; border: 1px solid var(--fiq-bd); border-radius: 8px; font: inherit; font-size: 12px; } }
+    .fiq_hm_chip { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--fiq-side);
+        background: #f0f1f3; border: 1px solid var(--fiq-bd); border-radius: 12px; padding: 2px 10px; margin-bottom: 8px;
+        .fiq_hm_chip_x { cursor: pointer; color: var(--fiq-mut); &:hover { color: #c0392b; } } }
+    .fiq_hm_gantt { font-size: 11px; color: var(--fiq-mut); border: 1px solid var(--fiq-bd); border-radius: 6px; padding: 1px 7px; white-space: nowrap;
+        &:hover { color: var(--fiq-accent); border-color: var(--fiq-accent); } }
+    // Menneskelig syntaks: prosjekt-/oppgavenummer
+    .fiq_hm_no { font-family: monospace; font-size: 11px; color: var(--fiq-mut); background: #f0f1f3;
+        border: 1px solid var(--fiq-bd); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
+    .fiq_hm_task { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; font-size: 12px;
+        &:hover { background: var(--fiq-s2, #f7f8f9); }
+        .fiq_hm_task_n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .fiq_hm_task_p { color: var(--fiq-mut); font-size: 11px; }
+        .fiq_hm_dl { font-size: 11px; color: var(--fiq-mut); &.over { color: #c0392b; font-weight: 500; } }
+        .fiq_hm_warn { font-size: 10.5px; color: #c0392b; background: #fdecea; border-radius: 10px; padding: 1px 7px; } }
+}

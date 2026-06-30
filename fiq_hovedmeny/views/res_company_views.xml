@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_company_form_fiq_hovedmeny" model="ir.ui.view">
+        <field name="name">res.company.form.fiq.hovedmeny</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <sheet position="inside">
+                <group string="FIQ Hovedmeny" name="fiq_hovedmeny">
+                    <field name="fiq_hovedmeny_accent" widget="color"/>
+                    <field name="fiq_hovedmeny_logo" widget="image" options="{'size': [120, 60]}"/>
+                    <field name="fiq_hovedmeny_as_home"/>
+                </group>
+            </sheet>
+        </field>
+    </record>
+</odoo>
