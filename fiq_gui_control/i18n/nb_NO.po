@@ -352,3 +352,7 @@ msgstr "Kontrollrom logo (lys variant)"
 #. module: fiq_gui_control
 msgid "Start in Control room"
 msgstr "Start i Kontrollrommet"
+
+#. module: fiq_gui_control
+msgid "Own view under construction – content will appear here. Use the Odoo menu at the top for Odoo's standard view in the meantime."
+msgstr "Egen visning under utvikling – innhold kommer her. Bruk «⊞ Odoo-meny» øverst for Odoos standardvisning i mellomtiden."

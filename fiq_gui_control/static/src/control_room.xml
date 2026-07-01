@@ -51,12 +51,12 @@
                     </div>
                     <div class="fiq_hm_glbl">Areas</div>
                     <div t-att-class="state.view === 'oversikt' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('oversikt')"><span class="b"/>Home (overview)</div>
-                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_prj.action_fiq_gui_prj')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/prj.png"/>Projects</div>
+                    <div t-att-class="state.view === 'prosjekt' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('prosjekt')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/prj.png"/>Projects</div>
                     <div t-att-class="state.view === 'kommunikasjon' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('kommunikasjon')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/epost.png"/>Communication</div>
-                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_crm.action_fiq_gui_crm')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/crm.png"/>CRM</div>
-                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_crm_leads.action_fiq_gui_crm_leads')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/crm_leads.png"/>Opportunities</div>
-                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_crm_so.action_fiq_gui_crm_so')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/crm_so.png"/>Sales orders</div>
-                    <div class="fiq_hm_nav" t-on-click="() => this.openFlate('fiq_gui_rgs.action_fiq_gui_rgs')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/rgs.png"/>Accounting</div>
+                    <div t-att-class="state.view === 'crm' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('crm')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/crm.png"/>CRM</div>
+                    <div t-att-class="state.view === 'salgsmuligheter' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('salgsmuligheter')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/crm_leads.png"/>Opportunities</div>
+                    <div t-att-class="state.view === 'salgsordre' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('salgsordre')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/crm_so.png"/>Sales orders</div>
+                    <div t-att-class="state.view === 'regnskap' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('regnskap')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/rgs.png"/>Accounting</div>
 
                     <t t-if="state.dashboards.length">
                         <div class="fiq_hm_glbl">Dashboards</div>
@@ -68,6 +68,13 @@
 
                 <section class="fiq_hm_main">
                     <div t-if="state.loading" class="fiq_hm_loading">Loading …</div>
+
+                    <!-- Area view (Projects/CRM/Opportunities/Sales orders/Accounting) as an integrated view inside the shell -->
+                    <div t-if="!state.loading and area" class="fiq_hm_card fiq_hm_area">
+                        <img class="fiq_hm_area_ico" t-att-src="'/fiq_gui_control/static/img/' + area.icon"/>
+                        <h4 t-esc="area.title"/>
+                        <p class="fiq_hm_area_txt">Own view under construction – content will appear here. Use the Odoo menu at the top for Odoo's standard view in the meantime.</p>
+                    </div>
 
                     <div t-if="!state.loading and state.show.kpis and state.view === 'oversikt'" class="fiq_hm_kpis">
                         <t t-foreach="state.kpis" t-as="k" t-key="k.l">

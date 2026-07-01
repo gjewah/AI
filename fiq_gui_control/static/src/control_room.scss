@@ -119,4 +119,9 @@
         .fiq_hm_task_p { color: var(--fiq-mut); font-size: 11px; }
         .fiq_hm_dl { font-size: 11px; color: var(--fiq-mut); &.over { color: #c0392b; font-weight: 500; } }
         .fiq_hm_warn { font-size: 10.5px; color: #c0392b; background: #fdecea; border-radius: 10px; padding: 1px 7px; } }
+    // Fagområde-visning (Prosjekt/CRM/Salgsmuligheter/Salgsordre/Regnskap) – integrert plassholder i skallet
+    .fiq_hm_area { text-align: center; padding: 34px 18px;
+        .fiq_hm_area_ico { width: 46px; height: 46px; object-fit: contain; opacity: .9; margin-bottom: 10px; }
+        h4 { font-size: 15px; margin: 0 0 6px; }
+        .fiq_hm_area_txt { color: var(--fiq-mut); font-size: 12.5px; max-width: 440px; margin: 0 auto; line-height: 1.5; } }
 }

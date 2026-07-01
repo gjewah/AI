@@ -224,13 +224,20 @@ export class FiqControlRoom extends Component {
         this.action.doAction(xmlid);
     }
 
-    // Open one of the FIQ family views (Project/Communication/CRM/…) in-page via client action
-    openFlate(xmlid) {
-        this.action.doAction(xmlid);
-    }
-
     setView(v) {
         this.state.view = v;
+    }
+
+    // Metadata (icon + title) for the current area view; null for oversikt/kommunikasjon
+    get area() {
+        const map = {
+            prosjekt: { icon: "prj.png", title: _t("Projects") },
+            crm: { icon: "crm.png", title: "CRM" },
+            salgsmuligheter: { icon: "crm_leads.png", title: _t("Opportunities") },
+            salgsordre: { icon: "crm_so.png", title: _t("Sales orders") },
+            regnskap: { icon: "rgs.png", title: _t("Accounting") },
+        };
+        return map[this.state.view] || null;
     }
 
     openOdoo() {
