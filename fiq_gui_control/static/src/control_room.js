@@ -105,15 +105,24 @@ export class FiqControlRoom extends Component {
         }));
         try { openTasks = await this.orm.searchCount("project.task", [["user_ids", "in", [user.userId]]]); } catch (e) {}
 
-        this.state.kpis = [
-            { v: String(active), l: _t("Active projects") },
-            { v: String(openTasks), l: _t("My tasks") },
-            { v: String(myTasks.filter((t) => t.overdue).length), l: _t("Overdue") },
-            { v: "—", l: _t("ROI (soon)") },
-        ];
         // Communication view (email/messages on records) – filtered by period
         let komm = [];
         try { komm = await this.orm.call("fiq.gui.control.config", "get_kommunikasjon", [this.state.kommPeriod]); } catch (e) {}
+
+        // Salg (open opportunities, else quotations) for the category KPI – guarded
+        let salg = 0;
+        try { salg = await this.orm.searchCount("crm.lead", [["type", "=", "opportunity"], ["active", "=", true]]); }
+        catch (e) { try { salg = await this.orm.searchCount("sale.order", [["state", "in", ["draft", "sent"]]]); } catch (e2) {} }
+
+        // Category KPIs (report-up / management by exception): Kommunikasjon · Prosjekt · Salg · HMS/KS
+        const received = komm.filter((k) => k.direction === "mottatt");
+        const overdueN = myTasks.filter((t) => t.overdue).length;
+        this.state.kpis = [
+            { v: String(komm.length), l: _t("Kommunikasjon"), sub: received.length + " " + _t("ubesvart"), dot: received.length ? "red" : "green" },
+            { v: String(active), l: _t("Prosjekt"), sub: overdueN + " " + _t("forsinket"), dot: overdueN ? "amber" : "green" },
+            { v: String(salg), l: _t("Salg"), sub: _t("ok"), dot: "green" },
+            { v: "—", l: _t("HMS/KS"), sub: _t("avvik"), dot: "grey" },
+        ];
 
         // Native dashboards/analyses (only the ones that actually exist in the DB)
         let dashboards = [];
@@ -144,28 +153,33 @@ export class FiqControlRoom extends Component {
         return _t("God kveld");
     }
 
-    // Krever handling nå: forsinkede oppgaver + siste mottatte kommunikasjon (kontekst-linjer)
+    // Krever handling nå: sammendrag PER KATEGORI (styring ved unntak – rapporter opp,
+    // ikke én linje per post). Rød prikk + fet kategori + kort tekst; klikk → kategori-flate.
     get handlingsposter() {
         const out = [];
-        this.state.myTasks.filter((t) => t.overdue).forEach((t) => {
+        const received = this.state.komm.filter((k) => k.direction === "mottatt");
+        if (received.length) {
             out.push({
-                key: "task-" + t.id,
-                type: "oppgave",
-                text: _t("Forsinket oppgave") + ": " + (t.no ? t.no + " " : "") + t.name,
-                sub: t.project || "",
-                model: "project.task", res_id: t.id,
+                key: "kat-komm", kategori: _t("Kommunikasjon"), type: "kommunikasjon",
+                text: received.length + " " + _t("ubesvart — venter svar"),
+                view: "kommunikasjon",
             });
-        });
-        this.state.komm.filter((k) => k.direction === "mottatt").slice(0, 4).forEach((k) => {
+        }
+        const overdue = this.state.myTasks.filter((t) => t.overdue);
+        if (overdue.length) {
             out.push({
-                key: "komm-" + k.id,
-                type: "kommunikasjon",
-                text: _t("Ubesvart") + ": " + k.subject,
-                sub: k.author + (k.element ? " · " + k.element : ""),
-                model: k.model, res_id: k.res_id,
+                key: "kat-prosjekt", kategori: _t("Prosjekt"), type: "oppgave",
+                text: overdue.length + " " + _t("forsinkede oppgaver"),
+                model: "project.task", res_id: overdue[0].id,
             });
-        });
+        }
         return out;
+    }
+
+    // Klikk på en «krever handling»-linje: gå til kategori-flaten eller åpne posten
+    krevClick(hp) {
+        if (hp.view) { this.setView(hp.view); }
+        else if (hp.model) { this.openRecord(hp.model, hp.res_id); }
     }
 
     get filteredKomm() {

@@ -51,7 +51,7 @@
     .fiq_hm_kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 11px; }
     @media (max-width: 760px) { .fiq_hm_kpis { grid-template-columns: repeat(2, 1fr); } }
     .fiq_hm_kpi { background: #fff; border: 1px solid var(--fiq-bd); border-radius: 11px; padding: 11px;
-        .v { font-size: 20px; font-weight: 600; } .l { font-size: 11.5px; color: var(--fiq-mut); } }
+        .v { font-size: 22px; font-weight: 700; } .l { font-size: 12px; color: var(--fiq-side); display: flex; align-items: center; gap: 6px; } }
 
     .fiq_hm_cols { display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; }
     @media (max-width: 760px) { .fiq_hm_cols { grid-template-columns: 1fr; } }
@@ -130,13 +130,10 @@
     // ============ Topplinje: hilsen + firma-logo-velger ============
     .fiq_hm_hilsen { color: var(--fiq-side); font-weight: 600; margin-right: auto; }
     .fiq_hm_firmavelger { display: inline-flex; gap: 6px; }
-    .fiq_hm_firma { border: 1px solid var(--fiq-bd); background: #fff; border-radius: 9px; padding: 3px; cursor: pointer;
-        width: 38px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+    .fiq_hm_firma { border: 1px solid var(--fiq-bd); background: #fff; border-radius: 999px; padding: 5px 14px; cursor: pointer;
+        font-size: 13px; font-weight: 600; color: var(--fiq-side); white-space: nowrap;
         &:hover { border-color: var(--fiq-accent); }
-        &.on { border-color: var(--fiq-accent); box-shadow: 0 0 0 2px rgba(56,180,74,.18); }
-        .fiq_hm_firma_logo { max-width: 30px; max-height: 26px; object-fit: contain; }
-        .fiq_hm_firma_mono { width: 26px; height: 26px; border-radius: 6px; background: var(--fiq-side); color: #fff;
-            font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; } }
+        &.on { border-color: var(--fiq-accent); background: rgba(56,180,74,.10); box-shadow: 0 0 0 2px rgba(56,180,74,.18); } }
 
     // ============ Filter-stripe ============
     .fiq_hm_filter { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;
@@ -168,17 +165,16 @@
     // ============ Krever handling nå ============
     .fiq_hm_krev { border: 1px solid #f2c1bb; background: #fdf3f1;
         h4 { color: #b23c2c; }
-        .fiq_hm_krev_l { display: flex; align-items: center; gap: 9px; padding: 7px 4px; border-bottom: 1px solid #f2d9d4; cursor: pointer; font-size: 12px;
+        .fiq_hm_krev_l { display: flex; align-items: center; gap: 10px; padding: 9px 4px; border-bottom: 1px solid #f2d9d4; cursor: pointer; font-size: 13px;
             &:last-child { border-bottom: 0; }
             &:hover { background: #fbe9e5; }
-            .fiq_hm_krev_t { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; padding: 1px 8px; border-radius: 10px; white-space: nowrap;
-                &.oppgave { background: #fde2e0; color: #b23c2c; } &.kommunikasjon { background: #fdeecf; color: #a5680f; } }
-            .fiq_hm_krev_txt { flex: 1; color: var(--fiq-side); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-            .fiq_hm_krev_sub { color: var(--fiq-mut); font-size: 11px; white-space: nowrap; } } }
+            .fiq_hm_krev_dot { width: 9px; height: 9px; border-radius: 50%; background: #e0483a; flex: 0 0 auto; }
+            .fiq_hm_krev_kat { font-weight: 700; color: var(--fiq-side); }
+            .fiq_hm_krev_txt { flex: 1; color: var(--fiq-side); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } } }
 
-    // Status-boks: prikk
-    .fiq_hm_kpi { position: relative;
-        .fiq_hm_kdot { position: absolute; top: 11px; right: 11px; width: 8px; height: 8px; border-radius: 50%; background: var(--fiq-accent); } }
+    // Status-boks: farget prikk (rød/gul/grønn/grå) inline foran kategori-navnet
+    .fiq_hm_kdot { width: 9px; height: 9px; border-radius: 50%; background: #9ca3af; flex: 0 0 auto;
+        &.red { background: #e0483a; } &.amber { background: #e8a13a; } &.green { background: #38B44A; } &.grey { background: #c2c7cf; } }
 
     // ============ Beslutningsstøtte: 4 kolonner ============
     .fiq_hm_bs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
