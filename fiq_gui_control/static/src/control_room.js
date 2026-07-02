@@ -40,6 +40,9 @@ export class FiqControlRoom extends Component {
             kommDir: "alle",      // alle | mottatt | sendt (direction "sent from")
             kommSender: null,     // {id, name} – filter on a single sender
             dashboards: [],       // Odoo native dashboards/analyses (only the ones that exist)
+            presence: [],         // «Til stede nå» – interne brukere + tilgjengelighets-status
+            actions: {},          // {nøkkel: xmlid|false} – hvilke Odoo-handlinger som finnes (guardet)
+            aiQuery: "",          // «Spør AI om hjelp»-feltet
             view: "oversikt",     // main content: oversikt (overview) | kommunikasjon (communication)
             loading: true,
         });
@@ -116,11 +119,53 @@ export class FiqControlRoom extends Component {
         let dashboards = [];
         try { dashboards = await this.orm.call("fiq.gui.control.config", "get_dashboards", []); } catch (e) {}
 
+        // «Til stede nå» – interne brukere + tilgjengelighets-status
+        let presence = [];
+        try { presence = await this.orm.call("fiq.gui.control.config", "get_presence", []); } catch (e) {}
+
+        // Hvilke Odoo-handlinger finnes faktisk (guardet – depends = web+project)
+        let actions = {};
+        try { actions = await this.orm.call("fiq.gui.control.config", "get_actions", []); } catch (e) {}
+
         this.state.projects = projects;
         this.state.myTasks = myTasks;
         this.state.komm = komm;
         this.state.dashboards = dashboards;
+        this.state.presence = presence;
+        this.state.actions = actions;
         this.state.loading = false;
+    }
+
+    // Tidsbasert hilsen (norsk)
+    get hilsen() {
+        const h = new Date().getHours();
+        if (h < 10) return _t("God morgen");
+        if (h < 18) return _t("God dag");
+        return _t("God kveld");
+    }
+
+    // Krever handling nå: forsinkede oppgaver + siste mottatte kommunikasjon (kontekst-linjer)
+    get handlingsposter() {
+        const out = [];
+        this.state.myTasks.filter((t) => t.overdue).forEach((t) => {
+            out.push({
+                key: "task-" + t.id,
+                type: "oppgave",
+                text: _t("Forsinket oppgave") + ": " + (t.no ? t.no + " " : "") + t.name,
+                sub: t.project || "",
+                model: "project.task", res_id: t.id,
+            });
+        });
+        this.state.komm.filter((k) => k.direction === "mottatt").slice(0, 4).forEach((k) => {
+            out.push({
+                key: "komm-" + k.id,
+                type: "kommunikasjon",
+                text: _t("Ubesvart") + ": " + k.subject,
+                sub: k.author + (k.element ? " · " + k.element : ""),
+                model: k.model, res_id: k.res_id,
+            });
+        });
+        return out;
     }
 
     get filteredKomm() {
@@ -193,6 +238,35 @@ export class FiqControlRoom extends Component {
         this.action.doAction("project.open_view_project_all");
     }
 
+    // Melding når en funksjon ennå ikke er ferdig (3-ukers-estimat + 75 % buffer)
+    _underUtvikling() {
+        this.notification.add(
+            _t("Denne funksjonen er under utvikling — forventes levert: 2026-08-07"),
+            { type: "info" }
+        );
+    }
+
+    // Beslutningsstøtte: kjør ekte doAction hvis handlingen finnes (guardet), ellers varsel.
+    // key = nøkkel fra get_actions (nytt_prosjekt/salgsordre/nytt_leads/tilbud/kunde/dokument …)
+    runAction(key) {
+        const xmlid = this.state.actions[key];
+        if (xmlid) {
+            this.action.doAction(xmlid);
+        } else {
+            this._underUtvikling();
+        }
+    }
+
+    // «Legg til knapp» (tilpass) – ennå ikke bygget
+    addButton() {
+        this._underUtvikling();
+    }
+
+    // «Spør AI om hjelp» – AI-flate ennå ikke koblet
+    askAi() {
+        this._underUtvikling();
+    }
+
     // Real click-through: open a record in Odoo
     openRecord(model, id) {
         this.action.doAction({
@@ -228,16 +302,35 @@ export class FiqControlRoom extends Component {
         this.state.view = v;
     }
 
-    // Metadata (icon + title) for the current area view; null for oversikt/kommunikasjon
+    // Metadata (ikon/farge + tittel) for gjeldende fagflate-visning; null for oversikt/kommunikasjon
     get area() {
         const map = {
-            prosjekt: { icon: "prj.png", title: _t("Projects") },
+            prosjekt: { icon: "prj.png", title: _t("Prosjekter") },
             crm: { icon: "crm.png", title: "CRM" },
-            salgsmuligheter: { icon: "crm_leads.png", title: _t("Opportunities") },
-            salgsordre: { icon: "crm_so.png", title: _t("Sales orders") },
-            regnskap: { icon: "rgs.png", title: _t("Accounting") },
+            salgsmuligheter: { icon: "crm_leads.png", title: _t("Salgsmuligheter") },
+            salgsordre: { icon: "crm_so.png", title: _t("Salgsordrer") },
+            regnskap: { icon: "rgs.png", title: _t("Regnskap") },
+            // SP-fagområder (rutenett i sidemenyen) – integrerte placeholders inntil egne flater
+            omr_ledelse: { color: "#0070C0", title: _t("1 Ledelse") },
+            omr_admin: { color: "#6b7280", title: _t("2 Administrasjon") },
+            omr_log: { color: "#70AD47", title: _t("4 Logistikk") },
+            omr_mar: { color: "#ED7D31", title: _t("5 Marked") },
+            omr_salg: { color: "#CC0000", title: _t("6 Salg") },
+            omr_fag: { color: "#7030A0", title: _t("8 Fag") },
         };
         return map[this.state.view] || null;
+    }
+
+    // SP-fagområder for sidemeny-rutenettet (nummer + navn + kanonisk farge)
+    get fagomrader() {
+        return [
+            { view: "omr_ledelse", nr: "1", navn: _t("Ledelse"), farge: "#0070C0" },
+            { view: "omr_admin", nr: "2", navn: _t("Admin"), farge: "#6b7280" },
+            { view: "omr_log", nr: "4", navn: "LOG", farge: "#70AD47" },
+            { view: "omr_mar", nr: "5", navn: "MAR", farge: "#ED7D31" },
+            { view: "omr_salg", nr: "6", navn: _t("Salg"), farge: "#CC0000" },
+            { view: "omr_fag", nr: "8", navn: "FAG", farge: "#7030A0" },
+        ];
     }
 
     openOdoo() {

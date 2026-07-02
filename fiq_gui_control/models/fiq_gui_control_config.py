@@ -78,6 +78,77 @@ class FiqControlRoomConfig(models.Model):
         return True
 
     @api.model
+    def get_presence(self):
+        """«Til stede nå»: interne brukere (share=False, active=True) med
+        tilgjengelighets-status fra res.users.im_status.
+        Defensiv: hvis im_status-feltet mangler (ingen bus/presence-modul) → 'offline'.
+        status → 'online' (grønn) | 'away' (gul) | 'offline' (grå)."""
+        Users = self.env["res.users"]
+        users = Users.search(
+            [("share", "=", False), ("active", "=", True)],
+            order="login_date desc", limit=24,
+        )
+        out = []
+        for u in users:
+            # im_status er et computed felt (krever bus). Les defensivt.
+            try:
+                raw = u.im_status or "offline"
+            except Exception:
+                raw = "offline"
+            # Normaliser: Odoo gir online|away|offline (+ *_ios varianter)
+            if raw.startswith("online"):
+                status = "online"
+            elif raw.startswith("away"):
+                status = "away"
+            else:
+                status = "offline"
+            name = u.name or u.login or "—"
+            # Initialer (maks 2) fra navnet
+            parts = [p for p in name.replace("-", " ").split(" ") if p]
+            if len(parts) >= 2:
+                initialer = (parts[0][:1] + parts[-1][:1]).upper()
+            elif parts:
+                initialer = parts[0][:2].upper()
+            else:
+                initialer = "?"
+            # Har brukeren et ansattbilde? (kun flagg – vi laster ikke selve bildet her)
+            has_photo = False
+            try:
+                emp = self.env["hr.employee"].sudo().search(
+                    [("user_id", "=", u.id)], limit=1)
+                has_photo = bool(emp and emp.image_128)
+            except Exception:
+                has_photo = False
+            out.append({
+                "id": u.id,
+                "navn": name,
+                "initialer": initialer,
+                "status": status,
+                "has_photo": has_photo,
+            })
+        return out
+
+    @api.model
+    def get_actions(self):
+        """Resolverer kandidat-Odoo-handlinger som FAKTISK finnes i denne DB-en
+        (env.ref-guard). Front-end sjekker om et handlingsnavn er 'tilgjengelig' før
+        det gjør doAction; ellers vises «under utvikling»-varsel.
+        depends = web+project → prosjekt-handlinger er alltid trygge; crm/sale/account
+        må guardes (kan mangle i kundens DB)."""
+        candidates = {
+            "nytt_prosjekt": "project.open_view_project_all",
+            "salgsordre": "sale.action_orders",
+            "nytt_leads": "crm.crm_lead_all_leads",
+            "tilbud": "sale.action_quotations",
+            "kunde": "base.action_partner_form",
+            "dokument": "documents.document_action",
+        }
+        out = {}
+        for key, xmlid in candidates.items():
+            out[key] = xmlid if self.env.ref(xmlid, raise_if_not_found=False) else False
+        return out
+
+    @api.model
     def get_kommunikasjon(self, period="uke", limit=40):
         """Communication view (GENERIC – all models/records, not SDV-specific):
         the latest communication (email/messages) ON records the user can access, with a link.
