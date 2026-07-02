@@ -84,9 +84,11 @@ class FiqControlRoomConfig(models.Model):
         Defensiv: hvis im_status-feltet mangler (ingen bus/presence-modul) → 'offline'.
         status → 'online' (grønn) | 'away' (gul) | 'offline' (grå)."""
         Users = self.env["res.users"]
+        # NB: login_date er et ikke-lagret relatert felt (related=log_ids.create_date)
+        # og kan IKKE brukes i SQL ORDER BY i Odoo 19 → sorter på lagret felt (navn).
         users = Users.search(
             [("share", "=", False), ("active", "=", True)],
-            order="login_date desc", limit=24,
+            order="name", limit=24,
         )
         out = []
         for u in users:
