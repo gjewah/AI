@@ -73,7 +73,7 @@ class FiqControlRoomConfig(models.Model):
             "accent": comp.fiq_control_accent or "#38B44A",
             "logo": ("data:image/png;base64,%s" % logo) if logo else False,
             "progress_shape": ICP.get_param("fiq_gui_control.progress_shape", "bar"),
-            "progress_metric": ICP.get_param("fiq_gui_control.progress_metric", "auto"),
+            "progress_metric": ICP.get_param("fiq_gui_control.progress_metric", "timer"),
         }
 
     @api.model
@@ -83,9 +83,10 @@ class FiqControlRoomConfig(models.Model):
         return True
 
     # ---- Config-drevet per-linje fremdrift (lag 2) ---------------------------
-    # Fremdrift 0-100 per oppgave/prosjekt. Portabelt (felt-guard via _fields) +
-    # defensivt (0 ved feil). Oppdateres «innen rimelighetens grenser» = ved last,
-    # ikke sanntid. metric: auto|timer|deloppgaver|stadium.
+    # STANDARD = timebasert: førte timer (effective_hours) ÷ estimerte/antatte timer
+    # (allocated_hours). Estimatet er redigerbart i Kontrollrommet. Portabelt
+    # (felt-guard via _fields) + defensivt. Returnerer {id: {"pct","est","logged"}}.
+    # Oppdateres ved last, ikke sanntid. metric: timer(std) | auto | deloppgaver | stadium.
     @api.model
     def get_progress(self, model, ids, metric=None):
         ids = [i for i in (ids or []) if i]
@@ -93,13 +94,22 @@ class FiqControlRoomConfig(models.Model):
             return {}
         if not metric:
             metric = self.env["ir.config_parameter"].sudo().get_param(
-                "fiq_gui_control.progress_metric", "auto")
+                "fiq_gui_control.progress_metric", "timer")
         if model == "project.task":
             recs = self.env["project.task"].browse(ids).exists()
             return {t.id: self._task_progress(t, metric) for t in recs}
         if model == "project.project":
-            return self._project_progress(ids)
+            return self._project_progress(ids, metric)
         return {}
+
+    @staticmethod
+    def _mk(pct, est=0.0, logged=0.0):
+        """Normalisert fremdriftsobjekt: prosent + estimerte/førte timer."""
+        return {
+            "pct": max(0, min(100, int(round(pct or 0)))),
+            "est": round(est or 0.0, 1),
+            "logged": round(logged or 0.0, 1),
+        }
 
     def _stage_is_done(self, stage):
         if not stage:
@@ -111,28 +121,32 @@ class FiqControlRoomConfig(models.Model):
         return False
 
     def _task_progress(self, task, metric):
+        # STANDARD timer: førte ÷ estimerte timer
         if metric == "timer":
-            return self._task_hours(task) or 0
+            h = self._task_hours(task)
+            return h if h is not None else self._mk(0)
         if metric == "deloppgaver":
-            return self._task_subtasks(task) or 0
+            return self._mk(self._task_subtasks(task) or 0)
         if metric == "stadium":
-            return self._task_stage(task)
-        # auto: timer -> deloppgaver -> stadium (bruk det første som gir signal)
-        v = self._task_hours(task)
-        if v is not None:
-            return v
+            return self._mk(self._task_stage(task))
+        # auto: timer (m/ estimat) -> deloppgaver -> stadium
+        h = self._task_hours(task)
+        if h is not None and h["est"] > 0:
+            return h
         v = self._task_subtasks(task)
         if v is not None:
-            return v
-        return self._task_stage(task)
+            return self._mk(v)
+        return self._mk(self._task_stage(task))
 
     def _task_hours(self, task):
-        """Native project.task.progress (krever hr_timesheet + tildelte timer)."""
+        """Timebasert: effective_hours (ført) ÷ allocated_hours (estimert)."""
         f = task._fields
-        if "progress" in f and "allocated_hours" in f:
+        if "allocated_hours" in f and "effective_hours" in f:
             try:
-                if (task.allocated_hours or 0) > 0:
-                    return max(0, min(100, int(round(task.progress or 0))))
+                est = task.allocated_hours or 0.0
+                logged = task.effective_hours or 0.0
+                pct = (logged * 100.0 / est) if est > 0 else 0
+                return self._mk(pct, est, logged)
             except Exception:
                 pass
         return None
@@ -167,12 +181,36 @@ class FiqControlRoomConfig(models.Model):
             pass
         return 10  # i et stadium, men uten rekkefølge-signal
 
-    def _project_progress(self, ids):
-        """Prosjekt-fremdrift = andel ferdige oppgaver (ferdig-stadium)."""
+    def _project_progress(self, ids, metric):
+        """Prosjekt-fremdrift STANDARD = timebasert rollup: Σførte ÷ Σestimerte
+        over prosjektets oppgaver. Fallback: andel ferdige oppgaver."""
         Task = self.env["project.task"]
-        Stage = self.env["project.task.type"]
-        out = {pid: 0 for pid in ids}
+        f = Task._fields
+        out = {pid: self._mk(0) for pid in ids}
+        # Timebasert rollup (search_read regner effective_hours pr post → robust)
+        if "allocated_hours" in f and "effective_hours" in f:
+            try:
+                agg = {}
+                recs = Task.search_read(
+                    [("project_id", "in", ids)],
+                    ["project_id", "allocated_hours", "effective_hours"])
+                for r in recs:
+                    pid = r["project_id"][0] if r.get("project_id") else None
+                    if pid is None:
+                        continue
+                    a = agg.setdefault(pid, [0.0, 0.0])
+                    a[0] += r.get("allocated_hours") or 0.0
+                    a[1] += r.get("effective_hours") or 0.0
+                if agg:
+                    for pid, (est, logged) in agg.items():
+                        pct = (logged * 100.0 / est) if est > 0 else 0
+                        out[pid] = self._mk(pct, est, logged)
+                    return out
+            except Exception:
+                pass
+        # Fallback: andel ferdige oppgaver (ferdig-stadium)
         try:
+            Stage = self.env["project.task.type"]
             total = {}
             for grp in Task._read_group([("project_id", "in", ids)], ["project_id"], ["__count"]):
                 if grp[0]:
@@ -188,7 +226,7 @@ class FiqControlRoomConfig(models.Model):
                     done[grp[0].id] = grp[1]
             for pid in ids:
                 n = total.get(pid, 0)
-                out[pid] = int(round(done.get(pid, 0) * 100.0 / n)) if n else 0
+                out[pid] = self._mk(done.get(pid, 0) * 100.0 / n if n else 0)
         except Exception:
             pass
         return out

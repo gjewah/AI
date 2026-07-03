@@ -190,6 +190,11 @@
     .fiq_hm_no { font-family: monospace; font-size: 11px; color: var(--fiq-mut); background: #f0f1f3;
         border: 1px solid var(--fiq-bd); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
     .fiq_hm_din { border: 1px solid var(--fiq-bd); border-radius: 6px; padding: 2px 5px; font: inherit; font-size: 11px; color: var(--fiq-side); background: #fff; max-width: 122px; }
+    // Redigerbart estimat (antatte timer) – driver den timebaserte fremdriften
+    .fiq_hm_est { display: inline-flex; align-items: center; gap: 3px; flex: 0 0 auto;
+        .fiq_hm_esti { width: 46px; border: 1px solid var(--fiq-bd); border-radius: 6px; padding: 2px 4px; font: inherit; font-size: 11px; color: var(--fiq-side); background: #fff; text-align: right;
+            &:focus { border-color: var(--fiq-accent); outline: none; } }
+        .fiq_hm_estu { font-size: 10px; color: var(--fiq-mut); white-space: nowrap; } }
     .fiq_hm_task { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; font-size: 12px;
         &:hover { background: var(--fiq-s2, #f7f8f9); }
         .fiq_hm_task_n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

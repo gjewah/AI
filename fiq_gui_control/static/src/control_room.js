@@ -65,7 +65,8 @@ export class FiqControlRoom extends Component {
             selected: null,       // {model,id,name} for inspektor-panel
             inspTab: "beskrivelse",
             progressShape: "bar", // lag 2: per-linje fremdrift – "bar" | "ring" (config-drevet)
-            progressMetric: "auto", // auto | timer | deloppgaver | stadium (config-drevet)
+            progressMetric: "timer", // STANDARD timer (ført ÷ estimert) | auto | deloppgaver | stadium
+            hasHours: false,      // finnes allocated_hours/effective_hours (hr_timesheet)? → vis estimat-felt
             loading: true,
             refreshing: false,    // «⟳ Oppdater» – henter live data på nytt uten å blanke skjermen
             progLevel: "prosjekt", // Prosjektfremdrift-panel: "prosjekt" | "oppgave" (drill i valgt prosjekt)
@@ -153,7 +154,13 @@ export class FiqControlRoom extends Component {
             map = await this.orm.call("fiq.gui.control.config", "get_progress",
                 [model, ids, this.state.progressMetric]);
         } catch (e) { return; }
-        rows.forEach((r) => { r.progress = Math.max(0, Math.min(100, Math.round(map[r.id] || 0))); });
+        rows.forEach((r) => {
+            const v = map[r.id] || {};
+            const pct = (typeof v === "number") ? v : (v.pct || 0);
+            r.progress = Math.max(0, Math.min(100, Math.round(pct)));
+            r.estH = (v && typeof v === "object" && v.est) || 0;   // estimerte (antatte) timer
+            r.logH = (v && typeof v === "object" && v.logged) || 0; // førte timer
+        });
     }
 
     // Drill: last oppgavene til ETT prosjekt (m/ config-drevet fremdrift) for oppgave-nivå
@@ -223,6 +230,8 @@ export class FiqControlRoom extends Component {
 
         // My open tasks with their real number (code = "T0001") + deadline warning
         const today = new Date().toISOString().slice(0, 10);
+        // Har DB-en time-feltene (hr_timesheet)? → styrer om estimat-feltet vises
+        this.state.hasHours = (await this._optFields("project.task", ["allocated_hours", "effective_hours"])).length === 2;
         const tOpt = await this._optFields("project.task", ["code"]);
         const trecs = await this._read("project.task",
             [["user_ids", "in", [user.userId]]],
@@ -488,6 +497,19 @@ export class FiqControlRoom extends Component {
         try { await this.orm.write("project.task", [id], { [field]: val }); } catch (e) {}
         const t = this.state.myTasks.find((x) => x.id === id);
         if (t) { if (field === "planned_date_begin") { t.pfrom = value || ""; } else { t.pto = value || ""; } }
+    }
+
+    // Juster estimerte (antatte) timer på en oppgave → skriv allocated_hours og
+    // regn fremdrift på nytt (oppgave + prosjekt-rollup + evt. åpen oppgave-drill).
+    async setTaskEst(id, value) {
+        const h = parseFloat(String(value || "").replace(",", ".")) || 0;
+        try { await this.orm.write("project.task", [id], { allocated_hours: h }); }
+        catch (e) { return; }
+        await this._fillProgress("project.task", this.state.myTasks);
+        await this._fillProgress("project.project", this.state.projects);
+        if (this.state.progLevel === "oppgave") {
+            await this._fillProgress("project.task", this.state.progTasks);
+        }
     }
 
     // Click a project → its tasks. mode="gantt" opens the Gantt view.
