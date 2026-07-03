@@ -173,14 +173,36 @@ export class FiqControlRoom extends Component {
             domain = domain.concat(ors);
         }
         const precs = await this._read("project.project", domain,
-            ["name", "task_count", "date_start", "date", ...pOpt], { limit: (q || area) ? 30 : 8, order: "create_date desc" });
-        this.state.projects = precs.map((p) => ({
+            ["name", "task_count", "date_start", "date", ...pOpt], { limit: (q || area) ? 40 : 8, order: "create_date desc" });
+        const rows = precs.map((p) => ({
             id: p.id, no: p.sequence_code || "", name: p.name,
             taskCount: p.task_count || 0,
             start: p.date_start || false, end: p.date || false,
             hasKids: !!(p.child_ids && p.child_ids.length),
+            parentId: (p.parent_id && p.parent_id[0]) || null,
+            depth: 0, kidsLoaded: [], hasLoadedKids: false,
             progress: 0, status: _t("In progress"),
         }));
+        // TRE utvidet som standard: barn nestes under forelderen (aldri dobbel visning
+        // som egen topprad). Barn uten lastet forelder forblir toppnivå.
+        const byId = {};
+        rows.forEach((r) => { byId[r.id] = r; });
+        const roots = [];
+        rows.forEach((r) => {
+            if (r.parentId && byId[r.parentId]) { byId[r.parentId].kidsLoaded.push(r); }
+            else { roots.push(r); }
+        });
+        const byName = (x, y) => (x.name || "").localeCompare(y.name || "");
+        if (q || area) { roots.sort(byName); }
+        const flat = [];
+        const walk = (r, d) => {
+            r.depth = d;
+            r.hasLoadedKids = r.kidsLoaded.length > 0;
+            flat.push(r);
+            r.kidsLoaded.sort(byName).forEach((k) => walk(k, d + 1));
+        };
+        roots.forEach((r) => walk(r, 0));
+        this.state.projects = flat;
         // Ekte, config-drevet fremdrift per prosjekt (lag 2) – erstatter tidligere placeholder
         await this._fillProgress("project.project", this.state.projects);
     }
@@ -374,7 +396,7 @@ export class FiqControlRoom extends Component {
         try { active = await this.orm.searchCount("project.project", [["active", "=", true]]); } catch (e) {}
 
         // Projects (overview + search). Field-detect sequence_code for portability.
-        this._pOpt = await this._optFields("project.project", ["sequence_code", "child_ids"]);
+        this._pOpt = await this._optFields("project.project", ["sequence_code", "child_ids", "parent_id"]);
         await this._loadProjects("");
 
         // My open tasks with their real number (code = "T0001") + deadline warning

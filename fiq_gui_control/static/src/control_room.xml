@@ -237,9 +237,10 @@
                                         <thead><tr><th>Nr.</th><th>Prosjekt</th><th>Fremdrift</th><th>Oppg</th><th></th></tr></thead>
                                         <tbody>
                                             <t t-foreach="state.projects" t-as="p" t-key="p.id">
-                                                <tr t-att-class="(state.selected and state.selected.model === 'project.project' and state.selected.id === p.id) ? 'fiq_hm_selrow' : ''">
-                                                    <td t-on-click="() =&gt; this.pickProject(p.id, p.name)">
-                                                        <button t-if="p.hasKids" class="fiq_hm_exp" t-on-click.stop="() =&gt; this.toggleExpand('project.project', p.id)" t-esc="state.expanded['project.project:' + p.id] ? '▾' : '▸'"/>
+                                                <tr t-att-class="((state.selected and state.selected.model === 'project.project' and state.selected.id === p.id) ? 'fiq_hm_selrow' : '') + (p.depth ? ' fiq_hm_childrow' : '')">
+                                                    <td t-on-click="() =&gt; this.pickProject(p.id, p.name)" t-att-style="p.depth ? ('padding-left:' + (5 + p.depth * 16) + 'px') : ''">
+                                                        <span t-if="p.depth" class="fiq_hm_childind">↳</span>
+                                                        <button t-if="p.hasKids and !p.hasLoadedKids" class="fiq_hm_exp" t-on-click.stop="() =&gt; this.toggleExpand('project.project', p.id)" t-esc="state.expanded['project.project:' + p.id] ? '▾' : '▸'"/>
                                                         <span class="fiq_hm_no" t-esc="p.no"/>
                                                     </td>
                                                     <td t-on-click="() =&gt; this.pickProject(p.id, p.name)" t-esc="p.name"/>
