@@ -118,6 +118,8 @@ export class FiqControlRoom extends Component {
             progLevel: "prosjekt", // Prosjektfremdrift-panel: "prosjekt" | "oppgave" (drill i valgt prosjekt)
             progTasks: [],        // oppgavene til valgt prosjekt (m/ fremdrift) når progLevel = "oppgave"
             progProjId: false,    // valgt prosjekt for oppgave-drill
+            progSubs: false,      // vis deloppgaver i fremdrift-drillen (av = kun hovedoppgaver)
+            selDelt: null,        // Detaljer: deltagerliste (null = skjult)
             progProjName: "",
             aiStageNames: [],     // navn på AI-merkede stadier (fiq_ai_stage) – for velgeren
             stageHidden: {},      // {stadienavn: true} = skjult i oppgave-drillen
@@ -278,9 +280,11 @@ export class FiqControlRoom extends Component {
     // Drill: last oppgavene til ETT prosjekt (m/ config-drevet fremdrift) for oppgave-nivå
     async _loadProgTasks(pid) {
         const tOpt = await this._optFields("project.task", ["code"]);
-        const recs = await this._read("project.task", [["project_id", "=", pid]],
+        const dom = [["project_id", "=", pid]];
+        if (!this.state.progSubs) { dom.push(["parent_id", "=", false]); }  // kun hovedoppgaver
+        const recs = await this._read("project.task", dom,
             ["name", "date_deadline", "planned_date_begin", "stage_id", "user_ids", ...tOpt],
-            { limit: 60, order: "planned_date_begin asc, id asc" });
+            { limit: 80, order: "planned_date_begin asc, id asc" });
         // Ansvarlig-navn (user_ids gir kun id-er) — batch-oppslag
         const uidSet = new Set();
         recs.forEach((t) => (t.user_ids || []).forEach((u) => uidSet.add(u)));
@@ -324,6 +328,22 @@ export class FiqControlRoom extends Component {
     // «◂ Prosjekter»: tilbake til prosjektfremdrift
     backToProjects() {
         this.state.progLevel = "prosjekt";
+    }
+
+    // Deloppgaver av/på i fremdrift-drillen (liste + Gantt)
+    async toggleProgSubs() {
+        this.state.progSubs = !this.state.progSubs;
+        if (this.state.progProjId) { await this._loadProgTasks(this.state.progProjId); }
+    }
+
+    // «👥 Deltagere» i Detaljer: PL + oppgave-ansvarlige (rolle-innehavere når rollemodellen er klar)
+    async showDeltagere() {
+        if (this.state.selDelt) { this.state.selDelt = null; return; }
+        const s = this.state.selected;
+        if (!s) { return; }
+        try {
+            this.state.selDelt = await this.orm.call("fiq.gui.control.config", "get_deltagere", [s.model, s.id]) || [];
+        } catch (e) { this.state.selDelt = []; }
     }
 
     // Klikk på et PROSJEKT (oversikt ELLER fremdrift-liste): (1) vis i Detaljer,
@@ -1055,6 +1075,7 @@ export class FiqControlRoom extends Component {
     async selectEl(model, id, name) {
         this.state.selected = { model, id, name };
         this.state.selDet = { beskrivelse: "", logg: [], epost: [], dok: [] };
+        this.state.selDelt = null;
         this.state.inspTab = "beskrivelse";
         try {
             const d = await this.orm.call("fiq.gui.control.config", "get_detaljer", [model, id]);

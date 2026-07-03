@@ -384,6 +384,34 @@ class FiqControlRoomConfig(models.Model):
         return out
 
     @api.model
+    def get_deltagere(self, model, res_id):
+        """Detaljer: prosjektdeltagere — prosjektleder + oppgave-ansvarlige. Kobles til
+        fiq.project.role (rolle-innehavere) når rollemodellen er bygd. Defensivt."""
+        out = []
+        try:
+            if model == "project.task":
+                t = self.env["project.task"].browse(res_id).exists()
+                if t and t.project_id:
+                    model, res_id = "project.project", t.project_id.id
+            if model != "project.project":
+                return out
+            p = self.env["project.project"].browse(res_id).exists()
+            if not p:
+                return out
+            seen = set()
+            if "user_id" in p._fields and p.user_id:
+                out.append({"name": p.user_id.name, "rolle": _("Prosjektleder")})
+                seen.add(p.user_id.id)
+            for t in self.env["project.task"].search([("project_id", "=", p.id)], limit=200):
+                for u in t.user_ids:
+                    if u.id not in seen:
+                        seen.add(u.id)
+                        out.append({"name": u.name, "rolle": _("Deltager")})
+        except Exception:
+            pass
+        return out
+
+    @api.model
     def get_presence(self):
         """«Til stede nå»: interne brukere med SAMMENSATT status som farger HELE kortet:
            🟢 grønn = Til stede · 🟠 oransje = I møte / Ute · 🔴 rød = Fraværende / Ikke møtt.

@@ -357,6 +357,7 @@
                                         </t>
                                         <t t-else="">
                                             <button class="fiq_hm_ext" t-on-click="() =&gt; this.backToProjects()" title="Tilbake til prosjektfremdrift">◂ Prosjekter</button>
+                                            <button t-att-class="state.progSubs ? 'fiq_hm_ext on' : 'fiq_hm_ext'" t-on-click="() =&gt; this.toggleProgSubs()" t-att-title="state.progSubs ? 'Deloppgaver vises — klikk for kun hovedoppgaver' : 'Vis også deloppgaver'">Deloppgaver<t t-if="state.progSubs"> ✓</t></button>
                                             <span class="fiq_hm_proglvl" t-att-title="state.progProjName" t-esc="state.progProjName"/>
                                         </t>
                                         <button class="fiq_hm_ext" t-on-click="() =&gt; this.openProsjektKontrollrom()" title="Åpne Prosjekt-kontrollrommet (utvidet)">⤢ Utvidet</button>
@@ -379,6 +380,7 @@
                                                 <div t-else="" t-att-class="'fiq_hm_rrow' + ((state.selected and state.selected.model === progModel and state.selected.id === p.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.pickRow(p)">
                                                     <span class="fiq_hm_no" t-esc="p.no"/>
                                                     <span class="fiq_hm_rname" t-esc="p.name"/>
+                                                    <span t-if="state.progLevel === 'oppgave' and p.ansvarlig" class="fiq_hm_stagetag fiq_hm_ansv" t-att-title="'Ansvarlig: ' + p.ansvarlig">👤 <t t-esc="p.ansvarlig"/></span>
                                                     <span t-if="state.progLevel === 'oppgave' and p.stage" class="fiq_hm_stagetag" t-esc="p.stage"/>
                                                     <input type="date" class="fiq_hm_din" t-att-value="p.start || ''" t-on-click.stop="() =&gt; {}" t-on-change="(ev) =&gt; this.setRowDate(p, 'from', ev.target.value)" title="Planlagt fra"/>
                                                     <input type="date" class="fiq_hm_din" t-att-value="p.end || ''" t-on-click.stop="() =&gt; {}" t-on-change="(ev) =&gt; this.setRowDate(p, 'to', ev.target.value)" title="Planlagt til"/>
@@ -426,6 +428,16 @@
                                     <div class="fiq_hm_ch"><h4>Detaljer</h4><button t-if="state.selected" class="fiq_hm_coll" t-on-click="() =&gt; this.openRecord(state.selected.model, state.selected.id)" title="Åpne posten">⤢</button></div>
                                     <t t-if="state.selected">
                                         <div class="fiq_hm_insp_sel" t-esc="state.selected.name"/>
+                                        <!-- Deltagere: PL + oppgave-ansvarlige nå; rolle-innehavere når rollemodellen er bygd -->
+                                        <button t-att-class="state.selDelt ? 'fiq_hm_ext on fiq_hm_deltbtn' : 'fiq_hm_ext fiq_hm_deltbtn'" t-on-click="() =&gt; this.showDeltagere()">👥 Deltagere</button>
+                                        <div t-if="state.selDelt" class="fiq_hm_delt">
+                                            <t t-if="state.selDelt.length">
+                                                <div t-foreach="state.selDelt" t-as="dp" t-key="dp_index" class="fiq_hm_delt_l">
+                                                    <strong t-esc="dp.name"/> <span class="fiq_hm_insp_mut" t-esc="dp.rolle"/>
+                                                </div>
+                                            </t>
+                                            <t t-else=""><span class="fiq_hm_insp_mut">Ingen deltagere funnet ennå.</span></t>
+                                        </div>
                                         <div class="fiq_hm_insp_tabs">
                                             <button t-foreach="[['beskrivelse','Beskrivelse'],['logg','Logg'],['chat','Chat'],['epost','E-post'],['dok','Dokumenter']]" t-as="tb" t-key="tb[0]" t-att-class="state.inspTab === tb[0] ? 'on' : ''" t-on-click="() =&gt; this.setInspTab(tb[0])" t-esc="tb[1]"/>
                                         </div>

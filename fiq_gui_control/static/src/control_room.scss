@@ -135,7 +135,14 @@
             &.on { background: var(--fiq-accent); color: #fff; } } }
     .fiq_hm_ext { border: 1px solid var(--fiq-bd); background: #f7f8f9; border-radius: 8px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 11.5px; color: var(--fiq-side);
         &:hover { border-color: var(--fiq-accent); background: #fff; }
+        &.on { border-color: var(--fiq-accent); background: rgba(56,180,74,.10); }
         &[disabled] { opacity: .45; cursor: default; &:hover { border-color: var(--fiq-bd); background: #f7f8f9; } } }
+    // Deltagere i Detaljer
+    .fiq_hm_deltbtn { margin: 0 0 8px; }
+    .fiq_hm_delt { margin: 0 0 10px; border: 1px solid var(--fiq-bd); border-radius: 8px; padding: 7px 9px;
+        .fiq_hm_delt_l { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; padding: 2px 0;
+            strong { font-weight: 600; } } }
+    .fiq_hm_ansv { max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
     .fiq_hm_proglvl { font-size: 11.5px; color: var(--fiq-mut); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     // Stadie-velger (oppgave-drill): brikker for å vise/skjule stadier
     .fiq_hm_stagesel { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 10px;
