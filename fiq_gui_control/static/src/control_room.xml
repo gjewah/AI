@@ -60,7 +60,8 @@
                          Treet leses fra Odoo prosjekt-hierarkiet (SSOT) — ingen hardkodet liste. -->
                     <div class="fiq_hm_glbl">Fagområder (SP)</div>
                     <div class="fiq_hm_alist">
-                        <t t-foreach="sideAreas" t-as="a" t-key="a.nr">
+                        <!-- t-key = post-id (unik) — prosjektNUMMER kan duplisere (to «0.90»-maler) -->
+                        <t t-foreach="sideAreas" t-as="a" t-key="a.id || a.nr">
                             <div t-att-class="(state.view === 'oversikt' and state.projArea === a.nr) ? 'fiq_hm_arow on' : 'fiq_hm_arow'"
                                  t-att-title="a.nr + ' ' + a.name" t-on-click="() => this.pickArea(a.nr)">
                                 <span t-att-class="a.dk ? 'fiq_hm_asq dk' : 'fiq_hm_asq'" t-att-style="'--sp:' + a.color + ';'" t-esc="a.nr"/>
@@ -69,7 +70,7 @@
                                         t-on-click.stop="() => this.toggleArea(a.nr)" t-esc="state.areaOpen[a.nr] ? '▾' : '▸'"/>
                             </div>
                             <t t-if="state.areaOpen[a.nr]">
-                                <div t-foreach="a.subs" t-as="s" t-key="s.nr"
+                                <div t-foreach="a.subs" t-as="s" t-key="s.id"
                                      t-att-class="(state.view === 'oversikt' and state.projArea === s.nr) ? 'fiq_hm_asub on' : 'fiq_hm_asub'"
                                      t-on-click="() => this.pickArea(s.nr)">
                                     <span class="fiq_hm_asubnr" t-esc="s.nr"/>
@@ -222,12 +223,12 @@
                                 <!-- Fagområde-filtre (rad 1 = toppområder fra prosjekt-treet; rad 2 = undergrupper) -->
                                 <div class="fiq_hm_pfilter">
                                     <button t-att-class="!state.projArea ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-on-click="() =&gt; this.setProjArea('')">Alle</button>
-                                    <t t-foreach="sideAreas" t-as="o" t-key="o.nr">
+                                    <t t-foreach="sideAreas" t-as="o" t-key="o.id || o.nr">
                                         <button t-att-class="(state.projArea === o.nr or chipParent === o.nr) ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-att-style="'--sp:' + o.color + ';'" t-on-click="() =&gt; this.setProjArea(o.nr)"><span class="fiq_hm_pfc_nr" t-esc="o.nr"/> <t t-esc="o.name"/></button>
                                     </t>
                                 </div>
                                 <div t-if="chipSubs.length" class="fiq_hm_pfilter2">
-                                    <t t-foreach="chipSubs" t-as="s" t-key="s.nr">
+                                    <t t-foreach="chipSubs" t-as="s" t-key="s.id">
                                         <button t-att-class="state.projArea === s.nr ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-on-click="() =&gt; this.setProjArea(s.nr)"><span class="fiq_hm_pfc_nr" t-esc="s.nr"/> <t t-esc="s.name"/></button>
                                     </t>
                                 </div>
