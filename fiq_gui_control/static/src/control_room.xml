@@ -244,7 +244,22 @@
                                 </div>
                                 <!-- Mini-månedskalender: uthevede datoer = dager MED MØTER; klikk = vis dagens møter -->
                                 <div class="fiq_hm_kal">
-                                    <div class="fiq_hm_kal_h" t-esc="kalTittel"/>
+                                    <!-- Std kalendernavigasjon: ◂ ▸ + måned-/år-nedtrekk + I dag -->
+                                    <div class="fiq_hm_kal_nav">
+                                        <button class="fiq_hm_kal_step" t-on-click="() =&gt; this.stepKalMnd(-1)" title="Forrige måned">◂</button>
+                                        <select class="fiq_hm_kal_sel" t-on-change="(ev) =&gt; this.setKalMonth(ev.target.value)">
+                                            <t t-foreach="mndNavn" t-as="mn" t-key="mn">
+                                                <option t-att-value="mn_index" t-att-selected="mn_index === kalM ? 'selected' : undefined" t-esc="mn"/>
+                                            </t>
+                                        </select>
+                                        <select class="fiq_hm_kal_sel fiq_hm_kal_aar" t-on-change="(ev) =&gt; this.setKalYear(ev.target.value)">
+                                            <t t-foreach="kalAar" t-as="aa" t-key="aa">
+                                                <option t-att-value="aa" t-att-selected="aa === kalY ? 'selected' : undefined" t-esc="aa"/>
+                                            </t>
+                                        </select>
+                                        <button class="fiq_hm_kal_step" t-on-click="() =&gt; this.stepKalMnd(1)" title="Neste måned">▸</button>
+                                        <button class="fiq_hm_kal_step fiq_hm_kal_idag" t-on-click="() =&gt; this.kalIdag()" title="Gå til i dag">I dag</button>
+                                    </div>
                                     <div class="fiq_hm_kal_uke">
                                         <span t-foreach="['Ma','Ti','On','To','Fr','Lø','Sø']" t-as="wd" t-key="wd" t-esc="wd"/>
                                     </div>

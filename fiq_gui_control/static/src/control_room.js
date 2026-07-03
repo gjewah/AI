@@ -102,6 +102,7 @@ export class FiqControlRoom extends Component {
             presence: [],         // «Til stede nå» – interne brukere + tilgjengelighets-status
             kal: { moter: [], aktiviteter: [], mnd: [] }, // Møter/aktiviteter-panelet (periode-styrt)
             selPerson: null,      // valgt person (toggle på Til stede-kort) — styrer kalender + komm
+            kalMnd: new Date().toISOString().slice(0, 7), // vist måned i mini-kalenderen (YYYY-MM)
             selMote: false,       // valgt møte (rad) → «Åpne valgt møte»
             selAkt: null,         // valgt aktivitet (objekt) → «Åpne valgt aktivitet»
             actions: {},          // {nøkkel: xmlid|false} – hvilke Odoo-handlinger som finnes (guardet)
@@ -940,8 +941,11 @@ export class FiqControlRoom extends Component {
         if (!w) { // «Alle» = hele året rundt referansedatoen
             w = { s: new Date(a.getFullYear(), 0, 1), e: new Date(a.getFullYear() + 1, 0, 1) };
         }
-        const ms = new Date(a.getFullYear(), a.getMonth(), 1);
-        const me = new Date(a.getFullYear(), a.getMonth() + 1, 1);
+        // Måneds-markørene følger VIST måned (kalMnd) — bla fritt uten å endre perioden
+        const kY = parseInt(this.state.kalMnd.slice(0, 4), 10);
+        const kM = parseInt(this.state.kalMnd.slice(5, 7), 10) - 1;
+        const ms = new Date(kY, kM, 1);
+        const me = new Date(kY, kM + 1, 1);
         const uid = this.state.selPerson ? this.state.selPerson.id : false;
         try {
             this.state.kal = await this.orm.call("fiq.gui.control.config", "get_kalender",
@@ -964,10 +968,34 @@ export class FiqControlRoom extends Component {
         this._loadKalender();
     }
 
-    // Mini-månedskalenderen: uker/dager for referanse-måneden, møtedager markert
+    // Måned-/år-navigasjon (std kalenderfunksjoner): ◂ ▸ + nedtrekk + I dag
+    get kalY() { return parseInt(this.state.kalMnd.slice(0, 4), 10); }
+    get kalM() { return parseInt(this.state.kalMnd.slice(5, 7), 10) - 1; }
+    get mndNavn() { return MND; }
+    get kalAar() {
+        const y = this.kalY, out = [];
+        for (let i = y - 4; i <= y + 4; i++) { out.push(i); }
+        return out;
+    }
+
+    _setKalMnd(y, m) {
+        const d = new Date(y, m, 1);
+        this.state.kalMnd = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+        this._loadKalender();
+    }
+
+    stepKalMnd(dir) { this._setKalMnd(this.kalY, this.kalM + dir); }
+    setKalMonth(idx) { this._setKalMnd(this.kalY, parseInt(idx, 10)); }
+    setKalYear(y) { this._setKalMnd(parseInt(y, 10), this.kalM); }
+    kalIdag() {
+        const t = new Date().toISOString().slice(0, 10);
+        this.state.kalMnd = t.slice(0, 7);
+        this.pickKalDag(t);
+    }
+
+    // Mini-månedskalenderen: uker/dager for VIST måned, møtedager markert
     get kalUker() {
-        const a = this.state.anchorDate ? new Date(this.state.anchorDate + "T12:00:00") : new Date();
-        const y = a.getFullYear(), m = a.getMonth();
+        const y = this.kalY, m = this.kalM;
         const first = new Date(y, m, 1);
         const offset = (first.getDay() + 6) % 7;   // mandag først
         const start = new Date(y, m, 1 - offset);
@@ -987,8 +1015,7 @@ export class FiqControlRoom extends Component {
     }
 
     get kalTittel() {
-        const a = this.state.anchorDate ? new Date(this.state.anchorDate + "T12:00:00") : new Date();
-        return MND[a.getMonth()] + " " + a.getFullYear();
+        return MND[this.kalM] + " " + this.kalY;
     }
 
     get periodeTekst() {
@@ -999,6 +1026,7 @@ export class FiqControlRoom extends Component {
     // Klikk på dato i månedskalenderen → vis møtene den dagen
     pickKalDag(iso) {
         this.state.anchorDate = iso;
+        this.state.kalMnd = iso.slice(0, 7);
         this.state.kommPeriod = "dag";
         this._loadProjects(this.state.projQuery);
         this._loadKalender();
