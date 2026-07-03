@@ -40,10 +40,14 @@
                 </div>
 
                 <button class="btn fiq_hm_refresh" t-att-class="state.refreshing ? 'fiq_hm_refresh spin' : 'fiq_hm_refresh'" t-on-click="() =&gt; this.refresh()" t-att-disabled="state.refreshing" title="Hent live data på nytt"><span class="fiq_hm_refresh_i">⟳</span> <t t-esc="state.refreshing ? 'Oppdaterer …' : 'Oppdater'"/></button>
+                <button t-att-class="state.autoRefresh ? 'fiq_hm_auto on' : 'fiq_hm_auto'" t-on-click="() =&gt; this.toggleAuto()"
+                        t-att-title="state.autoRefresh ? ('Auto-oppdatering PÅ — henter live data hvert ' + autoMin + '. minutt. Klikk for å skru av.') : ('Skru på auto-oppdatering (hvert ' + autoMin + '. minutt)')">
+                    Auto <t t-if="state.autoRefresh">✓</t>
+                </button>
                 <span t-if="verVis" t-att-class="verVis.avvik ? 'fiq_hm_ver avvik' : 'fiq_hm_ver'" t-att-title="verVis.title">
                     <t t-esc="verVis.text"/><t t-if="verVis.avvik"> ⚠</t>
                 </span>
-                <button class="btn fiq_hm_gear" t-on-click="() => this.toggleCustomize()">⚙ Tilpass</button>
+                <button class="btn fiq_hm_gear" t-on-click="() => this.toggleCustomize()">⚙ Innstillinger</button>
             </div>
 
             <div class="fiq_hm_wrap">
@@ -114,7 +118,7 @@
                     </div>
                     <!-- Tilpass-panel: dynamisk vis/skjul -->
                     <div t-if="state.customize" class="fiq_hm_cust">
-                        <strong>Tilpass kontrollrommet – velg innhold</strong>
+                        <strong>Innstillinger – velg innhold i kontrollrommet</strong>
                         <div class="fiq_hm_toggles">
                             <t t-foreach="['kpis','projects','kommunikasjon','activity','tasks','chart','copilot','quick']" t-as="w" t-key="w">
                                 <label>
@@ -227,10 +231,14 @@
                                         <button t-att-class="(state.projArea === o.nr or chipParent === o.nr) ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-att-style="'--sp:' + o.color + ';'" t-on-click="() =&gt; this.setProjArea(o.nr, o.id)"><span class="fiq_hm_pfc_nr" t-esc="o.nr"/> <t t-esc="o.name"/></button>
                                     </t>
                                 </div>
+                                <!-- Undergruppe = nedtrekksmeny (variant C, Gjermund 2026-07-03) -->
                                 <div t-if="chipSubs.length" class="fiq_hm_pfilter2">
-                                    <t t-foreach="chipSubs" t-as="s" t-key="s.id">
-                                        <button t-att-class="state.projArea === s.nr ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-att-style="'--sp:' + s.color + ';'" t-on-click="() =&gt; this.setProjArea(s.nr, s.id)"><span class="fiq_hm_pfc_nr" t-esc="s.nr"/> <t t-esc="s.name"/></button>
-                                    </t>
+                                    <select class="fiq_hm_subsel" t-on-change="(ev) =&gt; this.pickSub(ev.target.value)">
+                                        <option value="" t-att-selected="!isSubActive ? 'selected' : undefined">Undergruppe: alle</option>
+                                        <t t-foreach="chipSubs" t-as="s" t-key="s.id">
+                                            <option t-att-value="s.id" t-att-selected="state.projAreaId === s.id ? 'selected' : undefined" t-esc="s.nr + ' ' + s.name"/>
+                                        </t>
+                                    </select>
                                 </div>
                                 <t t-if="state.projects.length">
                                     <table>

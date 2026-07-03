@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, useState, onWillStart } from "@odoo/owl";
+import { Component, useState, onWillStart, onWillDestroy } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { user } from "@web/core/user";
@@ -111,10 +111,36 @@ export class FiqControlRoom extends Component {
             stageHidden: {},      // {stadienavn: true} = skjult i oppgave-drillen
         });
 
+        this.state.autoRefresh = this._loadAuto();
+
         onWillStart(async () => {
             await this.loadConfig();   // FIQ access/setup layer (per user, server-persisted)
             await this.loadData();
+            this._applyAuto();
         });
+        onWillDestroy(() => clearInterval(this._autoTmr));
+    }
+
+    // Auto-oppdatering: hent live data automatisk (intervall config-drevet, valg huskes)
+    _loadAuto() {
+        try { return localStorage.getItem("fiq_hm_auto") === "1"; } catch (e) { return false; }
+    }
+
+    _applyAuto() {
+        clearInterval(this._autoTmr);
+        if (this.state.autoRefresh) {
+            this._autoTmr = setInterval(() => this.refresh(), (this._autoMin || 5) * 60000);
+        }
+    }
+
+    toggleAuto() {
+        this.state.autoRefresh = !this.state.autoRefresh;
+        try { localStorage.setItem("fiq_hm_auto", this.state.autoRefresh ? "1" : "0"); } catch (e) {}
+        this._applyAuto();
+    }
+
+    get autoMin() {
+        return this._autoMin || 5;
     }
 
     async loadConfig() {
@@ -132,6 +158,7 @@ export class FiqControlRoom extends Component {
             if (cfg.progress_metric) this.state.progressMetric = cfg.progress_metric;
             this.state.verInstalled = cfg.version_installed || "";
             this.state.verFiles = cfg.version_files || "";
+            this._autoMin = cfg.auto_refresh_min || 5;
         } catch (e) {
             // keep defaults (everything visible) if the model is not ready
         }
@@ -428,6 +455,29 @@ export class FiqControlRoom extends Component {
         if (this.state.projArea !== nr) {
             this.state.projArea = nr;
             this.state.projAreaId = id || false;
+            this._loadProjects(this.state.projQuery);
+        }
+    }
+
+    // Undergruppe-nedtrekk (variant C): velg underområde, eller «alle» = tilbake til toppområdet
+    get isSubActive() {
+        return this.chipSubs.some((s) => s.id === this.state.projAreaId);
+    }
+
+    pickSub(v) {
+        if (v === "") {
+            const par = this.sideAreas.find((x) => x.nr === this.chipParent);
+            if (par) {
+                this.state.projArea = par.nr;
+                this.state.projAreaId = par.id || false;
+                this._loadProjects(this.state.projQuery);
+            }
+            return;
+        }
+        const s = this.chipSubs.find((x) => String(x.id) === String(v));
+        if (s) {
+            this.state.projArea = s.nr;
+            this.state.projAreaId = s.id || false;
             this._loadProjects(this.state.projQuery);
         }
     }
@@ -896,6 +946,7 @@ export class FiqControlRoom extends Component {
         if (this.state.refreshing) { return; }
         this.state.refreshing = true;
         try {
+            await this.loadConfig();   // versjonsbrikke + oppsett friskt uten sidelast
             await this.loadData();
             // Hold oppgave-drillen fersk hvis den er åpen
             if (this.state.progLevel === "oppgave" && this.state.progProjId) {

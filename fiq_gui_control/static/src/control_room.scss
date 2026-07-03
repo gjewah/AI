@@ -287,8 +287,16 @@
         .fiq_hm_asubnr { font-family: monospace; font-size: 10px; opacity: .8; min-width: 32px; flex: 0 0 auto; }
         .fiq_hm_aname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } }
 
-    // Undergruppe-chips (rad 2 under fagområde-filtrene) — midtstilt
+    // Undergruppe-nedtrekk (rad 2 under fagområde-filtrene) — midtstilt
     .fiq_hm_pfilter2 { display: flex; flex-wrap: wrap; gap: 5px; margin: -5px 0 10px; justify-content: center; }
+    .fiq_hm_subsel { border: 1px solid var(--fiq-bd); border-radius: 8px; padding: 3px 8px; font: inherit; font-size: 11.5px; color: var(--fiq-side); background: #fff; max-width: 260px;
+        &:focus { border-color: var(--fiq-accent); outline: none; } }
+
+    // Auto-oppdatering-toggle (ved ⟳ Oppdater)
+    .fiq_hm_auto { border: 1px solid var(--fiq-bd); background: #f7f8f9; color: var(--fiq-mut); cursor: pointer;
+        font: inherit; font-size: 11px; padding: 3px 9px; border-radius: 7px; white-space: nowrap;
+        &:hover { border-color: var(--fiq-accent); background: #fff; }
+        &.on { border-color: var(--fiq-accent); background: rgba(56,180,74,.10); color: var(--fiq-side); } }
 
     // Oppgavesøk: to felt (nummer + fritekst)
     .fiq_hm_tsok { display: flex; gap: 6px; margin: 0 0 8px;

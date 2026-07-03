@@ -80,6 +80,8 @@ class FiqControlRoomConfig(models.Model):
             # Avvik → GUI-et varsler «trykk Oppgrader» (fanger filer-nyere-enn-DB-fella).
             "version_installed": self._module_versions()[0],
             "version_files": self._module_versions()[1],
+            # Auto-oppdatering: intervall i minutter (config-drevet, overstyrbar)
+            "auto_refresh_min": int(ICP.get_param("fiq_gui_control.auto_refresh_min", "5") or 5),
         }
 
     @api.model
