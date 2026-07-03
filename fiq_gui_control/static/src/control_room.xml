@@ -255,7 +255,7 @@
                                             <button t-att-class="state.rightView === 'gantt' ? 'on' : ''" t-on-click="() =&gt; this.setRightView('gantt')">Gantt</button>
                                         </div>
                                         <t t-if="state.progLevel === 'prosjekt'">
-                                            <button class="fiq_hm_ext" t-att-disabled="!(state.selected and state.selected.model === 'project.project')" t-on-click="() =&gt; this.showTasksSelected()" title="Vis oppgavefremdrift for valgt prosjekt">▸ Oppgaver</button>
+                                            <button class="fiq_hm_ext" t-on-click="() =&gt; this.showTasksSelected()" title="Vis oppgavefremdrift (valgt prosjekt, ellers første)">▸ Oppgaver</button>
                                         </t>
                                         <t t-else="">
                                             <button class="fiq_hm_ext" t-on-click="() =&gt; this.backToProjects()" title="Tilbake til prosjektfremdrift">◂ Prosjekter</button>

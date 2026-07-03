@@ -182,15 +182,18 @@ export class FiqControlRoom extends Component {
         this.state.progTasks = rows;
     }
 
-    // «▸ Oppgaver»: vis oppgavefremdrift for det valgte prosjektet
+    // «▸ Oppgaver»: vis oppgavefremdrift. Bruker valgt prosjekt, ellers første i lista
+    // (så knappen alltid gjør noe – krever ikke at man har valgt et prosjekt først).
     async showTasksSelected() {
         const s = this.state.selected;
-        if (s && s.model === "project.project") {
-            this.state.progProjId = s.id;
-            this.state.progProjName = s.name || "";
-            await this._loadProgTasks(s.id);
-            this.state.progLevel = "oppgave";
-        }
+        const proj = (s && s.model === "project.project")
+            ? s
+            : (this.state.projects.length ? this.state.projects[0] : null);
+        if (!proj) { return; }
+        this.state.progProjId = proj.id;
+        this.state.progProjName = proj.name || "";
+        await this._loadProgTasks(proj.id);
+        this.state.progLevel = "oppgave";
     }
 
     // «◂ Prosjekter»: tilbake til prosjektfremdrift

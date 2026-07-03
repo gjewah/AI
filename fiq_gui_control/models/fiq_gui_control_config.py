@@ -301,14 +301,18 @@ class FiqControlRoomConfig(models.Model):
             meeting = u.partner_id.id in in_meeting
             moett = (u.id in checked_in_users) if attendance_avail else None
 
-            # Fargelogikk for HELE kortet
+            # Fargelogikk for HELE kortet. OPPMØTE (innstemplet) er sterkeste signal =
+            # «Til stede», UANSETT im_status (im_status er upålitelig uten sanntids-buss,
+            # f.eks. på Staging). Deretter im_status som fallback.
             if meeting:
                 farge, tekst = "orange", _("I møte")
+            elif moett:
+                farge, tekst = "green", _("Til stede")
             elif im == "online":
                 farge, tekst = "green", _("Til stede")
             elif im == "away":
                 farge, tekst = "orange", _("Ute")
-            elif attendance_avail and not moett:
+            elif attendance_avail:
                 farge, tekst = "red", _("Ikke møtt")
             else:
                 farge, tekst = "red", _("Fraværende")
