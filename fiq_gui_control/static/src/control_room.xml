@@ -213,11 +213,11 @@
                                         <tbody>
                                             <t t-foreach="state.projects" t-as="p" t-key="p.id">
                                                 <tr t-att-class="(state.selected and state.selected.model === 'project.project' and state.selected.id === p.id) ? 'fiq_hm_selrow' : ''">
-                                                    <td t-on-click="() =&gt; this.selectEl('project.project', p.id, p.name)"><span class="fiq_hm_no" t-esc="p.no"/></td>
-                                                    <td t-on-click="() =&gt; this.selectEl('project.project', p.id, p.name)" t-esc="p.name"/>
+                                                    <td t-on-click="() =&gt; this.pickProject(p.id, p.name)"><span class="fiq_hm_no" t-esc="p.no"/></td>
+                                                    <td t-on-click="() =&gt; this.pickProject(p.id, p.name)" t-esc="p.name"/>
                                                     <td><input type="date" class="fiq_hm_din" t-att-value="p.start || ''" t-on-change="(ev) =&gt; this.setProjDate(p.id, 'date_start', ev.target.value)"/></td>
                                                     <td><input type="date" class="fiq_hm_din" t-att-value="p.end || ''" t-on-change="(ev) =&gt; this.setProjDate(p.id, 'date', ev.target.value)"/></td>
-                                                    <td t-on-click="() =&gt; this.selectEl('project.project', p.id, p.name)">
+                                                    <td t-on-click="() =&gt; this.pickProject(p.id, p.name)">
                                                         <t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="p.progress"/><t t-set="shape" t-value="state.progressShape"/><t t-set="hrs" t-value="p.estH ? (p.logH + '/' + p.estH + ' t') : ''"/></t>
                                                     </td>
                                                     <td t-on-click="() =&gt; this.openProjectTasks(p.id)" t-esc="p.taskCount"/>
@@ -283,7 +283,7 @@
                                     <t t-if="state.rightView === 'liste'">
                                         <t t-if="progRows.length">
                                             <t t-foreach="progRows" t-as="p" t-key="p.id">
-                                                <div t-att-class="'fiq_hm_rrow' + ((state.selected and state.selected.model === progModel and state.selected.id === p.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.selectEl(progModel, p.id, p.name)">
+                                                <div t-att-class="'fiq_hm_rrow' + ((state.selected and state.selected.model === progModel and state.selected.id === p.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.pickRow(p)">
                                                     <span class="fiq_hm_no" t-esc="p.no"/>
                                                     <span class="fiq_hm_rname" t-esc="p.name"/>
                                                     <span t-if="state.progLevel === 'oppgave' and p.stage" class="fiq_hm_stagetag" t-esc="p.stage"/>
@@ -301,7 +301,7 @@
                                         </div>
                                         <t t-if="ganttRows.length">
                                             <t t-foreach="ganttRows" t-as="g" t-key="g.id">
-                                                <div t-att-class="'fiq_hm_cg_row' + ((state.selected and state.selected.model === progModel and state.selected.id === g.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.selectEl(progModel, g.id, g.name)">
+                                                <div t-att-class="'fiq_hm_cg_row' + ((state.selected and state.selected.model === progModel and state.selected.id === g.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.pickRow(g)">
                                                     <span class="fiq_hm_cg_lbl" t-att-title="g.name" t-esc="g.name"/>
                                                     <span class="fiq_hm_cg_track">
                                                         <span t-if="g.hasDates" class="fiq_hm_cg_bar" t-att-style="'left:' + g.leftPct + '%; width:' + g.widthPct + '%'" t-att-title="g.name">

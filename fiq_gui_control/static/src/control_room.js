@@ -203,6 +203,25 @@ export class FiqControlRoom extends Component {
         this.state.progLevel = "prosjekt";
     }
 
+    // Klikk på et PROSJEKT (oversikt ELLER fremdrift-liste): (1) vis i Detaljer,
+    // (2) DRILL fremdriften inn i prosjektets oppgaver. Gir tydelig fremdrift-respons.
+    async pickProject(pid, name) {
+        this.selectEl("project.project", pid, name);   // Detaljer (async – kjører i bakgrunnen)
+        this.state.progProjId = pid;
+        this.state.progProjName = name || "";
+        this.state.progLevel = "oppgave";
+        await this._loadProgTasks(pid);
+    }
+
+    // Klikk på en rad i fremdrift-panelet: prosjekt-nivå -> drill; oppgave-nivå -> velg oppgave.
+    pickRow(row) {
+        if (this.state.progLevel === "oppgave") {
+            this.selectEl("project.task", row.id, row.name);
+        } else {
+            this.pickProject(row.id, row.name);
+        }
+    }
+
     // Kilden Prosjektfremdrift-panelet itererer over (prosjekter ELLER valgt prosjekts
     // oppgaver). På oppgave-nivå filtreres skjulte stadier bort (stadie-velgeren).
     get progRows() {
