@@ -418,6 +418,21 @@ class FiqControlRoomConfig(models.Model):
         return True
 
     @api.model
+    def set_ai_cockpit_url(self, url):
+        """Endre cockpit-adressen rett fra AI Kontrollrom-flaten — config-drevet
+        (systemparameter fiq_gui_control.ai_cockpit_url), så adressen kan byttes
+        UTEN ny modulversjon. Kontrollert løft: FIQ-admin eller Settings-admin."""
+        if not (self.env.user.has_group("fiq_gui_control.group_admin")
+                or self.env.user.has_group("base.group_system")):
+            raise AccessError(_("Kun administratorer kan endre cockpit-adressen."))
+        url = (url or "").strip()
+        if url and not url.startswith(("https://", "http://")):
+            url = "https://" + url
+        self.env["ir.config_parameter"].sudo().set_param(
+            "fiq_gui_control.ai_cockpit_url", url)
+        return url
+
+    @api.model
     def get_deltagere(self, model, res_id):
         """Detaljer: prosjektdeltagere — prosjektleder + oppgave-ansvarlige. Kobles til
         fiq.project.role (rolle-innehavere) når rollemodellen er bygd. Defensivt."""

@@ -72,6 +72,8 @@ export class FiqControlRoom extends Component {
             mode: "total",         // Simple/Full: "enkel" (simple) | "total" (full)
             customize: false,
             isAdmin: false,
+            cockpitEdit: false,    // redigerer cockpit-URL (AI Kontrollrom-flaten)
+            cockpitUrlDraft: "",
             level: "balansert",
             show,
             kpis: [],
@@ -571,6 +573,25 @@ export class FiqControlRoom extends Component {
     // AI-cockpiten (Artifact, interim): åpnes fra AI Kontrollrom-flaten
     openCockpit() {
         if (this.state.aiCockpitUrl) { window.open(this.state.aiCockpitUrl, "_blank"); }
+    }
+
+    // Endre cockpit-adressen uten ny modulversjon (config-drevet, admin-gated server-side)
+    toggleCockpitEdit() {
+        this.state.cockpitUrlDraft = this.state.aiCockpitUrl || "";
+        this.state.cockpitEdit = !this.state.cockpitEdit;
+    }
+
+    async saveCockpitUrl() {
+        try {
+            const url = await this.orm.call(
+                "fiq.gui.control.config", "set_ai_cockpit_url",
+                [this.state.cockpitUrlDraft || ""]);
+            this.state.aiCockpitUrl = url || "";
+            this.state.cockpitEdit = false;
+            this.notification.add(_t("Cockpit-adressen er lagret."), { type: "success" });
+        } catch (e) {
+            this.notification.add(_t("Kunne ikke lagre — ") + this._errMsg(e), { type: "danger" });
+        }
     }
 
     // SP-lenke for et fagområde (config-drevet per firma; eksakt nr vinner over toppnr)

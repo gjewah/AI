@@ -154,6 +154,15 @@
                             <span class="fiq_hm_kdot green"/> <strong>Claude-kobling aktiv</strong> — «Spør AI» i topplinja bruker denne.
                             <button class="fiq_hm_ext" t-on-click="() =&gt; { state.aiQuery = 'Svar med maks 5 ord: er AI-koblingen OK?'; this.askAi(); }">Test AI-koblingen</button>
                         </div>
+                        <!-- Cockpit-adresse: redigerbar UTEN ny modulversjon (config-drevet, admin) -->
+                        <div t-if="state.isAdmin" class="fiq_hm_aikr_url">
+                            <button t-if="!state.cockpitEdit" class="fiq_hm_ext" t-on-click="() =&gt; this.toggleCockpitEdit()">⚙ Endre cockpit-adresse</button>
+                            <t t-if="state.cockpitEdit">
+                                <input class="fiq_hm_urlinp" type="text" t-model="state.cockpitUrlDraft" placeholder="https://claude.ai/code/artifact/…" t-on-keydown="(ev) =&gt; { if (ev.key === 'Enter') this.saveCockpitUrl(); }"/>
+                                <button class="fiq_hm_ext" t-on-click="() =&gt; this.saveCockpitUrl()">Lagre</button>
+                                <button class="fiq_hm_ext" t-on-click="() =&gt; { state.cockpitEdit = false; }">Avbryt</button>
+                            </t>
+                        </div>
                         <div class="fiq_hm_aikr_kommer">
                             <strong>Kommer i denne flaten (designet, bygges trinnvis):</strong>
                             <ul>
