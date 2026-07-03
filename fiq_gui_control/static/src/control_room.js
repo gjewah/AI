@@ -106,6 +106,8 @@ export class FiqControlRoom extends Component {
             selMote: false,       // valgt møte (rad) → «Åpne valgt møte»
             selAkt: null,         // valgt aktivitet (objekt) → «Åpne valgt aktivitet»
             aktFilter: "alle",    // aktivitets-filter: alle | skjul (uten forfalte) | kun (bare forfalte)
+            aktGruppe: "",        // gruppering i panelet (som native): "" | type | element | modell | frist | status
+            utsettDager: "",      // «Utsett til»: antall dager
             actions: {},          // {nøkkel: xmlid|false} – hvilke Odoo-handlinger som finnes (guardet)
             aiQuery: "",          // «Spør AI om hjelp»-feltet
             aiAnswer: "",         // svar fra Claude via fiq.ai
@@ -1044,8 +1046,43 @@ export class FiqControlRoom extends Component {
         return rows;
     }
 
+    // Gruppering i panelet — samme funksjon som native group-by, uten å forlate Kontrollrommet
+    get aktGruppert() {
+        const rows = this.filtAktiviteter;
+        const g = this.state.aktGruppe;
+        if (!g) { return rows; }
+        const key = (a) => g === "type" ? (a.type || "(uten type)")
+            : g === "element" ? (a.res_name || "(uten element)")
+            : g === "modell" ? (a.model || "(uten)")
+            : g === "frist" ? (a.frist || "(uten frist)")
+            : (a.forsinket ? "Forfalt" : "Kommende");
+        const map = {}, order = [];
+        rows.forEach((a) => { const k = key(a); if (!(k in map)) { map[k] = []; order.push(k); } map[k].push(a); });
+        order.sort((x, y) => x.localeCompare(y));
+        const out = [];
+        order.forEach((k) => { out.push({ isHead: true, id: "ah:" + k, name: k, count: map[k].length }); out.push(...map[k]); });
+        return out;
+    }
+
+    // «Utsett til»: +N dager fra fristen ELLER eksplisitt ny dato (på valgt aktivitet)
+    async utsettAkt(dager, nyDato) {
+        const a = this.state.selAkt;
+        if (!a) { return; }
+        try {
+            await this.orm.call("fiq.gui.control.config", "utsett_aktivitet", [a.id, dager || false, nyDato || false]);
+            this.notification.add(_t("Aktiviteten er utsatt."), { type: "success" });
+            this.state.utsettDager = "";
+            await this._loadKalender();
+        } catch (e) {
+            this.notification.add(_t("Kunne ikke utsette — ") + this._errMsg(e), { type: "danger" });
+        }
+    }
+
     velgMote(id) { this.state.selMote = (this.state.selMote === id) ? false : id; }
-    velgAkt(ak) { this.state.selAkt = (this.state.selAkt && this.state.selAkt.id === ak.id) ? null : ak; }
+    velgAkt(ak) {
+        if (ak.isHead) { return; }
+        this.state.selAkt = (this.state.selAkt && this.state.selAkt.id === ak.id) ? null : ak;
+    }
 
     openSelMote() {
         if (this.state.selMote) { this.openRecord("calendar.event", this.state.selMote); }

@@ -426,7 +426,14 @@
             .fiq_hm_pseg { display: inline-flex; border: 1px solid var(--fiq-bd); border-radius: 8px; overflow: hidden; background: #fff;
                 button { border: 0; background: #fff; color: var(--fiq-mut); padding: 2px 9px; cursor: pointer; font: inherit; font-size: 10.5px;
                     &.on { background: var(--fiq-accent); color: #fff; } } }
-            .fiq_hm_ext { padding: 2px 9px; font-size: 10.5px; } }
+            .fiq_hm_ext { padding: 2px 9px; font-size: 10.5px; }
+            .fiq_hm_grpsel { flex: 0 0 auto; font: inherit; font-size: 10.5px; font-weight: 600; background: #fff; color: #111;
+                border: 1px solid var(--fiq-bd); border-radius: 6px; padding: 2px 4px; cursor: pointer; } }
+        .fiq_hm_utsett { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0 0 6px;
+            background: rgba(56,180,74,.07); border: 1px solid var(--fiq-bd); border-radius: 8px; padding: 4px 8px;
+            .fiq_hm_utsett_l { font-size: 10.5px; font-weight: 700; color: var(--fiq-side); }
+            .fiq_hm_esti { width: 54px; }
+            .fiq_hm_din { max-width: 130px; } }
         .fiq_hm_dagrow { display: flex; gap: 7px; align-items: baseline; padding: 3px 4px; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; border-radius: 4px;
             &:hover { background: #f7f8f9; }
             &.on { background: rgba(56,180,74,.10); box-shadow: inset 3px 0 0 var(--fiq-accent); }

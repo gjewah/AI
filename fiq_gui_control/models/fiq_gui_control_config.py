@@ -473,6 +473,7 @@ class FiqControlRoomConfig(models.Model):
                 out["aktiviteter"].append({
                     "id": a.id,
                     "name": a.summary or (a.activity_type_id.name or _("Aktivitet")),
+                    "type": a.activity_type_id.name or "",
                     "frist": str(a.date_deadline or ""),
                     "forsinket": bool(a.date_deadline and a.date_deadline < today),
                     "model": a.res_model or "",
@@ -482,6 +483,20 @@ class FiqControlRoomConfig(models.Model):
         except Exception:
             pass
         return out
+
+    @api.model
+    def utsett_aktivitet(self, activity_id, dager=None, ny_dato=None):
+        """Utsett en aktivitet: +N dager fra fristen (el. i dag), ELLER eksplisitt ny dato.
+        Kjøres som brukeren → tilgangsregler styrer."""
+        act = self.env["mail.activity"].browse(activity_id).exists()
+        if not act:
+            return False
+        if ny_dato:
+            act.write({"date_deadline": ny_dato})
+        elif dager:
+            base = act.date_deadline or fields.Date.context_today(self)
+            act.write({"date_deadline": fields.Date.add(base, days=int(dager))})
+        return str(act.date_deadline)
 
     @api.model
     def get_presence(self):
