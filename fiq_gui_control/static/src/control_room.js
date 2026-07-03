@@ -558,6 +558,13 @@ export class FiqControlRoom extends Component {
         this.state.areaOpen[nr] = !this.state.areaOpen[nr];
     }
 
+    // Nedtrekksliste under SP-flisen: velg underområde («» = hele området)
+    pickAreaSub(a, v) {
+        if (!v) { this.pickArea(a.nr, a.id); return; }
+        const s = (a.subs || []).find((x) => String(x.id) === String(v));
+        if (s) { this.pickArea(s.nr, s.id); }
+    }
+
     // Klikk på område/underområde i sidemenyen: gå til oversikten + hierarki-filtrer
     pickArea(nr, id) {
         this.state.view = "oversikt";

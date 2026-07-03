@@ -80,25 +80,17 @@
                     <div class="fiq_hm_alist">
                         <!-- t-key = post-id (unik) — prosjektNUMMER kan duplisere (to «0.90»-maler) -->
                         <t t-foreach="sideAreas" t-as="a" t-key="a.id || a.nr">
-                            <!-- Stor SP-flis (256 px, glossy MedBib-ikon — innstøpt tekst lesbar) -->
+                            <!-- Kompakt SP-flis (glossy MedBib-ikon, lesbar innstøpt tekst) + nedtrekk for underområder -->
                             <div t-att-class="(state.view === 'oversikt' and state.projArea === a.nr) ? 'fiq_hm_atile on' : 'fiq_hm_atile'"
                                  t-att-title="a.nr + ' ' + a.name" t-on-click="() => this.pickArea(a.nr, a.id)">
                                 <img class="fiq_hm_aimg_big" t-att-src="'/fiq_gui_control/static/img/sp/' + a.nr.split('.')[0] + '.png'" t-att-alt="a.nr + ' ' + a.name" t-on-error="(ev) =&gt; ev.target.style.display = 'none'"/>
-                                <div class="fiq_hm_atile_foot">
-                                    <span t-att-class="a.dk ? 'fiq_hm_asq dk' : 'fiq_hm_asq'" t-att-style="'--sp:' + a.color + ';'" t-esc="a.nr"/>
-                                    <span class="fiq_hm_aname" t-esc="a.name"/>
-                                    <button t-if="a.subs.length" class="fiq_hm_achev" t-att-title="state.areaOpen[a.nr] ? 'Lukk underområder' : 'Vis underområder'"
-                                            t-on-click.stop="() => this.toggleArea(a.nr)" t-esc="state.areaOpen[a.nr] ? '▾' : '▸'"/>
-                                </div>
+                                <select t-if="a.subs.length" class="fiq_hm_asel" t-on-click.stop="() =&gt; {}" t-on-change="(ev) =&gt; this.pickAreaSub(a, ev.target.value)">
+                                    <option value="">Alle</option>
+                                    <t t-foreach="a.subs" t-as="s" t-key="s.id">
+                                        <option t-att-value="s.id" t-att-selected="state.projAreaId === s.id ? 'selected' : undefined" t-esc="s.nr + ' ' + s.name"/>
+                                    </t>
+                                </select>
                             </div>
-                            <t t-if="state.areaOpen[a.nr]">
-                                <div t-foreach="a.subs" t-as="s" t-key="s.id"
-                                     t-att-class="(state.view === 'oversikt' and state.projArea === s.nr) ? 'fiq_hm_asub on' : 'fiq_hm_asub'"
-                                     t-on-click="() => this.pickArea(s.nr, s.id)">
-                                    <span class="fiq_hm_asubnr" t-esc="s.nr"/>
-                                    <span class="fiq_hm_aname" t-esc="s.name"/>
-                                </div>
-                            </t>
                         </t>
                     </div>
                 </aside>
