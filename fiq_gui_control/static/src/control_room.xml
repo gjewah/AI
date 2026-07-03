@@ -63,7 +63,7 @@
                         <!-- t-key = post-id (unik) — prosjektNUMMER kan duplisere (to «0.90»-maler) -->
                         <t t-foreach="sideAreas" t-as="a" t-key="a.id || a.nr">
                             <div t-att-class="(state.view === 'oversikt' and state.projArea === a.nr) ? 'fiq_hm_arow on' : 'fiq_hm_arow'"
-                                 t-att-title="a.nr + ' ' + a.name" t-on-click="() => this.pickArea(a.nr)">
+                                 t-att-title="a.nr + ' ' + a.name" t-on-click="() => this.pickArea(a.nr, a.id)">
                                 <span t-att-class="a.dk ? 'fiq_hm_asq dk' : 'fiq_hm_asq'" t-att-style="'--sp:' + a.color + ';'" t-esc="a.nr"/>
                                 <span class="fiq_hm_aname" t-esc="a.name"/>
                                 <button t-if="a.subs.length" class="fiq_hm_achev" t-att-title="state.areaOpen[a.nr] ? 'Lukk underområder' : 'Vis underområder'"
@@ -72,7 +72,7 @@
                             <t t-if="state.areaOpen[a.nr]">
                                 <div t-foreach="a.subs" t-as="s" t-key="s.id"
                                      t-att-class="(state.view === 'oversikt' and state.projArea === s.nr) ? 'fiq_hm_asub on' : 'fiq_hm_asub'"
-                                     t-on-click="() => this.pickArea(s.nr)">
+                                     t-on-click="() => this.pickArea(s.nr, s.id)">
                                     <span class="fiq_hm_asubnr" t-esc="s.nr"/>
                                     <span class="fiq_hm_aname" t-esc="s.name"/>
                                 </div>
@@ -224,12 +224,12 @@
                                 <div class="fiq_hm_pfilter">
                                     <button t-att-class="!state.projArea ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-on-click="() =&gt; this.setProjArea('')">Alle</button>
                                     <t t-foreach="sideAreas" t-as="o" t-key="o.id || o.nr">
-                                        <button t-att-class="(state.projArea === o.nr or chipParent === o.nr) ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-att-style="'--sp:' + o.color + ';'" t-on-click="() =&gt; this.setProjArea(o.nr)"><span class="fiq_hm_pfc_nr" t-esc="o.nr"/> <t t-esc="o.name"/></button>
+                                        <button t-att-class="(state.projArea === o.nr or chipParent === o.nr) ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-att-style="'--sp:' + o.color + ';'" t-on-click="() =&gt; this.setProjArea(o.nr, o.id)"><span class="fiq_hm_pfc_nr" t-esc="o.nr"/> <t t-esc="o.name"/></button>
                                     </t>
                                 </div>
                                 <div t-if="chipSubs.length" class="fiq_hm_pfilter2">
                                     <t t-foreach="chipSubs" t-as="s" t-key="s.id">
-                                        <button t-att-class="state.projArea === s.nr ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-on-click="() =&gt; this.setProjArea(s.nr)"><span class="fiq_hm_pfc_nr" t-esc="s.nr"/> <t t-esc="s.name"/></button>
+                                        <button t-att-class="state.projArea === s.nr ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-on-click="() =&gt; this.setProjArea(s.nr, s.id)"><span class="fiq_hm_pfc_nr" t-esc="s.nr"/> <t t-esc="s.name"/></button>
                                     </t>
                                 </div>
                                 <t t-if="state.projects.length">

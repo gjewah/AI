@@ -71,6 +71,7 @@ export class FiqControlRoom extends Component {
             projects: [],
             projQuery: "",        // project search over the project overview
             projArea: "",         // fagområde-filter (fagområdenr, f.eks. "6" el. "2.20") – tom = alle
+            projAreaId: false,    // område-PROSJEKTETS id → hierarki-filter (child_of via project_parent)
             areas: [],            // fagområde-treet fra Odoo prosjekt-hierarkiet (get_areas)
             areaOpen: {},         // {nr: true} = nedtrekk åpent i sidemenyen
             expanded: {},         // utvid-funksjon: {"model:id": true} = utvidet
@@ -159,9 +160,11 @@ export class FiqControlRoom extends Component {
         const pOpt = this._pOpt || [];
         const q = (query || "").trim();
         const area = this.state.projArea;
-        // Implisitt AND-liste. Fagområde-filter = navn starter med fagområdenr (f.eks. "6%").
+        // Implisitt AND-liste. Fagområde-filter = HIERARKI (child_of områdets prosjekt via
+        // project_parent) — fanger underprosjekter og navn uten nummer. Navn-prefiks = fallback.
         let domain = [["active", "=", true]];
-        if (area) { domain.push(["name", "=ilike", area + "%"]); }
+        if (this.state.projAreaId) { domain.push(["id", "child_of", this.state.projAreaId]); }
+        else if (area) { domain.push(["name", "=ilike", area + "%"]); }
         if (q) {
             const flds = ["name", ...(pOpt.includes("sequence_code") ? ["sequence_code"] : [])];
             const ors = [];
@@ -293,10 +296,16 @@ export class FiqControlRoom extends Component {
         this._projTmr = setTimeout(() => this._loadProjects(v), 200);
     }
 
-    // Fagområde-filter i prosjektoversikten. Klikk = filtrer på fagområdenr;
-    // klikk på aktivt filter igjen = tilbake til alle.
-    setProjArea(nr) {
-        this.state.projArea = (this.state.projArea === nr) ? "" : nr;
+    // Fagområde-filter i prosjektoversikten. Klikk = hierarki-filter (child_of områdets
+    // prosjekt-id); klikk på aktivt filter igjen = tilbake til alle.
+    setProjArea(nr, id) {
+        if (this.state.projArea === nr) {
+            this.state.projArea = "";
+            this.state.projAreaId = false;
+        } else {
+            this.state.projArea = nr;
+            this.state.projAreaId = id || false;
+        }
         this._loadProjects(this.state.projQuery);
     }
 
@@ -311,11 +320,12 @@ export class FiqControlRoom extends Component {
         this.state.areaOpen[nr] = !this.state.areaOpen[nr];
     }
 
-    // Klikk på område/underområde i sidemenyen: gå til oversikten + filtrer på nummeret
-    pickArea(nr) {
+    // Klikk på område/underområde i sidemenyen: gå til oversikten + hierarki-filtrer
+    pickArea(nr, id) {
         this.state.view = "oversikt";
         if (this.state.projArea !== nr) {
             this.state.projArea = nr;
+            this.state.projAreaId = id || false;
             this._loadProjects(this.state.projQuery);
         }
     }
