@@ -234,8 +234,17 @@
                                     <div class="fiq_hm_dag_h fiq_hm_dag_h2">Aktiviteter
                                         <button class="fiq_hm_ext fiq_hm_dag_open" t-att-disabled="!state.selAkt" t-on-click="() =&gt; this.openSelAkt()" title="Åpne valgt aktivitet i Odoo">⤢ Åpne valgt aktivitet</button>
                                     </div>
-                                    <t t-if="state.kal.aktiviteter.length">
-                                        <div t-foreach="state.kal.aktiviteter" t-as="ak" t-key="ak.id" t-att-class="(state.selAkt and state.selAkt.id === ak.id) ? 'fiq_hm_dagrow on' : 'fiq_hm_dagrow'" t-on-click="() =&gt; this.velgAkt(ak)">
+                                    <!-- Filter: forfalte av/på + gruppering via Odoo native -->
+                                    <div class="fiq_hm_aktfilter">
+                                        <div class="fiq_hm_pseg">
+                                            <button t-att-class="state.aktFilter === 'alle' ? 'on' : ''" t-on-click="() =&gt; this.setAktFilter('alle')">Alle</button>
+                                            <button t-att-class="state.aktFilter === 'skjul' ? 'on' : ''" t-on-click="() =&gt; this.setAktFilter('skjul')" title="Skjul forfalte aktiviteter">Uten forfalte</button>
+                                            <button t-att-class="state.aktFilter === 'kun' ? 'on' : ''" t-on-click="() =&gt; this.setAktFilter('kun')" title="Vis bare forfalte aktiviteter">Kun forfalte</button>
+                                        </div>
+                                        <button class="fiq_hm_ext" t-on-click="() =&gt; this.runAction('aktivitet')" title="Åpne aktivitetene i Odoo native — full gruppering og filtrering der">⚙ Gruppér (native)</button>
+                                    </div>
+                                    <t t-if="filtAktiviteter.length">
+                                        <div t-foreach="filtAktiviteter" t-as="ak" t-key="ak.id" t-att-class="(state.selAkt and state.selAkt.id === ak.id) ? 'fiq_hm_dagrow on' : 'fiq_hm_dagrow'" t-on-click="() =&gt; this.velgAkt(ak)">
                                             <span t-att-class="ak.forsinket ? 'fiq_hm_dagtid rod' : 'fiq_hm_dagtid'" t-esc="ak.frist"/>
                                             <span class="fiq_hm_dagnavn"><t t-esc="ak.name"/><t t-if="ak.res_name"> · <t t-esc="ak.res_name"/></t></span>
                                         </div>

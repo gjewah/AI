@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.2.0",
     "summary": "FIQ GUI-skjelett for flaten Prosjekt – OWL klient-handling "
                "(placeholder-dashbord), menuitem og rettighetsgruppe. Klar for ekte funksjonalitet.",
     "description": """
@@ -17,7 +17,7 @@ Bygd rent og konsistent med Hovedmeny-stilen, klart for å fylles med ekte funks
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
     "license": "LGPL-3",
-    "depends": ["web", "project"],
+    "depends": ["fiq_gui_control", "web", "project"],
     "data": [
         "security/fiq_gui_prj_groups.xml",
         "views/fiq_gui_prj_action.xml",

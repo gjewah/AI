@@ -105,6 +105,7 @@ export class FiqControlRoom extends Component {
             kalMnd: new Date().toISOString().slice(0, 7), // vist måned i mini-kalenderen (YYYY-MM)
             selMote: false,       // valgt møte (rad) → «Åpne valgt møte»
             selAkt: null,         // valgt aktivitet (objekt) → «Åpne valgt aktivitet»
+            aktFilter: "alle",    // aktivitets-filter: alle | skjul (uten forfalte) | kun (bare forfalte)
             actions: {},          // {nøkkel: xmlid|false} – hvilke Odoo-handlinger som finnes (guardet)
             aiQuery: "",          // «Spør AI om hjelp»-feltet
             aiAnswer: "",         // svar fra Claude via fiq.ai
@@ -1030,6 +1031,17 @@ export class FiqControlRoom extends Component {
         this.state.kommPeriod = "dag";
         this._loadProjects(this.state.projQuery);
         this._loadKalender();
+    }
+
+    // Aktivitets-filter: alle | uten forfalte | kun forfalte (perioden styres av Dag/Uke/Måned)
+    setAktFilter(m) { this.state.aktFilter = m; this.state.selAkt = null; }
+
+    get filtAktiviteter() {
+        const f = this.state.aktFilter;
+        const rows = this.state.kal.aktiviteter || [];
+        if (f === "skjul") { return rows.filter((a) => !a.forsinket); }
+        if (f === "kun") { return rows.filter((a) => a.forsinket); }
+        return rows;
     }
 
     velgMote(id) { this.state.selMote = (this.state.selMote === id) ? false : id; }
