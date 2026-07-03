@@ -46,6 +46,7 @@ export class FiqControlRoom extends Component {
             show,
             kpis: [],
             selectedKpi: "",
+            finansLines: [],      // detaljlinjer for Finans-boksen (fakturaer som krever handling)
             collapsed: this._loadCollapsed(),
             projects: [],
             projQuery: "",        // project search over the project overview
@@ -293,13 +294,34 @@ export class FiqControlRoom extends Component {
         try { salg = await this.orm.searchCount("crm.lead", [["type", "=", "opportunity"], ["active", "=", true]]); }
         catch (e) { try { salg = await this.orm.searchCount("sale.order", [["state", "in", ["draft", "sent"]]]); } catch (e2) {} }
 
-        // Category KPIs (report-up / management by exception): Kommunikasjon · Prosjekt · Salg · HMS/KS
+        // Finans: leverandørfakturaer til godkjenning (draft in_invoice) + forsinkede
+        // kundefakturaer (out_invoice, ikke betalt, forfalt). Guardet – account kan mangle.
+        const today0 = new Date().toISOString().slice(0, 10);
+        let finLev = [], finForsinket = [];
+        try {
+            finLev = await this._read("account.move",
+                [["move_type", "=", "in_invoice"], ["state", "=", "draft"]],
+                ["name", "partner_id"], { limit: 25, order: "id desc" });
+        } catch (e) {}
+        try {
+            finForsinket = await this._read("account.move",
+                [["move_type", "=", "out_invoice"], ["state", "=", "posted"],
+                 ["payment_state", "in", ["not_paid", "partial"]], ["invoice_date_due", "<", today0]],
+                ["name", "partner_id", "invoice_date_due"], { limit: 25, order: "invoice_date_due asc" });
+        } catch (e) {}
+        this.state.finansLines = [
+            ...finForsinket.map((m) => ({ text: (m.name || _t("Faktura")) + " · " + (m.partner_id ? m.partner_id[1] : "") + " (" + _t("forfalt") + " " + (m.invoice_date_due || "") + ")", model: "account.move", res_id: m.id })),
+            ...finLev.map((m) => ({ text: (m.name || _t("Lev.faktura")) + " · " + (m.partner_id ? m.partner_id[1] : "") + " (" + _t("til godkjenning") + ")", model: "account.move", res_id: m.id })),
+        ];
+
+        // Category KPIs (report-up / management by exception): Kommunikasjon · Prosjekt · Salg · Finans · HMS/KS
         const received = komm.filter((k) => k.direction === "mottatt");
         const overdueN = myTasks.filter((t) => t.overdue).length;
         this.state.kpis = [
             { key: "komm", v: String(komm.length), l: _t("Kommunikasjon"), sub: received.length + " " + _t("ubesvart"), dot: received.length ? "red" : "green" },
             { key: "prosjekt", v: String(active), l: _t("Prosjekt"), sub: overdueN + " " + _t("forsinket"), dot: overdueN ? "amber" : "green" },
             { key: "salg", v: String(salg), l: _t("Salg"), sub: _t("ok"), dot: "green" },
+            { key: "finans", v: String(finForsinket.length + finLev.length), l: _t("Finans"), sub: finForsinket.length + " " + _t("forsinket") + " · " + finLev.length + " " + _t("til godkj."), dot: finForsinket.length ? "red" : (finLev.length ? "amber" : "green") },
             { key: "hms", v: "—", l: _t("HMS/KS"), sub: _t("avvik"), dot: "grey" },
         ];
         if (!this.state.selectedKpi) {
@@ -391,6 +413,9 @@ export class FiqControlRoom extends Component {
         if (k === "prosjekt") {
             return this.state.myTasks.filter((t) => t.overdue)
                 .map((t) => ({ text: (t.no ? t.no + " " : "") + t.name, model: "project.task", res_id: t.id }));
+        }
+        if (k === "finans") {
+            return this.state.finansLines || [];
         }
         return [];
     }
