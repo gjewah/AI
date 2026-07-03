@@ -77,6 +77,10 @@ export class FiqControlRoom extends Component {
             expanded: {},         // utvid-funksjon: {"model:id": true} = utvidet
             children: {},         // lazy-lastede barn: {"model:id": [rader]}
             myTasks: [],
+            taskNoQuery: "",      // oppgavesøk: nummer (code)
+            taskTextQuery: "",    // oppgavesøk: fritekst
+            taskStage: "",        // filter: valgt stadium ("" = alle)
+            taskMile: "",         // filter: valgt milepæl ("" = alle)
             komm: [],
             kommPeriod: "uke",
             kommQuery: "",
@@ -311,6 +315,82 @@ export class FiqControlRoom extends Component {
         this.state.stageHidden[name] = !this.state.stageHidden[name];
     }
 
+    // Mine oppgaver: server-søk (nummer + fritekst) + stadium-/milepæl-chips
+    async _loadMyTasks() {
+        const tOpt = this._tOpt || [];
+        const no = (this.state.taskNoQuery || "").trim();
+        const txt = (this.state.taskTextQuery || "").trim();
+        const today = new Date().toISOString().slice(0, 10);
+        const domain = [["user_ids", "in", [user.userId]]];
+        if (no) { domain.push([tOpt.includes("code") ? "code" : "name", "ilike", no]); }
+        if (txt) { domain.push(["name", "ilike", txt]); }
+        const recs = await this._read("project.task", domain,
+            ["name", "project_id", "date_deadline", "planned_date_begin", "child_ids", "stage_id", ...tOpt],
+            { limit: (no || txt) ? 30 : 10, order: "date_deadline asc" });
+        const rows = recs.map((t) => ({
+            id: t.id, no: t.code || "", name: t.name,
+            project: t.project_id ? t.project_id[1] : "",
+            stage: t.stage_id ? t.stage_id[1] : "",
+            mile: t.milestone_id ? t.milestone_id[1] : "",
+            deadline: t.date_deadline || "",
+            pfrom: (t.planned_date_begin || "").slice(0, 10),
+            pto: (t.date_deadline || "").slice(0, 10),
+            overdue: !!(t.date_deadline && t.date_deadline < today),
+            hasKids: !!(t.child_ids && t.child_ids.length),
+            progress: 0,
+        }));
+        await this._fillProgress("project.task", rows);
+        this.state.myTasks = rows;
+    }
+
+    setTaskNoQuery(v) {
+        this.state.taskNoQuery = v;
+        clearTimeout(this._taskTmr);
+        this._taskTmr = setTimeout(() => this._loadMyTasks(), 250);
+    }
+
+    setTaskTextQuery(v) {
+        this.state.taskTextQuery = v;
+        clearTimeout(this._taskTmr);
+        this._taskTmr = setTimeout(() => this._loadMyTasks(), 250);
+    }
+
+    // Filter-chips for Mine oppgaver: stadium + milepæl (fra de lastede oppgavene)
+    get taskStageChips() {
+        const seen = [], map = {};
+        this.state.myTasks.forEach((t) => {
+            const nm = t.stage || "";
+            if (!nm) { return; }
+            if (!(nm in map)) { map[nm] = 0; seen.push(nm); }
+            map[nm] += 1;
+        });
+        return seen.map((n) => ({ name: n, count: map[n] }));
+    }
+
+    get taskMileChips() {
+        const seen = [], map = {};
+        this.state.myTasks.forEach((t) => {
+            const nm = t.mile || "";
+            if (!nm) { return; }
+            if (!(nm in map)) { map[nm] = 0; seen.push(nm); }
+            map[nm] += 1;
+        });
+        return seen.map((n) => ({ name: n, count: map[n] }));
+    }
+
+    get filteredMyTasks() {
+        const st = this.state.taskStage, mi = this.state.taskMile;
+        return this.state.myTasks.filter((t) => (!st || t.stage === st) && (!mi || t.mile === mi));
+    }
+
+    toggleTaskStage(name) {
+        this.state.taskStage = (this.state.taskStage === name) ? "" : name;
+    }
+
+    toggleTaskMile(name) {
+        this.state.taskMile = (this.state.taskMile === name) ? "" : name;
+    }
+
     // Project search field (right above the project overview) - debounced server search
     setProjQuery(v) {
         this.state.projQuery = v;
@@ -406,22 +486,9 @@ export class FiqControlRoom extends Component {
         // AI-merkede stadier (for stadie-velgeren i oppgave-drillen)
         try { this.state.aiStageNames = await this.orm.call("fiq.gui.control.config", "get_ai_stages", []); }
         catch (e) { this.state.aiStageNames = []; }
-        const tOpt = await this._optFields("project.task", ["code"]);
-        const trecs = await this._read("project.task",
-            [["user_ids", "in", [user.userId]]],
-            ["name", "project_id", "date_deadline", "planned_date_begin", "child_ids", ...tOpt], { limit: 10, order: "date_deadline asc" });
-        const myTasks = trecs.map((t) => ({
-            id: t.id, no: t.code || "", name: t.name,
-            project: t.project_id ? t.project_id[1] : "",
-            deadline: t.date_deadline || "",
-            pfrom: (t.planned_date_begin || "").slice(0, 10),
-            pto: (t.date_deadline || "").slice(0, 10),
-            overdue: !!(t.date_deadline && t.date_deadline < today),
-            hasKids: !!(t.child_ids && t.child_ids.length),
-            progress: 0,
-        }));
-        // Ekte, config-drevet fremdrift per oppgave (lag 2)
-        await this._fillProgress("project.task", myTasks);
+        this._tOpt = await this._optFields("project.task", ["code", "milestone_id"]);
+        await this._loadMyTasks();
+        const myTasks = this.state.myTasks;
         try { openTasks = await this.orm.searchCount("project.task", [["user_ids", "in", [user.userId]]]); } catch (e) {}
 
         // Communication view (email/messages on records) – filtered by period
@@ -479,7 +546,10 @@ export class FiqControlRoom extends Component {
         // Fagområde-treet fra prosjekt-hierarkiet (sidemeny + filter-chips) m/ kanoniske farger
         try {
             const raw = await this.orm.call("fiq.gui.control.config", "get_areas", []);
-            this.state.areas = (raw || []).map((a) => ({ ...a, ...spColor(a.nr) }));
+            this.state.areas = (raw || []).map((a) => ({
+                ...a, ...spColor(a.nr),
+                subs: (a.subs || []).map((s) => ({ ...s, ...spColor(s.nr) })),
+            }));
         } catch (e) { this.state.areas = []; }
 
         // Hvilke Odoo-handlinger finnes faktisk (guardet – depends = web+project)
@@ -552,17 +622,23 @@ export class FiqControlRoom extends Component {
         this.state.selectedKpi = key;
     }
 
-    // Kollaps-tilstand huskes per bruker/nettleser (localStorage) → nullstilles IKKE
-    // ved oppfrisk/re-åpning. Defensiv: tomt objekt hvis localStorage ikke er tilgjengelig.
+    // Kollaps huskes per bruker/nettleser (localStorage), men NULLSTILLES ved NY DAG —
+    // alt er synlig ved dagens start (Gjermund 2026-07-03).
     _loadCollapsed() {
-        try { return JSON.parse(localStorage.getItem("fiq_hm_collapsed") || "{}") || {}; }
-        catch (e) { return {}; }
+        try {
+            const raw = JSON.parse(localStorage.getItem("fiq_hm_collapsed") || "{}") || {};
+            const today = new Date().toISOString().slice(0, 10);
+            return (raw.d === today && raw.v) ? raw.v : {};
+        } catch (e) { return {}; }
     }
 
     // Skjul/vis en seksjon (kollaps ved hovedoverskrift) for å løfte fram de andre listene
     toggleCollapse(key) {
         this.state.collapsed[key] = !this.state.collapsed[key];
-        try { localStorage.setItem("fiq_hm_collapsed", JSON.stringify(this.state.collapsed)); } catch (e) {}
+        try {
+            localStorage.setItem("fiq_hm_collapsed", JSON.stringify(
+                { d: new Date().toISOString().slice(0, 10), v: this.state.collapsed }));
+        } catch (e) {}
     }
 
     // Detaljlinjer for valgt status-knapp (vises i frigjort plass under statuslinja)

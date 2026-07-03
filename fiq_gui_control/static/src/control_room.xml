@@ -139,7 +139,7 @@
 
                         <!-- (1) Til stede nå -->
                         <div t-att-class="'fiq_hm_card' + (state.collapsed.presence ? ' fiq_hm_collapsed' : '')">
-                            <div class="fiq_hm_ch"><h4>👥 Til stede nå</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('presence')" t-esc="state.collapsed.presence ? '▸' : '▾'"/></div>
+                            <div class="fiq_hm_ch"><h4>👥 Til stede nå</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('presence')" t-esc="state.collapsed.presence ? 'Vis ▸' : 'Skjul ▾'"/></div>
                             <t t-if="state.presence.length">
                                 <div class="fiq_hm_presence">
                                     <t t-foreach="state.presence" t-as="pr" t-key="pr.id">
@@ -184,7 +184,7 @@
 
                         <!-- (4) Beslutningsstøtte: 4 kolonner tilpassbare knapper -->
                         <div t-att-class="'fiq_hm_card' + (state.collapsed.beslutning ? ' fiq_hm_collapsed' : '')">
-                            <div class="fiq_hm_ch"><h4>Beslutningsstøtte</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('beslutning')" t-esc="state.collapsed.beslutning ? '▸' : '▾'"/></div>
+                            <div class="fiq_hm_ch"><h4>Beslutningsstøtte</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('beslutning')" t-esc="state.collapsed.beslutning ? 'Vis ▸' : 'Skjul ▾'"/></div>
                             <div class="fiq_hm_bs">
                                 <div class="fiq_hm_bs_col">
                                     <div class="fiq_hm_bs_h">Opprett</div>
@@ -215,7 +215,7 @@
                         <!-- Lister: Prosjektoversikt + Mine oppgaver (side om side) -->
                         <div class="fiq_hm_lists">
                             <div t-if="state.show.projects" t-att-class="'fiq_hm_card' + (state.collapsed.prosjekt ? ' fiq_hm_collapsed' : '')">
-                                <div class="fiq_hm_ch"><h4>Prosjektoversikt</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('prosjekt')" t-esc="state.collapsed.prosjekt ? '▸' : '▾'"/></div>
+                                <div class="fiq_hm_ch"><h4>Prosjektoversikt</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('prosjekt')" t-esc="state.collapsed.prosjekt ? 'Vis ▸' : 'Skjul ▾'"/></div>
                                 <span class="fiq_hm_srch fiq_hm_srch_blk">
                                     <input class="fiq_hm_psok" placeholder="Søk i prosjekter (navn eller nr.) …" t-att-value="state.projQuery" t-on-input="(ev) =&gt; this.setProjQuery(ev.target.value)"/>
                                     <span t-if="state.projQuery" class="fiq_hm_srch_x" t-on-click="() =&gt; this.setProjQuery('')" title="Tøm søk">✕</span>
@@ -229,7 +229,7 @@
                                 </div>
                                 <div t-if="chipSubs.length" class="fiq_hm_pfilter2">
                                     <t t-foreach="chipSubs" t-as="s" t-key="s.id">
-                                        <button t-att-class="state.projArea === s.nr ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-on-click="() =&gt; this.setProjArea(s.nr, s.id)"><span class="fiq_hm_pfc_nr" t-esc="s.nr"/> <t t-esc="s.name"/></button>
+                                        <button t-att-class="state.projArea === s.nr ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-att-style="'--sp:' + s.color + ';'" t-on-click="() =&gt; this.setProjArea(s.nr, s.id)"><span class="fiq_hm_pfc_nr" t-esc="s.nr"/> <t t-esc="s.name"/></button>
                                     </t>
                                 </div>
                                 <t t-if="state.projects.length">
@@ -267,9 +267,37 @@
                                 </t>
                                 <t t-else=""><div class="fiq_hm_empty" t-esc="state.projQuery ? 'Ingen prosjekter matcher søket.' : 'Ingen aktive prosjekter ennå.'"/></t>
                             </div>
-                            <div t-if="state.show.tasks" t-att-class="'fiq_hm_card' + (state.collapsed.oppgaver ? ' fiq_hm_collapsed' : '')"><div class="fiq_hm_ch"><h4>Mine oppgaver</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('oppgaver')" t-esc="state.collapsed.oppgaver ? '▸' : '▾'"/></div>
-                                <t t-if="state.myTasks.length">
-                                    <t t-foreach="state.myTasks" t-as="t" t-key="t.id">
+                            <div t-if="state.show.tasks" t-att-class="'fiq_hm_card' + (state.collapsed.oppgaver ? ' fiq_hm_collapsed' : '')"><div class="fiq_hm_ch"><h4>Mine oppgaver</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('oppgaver')" t-esc="state.collapsed.oppgaver ? 'Vis ▸' : 'Skjul ▾'"/></div>
+                                <!-- Oppgavesøk: nummer + fritekst (to felt, server-søk) -->
+                                <div class="fiq_hm_tsok">
+                                    <span class="fiq_hm_srch fiq_hm_tsok_no">
+                                        <input class="fiq_hm_psok" placeholder="Oppg.nr …" t-att-value="state.taskNoQuery" t-on-input="(ev) =&gt; this.setTaskNoQuery(ev.target.value)"/>
+                                        <span t-if="state.taskNoQuery" class="fiq_hm_srch_x" t-on-click="() =&gt; this.setTaskNoQuery('')" title="Tøm">✕</span>
+                                    </span>
+                                    <span class="fiq_hm_srch">
+                                        <input class="fiq_hm_psok" placeholder="Søk i oppgaver (fritekst) …" t-att-value="state.taskTextQuery" t-on-input="(ev) =&gt; this.setTaskTextQuery(ev.target.value)"/>
+                                        <span t-if="state.taskTextQuery" class="fiq_hm_srch_x" t-on-click="() =&gt; this.setTaskTextQuery('')" title="Tøm">✕</span>
+                                    </span>
+                                </div>
+                                <!-- Filter: stadium + milepæl -->
+                                <div t-if="taskStageChips.length or taskMileChips.length" class="fiq_hm_pfilter">
+                                    <t t-foreach="taskStageChips" t-as="sc" t-key="sc.name">
+                                        <button t-att-class="state.taskStage === sc.name ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-on-click="() =&gt; this.toggleTaskStage(sc.name)"><t t-esc="sc.name"/> <span class="fiq_hm_stchip_n" t-esc="sc.count"/></button>
+                                    </t>
+                                    <t t-foreach="taskMileChips" t-as="mc" t-key="mc.name">
+                                        <button t-att-class="state.taskMile === mc.name ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-on-click="() =&gt; this.toggleTaskMile(mc.name)">🏁 <t t-esc="mc.name"/> <span class="fiq_hm_stchip_n" t-esc="mc.count"/></button>
+                                    </t>
+                                </div>
+                                <!-- Kolonneoverskrifter -->
+                                <div class="fiq_hm_th">
+                                    <span class="h_no">Nr.</span>
+                                    <span class="h_name">Oppgave</span>
+                                    <span class="h_prj">Prosjekt</span>
+                                    <span t-if="state.hasHours" class="h_est">Est.</span>
+                                    <span class="h_prog">Fremdrift</span>
+                                </div>
+                                <t t-if="filteredMyTasks.length">
+                                    <t t-foreach="filteredMyTasks" t-as="t" t-key="t.id">
                                         <div t-att-class="'fiq_hm_task' + ((state.selected and state.selected.model === 'project.task' and state.selected.id === t.id) ? ' fiq_hm_selrow' : '')">
                                             <button t-if="t.hasKids" class="fiq_hm_exp" t-on-click.stop="() =&gt; this.toggleExpand('project.task', t.id)" t-esc="state.expanded['project.task:' + t.id] ? '▾' : '▸'"/>
                                             <span class="fiq_hm_no" t-esc="t.no" t-on-click="() =&gt; this.selectEl('project.task', t.id, t.name)"/>
