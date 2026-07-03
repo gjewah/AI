@@ -429,32 +429,47 @@ class FiqControlRoomConfig(models.Model):
         return out
 
     @api.model
-    def get_dagens(self):
-        """«Møter og aktiviteter i dag» for innlogget bruker — panel ved siden av
-        Til stede nå. Møter = calendar.event i dag; aktiviteter = mail.activity
-        (forfalte + kommende). Defensivt/felt-guardet."""
-        out = {"moter": [], "aktiviteter": []}
-        now = fields.Datetime.now()
-        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        end = start + timedelta(days=1)
+    def get_kalender(self, start, end, month_start, month_end, user_id=None):
+        """Møter + aktiviteter i VALGT periode (Dag/Uke/Måned/Alle) for VALGT person
+        (standard = innlogget; kollega leses sudo som intern busy-/oppfølgingsvisning).
+        mnd = datoer i vist måned som har møter → mini-månedskalenderen."""
+        uid = user_id or self.env.uid
+        other = bool(user_id) and user_id != self.env.uid
+        user = self.env["res.users"].sudo().browse(uid).exists()
+        out = {"moter": [], "aktiviteter": [], "mnd": []}
+        if not user:
+            return out
+        Ev = self.env["calendar.event"].sudo() if other else self.env["calendar.event"]
+        Act = self.env["mail.activity"].sudo() if other else self.env["mail.activity"]
         try:
-            evs = self.env["calendar.event"].search([
-                ("partner_ids", "in", self.env.user.partner_id.ids),
-                ("start", "<", end), ("stop", ">=", start)], order="start", limit=15)
+            evs = Ev.search([
+                ("partner_ids", "in", user.partner_id.ids),
+                ("start", "<", end), ("stop", ">=", start)], order="start", limit=60)
             for e in evs:
                 st = fields.Datetime.context_timestamp(e, e.start) if e.start else None
                 sl = fields.Datetime.context_timestamp(e, e.stop) if e.stop else None
                 out["moter"].append({
                     "id": e.id, "name": e.name or "",
+                    "dato": st.strftime("%d.%m") if st else "",
                     "tid": st.strftime("%H:%M") if st else "",
                     "slutt": sl.strftime("%H:%M") if sl else "",
                 })
+            # Måneds-markører: dager med MØTER (ikke aktiviteter)
+            dager = set()
+            for e in Ev.search([
+                    ("partner_ids", "in", user.partner_id.ids),
+                    ("start", "<", month_end), ("stop", ">=", month_start)], limit=300):
+                st = fields.Datetime.context_timestamp(e, e.start) if e.start else None
+                if st:
+                    dager.add(st.strftime("%Y-%m-%d"))
+            out["mnd"] = sorted(dager)
         except Exception:
             pass
         try:
             today = fields.Date.context_today(self)
-            for a in self.env["mail.activity"].search(
-                    [("user_id", "=", self.env.uid)], order="date_deadline", limit=15):
+            end_d = str(end)[:10]
+            for a in Act.search([("user_id", "=", uid), ("date_deadline", "<=", end_d)],
+                                order="date_deadline", limit=30):
                 out["aktiviteter"].append({
                     "id": a.id,
                     "name": a.summary or (a.activity_type_id.name or _("Aktivitet")),

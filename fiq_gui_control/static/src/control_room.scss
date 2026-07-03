@@ -2,7 +2,7 @@
     --fiq-side: #1f2228;          // svartgrå sidemeny (standard alle firma)
     --fiq-bd: #e3e5e9;
     --fiq-mut: #6b7280;
-    font-size: 13px;
+    font-size: 14px;               // større grunnskrift — lesbart på mobil
     padding: 14px;
     background: #f4f5f7;
     min-height: 100%;
@@ -104,16 +104,18 @@
     @media (max-width: 760px) { .fiq_hm_cols { grid-template-columns: 1fr; } }
     .fiq_hm_colL, .fiq_hm_colR { display: flex; flex-direction: column; gap: 12px; }
 
+    // Kort-overskrift m/ tydelig skillelinje (synlig også i kollapset tilstand)
     .fiq_hm_ch { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
-        h4 { margin: 0; } }
+        padding-bottom: 7px; border-bottom: 2px solid #d5d9df;
+        h4 { margin: 0; font-size: 14px; } }
     // Tydelig utvid/minimer-knapp (tekst, ikke bare pil)
     .fiq_hm_coll { border: 1px solid var(--fiq-bd); background: #f7f8f9; color: var(--fiq-mut); cursor: pointer;
         font: inherit; font-size: 11px; padding: 2px 9px; line-height: 1.3; border-radius: 7px; white-space: nowrap;
         &:hover { color: var(--fiq-accent); border-color: var(--fiq-accent); background: #fff; } }
     .fiq_hm_collapsed > :not(.fiq_hm_ch) { display: none; }
     .fiq_hm_card { background: #fff; border: 1px solid var(--fiq-bd); border-radius: 11px; padding: 12px;
-        h4 { margin: 0 0 10px; font-size: 13px; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        h4 { margin: 0 0 10px; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
         th { text-align: left; color: var(--fiq-side); font-weight: 700; padding: 6px 5px; border-bottom: 1px solid var(--fiq-bd); }
         td { padding: 7px 5px; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; }
         .prog { height: 7px; border-radius: 4px; background: #f0f1f3; overflow: hidden; min-width: 60px;
@@ -327,15 +329,15 @@
         .fiq_hm_aname { flex: 1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .fiq_hm_achev { border: 0; background: transparent; color: #8b93a1; cursor: pointer; font-size: 10px; padding: 2px 5px; line-height: 1; flex: 0 0 auto;
             &:hover { color: #fff; } } }
-    // SP-flis: ÉN per rad, proporsjonal størrelse (~140 px) + nedtrekk for underområder
-    .fiq_hm_atile { width: 100%; max-width: 148px; margin: 0; cursor: pointer; border-radius: 8px; padding: 3px 4px;
-        box-sizing: border-box; overflow: hidden;
+    // SP-flis: ÉN per rad, kompakt 72 px + TYDELIG nedtrekk (hvit bakgrunn, svart skrift)
+    .fiq_hm_atile { width: 100%; max-width: 170px; margin: 0; cursor: pointer; border-radius: 8px; padding: 3px 4px;
+        box-sizing: border-box; overflow: hidden; display: flex; align-items: center; gap: 6px;
         &:hover { background: #262f37; }
         &.on { background: #262f37; box-shadow: inset 0 0 0 2px rgba(255,255,255,.4); }
-        .fiq_hm_aimg_big { width: 100%; max-width: 140px; height: auto; border-radius: 6px; display: block; }
-        .fiq_hm_asel { width: 100%; margin-top: 3px; box-sizing: border-box; font: inherit; font-size: 10.5px;
-            background: #262f37; color: #dbe2e8; border: 1px solid #3a444e; border-radius: 6px; padding: 2px 4px; cursor: pointer;
-            &:hover { border-color: #6b7683; }
+        .fiq_hm_aimg_big { width: 72px; height: auto; flex: 0 0 auto; border-radius: 6px; display: block; }
+        .fiq_hm_asel { flex: 1; min-width: 0; box-sizing: border-box; font: inherit; font-size: 11px; font-weight: 600;
+            background: #fff; color: #111; border: 1px solid #9aa3ad; border-radius: 6px; padding: 3px 4px; cursor: pointer;
+            &:hover { border-color: var(--fiq-accent); }
             &:focus { border-color: var(--fiq-accent); outline: none; } } }
     .fiq_hm_asub { display: flex; align-items: center; gap: 7px; padding: 4px 6px 4px 26px; cursor: pointer; color: #9aa3ad; font-size: 11.5px; border-radius: 6px;
         &:hover { background: #262f37; color: #fff; }
@@ -413,15 +415,38 @@
     .fiq_hm_chip_click { cursor: pointer; transition: border-color .12s, background .12s;
         &:hover { border-color: var(--fiq-accent); background: rgba(56,180,74,.06); } }
 
-    // Møter og aktiviteter i dag (panel ved siden av Til stede nå)
-    .fiq_hm_dag2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 12px;
-        .fiq_hm_dag_h { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11.5px; margin-bottom: 4px;
-            .fiq_hm_dag_open { padding: 1px 6px; font-size: 11px; } }
-        .fiq_hm_dagrow { display: flex; gap: 7px; align-items: baseline; padding: 3px 0; border-bottom: 1px solid var(--fiq-bd); cursor: pointer;
+    // Møter og aktiviteter (lister venstre, mini-månedskalender høyre)
+    .fiq_hm_dagwrap { display: grid; grid-template-columns: minmax(0, 1fr) 196px; gap: 12px; font-size: 12px; }
+    @media (max-width: 900px) { .fiq_hm_dagwrap { grid-template-columns: 1fr; } }
+    .fiq_hm_daglists { min-width: 0;
+        .fiq_hm_dag_h { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 11.5px; margin-bottom: 4px;
+            .fiq_hm_dag_open { padding: 1px 8px; font-size: 10.5px; margin-left: auto; } }
+        .fiq_hm_dag_h2 { margin-top: 12px; border-top: 1px solid var(--fiq-bd); padding-top: 8px; }
+        .fiq_hm_dagrow { display: flex; gap: 7px; align-items: baseline; padding: 3px 4px; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; border-radius: 4px;
             &:hover { background: #f7f8f9; }
+            &.on { background: rgba(56,180,74,.10); box-shadow: inset 3px 0 0 var(--fiq-accent); }
             .fiq_hm_dagtid { font-family: monospace; font-size: 10.5px; color: var(--fiq-mut); flex: 0 0 auto;
                 &.rod { color: #e0483a; font-weight: 700; } }
             .fiq_hm_dagnavn { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } } }
+    // Mini-månedskalender: uthevede dager = MØTER; klikk = vis dagen
+    .fiq_hm_kal { border: 1px solid var(--fiq-bd); border-radius: 9px; padding: 8px;
+        .fiq_hm_kal_h { text-align: center; font-weight: 700; font-size: 11.5px; margin-bottom: 5px; }
+        .fiq_hm_kal_uke { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 2px;
+            > span { text-align: center; font-size: 9px; color: var(--fiq-mut); font-weight: 700; } }
+        .fiq_hm_kal_d { border: 0; background: transparent; border-radius: 5px; font: inherit; font-size: 10.5px; padding: 3px 0;
+            text-align: center; cursor: pointer; color: var(--fiq-side); line-height: 1.2;
+            &:hover { background: #f0f1f3; }
+            &.ute { color: #c2c7cf; }
+            &.mote { background: rgba(56,180,74,.18); font-weight: 700; color: #1e7a3a; }
+            &.sel { outline: 2px solid var(--fiq-accent); font-weight: 700; } } }
+    // Person-toggle på Til stede-kort
+    .fiq_hm_chip_p.valgt { box-shadow: 0 0 0 3px rgba(56,180,74,.45); }
+    .fiq_hm_pvalgt { color: #1e7a3a; font-weight: 700; font-size: 13px; }
+    .fiq_hm_pchat { border: 1px solid var(--fiq-bd); background: #fff; border-radius: 6px; cursor: pointer; font-size: 11px; padding: 1px 5px;
+        &:hover { border-color: var(--fiq-accent); } }
+    .fiq_hm_selinfo { font-size: 11.5px; color: var(--fiq-side); background: rgba(56,180,74,.10); border: 1px solid var(--fiq-accent);
+        border-radius: 8px; padding: 3px 9px; margin: 9px 0 0; display: inline-flex; align-items: center; gap: 6px; }
+    .fiq_hm_statusrow_inn { margin-top: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 
     // AI Kontrollrom (MVP)
     .fiq_hm_aikr { border-left: 4px solid #7030A0;

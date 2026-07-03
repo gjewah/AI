@@ -100,7 +100,10 @@ export class FiqControlRoom extends Component {
             kommSender: null,     // {id, name} – filter on a single sender
             dashboards: [],       // Odoo native dashboards/analyses (only the ones that exist)
             presence: [],         // «Til stede nå» – interne brukere + tilgjengelighets-status
-            dagens: { moter: [], aktiviteter: [] }, // «Møter og aktiviteter i dag»-panelet
+            kal: { moter: [], aktiviteter: [], mnd: [] }, // Møter/aktiviteter-panelet (periode-styrt)
+            selPerson: null,      // valgt person (toggle på Til stede-kort) — styrer kalender + komm
+            selMote: false,       // valgt møte (rad) → «Åpne valgt møte»
+            selAkt: null,         // valgt aktivitet (objekt) → «Åpne valgt aktivitet»
             actions: {},          // {nøkkel: xmlid|false} – hvilke Odoo-handlinger som finnes (guardet)
             aiQuery: "",          // «Spør AI om hjelp»-feltet
             aiAnswer: "",         // svar fra Claude via fiq.ai
@@ -729,9 +732,8 @@ export class FiqControlRoom extends Component {
         let presence = [];
         try { presence = await this.orm.call("fiq.gui.control.config", "get_presence", []); } catch (e) {}
 
-        // «Møter og aktiviteter i dag» (panel ved siden av Til stede nå)
-        try { this.state.dagens = await this.orm.call("fiq.gui.control.config", "get_dagens", []); }
-        catch (e) { this.state.dagens = { moter: [], aktiviteter: [] }; }
+        // Møter/aktiviteter-panelet (periode- og person-styrt)
+        await this._loadKalender();
 
         // Fagområde-treet fra prosjekt-hierarkiet (sidemeny + filter-chips) m/ kanoniske farger
         try {
@@ -912,6 +914,7 @@ export class FiqControlRoom extends Component {
     async setKommPeriod(p) {
         this.state.kommPeriod = p;
         this._loadProjects(this.state.projQuery);   // perioden gjelder også prosjektlista
+        this._loadKalender();                        // … og møter/aktiviteter-panelet
         try {
             this.state.komm = await this.orm.call("fiq.gui.control.config", "get_kommunikasjon", [p]);
         } catch (e) { this.state.komm = []; }
@@ -921,6 +924,97 @@ export class FiqControlRoom extends Component {
     setAnchor(v) {
         this.state.anchorDate = v || new Date().toISOString().slice(0, 10);
         this._loadProjects(this.state.projQuery);
+        this._loadKalender();
+    }
+
+    // ---- Møter/aktiviteter-panelet: periode-vindu + person + månedskalender ----
+    _iso(d) {
+        const p = (n) => String(n).padStart(2, "0");
+        return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " +
+               p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+    }
+
+    async _loadKalender() {
+        const a = this.state.anchorDate ? new Date(this.state.anchorDate + "T12:00:00") : new Date();
+        let w = this._periodWindow();
+        if (!w) { // «Alle» = hele året rundt referansedatoen
+            w = { s: new Date(a.getFullYear(), 0, 1), e: new Date(a.getFullYear() + 1, 0, 1) };
+        }
+        const ms = new Date(a.getFullYear(), a.getMonth(), 1);
+        const me = new Date(a.getFullYear(), a.getMonth() + 1, 1);
+        const uid = this.state.selPerson ? this.state.selPerson.id : false;
+        try {
+            this.state.kal = await this.orm.call("fiq.gui.control.config", "get_kalender",
+                [this._iso(w.s), this._iso(w.e), this._iso(ms), this._iso(me), uid]);
+        } catch (e) { this.state.kal = { moter: [], aktiviteter: [], mnd: [] }; }
+        this.state.selMote = false;
+        this.state.selAkt = null;
+    }
+
+    // Person-toggle på Til stede-kortene: kalender + kommunikasjon følger valgt person
+    selectPerson(pr) {
+        const cur = this.state.selPerson;
+        if (cur && cur.id === pr.id) {
+            this.state.selPerson = null;
+            this.state.kommSender = null;
+        } else {
+            this.state.selPerson = { id: pr.id, partner_id: pr.partner_id, name: pr.navn };
+            this.state.kommSender = { id: pr.partner_id, name: pr.navn };
+        }
+        this._loadKalender();
+    }
+
+    // Mini-månedskalenderen: uker/dager for referanse-måneden, møtedager markert
+    get kalUker() {
+        const a = this.state.anchorDate ? new Date(this.state.anchorDate + "T12:00:00") : new Date();
+        const y = a.getFullYear(), m = a.getMonth();
+        const first = new Date(y, m, 1);
+        const offset = (first.getDay() + 6) % 7;   // mandag først
+        const start = new Date(y, m, 1 - offset);
+        const has = new Set(this.state.kal.mnd || []);
+        const p = (n) => String(n).padStart(2, "0");
+        const uker = [];
+        for (let u = 0; u < 6; u++) {
+            const dager = [];
+            for (let d = 0; d < 7; d++) {
+                const dt = new Date(start); dt.setDate(start.getDate() + u * 7 + d);
+                const iso = dt.getFullYear() + "-" + p(dt.getMonth() + 1) + "-" + p(dt.getDate());
+                dager.push({ d: dt.getDate(), iso, im: dt.getMonth() === m, has: has.has(iso), sel: iso === this.state.anchorDate });
+            }
+            uker.push({ key: "u" + u, dager });
+        }
+        return uker;
+    }
+
+    get kalTittel() {
+        const a = this.state.anchorDate ? new Date(this.state.anchorDate + "T12:00:00") : new Date();
+        return MND[a.getMonth()] + " " + a.getFullYear();
+    }
+
+    get periodeTekst() {
+        const m = { dag: "valgt dag", uke: "uken", maaned: "måneden", alle: "året" };
+        return m[this.state.kommPeriod] || "";
+    }
+
+    // Klikk på dato i månedskalenderen → vis møtene den dagen
+    pickKalDag(iso) {
+        this.state.anchorDate = iso;
+        this.state.kommPeriod = "dag";
+        this._loadProjects(this.state.projQuery);
+        this._loadKalender();
+    }
+
+    velgMote(id) { this.state.selMote = (this.state.selMote === id) ? false : id; }
+    velgAkt(ak) { this.state.selAkt = (this.state.selAkt && this.state.selAkt.id === ak.id) ? null : ak; }
+
+    openSelMote() {
+        if (this.state.selMote) { this.openRecord("calendar.event", this.state.selMote); }
+    }
+
+    openSelAkt() {
+        const a = this.state.selAkt;
+        if (a && a.model && a.res_id) { this.openRecord(a.model, a.res_id); }
+        else if (a) { this.runAction("aktivitet"); }
     }
 
     // ◂ ▸: hopp forrige/neste periode (dag/uke/måned/år etter valgt toggle)

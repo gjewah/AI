@@ -85,7 +85,7 @@
                                  t-att-title="a.nr + ' ' + a.name" t-on-click="() => this.pickArea(a.nr, a.id)">
                                 <img class="fiq_hm_aimg_big" t-att-src="'/fiq_gui_control/static/img/sp/' + a.nr.split('.')[0] + '.png'" t-att-alt="a.nr + ' ' + a.name" t-on-error="(ev) =&gt; ev.target.style.display = 'none'"/>
                                 <select t-if="a.subs.length" class="fiq_hm_asel" t-on-click.stop="() =&gt; {}" t-on-change="(ev) =&gt; this.pickAreaSub(a, ev.target.value)">
-                                    <option value="">Alle</option>
+                                    <option value="">Velg fagområde</option>
                                     <t t-foreach="a.subs" t-as="s" t-key="s.id">
                                         <option t-att-value="s.id" t-att-selected="state.projAreaId === s.id ? 'selected' : undefined" t-esc="s.nr + ' ' + s.name"/>
                                     </t>
@@ -176,7 +176,8 @@
                             <t t-if="state.presence.length">
                                 <div class="fiq_hm_presence">
                                     <t t-foreach="state.presence" t-as="pr" t-key="pr.id">
-                                        <div t-att-class="'fiq_hm_chip_p fiq_hm_chip_click fiq_hm_pres_' + (pr.farge || 'red')" t-att-title="pr.tekst + ' — chat med ' + pr.navn" t-on-click="() =&gt; this.openColleagueChat(pr)">
+                                        <div t-att-class="'fiq_hm_chip_p fiq_hm_chip_click fiq_hm_pres_' + (pr.farge || 'red') + ((state.selPerson and state.selPerson.id === pr.id) ? ' valgt' : '')"
+                                             t-att-title="pr.tekst + ' — klikk for å vise ' + pr.navn + ' sine varsler/møter/aktiviteter'" t-on-click="() =&gt; this.selectPerson(pr)">
                                             <span class="fiq_hm_avatar">
                                                 <span class="fiq_hm_ini" t-esc="pr.initialer"/>
                                                 <img t-if="pr.has_photo" class="fiq_hm_photo" t-att-src="'/web/image/res.users/' + pr.id + '/avatar_128'" t-att-alt="pr.navn" t-on-error="(ev) =&gt; ev.target.style.display = 'none'"/>
@@ -186,61 +187,79 @@
                                                 <span class="fiq_hm_pnavn" t-esc="pr.navn"/>
                                                 <span class="fiq_hm_pstat" t-esc="pr.tekst"/>
                                             </span>
+                                            <span t-if="state.selPerson and state.selPerson.id === pr.id" class="fiq_hm_pvalgt" title="Valgt person">✓</span>
+                                            <button class="fiq_hm_pchat" t-on-click.stop="() =&gt; this.openColleagueChat(pr)" t-att-title="'Chat med ' + pr.navn">💬</button>
                                         </div>
                                     </t>
                                 </div>
                             </t>
                             <t t-else=""><div class="fiq_hm_empty">Ingen registrerte interne brukere.</div></t>
+                            <!-- Varslene UNDER personene (gjelder valgt person når toggle er på) -->
+                            <div t-if="state.selPerson" class="fiq_hm_selinfo">Viser for: <strong t-esc="state.selPerson.name"/> <span class="fiq_hm_srch_x" t-on-click="() =&gt; this.selectPerson(state.selPerson)" title="Nullstill person">✕</span></div>
+                            <div t-if="state.show.kpis" class="fiq_hm_statusrow fiq_hm_statusrow_inn">
+                                <t t-foreach="state.kpis" t-as="k" t-key="k.key">
+                                    <div t-att-class="state.selectedKpi === k.key ? 'fiq_hm_kpi on' : 'fiq_hm_kpi'" t-att-style="'border-left: 4px solid ' + k.farge + ';'" t-on-click="() =&gt; this.selectKpi(k.key)">
+                                        <div class="v" t-esc="k.v"/>
+                                        <div class="l"><span t-att-class="'fiq_hm_kdot ' + (k.dot || '')"/><t t-esc="k.l"/><t t-if="k.sub"> · <t t-esc="k.sub"/></t></div>
+                                    </div>
+                                </t>
+                            </div>
+                            <div t-if="state.show.kpis" class="fiq_hm_detail">
+                                <t t-if="kpiDetailLines.length">
+                                    <t t-foreach="kpiDetailLines" t-as="dl" t-key="dl_index">
+                                        <div class="fiq_hm_detail_l" t-on-click="() =&gt; this.openDetail(dl)">
+                                            <span class="fiq_hm_detail_dot"/>
+                                            <span class="fiq_hm_detail_t" t-esc="dl.text"/>
+                                        </div>
+                                    </t>
+                                </t>
+                                <t t-else=""><div class="fiq_hm_empty">Ingen linjer å vise for valget.</div></t>
+                            </div>
                         </div>
-                        <!-- Møter og aktiviteter i dag (eget vindu ved siden av brukerne) -->
+                        <!-- Møter og aktiviteter (eget vindu ved siden av brukerne) -->
                         <div t-att-class="'fiq_hm_card' + (state.collapsed.dagens ? ' fiq_hm_collapsed' : '')">
-                            <div class="fiq_hm_ch"><h4>📅 Møter og aktiviteter i dag</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('dagens')" t-esc="state.collapsed.dagens ? 'Vis ▸' : 'Skjul ▾'"/></div>
-                            <div class="fiq_hm_dag2">
-                                <div>
-                                    <div class="fiq_hm_dag_h">Møter <button class="fiq_hm_ext fiq_hm_dag_open" t-on-click="() =&gt; this.runAction('kalender')" title="Åpne kalenderen">⤢</button></div>
-                                    <t t-if="state.dagens.moter.length">
-                                        <div t-foreach="state.dagens.moter" t-as="m" t-key="m.id" class="fiq_hm_dagrow" t-on-click="() =&gt; this.openRecord('calendar.event', m.id)">
-                                            <span class="fiq_hm_dagtid"><t t-esc="m.tid"/><t t-if="m.slutt">–<t t-esc="m.slutt"/></t></span>
+                            <div class="fiq_hm_ch"><h4>📅 Møter og aktiviteter (<t t-esc="periodeTekst"/><t t-if="state.selPerson"> · <t t-esc="state.selPerson.name"/></t>)</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('dagens')" t-esc="state.collapsed.dagens ? 'Vis ▸' : 'Skjul ▾'"/></div>
+                            <div class="fiq_hm_dagwrap">
+                                <div class="fiq_hm_daglists">
+                                    <div class="fiq_hm_dag_h">Møter
+                                        <button class="fiq_hm_ext fiq_hm_dag_open" t-att-disabled="!state.selMote" t-on-click="() =&gt; this.openSelMote()" title="Åpne valgt møte i Odoo">⤢ Åpne valgt møte</button>
+                                    </div>
+                                    <t t-if="state.kal.moter.length">
+                                        <div t-foreach="state.kal.moter" t-as="m" t-key="m.id" t-att-class="state.selMote === m.id ? 'fiq_hm_dagrow on' : 'fiq_hm_dagrow'" t-on-click="() =&gt; this.velgMote(m.id)">
+                                            <span class="fiq_hm_dagtid"><t t-esc="m.dato"/> <t t-esc="m.tid"/><t t-if="m.slutt">–<t t-esc="m.slutt"/></t></span>
                                             <span class="fiq_hm_dagnavn" t-esc="m.name"/>
                                         </div>
                                     </t>
-                                    <t t-else=""><div class="fiq_hm_empty">Ingen møter i dag.</div></t>
-                                </div>
-                                <div>
-                                    <div class="fiq_hm_dag_h">Aktiviteter <button class="fiq_hm_ext fiq_hm_dag_open" t-on-click="() =&gt; this.runAction('aktivitet')" title="Åpne aktivitetene">⤢</button></div>
-                                    <t t-if="state.dagens.aktiviteter.length">
-                                        <div t-foreach="state.dagens.aktiviteter" t-as="ak" t-key="ak.id" class="fiq_hm_dagrow" t-on-click="() =&gt; ak.model and ak.res_id ? this.openRecord(ak.model, ak.res_id) : this.runAction('aktivitet')">
+                                    <t t-else=""><div class="fiq_hm_empty">Ingen møter i perioden.</div></t>
+                                    <div class="fiq_hm_dag_h fiq_hm_dag_h2">Aktiviteter
+                                        <button class="fiq_hm_ext fiq_hm_dag_open" t-att-disabled="!state.selAkt" t-on-click="() =&gt; this.openSelAkt()" title="Åpne valgt aktivitet i Odoo">⤢ Åpne valgt aktivitet</button>
+                                    </div>
+                                    <t t-if="state.kal.aktiviteter.length">
+                                        <div t-foreach="state.kal.aktiviteter" t-as="ak" t-key="ak.id" t-att-class="(state.selAkt and state.selAkt.id === ak.id) ? 'fiq_hm_dagrow on' : 'fiq_hm_dagrow'" t-on-click="() =&gt; this.velgAkt(ak)">
                                             <span t-att-class="ak.forsinket ? 'fiq_hm_dagtid rod' : 'fiq_hm_dagtid'" t-esc="ak.frist"/>
                                             <span class="fiq_hm_dagnavn"><t t-esc="ak.name"/><t t-if="ak.res_name"> · <t t-esc="ak.res_name"/></t></span>
                                         </div>
                                     </t>
-                                    <t t-else=""><div class="fiq_hm_empty">Ingen aktiviteter.</div></t>
+                                    <t t-else=""><div class="fiq_hm_empty">Ingen aktiviteter i perioden.</div></t>
+                                </div>
+                                <!-- Mini-månedskalender: uthevede datoer = dager MED MØTER; klikk = vis dagens møter -->
+                                <div class="fiq_hm_kal">
+                                    <div class="fiq_hm_kal_h" t-esc="kalTittel"/>
+                                    <div class="fiq_hm_kal_uke">
+                                        <span t-foreach="['Ma','Ti','On','To','Fr','Lø','Sø']" t-as="wd" t-key="wd" t-esc="wd"/>
+                                    </div>
+                                    <div t-foreach="kalUker" t-as="uke" t-key="uke.key" class="fiq_hm_kal_uke">
+                                        <button t-foreach="uke.dager" t-as="dg" t-key="dg.iso"
+                                                t-att-class="'fiq_hm_kal_d' + (dg.im ? '' : ' ute') + (dg.has ? ' mote' : '') + (dg.sel ? ' sel' : '')"
+                                                t-att-title="dg.has ? 'Møter denne dagen — klikk for å vise' : dg.iso"
+                                                t-on-click="() =&gt; this.pickKalDag(dg.iso)" t-esc="dg.d"/>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         </div>
 
-                        <!-- Statuslinje: KPI + krever-handling som klikkbare knapper -->
-                        <div t-if="state.show.kpis" class="fiq_hm_statusrow">
-                            <t t-foreach="state.kpis" t-as="k" t-key="k.key">
-                                <div t-att-class="state.selectedKpi === k.key ? 'fiq_hm_kpi on' : 'fiq_hm_kpi'" t-att-style="'border-left: 4px solid ' + k.farge + ';'" t-on-click="() =&gt; this.selectKpi(k.key)">
-                                    <div class="v" t-esc="k.v"/>
-                                    <div class="l"><span t-att-class="'fiq_hm_kdot ' + (k.dot || '')"/><t t-esc="k.l"/><t t-if="k.sub"> · <t t-esc="k.sub"/></t></div>
-                                </div>
-                            </t>
-                        </div>
-                        <!-- Detaljlinjer for valgt knapp (frigjort plass) -->
-                        <div t-if="state.show.kpis" class="fiq_hm_card fiq_hm_detail">
-                            <t t-if="kpiDetailLines.length">
-                                <t t-foreach="kpiDetailLines" t-as="dl" t-key="dl_index">
-                                    <div class="fiq_hm_detail_l" t-on-click="() =&gt; this.openDetail(dl)">
-                                        <span class="fiq_hm_detail_dot"/>
-                                        <span class="fiq_hm_detail_t" t-esc="dl.text"/>
-                                    </div>
-                                </t>
-                            </t>
-                            <t t-else=""><div class="fiq_hm_empty">Ingen linjer å vise for valget.</div></t>
-                        </div>
+                        <!-- (KPI-varslene er flyttet inn under personene i Til stede-kortet) -->
 
                         <!-- (4) Beslutningsstøtte: 4 kolonner tilpassbare knapper -->
                         <div t-att-class="'fiq_hm_card' + (state.collapsed.beslutning ? ' fiq_hm_collapsed' : '')">
