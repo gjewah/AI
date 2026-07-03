@@ -587,9 +587,20 @@ export class FiqControlRoom extends Component {
         });
     }
 
+    // Feilmelding fra en ORM-/RPC-feil, mest mulig lesbart
+    _errMsg(e) {
+        return (e && e.data && e.data.message) || (e && e.message) || String(e || "");
+    }
+
     // Inline planlagt-dato (prosjekt: date-felt). Uavhengige fra/til-kalendere.
+    // Oppdaterer skjermen KUN hvis lagringen faktisk gikk gjennom; ellers vis feilen.
     async setProjDate(id, field, value) {
-        try { await this.orm.write("project.project", [id], { [field]: value || false }); } catch (e) {}
+        try {
+            await this.orm.write("project.project", [id], { [field]: value || false });
+        } catch (e) {
+            this.notification.add(_t("Kunne ikke lagre datoen — ") + this._errMsg(e), { type: "danger" });
+            return;
+        }
         const p = this.state.projects.find((x) => x.id === id);
         if (p) { if (field === "date_start") { p.start = value || false; } else { p.end = value || false; } }
     }
@@ -597,7 +608,12 @@ export class FiqControlRoom extends Component {
     // Inline planlagt-dato (oppgave: datetime-felt). Lagre kl. 12 for å unngå tidssone-skift.
     async setTaskDate(id, field, value) {
         const val = value ? value + " 12:00:00" : false;
-        try { await this.orm.write("project.task", [id], { [field]: val }); } catch (e) {}
+        try {
+            await this.orm.write("project.task", [id], { [field]: val });
+        } catch (e) {
+            this.notification.add(_t("Kunne ikke lagre datoen — ") + this._errMsg(e), { type: "danger" });
+            return;
+        }
         const t = this.state.myTasks.find((x) => x.id === id);
         if (t) { if (field === "planned_date_begin") { t.pfrom = value || ""; } else { t.pto = value || ""; } }
     }
@@ -607,7 +623,7 @@ export class FiqControlRoom extends Component {
     async setTaskEst(id, value) {
         const h = parseFloat(String(value || "").replace(",", ".")) || 0;
         try { await this.orm.write("project.task", [id], { allocated_hours: h }); }
-        catch (e) { return; }
+        catch (e) { this.notification.add(_t("Kunne ikke lagre estimatet — ") + this._errMsg(e), { type: "danger" }); return; }
         await this._fillProgress("project.task", this.state.myTasks);
         await this._fillProgress("project.project", this.state.projects);
         if (this.state.progLevel === "oppgave") {
