@@ -46,6 +46,14 @@
             <div class="fiq_hm_wrap">
                 <!-- Mørk sidemeny -->
                 <aside class="fiq_hm_side">
+                    <!-- STYRING øverst (primær-nav) -->
+                    <div class="fiq_hm_glbl">Styring</div>
+                    <div t-att-class="state.view === 'oversikt' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('oversikt')"><span class="b"/>Kontrollrom</div>
+                    <div t-att-class="state.view === 'kommunikasjon' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('kommunikasjon')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/epost.png"/>Kommunikasjon</div>
+                    <div t-att-class="state.view === 'hmsks' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('hmsks')"><span class="b"/>HMS/KS</div>
+                    <div t-att-class="state.view === 'airmm' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('airmm')"><span class="b"/>AI-RMM</div>
+
+                    <!-- Fagområder under -->
                     <div class="fiq_hm_glbl">Fagområder (SP)</div>
                     <div class="fiq_hm_sp_grid">
                         <t t-foreach="fagomrader" t-as="o" t-key="o.view">
@@ -58,12 +66,6 @@
                             </button>
                         </t>
                     </div>
-
-                    <div class="fiq_hm_glbl">Styring</div>
-                    <div t-att-class="state.view === 'oversikt' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('oversikt')"><span class="b"/>Kontrollrom</div>
-                    <div t-att-class="state.view === 'kommunikasjon' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('kommunikasjon')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/epost.png"/>Kommunikasjon</div>
-                    <div t-att-class="state.view === 'hmsks' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('hmsks')"><span class="b"/>HMS/KS</div>
-                    <div t-att-class="state.view === 'airmm' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('airmm')"><span class="b"/>AI-RMM</div>
                 </aside>
 
                 <section class="fiq_hm_main">
@@ -76,8 +78,11 @@
                         </div>
                         <div class="fiq_hm_topfield">
                             <span class="fiq_hm_toplbl">Søk</span>
-                            <input class="fiq_hm_filtersok" placeholder="Firma, person, prosjekt, oppgave …"
-                                   t-att-value="state.kommQuery" t-on-input="(ev) =&gt; state.kommQuery = ev.target.value"/>
+                            <span class="fiq_hm_srch">
+                                <input class="fiq_hm_filtersok" placeholder="Firma, person, prosjekt, oppgave …"
+                                       t-att-value="state.kommQuery" t-on-input="(ev) =&gt; state.kommQuery = ev.target.value"/>
+                                <span t-if="state.kommQuery" class="fiq_hm_srch_x" t-on-click="() =&gt; state.kommQuery = ''" title="Tøm søk">✕</span>
+                            </span>
                         </div>
                         <div class="fiq_hm_topfield fiq_hm_aifield">
                             <span class="fiq_hm_toplbl">✨ Spør AI</span>
@@ -198,7 +203,10 @@
                         <div class="fiq_hm_lists">
                             <div t-if="state.show.projects" t-att-class="'fiq_hm_card' + (state.collapsed.prosjekt ? ' fiq_hm_collapsed' : '')">
                                 <div class="fiq_hm_ch"><h4>Prosjektoversikt</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('prosjekt')" t-esc="state.collapsed.prosjekt ? '▸' : '▾'"/></div>
-                                <input class="fiq_hm_psok" placeholder="Søk i prosjekter (navn eller nr.) …" t-att-value="state.projQuery" t-on-input="(ev) =&gt; this.setProjQuery(ev.target.value)"/>
+                                <span class="fiq_hm_srch fiq_hm_srch_blk">
+                                    <input class="fiq_hm_psok" placeholder="Søk i prosjekter (navn eller nr.) …" t-att-value="state.projQuery" t-on-input="(ev) =&gt; this.setProjQuery(ev.target.value)"/>
+                                    <span t-if="state.projQuery" class="fiq_hm_srch_x" t-on-click="() =&gt; this.setProjQuery('')" title="Tøm søk">✕</span>
+                                </span>
                                 <t t-if="state.projects.length">
                                     <table>
                                         <thead><tr><th>Nr.</th><th>Prosjekt</th><th>Planlagt fra</th><th>Planlagt til</th><th>Fremdrift</th><th>Oppg</th><th></th></tr></thead>
@@ -339,8 +347,11 @@
                                         t-att-class="state.kommDir === dd[0] ? 'on' : ''"
                                         t-on-click="() => this.setKommDir(dd[0])" t-esc="dd[1]"/>
                             </div>
-                            <input class="fiq_hm_ksearch" placeholder="Søk i firma, person, prosjekt, oppgave …"
-                                   t-att-value="state.kommQuery" t-on-input="(ev) => state.kommQuery = ev.target.value"/>
+                            <span class="fiq_hm_srch">
+                                <input class="fiq_hm_ksearch" placeholder="Søk i firma, person, prosjekt, oppgave …"
+                                       t-att-value="state.kommQuery" t-on-input="(ev) => state.kommQuery = ev.target.value"/>
+                                <span t-if="state.kommQuery" class="fiq_hm_srch_x" t-on-click="() => state.kommQuery = ''" title="Tøm søk">✕</span>
+                            </span>
                         </div>
                         <div t-if="state.kommSender" class="fiq_hm_chip">
                             Avsender: <strong t-esc="state.kommSender.name"/>

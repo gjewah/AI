@@ -46,7 +46,7 @@ export class FiqControlRoom extends Component {
             show,
             kpis: [],
             selectedKpi: "",
-            collapsed: {},
+            collapsed: this._loadCollapsed(),
             projects: [],
             projQuery: "",        // project search over the project overview
             myTasks: [],
@@ -367,9 +367,17 @@ export class FiqControlRoom extends Component {
         this.state.selectedKpi = key;
     }
 
+    // Kollaps-tilstand huskes per bruker/nettleser (localStorage) → nullstilles IKKE
+    // ved oppfrisk/re-åpning. Defensiv: tomt objekt hvis localStorage ikke er tilgjengelig.
+    _loadCollapsed() {
+        try { return JSON.parse(localStorage.getItem("fiq_hm_collapsed") || "{}") || {}; }
+        catch (e) { return {}; }
+    }
+
     // Skjul/vis en seksjon (kollaps ved hovedoverskrift) for å løfte fram de andre listene
     toggleCollapse(key) {
         this.state.collapsed[key] = !this.state.collapsed[key];
+        try { localStorage.setItem("fiq_hm_collapsed", JSON.stringify(this.state.collapsed)); } catch (e) {}
     }
 
     // Detaljlinjer for valgt status-knapp (vises i frigjort plass under statuslinja)
