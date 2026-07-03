@@ -209,14 +209,12 @@
                                 </span>
                                 <t t-if="state.projects.length">
                                     <table>
-                                        <thead><tr><th>Nr.</th><th>Prosjekt</th><th>Planlagt fra</th><th>Planlagt til</th><th>Fremdrift</th><th>Oppg</th><th></th></tr></thead>
+                                        <thead><tr><th>Nr.</th><th>Prosjekt</th><th>Fremdrift</th><th>Oppg</th><th></th></tr></thead>
                                         <tbody>
                                             <t t-foreach="state.projects" t-as="p" t-key="p.id">
                                                 <tr t-att-class="(state.selected and state.selected.model === 'project.project' and state.selected.id === p.id) ? 'fiq_hm_selrow' : ''">
                                                     <td t-on-click="() =&gt; this.pickProject(p.id, p.name)"><span class="fiq_hm_no" t-esc="p.no"/></td>
                                                     <td t-on-click="() =&gt; this.pickProject(p.id, p.name)" t-esc="p.name"/>
-                                                    <td><input type="date" class="fiq_hm_din" t-att-value="p.start || ''" t-on-change="(ev) =&gt; this.setProjDate(p.id, 'date_start', ev.target.value)"/></td>
-                                                    <td><input type="date" class="fiq_hm_din" t-att-value="p.end || ''" t-on-change="(ev) =&gt; this.setProjDate(p.id, 'date', ev.target.value)"/></td>
                                                     <td t-on-click="() =&gt; this.pickProject(p.id, p.name)">
                                                         <t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="p.progress"/><t t-set="shape" t-value="state.progressShape"/><t t-set="hrs" t-value="p.estH ? (p.logH + '/' + p.estH + ' t') : ''"/></t>
                                                     </td>
@@ -240,8 +238,6 @@
                                                 <input type="number" step="0.5" min="0" class="fiq_hm_esti" t-att-value="t.estH || ''" t-on-change="(ev) =&gt; this.setTaskEst(t.id, ev.target.value)"/><span class="fiq_hm_estu">t est.</span>
                                             </span>
                                             <t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="t.progress"/><t t-set="shape" t-value="state.progressShape"/><t t-set="hrs" t-value="t.estH ? (t.logH + '/' + t.estH + ' t') : ''"/></t>
-                                            <input type="date" class="fiq_hm_din" t-att-value="t.pfrom || ''" t-on-change="(ev) =&gt; this.setTaskDate(t.id, 'planned_date_begin', ev.target.value)" title="Planlagt fra"/>
-                                            <input type="date" class="fiq_hm_din" t-att-value="t.pto || ''" t-on-change="(ev) =&gt; this.setTaskDate(t.id, 'date_deadline', ev.target.value)" title="Planlagt til"/>
                                             <span t-if="t.overdue" class="fiq_hm_warn">⚠ forsinket</span>
                                         </div>
                                     </t>
@@ -287,6 +283,8 @@
                                                     <span class="fiq_hm_no" t-esc="p.no"/>
                                                     <span class="fiq_hm_rname" t-esc="p.name"/>
                                                     <span t-if="state.progLevel === 'oppgave' and p.stage" class="fiq_hm_stagetag" t-esc="p.stage"/>
+                                                    <input type="date" class="fiq_hm_din" t-att-value="p.start || ''" t-on-click.stop="() =&gt; {}" t-on-change="(ev) =&gt; this.setRowDate(p, 'from', ev.target.value)" title="Planlagt fra"/>
+                                                    <input type="date" class="fiq_hm_din" t-att-value="p.end || ''" t-on-click.stop="() =&gt; {}" t-on-change="(ev) =&gt; this.setRowDate(p, 'to', ev.target.value)" title="Planlagt til"/>
                                                     <t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="p.progress"/><t t-set="shape" t-value="state.progressShape"/><t t-set="hrs" t-value="p.estH ? (p.logH + '/' + p.estH + ' t') : ''"/></t>
                                                 </div>
                                             </t>
@@ -302,7 +300,13 @@
                                         <t t-if="ganttRows.length">
                                             <t t-foreach="ganttRows" t-as="g" t-key="g.id">
                                                 <div t-att-class="'fiq_hm_cg_row' + ((state.selected and state.selected.model === progModel and state.selected.id === g.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.pickRow(g)">
-                                                    <span class="fiq_hm_cg_lbl" t-att-title="g.name" t-esc="g.name"/>
+                                                    <span class="fiq_hm_cg_lbl">
+                                                        <span class="fiq_hm_cg_name" t-att-title="g.name" t-esc="g.name"/>
+                                                        <span class="fiq_hm_cg_dates">
+                                                            <input type="date" class="fiq_hm_din_g" t-att-value="g.start || ''" t-on-click.stop="() =&gt; {}" t-on-change="(ev) =&gt; this.setRowDate(g, 'from', ev.target.value)" title="Planlagt fra"/>
+                                                            <input type="date" class="fiq_hm_din_g" t-att-value="g.end || ''" t-on-click.stop="() =&gt; {}" t-on-change="(ev) =&gt; this.setRowDate(g, 'to', ev.target.value)" title="Planlagt til"/>
+                                                        </span>
+                                                    </span>
                                                     <span class="fiq_hm_cg_track">
                                                         <span t-if="g.hasDates" class="fiq_hm_cg_bar" t-att-style="'left:' + g.leftPct + '%; width:' + g.widthPct + '%'" t-att-title="g.name">
                                                             <span class="fiq_hm_cg_fill" t-att-style="'width:' + g.progress + '%'"/>

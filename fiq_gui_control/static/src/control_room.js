@@ -618,6 +618,25 @@ export class FiqControlRoom extends Component {
         if (t) { if (field === "planned_date_begin") { t.pfrom = value || ""; } else { t.pto = value || ""; } }
     }
 
+    // Dato på en oppgave i fremdrift-drillen (progTasks bruker start/end for Gantt).
+    async setProgTaskDate(id, field, value) {
+        const val = value ? value + " 12:00:00" : false;
+        try { await this.orm.write("project.task", [id], { [field]: val }); }
+        catch (e) { this.notification.add(_t("Kunne ikke lagre datoen — ") + this._errMsg(e), { type: "danger" }); return; }
+        const t = this.state.progTasks.find((x) => x.id === id);
+        if (t) { if (field === "planned_date_begin") { t.start = value || false; } else { t.end = value || false; } }
+    }
+
+    // Felles dato-ruter for fremdrift-radene: prosjekt-nivå -> project.project (date_start/date),
+    // oppgave-nivå -> project.task (planned_date_begin/date_deadline). which = "from" | "to".
+    setRowDate(row, which, value) {
+        if (this.state.progLevel === "oppgave") {
+            this.setProgTaskDate(row.id, which === "from" ? "planned_date_begin" : "date_deadline", value);
+        } else {
+            this.setProjDate(row.id, which === "from" ? "date_start" : "date", value);
+        }
+    }
+
     // Juster estimerte (antatte) timer på en oppgave → skriv allocated_hours og
     // regn fremdrift på nytt (oppgave + prosjekt-rollup + evt. åpen oppgave-drill).
     async setTaskEst(id, value) {
@@ -756,13 +775,13 @@ export class FiqControlRoom extends Component {
             const s = p.start ? new Date(p.start).getTime() : null;
             const e = p.end ? new Date(p.end).getTime() : null;
             if (s === null && e === null) {
-                return { id: p.id, no: p.no, name: p.name, hasDates: false };
+                return { id: p.id, no: p.no, name: p.name, hasDates: false, start: p.start || false, end: p.end || false };
             }
             const bs = s !== null ? s : e;
             const be = e !== null ? e : s;
             let left = Math.max(0, Math.min(100, ((bs - start) / span) * 100));
             let right = Math.max(0, Math.min(100, ((be - start) / span) * 100));
-            return { id: p.id, no: p.no, name: p.name, hasDates: true,
+            return { id: p.id, no: p.no, name: p.name, hasDates: true, start: p.start || false, end: p.end || false,
                      leftPct: left, widthPct: Math.max(1.5, right - left), progress: p.progress };
         });
     }
