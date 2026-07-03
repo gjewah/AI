@@ -51,6 +51,8 @@ export class FiqControlRoom extends Component {
             projects: [],
             projQuery: "",        // project search over the project overview
             projArea: "",         // fagområde-filter (fagområdenr, f.eks. "6") – tom = alle
+            expanded: {},         // utvid-funksjon: {"model:id": true} = utvidet
+            children: {},         // lazy-lastede barn: {"model:id": [rader]}
             myTasks: [],
             komm: [],
             kommPeriod: "uke",
@@ -147,6 +149,7 @@ export class FiqControlRoom extends Component {
             id: p.id, no: p.sequence_code || "", name: p.name,
             taskCount: p.task_count || 0,
             start: p.date_start || false, end: p.date || false,
+            hasKids: !!(p.child_ids && p.child_ids.length),
             progress: 0, status: _t("In progress"),
         }));
         // Ekte, config-drevet fremdrift per prosjekt (lag 2) – erstatter tidligere placeholder
@@ -271,6 +274,19 @@ export class FiqControlRoom extends Component {
         this._loadProjects(this.state.projQuery);
     }
 
+    // Utvid/kollaps en rad → viser underprosjekter (PRJ) eller deloppgaver (Oppg).
+    // Lazy-laster barn første gang. key = "model:id".
+    async toggleExpand(model, id) {
+        const key = model + ":" + id;
+        this.state.expanded[key] = !this.state.expanded[key];
+        if (this.state.expanded[key] && !this.state.children[key]) {
+            try { this.state.children[key] = await this.orm.call("fiq.gui.control.config", "get_children", [model, id]); }
+            catch (e) { this.state.children[key] = []; }
+        }
+    }
+    isExp(model, id) { return !!this.state.expanded[model + ":" + id]; }
+    kids(model, id) { return this.state.children[model + ":" + id] || []; }
+
     // Klikk pa en kollega i «Til stede na» -> apne Discuss-chat (DM) med personen.
     // Bruker mail.store hvis tilgjengelig (mail er dep via project); ellers stille no-op.
     openColleagueChat(pr) {
@@ -288,7 +304,7 @@ export class FiqControlRoom extends Component {
         try { active = await this.orm.searchCount("project.project", [["active", "=", true]]); } catch (e) {}
 
         // Projects (overview + search). Field-detect sequence_code for portability.
-        this._pOpt = await this._optFields("project.project", ["sequence_code"]);
+        this._pOpt = await this._optFields("project.project", ["sequence_code", "child_ids"]);
         await this._loadProjects("");
 
         // My open tasks with their real number (code = "T0001") + deadline warning
@@ -301,7 +317,7 @@ export class FiqControlRoom extends Component {
         const tOpt = await this._optFields("project.task", ["code"]);
         const trecs = await this._read("project.task",
             [["user_ids", "in", [user.userId]]],
-            ["name", "project_id", "date_deadline", "planned_date_begin", ...tOpt], { limit: 10, order: "date_deadline asc" });
+            ["name", "project_id", "date_deadline", "planned_date_begin", "child_ids", ...tOpt], { limit: 10, order: "date_deadline asc" });
         const myTasks = trecs.map((t) => ({
             id: t.id, no: t.code || "", name: t.name,
             project: t.project_id ? t.project_id[1] : "",
@@ -309,6 +325,7 @@ export class FiqControlRoom extends Component {
             pfrom: (t.planned_date_begin || "").slice(0, 10),
             pto: (t.date_deadline || "").slice(0, 10),
             overdue: !!(t.date_deadline && t.date_deadline < today),
+            hasKids: !!(t.child_ids && t.child_ids.length),
             progress: 0,
         }));
         // Ekte, config-drevet fremdrift per oppgave (lag 2)

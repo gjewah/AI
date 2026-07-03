@@ -219,6 +219,12 @@
         &:hover { border-color: var(--fiq-accent); }
         &.on { border-color: var(--fiq-accent); background: var(--fiq-accent); color: #fff;
             .fiq_hm_pfc_nr { background: rgba(255,255,255,.3); } } }
+    // Utvid-funksjon: knapp + barn-rader (underprosjekter / deloppgaver)
+    .fiq_hm_exp { border: 0; background: transparent; cursor: pointer; color: var(--fiq-mut); font-size: 10px; padding: 0 3px 0 0; line-height: 1; flex: 0 0 auto;
+        &:hover { color: var(--fiq-accent); } }
+    .fiq_hm_childrow { background: #fafbfc; }
+    div.fiq_hm_childrow { padding-left: 16px; }
+    .fiq_hm_childind { color: var(--fiq-mut); margin-right: 2px; font-size: 11px; }
     // Menneskelig syntaks: prosjekt-/oppgavenummer
     .fiq_hm_no { font-family: monospace; font-size: 11px; color: var(--fiq-mut); background: #f0f1f3;
         border: 1px solid var(--fiq-bd); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }

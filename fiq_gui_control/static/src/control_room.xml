@@ -220,7 +220,10 @@
                                         <tbody>
                                             <t t-foreach="state.projects" t-as="p" t-key="p.id">
                                                 <tr t-att-class="(state.selected and state.selected.model === 'project.project' and state.selected.id === p.id) ? 'fiq_hm_selrow' : ''">
-                                                    <td t-on-click="() =&gt; this.pickProject(p.id, p.name)"><span class="fiq_hm_no" t-esc="p.no"/></td>
+                                                    <td t-on-click="() =&gt; this.pickProject(p.id, p.name)">
+                                                        <button t-if="p.hasKids" class="fiq_hm_exp" t-on-click.stop="() =&gt; this.toggleExpand('project.project', p.id)" t-esc="state.expanded['project.project:' + p.id] ? '▾' : '▸'"/>
+                                                        <span class="fiq_hm_no" t-esc="p.no"/>
+                                                    </td>
                                                     <td t-on-click="() =&gt; this.pickProject(p.id, p.name)" t-esc="p.name"/>
                                                     <td t-on-click="() =&gt; this.pickProject(p.id, p.name)">
                                                         <t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="p.progress"/><t t-set="shape" t-value="state.progressShape"/><t t-set="hrs" t-value="p.estH ? (p.logH + '/' + p.estH + ' t') : ''"/></t>
@@ -228,6 +231,17 @@
                                                     <td t-on-click="() =&gt; this.openProjectTasks(p.id)" t-esc="p.taskCount"/>
                                                     <td><span class="fiq_hm_gantt" t-on-click="() =&gt; this.openProjectTasks(p.id, 'gantt')" title="Åpne planlegging">🗓 Planlegging</span></td>
                                                 </tr>
+                                                <t t-if="state.expanded['project.project:' + p.id]">
+                                                    <t t-foreach="state.children['project.project:' + p.id] or []" t-as="c" t-key="c.id">
+                                                        <tr class="fiq_hm_childrow">
+                                                            <td t-on-click="() =&gt; this.pickProject(c.id, c.name)"><span class="fiq_hm_childind">↳</span><span class="fiq_hm_no" t-esc="c.no"/></td>
+                                                            <td t-on-click="() =&gt; this.pickProject(c.id, c.name)" t-esc="c.name"/>
+                                                            <td/>
+                                                            <td t-esc="c.taskCount"/>
+                                                            <td/>
+                                                        </tr>
+                                                    </t>
+                                                </t>
                                             </t>
                                         </tbody>
                                     </table>
@@ -238,6 +252,7 @@
                                 <t t-if="state.myTasks.length">
                                     <t t-foreach="state.myTasks" t-as="t" t-key="t.id">
                                         <div t-att-class="'fiq_hm_task' + ((state.selected and state.selected.model === 'project.task' and state.selected.id === t.id) ? ' fiq_hm_selrow' : '')">
+                                            <button t-if="t.hasKids" class="fiq_hm_exp" t-on-click.stop="() =&gt; this.toggleExpand('project.task', t.id)" t-esc="state.expanded['project.task:' + t.id] ? '▾' : '▸'"/>
                                             <span class="fiq_hm_no" t-esc="t.no" t-on-click="() =&gt; this.selectEl('project.task', t.id, t.name)"/>
                                             <span class="fiq_hm_task_n" t-esc="t.name" t-on-click="() =&gt; this.selectEl('project.task', t.id, t.name)"/>
                                             <span class="fiq_hm_task_p" t-esc="t.project"/>
@@ -247,6 +262,15 @@
                                             <t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="t.progress"/><t t-set="shape" t-value="state.progressShape"/><t t-set="hrs" t-value="t.estH ? (t.logH + '/' + t.estH + ' t') : ''"/></t>
                                             <span t-if="t.overdue" class="fiq_hm_warn">⚠ forsinket</span>
                                         </div>
+                                        <t t-if="state.expanded['project.task:' + t.id]">
+                                            <t t-foreach="state.children['project.task:' + t.id] or []" t-as="c" t-key="c.id">
+                                                <div class="fiq_hm_task fiq_hm_childrow" t-on-click="() =&gt; this.selectEl('project.task', c.id, c.name)">
+                                                    <span class="fiq_hm_childind">↳</span>
+                                                    <span class="fiq_hm_no" t-esc="c.no"/>
+                                                    <span class="fiq_hm_task_n" t-esc="c.name"/>
+                                                </div>
+                                            </t>
+                                        </t>
                                     </t>
                                 </t>
                                 <t t-else=""><div class="fiq_hm_empty">Ingen åpne oppgaver tildelt deg.</div></t>

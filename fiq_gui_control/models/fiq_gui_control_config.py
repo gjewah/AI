@@ -248,6 +248,37 @@ class FiqControlRoomConfig(models.Model):
         return out
 
     @api.model
+    def get_children(self, model, parent_id):
+        """Utvid-funksjon: underprosjekter (project.project via parent_id) eller
+        deloppgaver (project.task via parent_id). Kjøres som brukeren (record rules).
+        Defensivt/felt-guardet."""
+        out = []
+        try:
+            if model == "project.project":
+                P = self.env["project.project"]; f = P._fields
+                dom = [("parent_id", "=", parent_id)]
+                if "active" in f:
+                    dom.append(("active", "=", True))
+                for r in P.search(dom, order="id"):
+                    out.append({
+                        "id": r.id,
+                        "no": (r.sequence_code if "sequence_code" in f else "") or "",
+                        "name": r.name or "",
+                        "taskCount": (r.task_count if "task_count" in f else 0) or 0,
+                    })
+            elif model == "project.task":
+                T = self.env["project.task"]; f = T._fields
+                for r in T.search([("parent_id", "=", parent_id)], order="id"):
+                    out.append({
+                        "id": r.id,
+                        "no": (r.code if "code" in f else "") or "",
+                        "name": r.name or "",
+                    })
+        except Exception:
+            pass
+        return out
+
+    @api.model
     def get_detaljer(self, model, res_id):
         """Detaljer-panelet (inspektor): beskrivelse + logg (interne meldinger) +
         e-post + dokumenter (vedlegg) for valgt post. Kjøres som brukeren →
