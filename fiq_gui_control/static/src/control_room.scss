@@ -245,6 +245,9 @@
     .fiq_hm_exp { border: 0; background: transparent; cursor: pointer; color: var(--fiq-mut); font-size: 10px; padding: 0 3px 0 0; line-height: 1; flex: 0 0 auto;
         &:hover { color: var(--fiq-accent); } }
     .fiq_hm_childrow { background: #fafbfc; }
+    // Fast pil-plass i prosjekt-treet: rader uten pil får kunstig avstand → likt innrykk per nivå
+    .fiq_hm_slot { display: inline-block; width: 16px; text-align: center; flex: 0 0 auto;
+        .fiq_hm_exp { padding: 0; } }
     div.fiq_hm_childrow { padding-left: 16px; }
     .fiq_hm_childind { color: var(--fiq-mut); margin-right: 2px; font-size: 11px; }
     // Menneskelig syntaks: prosjekt-/oppgavenummer
