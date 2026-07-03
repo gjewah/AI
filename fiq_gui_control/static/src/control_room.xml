@@ -14,6 +14,12 @@
             <b t-esc="(pct || 0) + '%'"/>
         </span>
     </t>
+    <!-- Systray: uthevet «Tilbake til Kontrollrommet» i Odoos topplinje (oversettbar tekst) -->
+    <t t-name="fiq_gui_control.Systray">
+        <button class="fiq_hm_backbtn" t-on-click="() => this.openControlRoom()" title="Tilbake til Kontrollrommet">
+            ⌂ Tilbake til Kontrollrommet
+        </button>
+    </t>
     <t t-name="fiq_gui_control.ControlRoom">
         <div class="fiq_hm" t-att-style="'--fiq-accent:' + state.accent + ';'">
             <!-- Topplinje -->
