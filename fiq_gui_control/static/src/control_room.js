@@ -492,9 +492,18 @@ export class FiqControlRoom extends Component {
         this._underUtvikling();
     }
 
-    // «Utvidet funksjonalitet» → Prosjekt-kontrollrommet (ikke bygd ennå → placeholder)
+    // «⤢ Utvidet» → åpne den NATIVE Odoo-visningen for det man ser på.
+    // Oppgave-nivå (drill): prosjektets oppgaver (liste/Gantt). Prosjekt-nivå:
+    // valgt prosjekt → dets oppgaver; ellers hele prosjekt-oversikten.
     openProsjektKontrollrom() {
-        this._underUtvikling();
+        const mode = this.state.rightView === "gantt" ? "gantt" : undefined;
+        if (this.state.progLevel === "oppgave" && this.state.progProjId) {
+            this.openProjectTasks(this.state.progProjId, mode);
+        } else if (this.state.selected && this.state.selected.model === "project.project") {
+            this.openProjectTasks(this.state.selected.id, mode);
+        } else {
+            this.openProjects();
+        }
     }
 
     // «Spør AI om hjelp» → Claude via fiq.ai-connector (krever installert fiq_ai + API-nøkkel)

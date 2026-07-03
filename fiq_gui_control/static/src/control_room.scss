@@ -292,6 +292,11 @@
     .fiq_hm_bs_btn { text-align: left; border: 1px solid var(--fiq-bd); background: #f7f8f9; border-radius: 8px; padding: 8px 10px; cursor: pointer; font: inherit; font-size: 12px; color: var(--fiq-side);
         &:hover { border-color: var(--fiq-accent); background: #fff; }
         &.fiq_hm_bs_add { border-style: dashed; color: var(--fiq-mut); } }
+    // Fargekode beslutningsstøtte-knappene etter fagområde (venstre aksentstripe)
+    .fiq_hm_bs_btn.fiq_hm_bc_prj { border-left: 3px solid #70AD47; }   // 7 PRJ / prosjekt = grønn
+    .fiq_hm_bs_btn.fiq_hm_bc_sal { border-left: 3px solid #CC0000; }   // 6 Salg = rød
+    .fiq_hm_bs_btn.fiq_hm_bc_ai  { border-left: 3px solid #9c92d4; }   // 8.50 AI = lilla
+    .fiq_hm_bs_btn.fiq_hm_bc_dok { border-left: 3px solid #6b7280; }   // 2 Admin / dok = grå
 
     // ============ Spør AI om hjelp (bar) ============
     .fiq_hm_topfield { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 150px; }

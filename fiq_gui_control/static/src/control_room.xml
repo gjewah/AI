@@ -175,21 +175,21 @@
                             <div class="fiq_hm_bs">
                                 <div class="fiq_hm_bs_col">
                                     <div class="fiq_hm_bs_h">Opprett</div>
-                                    <button class="fiq_hm_bs_btn" t-on-click="() => this.runAction('nytt_prosjekt')">＋ Nytt prosjekt</button>
-                                    <button class="fiq_hm_bs_btn" t-on-click="() => this.runAction('salgsordre')">＋ Salgsordre</button>
-                                    <button class="fiq_hm_bs_btn" t-on-click="() => this.runAction('nytt_prosjekt')">＋ PRJ</button>
+                                    <button class="fiq_hm_bs_btn fiq_hm_bc_prj" t-on-click="() => this.runAction('nytt_prosjekt')">＋ Nytt prosjekt</button>
+                                    <button class="fiq_hm_bs_btn fiq_hm_bc_sal" t-on-click="() => this.runAction('salgsordre')">＋ Salgsordre</button>
+                                    <button class="fiq_hm_bs_btn fiq_hm_bc_prj" t-on-click="() => this.runAction('nytt_prosjekt')">＋ PRJ</button>
                                 </div>
                                 <div class="fiq_hm_bs_col">
                                     <div class="fiq_hm_bs_h">Salg</div>
-                                    <button class="fiq_hm_bs_btn" t-on-click="() => this.runAction('nytt_leads')">＋ Nytt leads</button>
-                                    <button class="fiq_hm_bs_btn" t-on-click="() => this.runAction('tilbud')">＋ Tilbud</button>
-                                    <button class="fiq_hm_bs_btn" t-on-click="() => this.runAction('kunde')">＋ Kunde</button>
+                                    <button class="fiq_hm_bs_btn fiq_hm_bc_sal" t-on-click="() => this.runAction('nytt_leads')">＋ Nytt leads</button>
+                                    <button class="fiq_hm_bs_btn fiq_hm_bc_sal" t-on-click="() => this.runAction('tilbud')">＋ Tilbud</button>
+                                    <button class="fiq_hm_bs_btn fiq_hm_bc_sal" t-on-click="() => this.runAction('kunde')">＋ Kunde</button>
                                 </div>
                                 <div class="fiq_hm_bs_col">
                                     <div class="fiq_hm_bs_h">Hjelp</div>
-                                    <button class="fiq_hm_bs_btn" t-on-click="() => this.askAi()">✨ Spør AI om hjelp</button>
-                                    <button class="fiq_hm_bs_btn" t-on-click="() => this.askAi()">🗎 Ukesrapport</button>
-                                    <button class="fiq_hm_bs_btn" t-on-click="() => this.runAction('dokument')">🗎 Dokument</button>
+                                    <button class="fiq_hm_bs_btn fiq_hm_bc_ai" t-on-click="() => this.askAi()">✨ Spør AI om hjelp</button>
+                                    <button class="fiq_hm_bs_btn fiq_hm_bc_ai" t-on-click="() => this.askAi()">🗎 Ukesrapport</button>
+                                    <button class="fiq_hm_bs_btn fiq_hm_bc_dok" t-on-click="() => this.runAction('dokument')">🗎 Dokument</button>
                                 </div>
                                 <div class="fiq_hm_bs_col">
                                     <div class="fiq_hm_bs_h">Tilpass</div>
