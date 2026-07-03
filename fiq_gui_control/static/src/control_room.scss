@@ -251,8 +251,15 @@
             .fiq_hm_ini { width: 26px; height: 26px; border-radius: 50%; background: #e7eaee; color: var(--fiq-side); font-weight: 600; font-size: 11px;
                 display: flex; align-items: center; justify-content: center; }
             .fiq_hm_dot { position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 50%; border: 2px solid #fff;
-                &.online { background: #22c55e; } &.away { background: #eab308; } &.offline { background: #9ca3af; } } }
-        .fiq_hm_pnavn { font-size: 11.5px; white-space: nowrap; } }
+                &.online, &.green { background: #22c55e; } &.away, &.orange { background: #f59e0b; }
+                &.offline { background: #9ca3af; } &.red { background: #ef4444; } } }
+        .fiq_hm_pcol { display: flex; flex-direction: column; line-height: 1.15; }
+        .fiq_hm_pnavn { font-size: 11.5px; white-space: nowrap; }
+        .fiq_hm_pstat { font-size: 9.5px; color: var(--fiq-mut); white-space: nowrap; } }
+    // Sammensatt tilstede-status farger HELE kortet: grønn/oransje/rød
+    .fiq_hm_pres_green  { border-color: #22c55e; background: #f0fdf4; .fiq_hm_pstat { color: #15803d; } }
+    .fiq_hm_pres_orange { border-color: #f59e0b; background: #fffbeb; .fiq_hm_pstat { color: #b45309; } }
+    .fiq_hm_pres_red    { border-color: #ef4444; background: #fef2f2; .fiq_hm_pstat { color: #b91c1c; } }
     .fiq_hm_chip_click { cursor: pointer; transition: border-color .12s, background .12s;
         &:hover { border-color: var(--fiq-accent); background: rgba(56,180,74,.06); } }
 

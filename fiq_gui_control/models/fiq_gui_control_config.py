@@ -249,17 +249,41 @@ class FiqControlRoomConfig(models.Model):
 
     @api.model
     def get_presence(self):
-        """«Til stede nå»: interne brukere (share=False, active=True) med
-        tilgjengelighets-status fra res.users.im_status.
-        Defensiv: hvis im_status-feltet mangler (ingen bus/presence-modul) → 'offline'.
-        status → 'online' (grønn) | 'away' (gul) | 'offline' (grå)."""
+        """«Til stede nå»: interne brukere med SAMMENSATT status som farger HELE kortet:
+           🟢 grønn = Til stede · 🟠 oransje = I møte / Ute · 🔴 rød = Fraværende / Ikke møtt.
+           Kombinerer im_status (pålogget/borte/av) + pågående møte (calendar.event) +
+           oppmøte (hr.attendance åpen = møtt på jobb). Alt defensivt/felt-guardet.
+           Møte/oppmøte leses sudo (fri/opptatt-indikator på en delt tilstede-tavle)."""
         Users = self.env["res.users"]
-        # NB: login_date er et ikke-lagret relatert felt (related=log_ids.create_date)
-        # og kan IKKE brukes i SQL ORDER BY i Odoo 19 → sorter på lagret felt (navn).
         users = Users.search(
             [("share", "=", False), ("active", "=", True)],
             order="name", limit=24,
         )
+
+        # Batch: hvem er i et møte NÅ (calendar.event der nå ∈ [start, stop]) → partner_ids
+        in_meeting = set()
+        try:
+            now = fields.Datetime.now()
+            evs = self.env["calendar.event"].sudo().search(
+                [("start", "<=", now), ("stop", ">=", now)])
+            for e in evs:
+                in_meeting.update(e.partner_ids.ids)
+        except Exception:
+            pass
+
+        # Batch: hvem har møtt på jobb (åpen hr.attendance, ingen check_out) → user_ids
+        attendance_avail = False
+        checked_in_users = set()
+        try:
+            open_att = self.env["hr.attendance"].sudo().search([("check_out", "=", False)])
+            attendance_avail = True
+            emp_ids = open_att.mapped("employee_id").ids
+            if emp_ids:
+                emps = self.env["hr.employee"].sudo().browse(emp_ids)
+                checked_in_users = set(emps.mapped("user_id").ids)
+        except Exception:
+            attendance_avail = False
+
         out = []
         for u in users:
             # im_status er et computed felt (krever bus). Les defensivt.
@@ -267,15 +291,29 @@ class FiqControlRoomConfig(models.Model):
                 raw = u.im_status or "offline"
             except Exception:
                 raw = "offline"
-            # Normaliser: Odoo gir online|away|offline (+ *_ios varianter)
             if raw.startswith("online"):
-                status = "online"
+                im = "online"
             elif raw.startswith("away"):
-                status = "away"
+                im = "away"
             else:
-                status = "offline"
+                im = "offline"
+
+            meeting = u.partner_id.id in in_meeting
+            moett = (u.id in checked_in_users) if attendance_avail else None
+
+            # Fargelogikk for HELE kortet
+            if meeting:
+                farge, tekst = "orange", _("I møte")
+            elif im == "online":
+                farge, tekst = "green", _("Til stede")
+            elif im == "away":
+                farge, tekst = "orange", _("Ute")
+            elif attendance_avail and not moett:
+                farge, tekst = "red", _("Ikke møtt")
+            else:
+                farge, tekst = "red", _("Fraværende")
+
             name = u.name or u.login or "—"
-            # Initialer (maks 2) fra navnet
             parts = [p for p in name.replace("-", " ").split(" ") if p]
             if len(parts) >= 2:
                 initialer = (parts[0][:1] + parts[-1][:1]).upper()
@@ -283,7 +321,6 @@ class FiqControlRoomConfig(models.Model):
                 initialer = parts[0][:2].upper()
             else:
                 initialer = "?"
-            # Har brukeren et ansattbilde? (kun flagg – vi laster ikke selve bildet her)
             has_photo = False
             try:
                 emp = self.env["hr.employee"].sudo().search(
@@ -291,12 +328,15 @@ class FiqControlRoomConfig(models.Model):
                 has_photo = bool(emp and emp.image_128)
             except Exception:
                 has_photo = False
+
             out.append({
                 "id": u.id,
                 "partner_id": u.partner_id.id,
                 "navn": name,
                 "initialer": initialer,
-                "status": status,
+                "status": im,        # bakoverkomp (dot)
+                "farge": farge,      # green | orange | red – farger HELE kortet
+                "tekst": tekst,      # Til stede | I møte | Ute | Fraværende | Ikke møtt
                 "has_photo": has_photo,
             })
         return out

@@ -127,13 +127,16 @@
                             <t t-if="state.presence.length">
                                 <div class="fiq_hm_presence">
                                     <t t-foreach="state.presence" t-as="pr" t-key="pr.id">
-                                        <div class="fiq_hm_chip_p fiq_hm_chip_click" t-att-title="'Chat med ' + pr.navn" t-on-click="() =&gt; this.openColleagueChat(pr)">
+                                        <div t-att-class="'fiq_hm_chip_p fiq_hm_chip_click fiq_hm_pres_' + (pr.farge || 'red')" t-att-title="pr.tekst + ' — chat med ' + pr.navn" t-on-click="() =&gt; this.openColleagueChat(pr)">
                                             <span class="fiq_hm_avatar">
                                                 <span class="fiq_hm_ini" t-esc="pr.initialer"/>
                                                 <img t-if="pr.has_photo" class="fiq_hm_photo" t-att-src="'/web/image/res.users/' + pr.id + '/avatar_128'" t-att-alt="pr.navn" t-on-error="(ev) =&gt; ev.target.style.display = 'none'"/>
-                                                <span t-att-class="'fiq_hm_dot ' + pr.status"/>
+                                                <span t-att-class="'fiq_hm_dot ' + (pr.farge || 'red')"/>
                                             </span>
-                                            <span class="fiq_hm_pnavn" t-esc="pr.navn"/>
+                                            <span class="fiq_hm_pcol">
+                                                <span class="fiq_hm_pnavn" t-esc="pr.navn"/>
+                                                <span class="fiq_hm_pstat" t-esc="pr.tekst"/>
+                                            </span>
                                         </div>
                                     </t>
                                 </div>
