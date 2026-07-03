@@ -85,6 +85,7 @@ export class FiqControlRoom extends Component {
             areas: [],            // fagområde-treet fra Odoo prosjekt-hierarkiet (get_areas)
             areaOpen: {},         // {nr: true} = nedtrekk åpent i sidemenyen
             expanded: {},         // utvid-funksjon: {"model:id": true} = utvidet
+            treeClosed: {},       // prosjekt-treet: {prosjektId: true} = forelderens barn foldet inn
             children: {},         // lazy-lastede barn: {"model:id": [rader]}
             myTasks: [],
             taskNoQuery: "",      // oppgavesøk: nummer (code)
@@ -556,6 +557,23 @@ export class FiqControlRoom extends Component {
     }
     isExp(model, id) { return !!this.state.expanded[model + ":" + id]; }
     kids(model, id) { return this.state.children[model + ":" + id] || []; }
+
+    // Prosjekt-treet: fold-pilen sitter på FORELDEREN; lukkede foreldres barn skjules
+    toggleTree(id) {
+        this.state.treeClosed[id] = !this.state.treeClosed[id];
+    }
+
+    get visibleProjects() {
+        const out = [];
+        let skipDepth = null;
+        for (const r of this.state.projects) {
+            if (skipDepth !== null && r.depth > skipDepth) { continue; }
+            skipDepth = null;
+            out.push(r);
+            if (r.hasLoadedKids && this.state.treeClosed[r.id]) { skipDepth = r.depth; }
+        }
+        return out;
+    }
 
     // Klikk pa en kollega i «Til stede na» -> apne Discuss-chat (DM) med personen.
     // Bruker mail.store hvis tilgjengelig (mail er dep via project); ellers stille no-op.
