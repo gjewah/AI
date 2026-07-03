@@ -122,7 +122,9 @@
         button { border: 0; background: #fff; color: var(--fiq-mut); padding: 4px 12px; cursor: pointer; font: inherit; font-size: 11.5px;
             &.on { background: var(--fiq-accent); color: #fff; } } }
     .fiq_hm_ext { border: 1px solid var(--fiq-bd); background: #f7f8f9; border-radius: 8px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 11.5px; color: var(--fiq-side);
-        &:hover { border-color: var(--fiq-accent); background: #fff; } }
+        &:hover { border-color: var(--fiq-accent); background: #fff; }
+        &[disabled] { opacity: .45; cursor: default; &:hover { border-color: var(--fiq-bd); background: #f7f8f9; } } }
+    .fiq_hm_proglvl { font-size: 11.5px; color: var(--fiq-mut); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .fiq_hm_rrow { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; font-size: 12px;
         &:hover { background: #f7f8f9; }
         .fiq_hm_rname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

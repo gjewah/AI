@@ -242,24 +242,31 @@
                             <div class="fiq_hm_work_main">
                                 <div t-if="state.show.chart" class="fiq_hm_card">
                                     <div class="fiq_hm_rhead">
-                                        <h4>Prosjektfremdrift</h4>
+                                        <h4 t-esc="state.progLevel === 'oppgave' ? 'Oppgavefremdrift' : 'Prosjektfremdrift'"/>
                                         <div class="fiq_hm_rseg">
                                             <button t-att-class="state.rightView === 'liste' ? 'on' : ''" t-on-click="() =&gt; this.setRightView('liste')">Liste</button>
                                             <button t-att-class="state.rightView === 'gantt' ? 'on' : ''" t-on-click="() =&gt; this.setRightView('gantt')">Gantt</button>
                                         </div>
+                                        <t t-if="state.progLevel === 'prosjekt'">
+                                            <button class="fiq_hm_ext" t-att-disabled="!(state.selected and state.selected.model === 'project.project')" t-on-click="() =&gt; this.showTasksSelected()" title="Vis oppgavefremdrift for valgt prosjekt">▸ Oppgaver</button>
+                                        </t>
+                                        <t t-else="">
+                                            <button class="fiq_hm_ext" t-on-click="() =&gt; this.backToProjects()" title="Tilbake til prosjektfremdrift">◂ Prosjekter</button>
+                                            <span class="fiq_hm_proglvl" t-att-title="state.progProjName" t-esc="state.progProjName"/>
+                                        </t>
                                         <button class="fiq_hm_ext" t-on-click="() =&gt; this.openProsjektKontrollrom()" title="Åpne Prosjekt-kontrollrommet (utvidet)">⤢ Utvidet</button>
                                     </div>
                                     <t t-if="state.rightView === 'liste'">
-                                        <t t-if="state.projects.length">
-                                            <t t-foreach="state.projects" t-as="p" t-key="p.id">
-                                                <div t-att-class="'fiq_hm_rrow' + ((state.selected and state.selected.model === 'project.project' and state.selected.id === p.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.selectEl('project.project', p.id, p.name)">
+                                        <t t-if="progRows.length">
+                                            <t t-foreach="progRows" t-as="p" t-key="p.id">
+                                                <div t-att-class="'fiq_hm_rrow' + ((state.selected and state.selected.model === progModel and state.selected.id === p.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.selectEl(progModel, p.id, p.name)">
                                                     <span class="fiq_hm_no" t-esc="p.no"/>
                                                     <span class="fiq_hm_rname" t-esc="p.name"/>
                                                     <t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="p.progress"/><t t-set="shape" t-value="state.progressShape"/></t>
                                                 </div>
                                             </t>
                                         </t>
-                                        <t t-else=""><div class="fiq_hm_empty">Ingen prosjekter.</div></t>
+                                        <t t-else=""><div class="fiq_hm_empty" t-esc="state.progLevel === 'oppgave' ? 'Ingen oppgaver i prosjektet.' : 'Ingen prosjekter.'"/></t>
                                     </t>
                                     <div t-if="state.rightView === 'gantt'" class="fiq_hm_cgantt">
                                         <div class="fiq_hm_cg_axis">
@@ -269,7 +276,7 @@
                                         </div>
                                         <t t-if="ganttRows.length">
                                             <t t-foreach="ganttRows" t-as="g" t-key="g.id">
-                                                <div t-att-class="'fiq_hm_cg_row' + ((state.selected and state.selected.model === 'project.project' and state.selected.id === g.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.selectEl('project.project', g.id, g.name)">
+                                                <div t-att-class="'fiq_hm_cg_row' + ((state.selected and state.selected.model === progModel and state.selected.id === g.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.selectEl(progModel, g.id, g.name)">
                                                     <span class="fiq_hm_cg_lbl" t-att-title="g.name" t-esc="g.name"/>
                                                     <span class="fiq_hm_cg_track">
                                                         <span t-if="g.hasDates" class="fiq_hm_cg_bar" t-att-style="'left:' + g.leftPct + '%; width:' + g.widthPct + '%'" t-att-title="g.name">
@@ -280,7 +287,7 @@
                                                 </div>
                                             </t>
                                         </t>
-                                        <t t-else=""><div class="fiq_hm_empty">Ingen prosjekter.</div></t>
+                                        <t t-else=""><div class="fiq_hm_empty" t-esc="state.progLevel === 'oppgave' ? 'Ingen oppgaver i prosjektet.' : 'Ingen prosjekter.'"/></t>
                                     </div>
                                 </div>
                             </div>

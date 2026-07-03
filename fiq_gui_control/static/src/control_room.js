@@ -68,6 +68,10 @@ export class FiqControlRoom extends Component {
             progressMetric: "auto", // auto | timer | deloppgaver | stadium (config-drevet)
             loading: true,
             refreshing: false,    // «⟳ Oppdater» – henter live data på nytt uten å blanke skjermen
+            progLevel: "prosjekt", // Prosjektfremdrift-panel: "prosjekt" | "oppgave" (drill i valgt prosjekt)
+            progTasks: [],        // oppgavene til valgt prosjekt (m/ fremdrift) når progLevel = "oppgave"
+            progProjId: false,    // valgt prosjekt for oppgave-drill
+            progProjName: "",
         });
 
         onWillStart(async () => {
@@ -150,6 +154,47 @@ export class FiqControlRoom extends Component {
                 [model, ids, this.state.progressMetric]);
         } catch (e) { return; }
         rows.forEach((r) => { r.progress = Math.max(0, Math.min(100, Math.round(map[r.id] || 0))); });
+    }
+
+    // Drill: last oppgavene til ETT prosjekt (m/ config-drevet fremdrift) for oppgave-nivå
+    async _loadProgTasks(pid) {
+        const tOpt = await this._optFields("project.task", ["code"]);
+        const recs = await this._read("project.task", [["project_id", "=", pid]],
+            ["name", "date_deadline", "planned_date_begin", ...tOpt],
+            { limit: 60, order: "planned_date_begin asc, id asc" });
+        const rows = recs.map((t) => ({
+            id: t.id, no: t.code || "", name: t.name,
+            start: (t.planned_date_begin || "").slice(0, 10) || false,
+            end: (t.date_deadline || "").slice(0, 10) || false,
+            progress: 0,
+        }));
+        await this._fillProgress("project.task", rows);
+        this.state.progTasks = rows;
+    }
+
+    // «▸ Oppgaver»: vis oppgavefremdrift for det valgte prosjektet
+    async showTasksSelected() {
+        const s = this.state.selected;
+        if (s && s.model === "project.project") {
+            this.state.progProjId = s.id;
+            this.state.progProjName = s.name || "";
+            await this._loadProgTasks(s.id);
+            this.state.progLevel = "oppgave";
+        }
+    }
+
+    // «◂ Prosjekter»: tilbake til prosjektfremdrift
+    backToProjects() {
+        this.state.progLevel = "prosjekt";
+    }
+
+    // Kilden Prosjektfremdrift-panelet itererer over (prosjekter ELLER valgt prosjekts oppgaver)
+    get progRows() {
+        return this.state.progLevel === "oppgave" ? this.state.progTasks : this.state.projects;
+    }
+
+    get progModel() {
+        return this.state.progLevel === "oppgave" ? "project.task" : "project.project";
     }
 
     // Project search field (right above the project overview) - debounced server search
@@ -471,8 +516,13 @@ export class FiqControlRoom extends Component {
     async refresh() {
         if (this.state.refreshing) { return; }
         this.state.refreshing = true;
-        try { await this.loadData(); }
-        finally { this.state.refreshing = false; }
+        try {
+            await this.loadData();
+            // Hold oppgave-drillen fersk hvis den er åpen
+            if (this.state.progLevel === "oppgave" && this.state.progProjId) {
+                await this._loadProgTasks(this.state.progProjId);
+            }
+        } finally { this.state.refreshing = false; }
     }
 
     setView(v) {
@@ -541,7 +591,7 @@ export class FiqControlRoom extends Component {
     get ganttRows() {
         const { start, end } = this.ganttWindow;
         const span = (end - start) || 1;
-        return this.state.projects.map((p) => {
+        return this.progRows.map((p) => {
             const s = p.start ? new Date(p.start).getTime() : null;
             const e = p.end ? new Date(p.end).getTime() : null;
             if (s === null && e === null) {
