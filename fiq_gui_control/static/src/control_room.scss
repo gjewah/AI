@@ -47,7 +47,7 @@
         label { display: inline-flex; align-items: center; gap: 6px; margin: 4px 14px 4px 0; text-transform: capitalize; cursor: pointer; }
     }
 
-    .fiq_hm_wrap { display: grid; grid-template-columns: 190px 1fr; gap: 12px; flex: 1 1 auto; min-height: 0; }
+    .fiq_hm_wrap { display: grid; grid-template-columns: 288px 1fr; gap: 12px; flex: 1 1 auto; min-height: 0; }
     @media (max-width: 760px) { .fiq_hm_wrap { grid-template-columns: 1fr; } }
 
     .fiq_hm_side {
@@ -312,9 +312,14 @@
         .fiq_hm_asq { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 20px; border-radius: 5px;
             font-size: 10px; font-weight: 700; color: #fff; background: var(--sp, #555); flex: 0 0 auto; padding: 0 3px;
             &.dk { color: #1f2228; } }
-        // SP-ikon (glossy MedBib-flis) oppå farget nr-firkant (fallback hvis bildet mangler)
-        .fiq_hm_aico { position: relative; display: inline-flex; align-items: center; flex: 0 0 auto;
-            .fiq_hm_aimg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); height: 22px; width: auto; border-radius: 4px; } }
+        // Stor SP-flis (256 px bred) — glossy MedBib-ikon m/ lesbar innstøpt tekst
+        .fiq_hm_atile { width: 100%; max-width: 256px; margin: 0 auto 8px; cursor: pointer; border-radius: 10px; padding: 5px;
+            box-sizing: border-box;
+            &:hover { background: #262f37; }
+            &.on { background: #262f37; box-shadow: inset 0 0 0 2px rgba(255,255,255,.4); }
+            .fiq_hm_aimg_big { width: 100%; height: auto; border-radius: 8px; display: block; }
+            .fiq_hm_atile_foot { display: flex; align-items: center; gap: 6px; padding: 4px 2px 0; color: #c4ccd4; font-size: 11.5px;
+                .fiq_hm_aname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } } }
         .fiq_hm_aname { flex: 1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .fiq_hm_achev { border: 0; background: transparent; color: #8b93a1; cursor: pointer; font-size: 10px; padding: 2px 5px; line-height: 1; flex: 0 0 auto;
             &:hover { color: #fff; } } }
@@ -335,7 +340,8 @@
         &:hover { border-color: var(--fiq-accent); background: #fff; }
         &.on { border-color: var(--fiq-accent); background: rgba(56,180,74,.10); color: var(--fiq-side); } }
 
-    // Periode-speil + datovelger over prosjektoversikten
+    // Periode-speil + datovelger over prosjektoversikten (◂ ▸ = forrige/neste periode)
+    .fiq_hm_step { padding: 4px 8px; font-size: 12px; line-height: 1; }
     .fiq_hm_pperiod { display: flex; align-items: center; gap: 8px; margin: 0 0 8px;
         .fiq_hm_pseg { display: inline-flex; border: 1px solid var(--fiq-bd); border-radius: 8px; overflow: hidden; background: #fff;
             button { border: 0; background: #fff; color: var(--fiq-mut); padding: 3px 10px; cursor: pointer; font: inherit; font-size: 11px;

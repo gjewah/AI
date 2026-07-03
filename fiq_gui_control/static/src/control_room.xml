@@ -45,7 +45,7 @@
                     Auto <t t-if="state.autoRefresh">✓</t>
                 </button>
                 <!-- Versjonsbrikke: ved avvik blir den en OPPGRADER-knapp (admin) rett i Kontrollrommet -->
-                <button t-if="verVis and verVis.avvik and state.isAdmin" class="fiq_hm_ver avvik fiq_hm_verbtn" t-att-disabled="state.upgrading"
+                <button t-if="verVis and verVis.avvik and state.canUpgrade" class="fiq_hm_ver avvik fiq_hm_verbtn" t-att-disabled="state.upgrading"
                         t-on-click="() =&gt; this.upgradeModule()" t-att-title="verVis.title">
                     <t t-esc="state.upgrading ? 'Oppgraderer …' : (verVis.text + ' → Oppgrader')"/>
                 </button>
@@ -74,16 +74,16 @@
                     <div class="fiq_hm_alist">
                         <!-- t-key = post-id (unik) — prosjektNUMMER kan duplisere (to «0.90»-maler) -->
                         <t t-foreach="sideAreas" t-as="a" t-key="a.id || a.nr">
-                            <div t-att-class="(state.view === 'oversikt' and state.projArea === a.nr) ? 'fiq_hm_arow on' : 'fiq_hm_arow'"
+                            <!-- Stor SP-flis (256 px, glossy MedBib-ikon — innstøpt tekst lesbar) -->
+                            <div t-att-class="(state.view === 'oversikt' and state.projArea === a.nr) ? 'fiq_hm_atile on' : 'fiq_hm_atile'"
                                  t-att-title="a.nr + ' ' + a.name" t-on-click="() => this.pickArea(a.nr, a.id)">
-                                <!-- SP-områdeikon (glossy 3D-flis fra MedBib); farget nr-firkant = fallback bak -->
-                                <span class="fiq_hm_aico">
+                                <img class="fiq_hm_aimg_big" t-att-src="'/fiq_gui_control/static/img/sp/' + a.nr.split('.')[0] + '.png'" t-att-alt="a.nr + ' ' + a.name" t-on-error="(ev) =&gt; ev.target.style.display = 'none'"/>
+                                <div class="fiq_hm_atile_foot">
                                     <span t-att-class="a.dk ? 'fiq_hm_asq dk' : 'fiq_hm_asq'" t-att-style="'--sp:' + a.color + ';'" t-esc="a.nr"/>
-                                    <img class="fiq_hm_aimg" t-att-src="'/fiq_gui_control/static/img/sp/' + a.nr.split('.')[0] + '.png'" t-att-alt="a.nr" t-on-error="(ev) =&gt; ev.target.style.display = 'none'"/>
-                                </span>
-                                <span class="fiq_hm_aname" t-esc="a.name"/>
-                                <button t-if="a.subs.length" class="fiq_hm_achev" t-att-title="state.areaOpen[a.nr] ? 'Lukk underområder' : 'Vis underområder'"
-                                        t-on-click.stop="() => this.toggleArea(a.nr)" t-esc="state.areaOpen[a.nr] ? '▾' : '▸'"/>
+                                    <span class="fiq_hm_aname" t-esc="a.name"/>
+                                    <button t-if="a.subs.length" class="fiq_hm_achev" t-att-title="state.areaOpen[a.nr] ? 'Lukk underområder' : 'Vis underområder'"
+                                            t-on-click.stop="() => this.toggleArea(a.nr)" t-esc="state.areaOpen[a.nr] ? '▾' : '▸'"/>
+                                </div>
                             </div>
                             <t t-if="state.areaOpen[a.nr]">
                                 <div t-foreach="a.subs" t-as="s" t-key="s.id"
@@ -239,7 +239,9 @@
                                                 t-att-class="state.kommPeriod === pp[0] ? 'on' : ''"
                                                 t-on-click="() =&gt; this.setKommPeriod(pp[0])" t-esc="pp[1]"/>
                                     </div>
+                                    <button class="fiq_hm_ext fiq_hm_step" t-on-click="() =&gt; this.stepAnchor(-1)" title="Forrige periode">◂</button>
                                     <input type="date" class="fiq_hm_din" t-att-value="state.anchorDate" t-on-change="(ev) =&gt; this.setAnchor(ev.target.value)" title="Referansedato for perioden (Dag/Uke/Måned regnes fra denne)"/>
+                                    <button class="fiq_hm_ext fiq_hm_step" t-on-click="() =&gt; this.stepAnchor(1)" title="Neste periode">▸</button>
                                 </div>
                                 <span class="fiq_hm_srch fiq_hm_srch_blk">
                                     <input class="fiq_hm_psok" placeholder="Søk i prosjekter (navn eller nr.) …" t-att-value="state.projQuery" t-on-input="(ev) =&gt; this.setProjQuery(ev.target.value)"/>
@@ -334,7 +336,9 @@
                                     <t t-foreach="filteredMyTasks" t-as="t" t-key="t.id">
                                         <div t-att-class="'fiq_hm_task' + ((state.selected and state.selected.model === 'project.task' and state.selected.id === t.id) ? ' fiq_hm_selrow' : '')">
                                             <span class="fiq_hm_tcell_no">
-                                                <button t-if="t.hasKids" class="fiq_hm_exp" t-on-click.stop="() =&gt; this.toggleExpand('project.task', t.id)" t-esc="state.expanded['project.task:' + t.id] ? '▾' : '▸'"/>
+                                                <span class="fiq_hm_slot">
+                                                    <button t-if="t.hasKids" class="fiq_hm_exp" t-on-click.stop="() =&gt; this.toggleExpand('project.task', t.id)" t-esc="state.expanded['project.task:' + t.id] ? '▾' : '▸'"/>
+                                                </span>
                                                 <span class="fiq_hm_no" t-esc="t.no" t-on-click="() =&gt; this.selectEl('project.task', t.id, t.name)"/>
                                             </span>
                                             <span class="fiq_hm_task_n" t-esc="t.name" t-on-click="() =&gt; this.selectEl('project.task', t.id, t.name)"/>
@@ -353,7 +357,7 @@
                                         <t t-if="state.expanded['project.task:' + t.id]">
                                             <t t-foreach="state.children['project.task:' + t.id] or []" t-as="c" t-key="c.id">
                                                 <div class="fiq_hm_task fiq_hm_childrow" t-on-click="() =&gt; this.selectEl('project.task', c.id, c.name)">
-                                                    <span class="fiq_hm_tcell_no"><span class="fiq_hm_childind">↳</span><span class="fiq_hm_no" t-esc="c.no"/></span>
+                                                    <span class="fiq_hm_tcell_no"><span class="fiq_hm_slot"><span class="fiq_hm_childind">↳</span></span><span class="fiq_hm_no" t-esc="c.no"/></span>
                                                     <span class="fiq_hm_task_n" t-esc="c.name"/>
                                                     <span/><span/>
                                                     <span class="fiq_hm_statcol"><span class="fiq_hm_openbtn" t-on-click.stop="() =&gt; this.openRecord('project.task', c.id)" title="Åpne oppgaven i Odoo">⤢ Åpne</span></span>

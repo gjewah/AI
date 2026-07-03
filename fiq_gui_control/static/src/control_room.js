@@ -106,6 +106,7 @@ export class FiqControlRoom extends Component {
             verInstalled: "",     // installert modulversjon (DB — endres av «Oppgrader»)
             verFiles: "",         // fil-versjon på serveren (avvik → Oppgrader-knapp i brikken)
             upgrading: false,     // modul-oppgradering pågår (fra versjonsbrikken)
+            canUpgrade: false,    // FIQ-admin el. Settings-admin → ser Oppgrader-knappen
             view: "oversikt",     // main content: oversikt (overview) | kommunikasjon (communication)
             rightView: "liste",   // right panel: liste | gantt (Liste default = safe first render)
             selected: null,       // {model,id,name} for inspektor-panel
@@ -174,6 +175,7 @@ export class FiqControlRoom extends Component {
             this.state.verInstalled = cfg.version_installed || "";
             this.state.verFiles = cfg.version_files || "";
             this._autoMin = cfg.auto_refresh_min || 5;
+            this.state.canUpgrade = !!cfg.can_upgrade;
         } catch (e) {
             // keep defaults (everything visible) if the model is not ready
         }
@@ -870,6 +872,17 @@ export class FiqControlRoom extends Component {
     setAnchor(v) {
         this.state.anchorDate = v || new Date().toISOString().slice(0, 10);
         this._loadProjects(this.state.projQuery);
+    }
+
+    // ◂ ▸: hopp forrige/neste periode (dag/uke/måned/år etter valgt toggle)
+    stepAnchor(dir) {
+        const p = this.state.kommPeriod;
+        const a = this.state.anchorDate ? new Date(this.state.anchorDate + "T12:00:00") : new Date();
+        if (p === "dag") { a.setDate(a.getDate() + dir); }
+        else if (p === "maaned") { a.setMonth(a.getMonth() + dir); }
+        else if (p === "alle") { a.setFullYear(a.getFullYear() + dir); }
+        else { a.setDate(a.getDate() + 7 * dir); }
+        this.setAnchor(a.toISOString().slice(0, 10));
     }
 
     // Perioden som konkret tidsvindu (null = «Alle» → ingen datofilter)

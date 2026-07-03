@@ -2,6 +2,7 @@
 import re
 from datetime import timedelta
 from odoo import models, fields, api, _
+from odoo.exceptions import AccessError
 from odoo.modules.module import get_manifest
 
 WIDGETS = ["kpis", "projects", "kommunikasjon", "activity", "tasks", "chart", "copilot", "quick"]
@@ -82,6 +83,9 @@ class FiqControlRoomConfig(models.Model):
             "version_files": self._module_versions()[1],
             # Auto-oppdatering: intervall i minutter (config-drevet, overstyrbar)
             "auto_refresh_min": int(ICP.get_param("fiq_gui_control.auto_refresh_min", "5") or 5),
+            # Hvem kan kjøre modul-oppgradering fra brikken (FIQ-admin ELLER Settings-admin)
+            "can_upgrade": (self.env.user.has_group("fiq_gui_control.group_admin")
+                            or self.env.user.has_group("base.group_system")),
         }
 
     @api.model
@@ -386,8 +390,12 @@ class FiqControlRoomConfig(models.Model):
     @api.model
     def action_upgrade_module(self):
         """«Oppgrader» rett fra Kontrollrommet — samme som Oppgrader-knappen i Apper.
-        Tilgang styres av Odoos egne rettigheter på ir.module.module (admin)."""
-        mod = self.env["ir.module.module"].search([("name", "=", "fiq_gui_control")], limit=1)
+        Kontrollert løft: FIQ-admin-gruppen (eller Odoo Settings-admin) kan oppgradere
+        AKKURAT denne modulen, uavhengig av tekniske innstillingsrettigheter."""
+        if not (self.env.user.has_group("fiq_gui_control.group_admin")
+                or self.env.user.has_group("base.group_system")):
+            raise AccessError(_("Kun administratorer kan oppgradere Kontrollrommet."))
+        mod = self.env["ir.module.module"].sudo().search([("name", "=", "fiq_gui_control")], limit=1)
         if mod and mod.state == "installed":
             mod.button_immediate_upgrade()
         return True
