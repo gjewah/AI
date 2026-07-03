@@ -262,10 +262,11 @@
         .fiq_hm_esti { width: 46px; border: 1px solid var(--fiq-bd); border-radius: 6px; padding: 2px 4px; font: inherit; font-size: 11px; color: var(--fiq-side); background: #fff; text-align: right;
             &:focus { border-color: var(--fiq-accent); outline: none; } }
         .fiq_hm_estu { font-size: 10px; color: var(--fiq-mut); white-space: nowrap; } }
-    .fiq_hm_task { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; font-size: 12px;
+    .fiq_hm_task { display: grid; grid-template-columns: var(--fiq-taskcols); gap: 8px; align-items: center;
+        padding: 7px 0; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; font-size: 12px;
         &:hover { background: var(--fiq-s2, #f7f8f9); }
-        .fiq_hm_task_n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .fiq_hm_task_p { color: var(--fiq-mut); font-size: 11px; flex: 0 0 150px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .fiq_hm_task_n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .fiq_hm_task_p { color: var(--fiq-mut); font-size: 11px; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .fiq_hm_dl { font-size: 11px; color: var(--fiq-mut); &.over { color: #c0392b; font-weight: 500; } }
         .fiq_hm_warn { font-size: 10.5px; color: #c0392b; background: #fdecea; border-radius: 10px; padding: 1px 7px; } }
     // Fagområde-visning (Prosjekt/CRM/Salgsmuligheter/Salgsordre/Regnskap + SP-områder) – integrert plassholder
@@ -331,17 +332,15 @@
         .fiq_hm_psok { margin: 0; }
         .fiq_hm_tsok_no { flex: 0 0 110px; } }
 
-    // Kolonneoverskrifter for oppgavelista (BOLD; Prosjekt venstrejustert, Fremdrift ytterst høyre)
-    .fiq_hm_th { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--fiq-bd);
-        font-size: 11px; color: var(--fiq-side); font-weight: 700;
-        .h_no { flex: 0 0 52px; }
-        .h_name { flex: 1; }
-        .h_prj { flex: 0 0 150px; text-align: left; }
-        .h_timer { flex: 0 0 52px; }
-        .h_status { flex: 0 0 78px; }
-        .h_prog { flex: 0 0 96px; text-align: left; } }
-    .fiq_hm_statcol { flex: 0 0 78px; }
-    .fiq_hm_progcol { flex: 0 0 96px; display: inline-flex; justify-content: flex-start; }
+    // Oppgavelista = CSS GRID med ÉN felles kolonnedefinisjon (header + rader deler den
+    // → kan aldri komme ut av flukt). Kolonner: Nr | Oppgave | Prosjekt | Timer | Status | Fremdrift
+    --fiq-taskcols: 64px minmax(0, 1fr) minmax(120px, 170px) 56px 88px 100px;
+    .fiq_hm_th { display: grid; grid-template-columns: var(--fiq-taskcols); gap: 8px; align-items: center;
+        padding: 4px 0; border-bottom: 1px solid var(--fiq-bd);
+        font-size: 11px; color: var(--fiq-side); font-weight: 700; }
+    .fiq_hm_statcol { display: inline-flex; }
+    .fiq_hm_progcol { display: inline-flex; justify-content: flex-start; }
+    .fiq_hm_tcell_no { display: inline-flex; align-items: center; gap: 3px; min-width: 0; }
     .fiq_hm_warnbtn { cursor: pointer;
         &:hover { text-decoration: underline; } }
     .fiq_hm_openbtn { font-size: 10.5px; color: var(--fiq-mut); border: 1px solid var(--fiq-bd); border-radius: 10px; padding: 1px 7px; cursor: pointer; white-space: nowrap;

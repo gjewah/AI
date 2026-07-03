@@ -314,24 +314,26 @@
                                         <button t-att-class="state.taskMile === mc.name ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-on-click="() =&gt; this.toggleTaskMile(mc.name)">🏁 <t t-esc="mc.name"/> <span class="fiq_hm_stchip_n" t-esc="mc.count"/></button>
                                     </t>
                                 </div>
-                                <!-- Kolonneoverskrifter (bold; Prosjekt venstre, Fremdrift ytterst høyre) -->
+                                <!-- Kolonneoverskrifter — deler grid-definisjon med radene (kan ikke komme ut av flukt) -->
                                 <div class="fiq_hm_th">
-                                    <span class="h_no">Nr.</span>
-                                    <span class="h_name">Oppgave</span>
-                                    <span class="h_prj">Prosjekt</span>
-                                    <span t-if="state.hasHours" class="h_timer">Timer</span>
-                                    <span class="h_status">Status</span>
-                                    <span class="h_prog">Fremdrift</span>
+                                    <span>Nr.</span>
+                                    <span>Oppgave</span>
+                                    <span>Prosjekt</span>
+                                    <span t-esc="state.hasHours ? 'Timer' : ''"/>
+                                    <span>Status</span>
+                                    <span>Fremdrift</span>
                                 </div>
                                 <t t-if="filteredMyTasks.length">
                                     <t t-foreach="filteredMyTasks" t-as="t" t-key="t.id">
                                         <div t-att-class="'fiq_hm_task' + ((state.selected and state.selected.model === 'project.task' and state.selected.id === t.id) ? ' fiq_hm_selrow' : '')">
-                                            <button t-if="t.hasKids" class="fiq_hm_exp" t-on-click.stop="() =&gt; this.toggleExpand('project.task', t.id)" t-esc="state.expanded['project.task:' + t.id] ? '▾' : '▸'"/>
-                                            <span class="fiq_hm_no" t-esc="t.no" t-on-click="() =&gt; this.selectEl('project.task', t.id, t.name)"/>
+                                            <span class="fiq_hm_tcell_no">
+                                                <button t-if="t.hasKids" class="fiq_hm_exp" t-on-click.stop="() =&gt; this.toggleExpand('project.task', t.id)" t-esc="state.expanded['project.task:' + t.id] ? '▾' : '▸'"/>
+                                                <span class="fiq_hm_no" t-esc="t.no" t-on-click="() =&gt; this.selectEl('project.task', t.id, t.name)"/>
+                                            </span>
                                             <span class="fiq_hm_task_n" t-esc="t.name" t-on-click="() =&gt; this.selectEl('project.task', t.id, t.name)"/>
                                             <span class="fiq_hm_task_p" t-esc="t.project"/>
-                                            <span t-if="state.hasHours" class="fiq_hm_est" title="Estimerte (antatte) timer – juster; fremdrift = førte ÷ estimerte">
-                                                <input type="number" step="0.5" min="0" class="fiq_hm_esti" t-att-value="t.estH || ''" t-on-change="(ev) =&gt; this.setTaskEst(t.id, ev.target.value)"/>
+                                            <span class="fiq_hm_est" title="Estimerte (antatte) timer – juster; fremdrift = førte ÷ estimerte">
+                                                <input t-if="state.hasHours" type="number" step="0.5" min="0" class="fiq_hm_esti" t-att-value="t.estH || ''" t-on-change="(ev) =&gt; this.setTaskEst(t.id, ev.target.value)"/>
                                             </span>
                                             <span class="fiq_hm_statcol">
                                                 <span t-if="t.overdue" class="fiq_hm_warn fiq_hm_warnbtn" t-on-click.stop="() =&gt; this.openRecord('project.task', t.id)" title="Åpne oppgaven i Odoo">⚠ forsinket</span>
@@ -344,9 +346,11 @@
                                         <t t-if="state.expanded['project.task:' + t.id]">
                                             <t t-foreach="state.children['project.task:' + t.id] or []" t-as="c" t-key="c.id">
                                                 <div class="fiq_hm_task fiq_hm_childrow" t-on-click="() =&gt; this.selectEl('project.task', c.id, c.name)">
-                                                    <span class="fiq_hm_childind">↳</span>
-                                                    <span class="fiq_hm_no" t-esc="c.no"/>
+                                                    <span class="fiq_hm_tcell_no"><span class="fiq_hm_childind">↳</span><span class="fiq_hm_no" t-esc="c.no"/></span>
                                                     <span class="fiq_hm_task_n" t-esc="c.name"/>
+                                                    <span/><span/>
+                                                    <span class="fiq_hm_statcol"><span class="fiq_hm_openbtn" t-on-click.stop="() =&gt; this.openRecord('project.task', c.id)" title="Åpne oppgaven i Odoo">⤢ Åpne</span></span>
+                                                    <span/>
                                                 </div>
                                             </t>
                                         </t>
