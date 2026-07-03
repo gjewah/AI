@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import re
 from datetime import timedelta
 from odoo import models, fields, api, _
 
@@ -248,6 +249,42 @@ class FiqControlRoomConfig(models.Model):
         return out
 
     @api.model
+    def get_areas(self):
+        """Sidemeny: fagområde-treet lest fra Odoo prosjekt-hierarkiet (SSOT — speiler
+        SP-strukturen, ingen hardkodet liste). Områder = barn av toppnivå-prosjektene
+        (firma-roten, f.eks. «0.040 VD (MP)»); underområder = barnas barn.
+        «2 ADM (MP)» → nr «2», navn «ADM». Defensivt/felt-guardet."""
+        P = self.env["project.project"]
+        if "parent_id" not in P._fields:
+            return []
+
+        def parse(name):
+            m = re.match(r"^\s*(\d+(?:\.\d+)*)\s+(.+?)\s*(?:\((?:MP|MT)\))?\s*$", name or "")
+            return (m.group(1), m.group(2)) if m else (None, None)
+
+        def sortkey(nr):
+            return [int(p) for p in nr.split(".")]
+
+        out = []
+        try:
+            roots = P.search([("parent_id", "=", False), ("active", "=", True)])
+            for a in P.search([("parent_id", "in", roots.ids), ("active", "=", True)]):
+                nr, name = parse(a.name)
+                if not nr:
+                    continue
+                subs = []
+                for s in P.search([("parent_id", "=", a.id), ("active", "=", True)]):
+                    snr, sname = parse(s.name)
+                    if snr:
+                        subs.append({"id": s.id, "nr": snr, "name": sname})
+                subs.sort(key=lambda x: sortkey(x["nr"]))
+                out.append({"id": a.id, "nr": nr, "name": name, "subs": subs})
+            out.sort(key=lambda x: sortkey(x["nr"]))
+        except Exception:
+            return []
+        return out
+
+    @api.model
     def get_children(self, model, parent_id):
         """Utvid-funksjon: underprosjekter (project.project via parent_id) eller
         deloppgaver (project.task via parent_id). Kjøres som brukeren (record rules).
@@ -312,7 +349,13 @@ class FiqControlRoomConfig(models.Model):
             atts = self.env["ir.attachment"].search(
                 [("res_model", "=", model), ("res_id", "=", res_id)], order="id desc", limit=30)
             for a in atts:
-                out["dok"].append({"id": a.id, "name": a.name or _("Dokument")})
+                # mimetype + checksum → forhåndsvisning (FileViewer); ALDRI nedlasting
+                out["dok"].append({
+                    "id": a.id,
+                    "name": a.name or _("Dokument"),
+                    "mimetype": a.mimetype or "",
+                    "checksum": a.checksum or "",
+                })
         except Exception:
             pass
         return out

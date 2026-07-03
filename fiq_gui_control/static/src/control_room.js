@@ -6,8 +6,27 @@ import { useService } from "@web/core/utils/hooks";
 import { user } from "@web/core/user";
 import { _t } from "@web/core/l10n/translation";
 import { View } from "@web/views/view";
+import { useFileViewer } from "@web/core/file_viewer/file_viewer_hook";
+import { FileModel } from "@web/core/file_viewer/file_model";
 
 const WIDGETS = ["kpis", "projects", "kommunikasjon", "activity", "tasks", "chart", "copilot", "quick"];
+
+// Kanonisk fargekart per fagområde (fiq-fargekart-omrader). Underområde-unntak først.
+const SP_SUB_COLOR = {
+    "8.50": "#7030A0", "2.90": "#7030A0", "2.91": "#7030A0",
+    "2.70": "#4472C4", "2.80": "#4472C4", "2.50": "#70AD47",
+};
+const SP_TOP_COLOR = {
+    "0": "#8b93a1", "1": "#8b93a1", "2": "#0070C0", "3": "#8b93a1",
+    "4": "#ED7D31", "5": "#70AD47", "6": "#CC0000", "7": "#548235",
+    "8": "#FFC000", "9": "#FFC000",
+};
+const SP_DARK_TEXT = ["#FFC000", "#E7E6E6"];
+
+function spColor(nr) {
+    const c = SP_SUB_COLOR[nr] || SP_TOP_COLOR[(nr || "").split(".")[0]] || "#6b7280";
+    return { color: c, dk: SP_DARK_TEXT.includes(c) };
+}
 
 export class FiqControlRoom extends Component {
     static template = "fiq_gui_control.ControlRoom";
@@ -18,6 +37,7 @@ export class FiqControlRoom extends Component {
         this.orm = useService("orm");
         this.action = useService("action");
         this.notification = useService("notification");
+        this.fileViewer = useFileViewer();
 
         // Stable props for the embedded native Odoo Gantt (right panel). loadIrFilters stays
         // false (default) so stray default groupings are NOT applied; group by stage like native.
@@ -50,7 +70,9 @@ export class FiqControlRoom extends Component {
             collapsed: this._loadCollapsed(),
             projects: [],
             projQuery: "",        // project search over the project overview
-            projArea: "",         // fagområde-filter (fagområdenr, f.eks. "6") – tom = alle
+            projArea: "",         // fagområde-filter (fagområdenr, f.eks. "6" el. "2.20") – tom = alle
+            areas: [],            // fagområde-treet fra Odoo prosjekt-hierarkiet (get_areas)
+            areaOpen: {},         // {nr: true} = nedtrekk åpent i sidemenyen
             expanded: {},         // utvid-funksjon: {"model:id": true} = utvidet
             children: {},         // lazy-lastede barn: {"model:id": [rader]}
             myTasks: [],
@@ -274,6 +296,40 @@ export class FiqControlRoom extends Component {
         this._loadProjects(this.state.projQuery);
     }
 
+    // Sidemeny: fagområde-tre (fra prosjekt-hierarkiet); fallback = statisk liste.
+    get sideAreas() {
+        if (this.state.areas.length) { return this.state.areas; }
+        return this.fagomrader.map((o) => ({ nr: o.nr, name: o.navn, color: o.farge, dk: false, subs: [] }));
+    }
+
+    // Nedtrekk i sidemenyen (åpne/lukk underområder for et fagområde)
+    toggleArea(nr) {
+        this.state.areaOpen[nr] = !this.state.areaOpen[nr];
+    }
+
+    // Klikk på område/underområde i sidemenyen: gå til oversikten + filtrer på nummeret
+    pickArea(nr) {
+        this.state.view = "oversikt";
+        if (this.state.projArea !== nr) {
+            this.state.projArea = nr;
+            this._loadProjects(this.state.projQuery);
+        }
+    }
+
+    // Aktivt toppområde for filter-chipsene ("2.20" → "2")
+    get chipParent() {
+        const a = this.state.projArea;
+        return a && a.includes(".") ? a.split(".")[0] : a;
+    }
+
+    // Undergruppe-chips (rad 2) for det aktive toppområdet
+    get chipSubs() {
+        const p = this.chipParent;
+        if (!p) { return []; }
+        const area = this.sideAreas.find((x) => x.nr === p);
+        return (area && area.subs) || [];
+    }
+
     // Utvid/kollaps en rad → viser underprosjekter (PRJ) eller deloppgaver (Oppg).
     // Lazy-laster barn første gang. key = "model:id".
     async toggleExpand(model, id) {
@@ -383,6 +439,12 @@ export class FiqControlRoom extends Component {
         // «Til stede nå» – interne brukere + tilgjengelighets-status
         let presence = [];
         try { presence = await this.orm.call("fiq.gui.control.config", "get_presence", []); } catch (e) {}
+
+        // Fagområde-treet fra prosjekt-hierarkiet (sidemeny + filter-chips) m/ kanoniske farger
+        try {
+            const raw = await this.orm.call("fiq.gui.control.config", "get_areas", []);
+            this.state.areas = (raw || []).map((a) => ({ ...a, ...spColor(a.nr) }));
+        } catch (e) { this.state.areas = []; }
 
         // Hvilke Odoo-handlinger finnes faktisk (guardet – depends = web+project)
         let actions = {};
@@ -750,6 +812,28 @@ export class FiqControlRoom extends Component {
         this.state.inspTab = t;
     }
 
+    // Dokumenter i Detaljer: KUN forhåndsvisning (FileViewer-overlegg) — ALDRI åpne/laste
+    // ned (nedlasting gir versjonsproblemer; nedlastingsknappen i viseren er skjult i SCSS).
+    _dokFile(d) {
+        return Object.assign(new FileModel(), {
+            id: d.id, name: d.name, mimetype: d.mimetype || "",
+            checksum: d.checksum || false, type: "binary",
+        });
+    }
+
+    openDok(d) {
+        const files = (this.state.selDet.dok || []).map((x) => this._dokFile(x)).filter((f) => f.isViewable);
+        const file = files.find((f) => f.id === d.id);
+        if (file) {
+            this.fileViewer.open(file, files);
+        } else {
+            this.notification.add(
+                _t("Denne filtypen kan ikke forhåndsvises her ennå (SharePoint/M365-forhåndsvisning kommer). Nedlasting er skrudd av — versjonskontroll."),
+                { type: "info" }
+            );
+        }
+    }
+
     // ---- Egen kompakt Gantt (høyre panel). Vindu styres av periode-toggle (kommPeriod). ----
     get ganttWindow() {
         const p = this.state.kommPeriod;
@@ -817,6 +901,8 @@ export class FiqControlRoom extends Component {
     // Metadata (ikon/farge + tittel) for gjeldende fagflate-visning; null for oversikt/kommunikasjon
     get area() {
         const map = {
+            hmsks: { color: "#0070C0", title: "HMS/KS" },
+            airmm: { color: "#7030A0", title: "AI-RMM" },
             prosjekt: { icon: "prj.png", title: _t("Prosjekter") },
             crm: { icon: "crm.png", title: "CRM" },
             salgsmuligheter: { icon: "crm_leads.png", title: _t("Salgsmuligheter") },
