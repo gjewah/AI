@@ -125,6 +125,16 @@
         &:hover { border-color: var(--fiq-accent); background: #fff; }
         &[disabled] { opacity: .45; cursor: default; &:hover { border-color: var(--fiq-bd); background: #f7f8f9; } } }
     .fiq_hm_proglvl { font-size: 11.5px; color: var(--fiq-mut); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    // Stadie-velger (oppgave-drill): brikker for å vise/skjule stadier
+    .fiq_hm_stagesel { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 10px;
+        .fiq_hm_stagesel_l { font-size: 11px; color: var(--fiq-mut); margin-right: 2px; } }
+    .fiq_hm_stchip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--fiq-bd); background: #fff; border-radius: 999px; padding: 2px 9px; cursor: pointer; font: inherit; font-size: 11px; color: var(--fiq-side);
+        .fiq_hm_stchip_ai { color: var(--fiq-accent); font-size: 9px; }
+        .fiq_hm_stchip_n { font-size: 9.5px; color: var(--fiq-mut); background: #f0f1f3; border-radius: 8px; padding: 0 5px; font-variant-numeric: tabular-nums; }
+        &.ai { border-color: var(--fiq-accent); }
+        &.off { opacity: .45; text-decoration: line-through; background: #f7f8f9; }
+        &:hover { border-color: var(--fiq-accent); } }
+    .fiq_hm_stagetag { font-size: 10px; color: var(--fiq-mut); background: #f0f1f3; border: 1px solid var(--fiq-bd); border-radius: 10px; padding: 0 7px; white-space: nowrap; flex: 0 0 auto; }
     .fiq_hm_rrow { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; font-size: 12px;
         &:hover { background: #f7f8f9; }
         .fiq_hm_rname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

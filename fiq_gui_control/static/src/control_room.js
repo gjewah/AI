@@ -73,6 +73,8 @@ export class FiqControlRoom extends Component {
             progTasks: [],        // oppgavene til valgt prosjekt (m/ fremdrift) når progLevel = "oppgave"
             progProjId: false,    // valgt prosjekt for oppgave-drill
             progProjName: "",
+            aiStageNames: [],     // navn på AI-merkede stadier (fiq_ai_stage) – for velgeren
+            stageHidden: {},      // {stadienavn: true} = skjult i oppgave-drillen
         });
 
         onWillStart(async () => {
@@ -167,12 +169,13 @@ export class FiqControlRoom extends Component {
     async _loadProgTasks(pid) {
         const tOpt = await this._optFields("project.task", ["code"]);
         const recs = await this._read("project.task", [["project_id", "=", pid]],
-            ["name", "date_deadline", "planned_date_begin", ...tOpt],
+            ["name", "date_deadline", "planned_date_begin", "stage_id", ...tOpt],
             { limit: 60, order: "planned_date_begin asc, id asc" });
         const rows = recs.map((t) => ({
             id: t.id, no: t.code || "", name: t.name,
             start: (t.planned_date_begin || "").slice(0, 10) || false,
             end: (t.date_deadline || "").slice(0, 10) || false,
+            stage: t.stage_id ? t.stage_id[1] : "",
             progress: 0,
         }));
         await this._fillProgress("project.task", rows);
@@ -195,13 +198,35 @@ export class FiqControlRoom extends Component {
         this.state.progLevel = "prosjekt";
     }
 
-    // Kilden Prosjektfremdrift-panelet itererer over (prosjekter ELLER valgt prosjekts oppgaver)
+    // Kilden Prosjektfremdrift-panelet itererer over (prosjekter ELLER valgt prosjekts
+    // oppgaver). På oppgave-nivå filtreres skjulte stadier bort (stadie-velgeren).
     get progRows() {
-        return this.state.progLevel === "oppgave" ? this.state.progTasks : this.state.projects;
+        if (this.state.progLevel !== "oppgave") { return this.state.projects; }
+        const hidden = this.state.stageHidden;
+        return this.state.progTasks.filter((t) => !hidden[t.stage || ""]);
     }
 
     get progModel() {
         return this.state.progLevel === "oppgave" ? "project.task" : "project.project";
+    }
+
+    // Stadie-velger: distinkte stadier i det valgte prosjektets oppgaver, med AI-flagg,
+    // antall og av/på. «Velg hvilke stadier fra prosjektene som skal vises.»
+    get progStageChips() {
+        const ai = new Set(this.state.aiStageNames || []);
+        const hidden = this.state.stageHidden;
+        const order = [], map = {};
+        this.state.progTasks.forEach((t) => {
+            const nm = t.stage || "(uten stadium)";
+            if (!(nm in map)) { map[nm] = { name: nm, ai: ai.has(nm), hidden: !!hidden[nm], count: 0 }; order.push(nm); }
+            map[nm].count += 1;
+        });
+        // AI-stadier først, så resten
+        return order.map((n) => map[n]).sort((a, b) => (b.ai - a.ai));
+    }
+
+    toggleStage(name) {
+        this.state.stageHidden[name] = !this.state.stageHidden[name];
     }
 
     // Project search field (right above the project overview) - debounced server search
@@ -232,6 +257,9 @@ export class FiqControlRoom extends Component {
         const today = new Date().toISOString().slice(0, 10);
         // Har DB-en time-feltene (hr_timesheet)? → styrer om estimat-feltet vises
         this.state.hasHours = (await this._optFields("project.task", ["allocated_hours", "effective_hours"])).length === 2;
+        // AI-merkede stadier (for stadie-velgeren i oppgave-drillen)
+        try { this.state.aiStageNames = await this.orm.call("fiq.gui.control.config", "get_ai_stages", []); }
+        catch (e) { this.state.aiStageNames = []; }
         const tOpt = await this._optFields("project.task", ["code"]);
         const trecs = await this._read("project.task",
             [["user_ids", "in", [user.userId]]],

@@ -259,12 +259,24 @@
                                         </t>
                                         <button class="fiq_hm_ext" t-on-click="() =&gt; this.openProsjektKontrollrom()" title="Åpne Prosjekt-kontrollrommet (utvidet)">⤢ Utvidet</button>
                                     </div>
+                                    <!-- Stadie-velger (kun oppgave-drill): velg hvilke stadier som vises. AI-stadier først. -->
+                                    <div t-if="state.progLevel === 'oppgave' and progStageChips.length" class="fiq_hm_stagesel">
+                                        <span class="fiq_hm_stagesel_l">Vis stadier:</span>
+                                        <t t-foreach="progStageChips" t-as="sc" t-key="sc.name">
+                                            <button t-att-class="'fiq_hm_stchip' + (sc.hidden ? ' off' : '') + (sc.ai ? ' ai' : '')" t-on-click="() =&gt; this.toggleStage(sc.name)" t-att-title="(sc.ai ? 'AI-stadium · ' : '') + (sc.hidden ? 'skjult' : 'vises')">
+                                                <span t-if="sc.ai" class="fiq_hm_stchip_ai">✦</span>
+                                                <span class="fiq_hm_stchip_t" t-esc="sc.name"/>
+                                                <span class="fiq_hm_stchip_n" t-esc="sc.count"/>
+                                            </button>
+                                        </t>
+                                    </div>
                                     <t t-if="state.rightView === 'liste'">
                                         <t t-if="progRows.length">
                                             <t t-foreach="progRows" t-as="p" t-key="p.id">
                                                 <div t-att-class="'fiq_hm_rrow' + ((state.selected and state.selected.model === progModel and state.selected.id === p.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.selectEl(progModel, p.id, p.name)">
                                                     <span class="fiq_hm_no" t-esc="p.no"/>
                                                     <span class="fiq_hm_rname" t-esc="p.name"/>
+                                                    <span t-if="state.progLevel === 'oppgave' and p.stage" class="fiq_hm_stagetag" t-esc="p.stage"/>
                                                     <t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="p.progress"/><t t-set="shape" t-value="state.progressShape"/><t t-set="hrs" t-value="p.estH ? (p.logH + '/' + p.estH + ' t') : ''"/></t>
                                                 </div>
                                             </t>

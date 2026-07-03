@@ -82,6 +82,22 @@ class FiqControlRoomConfig(models.Model):
             self._get_or_create_current().write({"show_" + widget: bool(value)})
         return True
 
+    @api.model
+    def get_ai_stages(self):
+        """AI-merkede oppgave-stadier (fiq_ai_stage=True) – unike navn. Brukes til å
+        markere/prioritere AI-stadiene i stadie-velgeren. Defensiv: tomt hvis feltet
+        ikke finnes ennå (modulen ikke oppgradert)."""
+        Stage = self.env["project.task.type"]
+        if "fiq_ai_stage" not in Stage._fields:
+            return []
+        seen, out = set(), []
+        for s in Stage.search([("fiq_ai_stage", "=", True)], order="sequence, id"):
+            nm = s.name or ""
+            if nm and nm not in seen:
+                seen.add(nm)
+                out.append(nm)
+        return out
+
     # ---- Config-drevet per-linje fremdrift (lag 2) ---------------------------
     # STANDARD = timebasert: førte timer (effective_hours) ÷ estimerte/antatte timer
     # (allocated_hours). Estimatet er redigerbart i Kontrollrommet. Portabelt
