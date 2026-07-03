@@ -228,7 +228,7 @@
         &.on { border-color: var(--fiq-accent); background: rgba(56,180,74,.10); box-shadow: 0 0 0 2px rgba(56,180,74,.18); } }
 
     // ============ Filter-stripe ============
-    .fiq_hm_filter { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;
+    .fiq_hm_filter { display: flex; align-items: center; gap: 10px; margin-bottom: 0; flex-wrap: wrap;
         .fiq_hm_pseg { display: inline-flex; border: 1px solid var(--fiq-bd); border-radius: 8px; overflow: hidden; background: #fff;
             button { border: 0; background: #fff; color: var(--fiq-mut); padding: 5px 13px; cursor: pointer; font: inherit; font-size: 11.5px;
                 &.on { background: var(--fiq-accent); color: #fff; } } }

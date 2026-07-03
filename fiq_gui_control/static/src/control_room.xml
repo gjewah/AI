@@ -43,47 +43,6 @@
                 <button class="btn fiq_hm_gear" t-on-click="() => this.toggleCustomize()">⚙ Tilpass</button>
             </div>
 
-            <!-- Filter-stripe: Dag/Uke/Måned/Alle + søk -->
-            <div class="fiq_hm_filter">
-                <div class="fiq_hm_pseg">
-                    <button t-foreach="[['dag','Dag'],['uke','Uke'],['maaned','Måned'],['alle','Alle']]" t-as="pp" t-key="pp[0]"
-                            t-att-class="state.kommPeriod === pp[0] ? 'on' : ''"
-                            t-on-click="() => this.setKommPeriod(pp[0])" t-esc="pp[1]"/>
-                </div>
-                <div class="fiq_hm_topfield">
-                    <span class="fiq_hm_toplbl">Søk</span>
-                    <input class="fiq_hm_filtersok" placeholder="Firma, person, prosjekt, oppgave …"
-                           t-att-value="state.kommQuery" t-on-input="(ev) =&gt; state.kommQuery = ev.target.value"/>
-                </div>
-                <div class="fiq_hm_topfield fiq_hm_aifield">
-                    <span class="fiq_hm_toplbl">✨ Spør AI</span>
-                    <div class="fiq_hm_airow">
-                        <input class="fiq_hm_filtersok" placeholder="Spør Claude om hjelp …"
-                               t-att-value="state.aiQuery" t-on-input="(ev) =&gt; state.aiQuery = ev.target.value"
-                               t-on-keydown="(ev) =&gt; ev.key === 'Enter' ? this.askAi() : null"/>
-                        <button class="fiq_hm_ai_send" t-on-click="() =&gt; this.askAi()">Spør</button>
-                    </div>
-                </div>
-            </div>
-            <!-- AI responsrute -->
-            <div t-if="state.aiAnswer" class="fiq_hm_card fiq_hm_airesp">
-                <div class="fiq_hm_airesp_h"><span class="fiq_hm_airesp_t">✨ Svar fra AI</span><span class="fiq_hm_airesp_x" t-on-click="() =&gt; this.clearAi()" title="Lukk">✕</span></div>
-                <div class="fiq_hm_airesp_b" t-esc="state.aiAnswer"/>
-            </div>
-
-            <!-- Tilpass-panel: dynamisk vis/skjul -->
-            <div t-if="state.customize" class="fiq_hm_cust">
-                <strong>Tilpass kontrollrommet – velg innhold</strong>
-                <div class="fiq_hm_toggles">
-                    <t t-foreach="['kpis','projects','kommunikasjon','activity','tasks','chart','copilot','quick']" t-as="w" t-key="w">
-                        <label>
-                            <input type="checkbox" t-att-checked="state.show[w]" t-on-change="() => this.toggleWidget(w)"/>
-                            <span t-esc="w"/>
-                        </label>
-                    </t>
-                </div>
-            </div>
-
             <div class="fiq_hm_wrap">
                 <!-- Mørk sidemeny -->
                 <aside class="fiq_hm_side">
@@ -108,6 +67,45 @@
                 </aside>
 
                 <section class="fiq_hm_main">
+                    <!-- Filter-stripe: Dag/Uke/Måned/Alle + søk (nå i innholdskolonnen) -->
+                    <div class="fiq_hm_filter">
+                        <div class="fiq_hm_pseg">
+                            <button t-foreach="[['dag','Dag'],['uke','Uke'],['maaned','Måned'],['alle','Alle']]" t-as="pp" t-key="pp[0]"
+                                    t-att-class="state.kommPeriod === pp[0] ? 'on' : ''"
+                                    t-on-click="() => this.setKommPeriod(pp[0])" t-esc="pp[1]"/>
+                        </div>
+                        <div class="fiq_hm_topfield">
+                            <span class="fiq_hm_toplbl">Søk</span>
+                            <input class="fiq_hm_filtersok" placeholder="Firma, person, prosjekt, oppgave …"
+                                   t-att-value="state.kommQuery" t-on-input="(ev) =&gt; state.kommQuery = ev.target.value"/>
+                        </div>
+                        <div class="fiq_hm_topfield fiq_hm_aifield">
+                            <span class="fiq_hm_toplbl">✨ Spør AI</span>
+                            <div class="fiq_hm_airow">
+                                <input class="fiq_hm_filtersok" placeholder="Spør Claude om hjelp …"
+                                       t-att-value="state.aiQuery" t-on-input="(ev) =&gt; state.aiQuery = ev.target.value"
+                                       t-on-keydown="(ev) =&gt; ev.key === 'Enter' ? this.askAi() : null"/>
+                                <button class="fiq_hm_ai_send" t-on-click="() =&gt; this.askAi()">Spør</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- AI responsrute -->
+                    <div t-if="state.aiAnswer" class="fiq_hm_card fiq_hm_airesp">
+                        <div class="fiq_hm_airesp_h"><span class="fiq_hm_airesp_t">✨ Svar fra AI</span><span class="fiq_hm_airesp_x" t-on-click="() =&gt; this.clearAi()" title="Lukk">✕</span></div>
+                        <div class="fiq_hm_airesp_b" t-esc="state.aiAnswer"/>
+                    </div>
+                    <!-- Tilpass-panel: dynamisk vis/skjul -->
+                    <div t-if="state.customize" class="fiq_hm_cust">
+                        <strong>Tilpass kontrollrommet – velg innhold</strong>
+                        <div class="fiq_hm_toggles">
+                            <t t-foreach="['kpis','projects','kommunikasjon','activity','tasks','chart','copilot','quick']" t-as="w" t-key="w">
+                                <label>
+                                    <input type="checkbox" t-att-checked="state.show[w]" t-on-change="() => this.toggleWidget(w)"/>
+                                    <span t-esc="w"/>
+                                </label>
+                            </t>
+                        </div>
+                    </div>
                     <div t-if="state.loading" class="fiq_hm_loading">Laster …</div>
 
                     <!-- Fagflate-visning (Prosjekt/CRM/… + SP-områder) som integrert placeholder i skallet -->
