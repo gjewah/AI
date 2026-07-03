@@ -123,6 +123,7 @@ class FiqControlRoomConfig(models.Model):
                 has_photo = False
             out.append({
                 "id": u.id,
+                "partner_id": u.partner_id.id,
                 "navn": name,
                 "initialer": initialer,
                 "status": status,

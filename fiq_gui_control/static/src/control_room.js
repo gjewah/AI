@@ -5,17 +5,30 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { user } from "@web/core/user";
 import { _t } from "@web/core/l10n/translation";
+import { View } from "@web/views/view";
 
 const WIDGETS = ["kpis", "projects", "kommunikasjon", "activity", "tasks", "chart", "copilot", "quick"];
 
 export class FiqControlRoom extends Component {
     static template = "fiq_gui_control.ControlRoom";
     static props = ["*"];
+    static components = { View };
 
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
         this.notification = useService("notification");
+
+        // Stable props for the embedded native Odoo Gantt (right panel). loadIrFilters stays
+        // false (default) so stray default groupings are NOT applied; group by stage like native.
+        this.ganttProps = {
+            type: "gantt",
+            resModel: "project.task",
+            domain: [["project_id.active", "=", true]],
+            context: { group_by: ["stage_id"] },
+            display: { controlPanel: false },
+            noContentHelp: _t("Ingen planlagte oppgaver."),
+        };
 
         const show = {};
         WIDGETS.forEach((w) => (show[w] = true));
@@ -32,7 +45,10 @@ export class FiqControlRoom extends Component {
             level: "balansert",
             show,
             kpis: [],
+            selectedKpi: "",
+            collapsed: {},
             projects: [],
+            projQuery: "",        // project search over the project overview
             myTasks: [],
             komm: [],
             kommPeriod: "uke",
@@ -43,7 +59,9 @@ export class FiqControlRoom extends Component {
             presence: [],         // «Til stede nå» – interne brukere + tilgjengelighets-status
             actions: {},          // {nøkkel: xmlid|false} – hvilke Odoo-handlinger som finnes (guardet)
             aiQuery: "",          // «Spør AI om hjelp»-feltet
+            aiAnswer: "",         // svar fra Claude via fiq.ai
             view: "oversikt",     // main content: oversikt (overview) | kommunikasjon (communication)
+            rightView: "liste",   // right panel: liste | gantt (Liste default = safe first render)
             loading: true,
         });
 
@@ -79,28 +97,76 @@ export class FiqControlRoom extends Component {
         }
     }
 
+    async _optFields(model, candidates) {
+        // Only the candidate fields that actually exist on the model (portable across
+        // customer DBs). fields_get never raises for missing fields -> no server traceback.
+        try {
+            const meta = await this.orm.call(model, "fields_get", [candidates, ["type"]]);
+            return candidates.filter((f) => f in meta);
+        } catch (e) {
+            return [];
+        }
+    }
+
+    async _loadProjects(query) {
+        // Project overview / project search. Empty query = 8 most recent active projects;
+        // a query searches ALL active projects by name and (if present) sequence_code.
+        const pOpt = this._pOpt || [];
+        const q = (query || "").trim();
+        let domain = [["active", "=", true]];
+        if (q) {
+            const flds = ["name", ...(pOpt.includes("sequence_code") ? ["sequence_code"] : [])];
+            const ors = [];
+            for (let i = 0; i < flds.length - 1; i++) ors.push("|");
+            flds.forEach((f) => ors.push([f, "ilike", q]));
+            domain = ["&", ["active", "=", true], ...ors];
+        }
+        const precs = await this._read("project.project", domain,
+            ["name", "task_count", "date_start", "date", ...pOpt], { limit: q ? 30 : 8, order: "create_date desc" });
+        this.state.projects = precs.map((p) => ({
+            id: p.id, no: p.sequence_code || "", name: p.name,
+            taskCount: p.task_count || 0,
+            start: p.date_start || false, end: p.date || false,
+            progress: Math.min(100, (p.task_count || 0) * 8), status: _t("In progress"),
+        }));
+    }
+
+    // Project search field (right above the project overview) - debounced server search
+    setProjQuery(v) {
+        this.state.projQuery = v;
+        clearTimeout(this._projTmr);
+        this._projTmr = setTimeout(() => this._loadProjects(v), 200);
+    }
+
+    // Klikk pa en kollega i «Til stede na» -> apne Discuss-chat (DM) med personen.
+    // Bruker mail.store hvis tilgjengelig (mail er dep via project); ellers stille no-op.
+    openColleagueChat(pr) {
+        const store = this.env.services["mail.store"];
+        if (store && pr.partner_id) {
+            store.openChat({ partnerId: pr.partner_id });
+        }
+    }
+
     async loadData() {
         let active = 0, openTasks = 0;
         try { active = await this.orm.searchCount("project.project", [["active", "=", true]]); } catch (e) {}
 
-        // Projects with their real number (sequence_code = "Project No.") – human syntax
-        const precs = await this._read("project.project", [["active", "=", true]],
-            ["name", "sequence_code", "task_count"], { limit: 8, order: "create_date desc" });
-        const projects = precs.map((p) => ({
-            id: p.id, no: p.sequence_code || "", name: p.name,
-            taskCount: p.task_count || 0,
-            progress: Math.min(100, (p.task_count || 0) * 8), status: _t("In progress"),
-        }));
+        // Projects (overview + search). Field-detect sequence_code for portability.
+        this._pOpt = await this._optFields("project.project", ["sequence_code"]);
+        await this._loadProjects("");
 
         // My open tasks with their real number (code = "T0001") + deadline warning
         const today = new Date().toISOString().slice(0, 10);
+        const tOpt = await this._optFields("project.task", ["code"]);
         const trecs = await this._read("project.task",
             [["user_ids", "in", [user.userId]]],
-            ["name", "code", "project_id", "date_deadline"], { limit: 10, order: "date_deadline asc" });
+            ["name", "project_id", "date_deadline", "planned_date_begin", ...tOpt], { limit: 10, order: "date_deadline asc" });
         const myTasks = trecs.map((t) => ({
             id: t.id, no: t.code || "", name: t.name,
             project: t.project_id ? t.project_id[1] : "",
             deadline: t.date_deadline || "",
+            pfrom: (t.planned_date_begin || "").slice(0, 10),
+            pto: (t.date_deadline || "").slice(0, 10),
             overdue: !!(t.date_deadline && t.date_deadline < today),
         }));
         try { openTasks = await this.orm.searchCount("project.task", [["user_ids", "in", [user.userId]]]); } catch (e) {}
@@ -118,11 +184,15 @@ export class FiqControlRoom extends Component {
         const received = komm.filter((k) => k.direction === "mottatt");
         const overdueN = myTasks.filter((t) => t.overdue).length;
         this.state.kpis = [
-            { v: String(komm.length), l: _t("Kommunikasjon"), sub: received.length + " " + _t("ubesvart"), dot: received.length ? "red" : "green" },
-            { v: String(active), l: _t("Prosjekt"), sub: overdueN + " " + _t("forsinket"), dot: overdueN ? "amber" : "green" },
-            { v: String(salg), l: _t("Salg"), sub: _t("ok"), dot: "green" },
-            { v: "—", l: _t("HMS/KS"), sub: _t("avvik"), dot: "grey" },
+            { key: "komm", v: String(komm.length), l: _t("Kommunikasjon"), sub: received.length + " " + _t("ubesvart"), dot: received.length ? "red" : "green" },
+            { key: "prosjekt", v: String(active), l: _t("Prosjekt"), sub: overdueN + " " + _t("forsinket"), dot: overdueN ? "amber" : "green" },
+            { key: "salg", v: String(salg), l: _t("Salg"), sub: _t("ok"), dot: "green" },
+            { key: "hms", v: "—", l: _t("HMS/KS"), sub: _t("avvik"), dot: "grey" },
         ];
+        if (!this.state.selectedKpi) {
+            const red = this.state.kpis.find((k) => k.dot === "red");
+            this.state.selectedKpi = red ? red.key : "komm";
+        }
 
         // Native dashboards/analyses (only the ones that actually exist in the DB)
         let dashboards = [];
@@ -136,7 +206,6 @@ export class FiqControlRoom extends Component {
         let actions = {};
         try { actions = await this.orm.call("fiq.gui.control.config", "get_actions", []); } catch (e) {}
 
-        this.state.projects = projects;
         this.state.myTasks = myTasks;
         this.state.komm = komm;
         this.state.dashboards = dashboards;
@@ -180,6 +249,33 @@ export class FiqControlRoom extends Component {
     krevClick(hp) {
         if (hp.view) { this.setView(hp.view); }
         else if (hp.model) { this.openRecord(hp.model, hp.res_id); }
+    }
+
+    selectKpi(key) {
+        this.state.selectedKpi = key;
+    }
+
+    // Skjul/vis en seksjon (kollaps ved hovedoverskrift) for å løfte fram de andre listene
+    toggleCollapse(key) {
+        this.state.collapsed[key] = !this.state.collapsed[key];
+    }
+
+    // Detaljlinjer for valgt status-knapp (vises i frigjort plass under statuslinja)
+    get kpiDetailLines() {
+        const k = this.state.selectedKpi;
+        if (k === "komm") {
+            return this.state.komm.filter((m) => m.direction === "mottatt")
+                .map((m) => ({ text: (m.author || "") + " · " + (m.subject || ""), model: m.model, res_id: m.res_id }));
+        }
+        if (k === "prosjekt") {
+            return this.state.myTasks.filter((t) => t.overdue)
+                .map((t) => ({ text: (t.no ? t.no + " " : "") + t.name, model: "project.task", res_id: t.id }));
+        }
+        return [];
+    }
+
+    openDetail(dl) {
+        if (dl.model && dl.res_id) { this.openRecord(dl.model, dl.res_id); }
     }
 
     get filteredKomm() {
@@ -276,9 +372,27 @@ export class FiqControlRoom extends Component {
         this._underUtvikling();
     }
 
-    // «Spør AI om hjelp» – AI-flate ennå ikke koblet
-    askAi() {
+    // «Utvidet funksjonalitet» → Prosjekt-kontrollrommet (ikke bygd ennå → placeholder)
+    openProsjektKontrollrom() {
         this._underUtvikling();
+    }
+
+    // «Spør AI om hjelp» → Claude via fiq.ai-connector (krever installert fiq_ai + API-nøkkel)
+    async askAi() {
+        const q = (this.state.aiQuery || "").trim();
+        if (!q) { return; }
+        this.state.aiAnswer = _t("Tenker …");
+        try {
+            const ans = await this.orm.call("fiq.ai", "chat", [q]);
+            this.state.aiAnswer = ans || _t("(tomt svar)");
+        } catch (e) {
+            this.state.aiAnswer = _t("AI ikke tilgjengelig ennå — installer modulen fiq_ai og sett Anthropic API-nøkkel.");
+        }
+    }
+
+    clearAi() {
+        this.state.aiAnswer = "";
+        this.state.aiQuery = "";
     }
 
     // Real click-through: open a record in Odoo
@@ -292,6 +406,21 @@ export class FiqControlRoom extends Component {
         });
     }
 
+    // Inline planlagt-dato (prosjekt: date-felt). Uavhengige fra/til-kalendere.
+    async setProjDate(id, field, value) {
+        try { await this.orm.write("project.project", [id], { [field]: value || false }); } catch (e) {}
+        const p = this.state.projects.find((x) => x.id === id);
+        if (p) { if (field === "date_start") { p.start = value || false; } else { p.end = value || false; } }
+    }
+
+    // Inline planlagt-dato (oppgave: datetime-felt). Lagre kl. 12 for å unngå tidssone-skift.
+    async setTaskDate(id, field, value) {
+        const val = value ? value + " 12:00:00" : false;
+        try { await this.orm.write("project.task", [id], { [field]: val }); } catch (e) {}
+        const t = this.state.myTasks.find((x) => x.id === id);
+        if (t) { if (field === "planned_date_begin") { t.pfrom = value || ""; } else { t.pto = value || ""; } }
+    }
+
     // Click a project → its tasks. mode="gantt" opens the Gantt view.
     openProjectTasks(pid, mode) {
         const views = mode === "gantt"
@@ -299,10 +428,11 @@ export class FiqControlRoom extends Component {
             : [[false, "list"], [false, "form"]];
         this.action.doAction({
             type: "ir.actions.act_window",
-            name: _t("Tasks"),
+            name: mode === "gantt" ? _t("Planlegging") : _t("Tasks"),
             res_model: "project.task",
             domain: [["project_id", "=", pid]],
             views: views,
+            context: { group_by: ["stage_id"] },
             target: "current",
         });
     }
@@ -314,6 +444,74 @@ export class FiqControlRoom extends Component {
 
     setView(v) {
         this.state.view = v;
+    }
+
+    setRightView(v) {
+        this.state.rightView = v;
+    }
+
+    // ---- Egen kompakt Gantt (høyre panel). Vindu styres av periode-toggle (kommPeriod). ----
+    get ganttWindow() {
+        const p = this.state.kommPeriod;
+        const now = new Date();
+        let start, end;
+        if (p === "alle") {
+            start = new Date(now.getFullYear(), 0, 1);
+            end = new Date(now.getFullYear() + 1, 0, 1);
+        } else if (p === "maaned") {
+            start = new Date(now.getFullYear(), now.getMonth(), 1);
+            end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        } else {
+            // dag/uke -> inneværende uke (man..man+7)
+            const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const dow = (d.getDay() + 6) % 7;
+            start = new Date(d);
+            start.setDate(d.getDate() - dow);
+            end = new Date(start);
+            end.setDate(start.getDate() + 7);
+        }
+        return { start: start.getTime(), end: end.getTime() };
+    }
+
+    get ganttTicks() {
+        const p = this.state.kommPeriod;
+        const { start, end } = this.ganttWindow;
+        const span = (end - start) || 1;
+        const pct = (t) => ((t - start) / span) * 100;
+        const ticks = [];
+        if (p === "alle") {
+            const y = new Date(start).getFullYear();
+            const mn = ["Jan","Feb","Mar","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Des"];
+            for (let m = 0; m < 12; m++) ticks.push({ label: mn[m], left: pct(new Date(y, m, 1).getTime()) });
+        } else if (p === "maaned") {
+            let d = new Date(start);
+            while (d.getTime() < end) {
+                ticks.push({ label: d.getDate() + ".", left: pct(d.getTime()) });
+                const nx = new Date(d); nx.setDate(d.getDate() + 7); d = nx;
+            }
+        } else {
+            const wd = ["Ma","Ti","On","To","Fr","Lø","Sø"];
+            for (let i = 0; i < 7; i++) ticks.push({ label: wd[i], left: pct(start + i * 86400000) });
+        }
+        return ticks;
+    }
+
+    get ganttRows() {
+        const { start, end } = this.ganttWindow;
+        const span = (end - start) || 1;
+        return this.state.projects.map((p) => {
+            const s = p.start ? new Date(p.start).getTime() : null;
+            const e = p.end ? new Date(p.end).getTime() : null;
+            if (s === null && e === null) {
+                return { id: p.id, no: p.no, name: p.name, hasDates: false };
+            }
+            const bs = s !== null ? s : e;
+            const be = e !== null ? e : s;
+            let left = Math.max(0, Math.min(100, ((bs - start) / span) * 100));
+            let right = Math.max(0, Math.min(100, ((be - start) / span) * 100));
+            return { id: p.id, no: p.no, name: p.name, hasDates: true,
+                     leftPct: left, widthPct: Math.max(1.5, right - left), progress: p.progress };
+        });
     }
 
     // Metadata (ikon/farge + tittel) for gjeldende fagflate-visning; null for oversikt/kommunikasjon

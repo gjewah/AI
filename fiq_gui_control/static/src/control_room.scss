@@ -6,6 +6,11 @@
     padding: 14px;
     background: #f4f5f7;
     min-height: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;              // låst topp; scroll skjer i .fiq_hm_wrap
 
     .fiq_hm_top {
         display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -29,11 +34,11 @@
         label { display: inline-flex; align-items: center; gap: 6px; margin: 4px 14px 4px 0; text-transform: capitalize; cursor: pointer; }
     }
 
-    .fiq_hm_wrap { display: grid; grid-template-columns: 190px 1fr; gap: 12px; }
+    .fiq_hm_wrap { display: grid; grid-template-columns: 190px 1fr; gap: 12px; flex: 1 1 auto; min-height: 0; }
     @media (max-width: 760px) { .fiq_hm_wrap { grid-template-columns: 1fr; } }
 
     .fiq_hm_side {
-        background: var(--fiq-side); border-radius: 12px; padding: 10px; color: #c4ccd4; min-height: 520px;
+        background: var(--fiq-side); border-radius: 12px; padding: 10px; color: #c4ccd4; min-height: 0; overflow-y: auto;
         .fiq_hm_side_brand { display: flex; align-items: center; color: #fff; font-weight: 600; padding: 5px 6px 12px; }
         .fiq_hm_glbl { font-size: 10px; letter-spacing: .07em; text-transform: uppercase; opacity: .55; padding: 8px; }
         .fiq_hm_nav {
@@ -46,17 +51,33 @@
         }
     }
 
-    .fiq_hm_main { display: flex; flex-direction: column; gap: 12px; }
+    .fiq_hm_main { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto; padding-right: 2px; }
     .fiq_hm_loading, .fiq_hm_empty { color: var(--fiq-mut); padding: 10px; }
     .fiq_hm_kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 11px; }
     @media (max-width: 760px) { .fiq_hm_kpis { grid-template-columns: repeat(2, 1fr); } }
     .fiq_hm_kpi { background: #fff; border: 1px solid var(--fiq-bd); border-radius: 11px; padding: 11px;
         .v { font-size: 22px; font-weight: 700; } .l { font-size: 12px; color: var(--fiq-side); display: flex; align-items: center; gap: 6px; } }
+    .fiq_hm_statusrow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 11px; }
+    @media (max-width: 760px) { .fiq_hm_statusrow { grid-template-columns: repeat(2, 1fr); } }
+    .fiq_hm_statusrow .fiq_hm_kpi { cursor: pointer; transition: border-color .12s, box-shadow .12s;
+        &.on { border-color: var(--fiq-accent); box-shadow: 0 0 0 2px rgba(56,180,74,.15); } }
+    .fiq_hm_detail { padding: 8px 12px; }
+    .fiq_hm_detail_l { display: flex; align-items: center; gap: 9px; padding: 6px 2px; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; font-size: 12px;
+        &:last-child { border-bottom: 0; }
+        &:hover { background: #f7f8f9; }
+        .fiq_hm_detail_dot { width: 7px; height: 7px; border-radius: 50%; background: #e0483a; flex: 0 0 auto; }
+        .fiq_hm_detail_t { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } }
+    .fiq_hm_photo { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; display: block; }
 
-    .fiq_hm_cols { display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; }
+    .fiq_hm_cols { display: grid; grid-template-columns: 1fr 1.25fr; gap: 12px; }
     @media (max-width: 760px) { .fiq_hm_cols { grid-template-columns: 1fr; } }
     .fiq_hm_colL, .fiq_hm_colR { display: flex; flex-direction: column; gap: 12px; }
 
+    .fiq_hm_ch { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+        h4 { margin: 0; } }
+    .fiq_hm_coll { border: 0; background: transparent; color: var(--fiq-mut); cursor: pointer; font-size: 13px; padding: 0 4px; line-height: 1;
+        &:hover { color: var(--fiq-accent); } }
+    .fiq_hm_collapsed > :not(.fiq_hm_ch) { display: none; }
     .fiq_hm_card { background: #fff; border: 1px solid var(--fiq-bd); border-radius: 11px; padding: 12px;
         h4 { margin: 0 0 10px; font-size: 13px; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -76,6 +97,31 @@
         &:hover { border-color: var(--fiq-accent); } }
     .fiq_hm_qa { display: flex; gap: 9px; flex-wrap: wrap;
         span { border: 1px solid var(--fiq-bd); border-radius: 8px; padding: 8px 12px; background: #f0f1f3; } }
+    // Høyre panel: Liste/Gantt-toggle + Utvidet
+    .fiq_hm_rhead { display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+        h4 { margin: 0; flex: 1; } }
+    .fiq_hm_rseg { display: inline-flex; border: 1px solid var(--fiq-bd); border-radius: 8px; overflow: hidden;
+        button { border: 0; background: #fff; color: var(--fiq-mut); padding: 4px 12px; cursor: pointer; font: inherit; font-size: 11.5px;
+            &.on { background: var(--fiq-accent); color: #fff; } } }
+    .fiq_hm_ext { border: 1px solid var(--fiq-bd); background: #f7f8f9; border-radius: 8px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 11.5px; color: var(--fiq-side);
+        &:hover { border-color: var(--fiq-accent); background: #fff; } }
+    .fiq_hm_rrow { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; font-size: 12px;
+        &:hover { background: #f7f8f9; }
+        .fiq_hm_rname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .track { width: 90px; height: 8px; background: #f0f1f3; border-radius: 4px; overflow: hidden; flex: 0 0 auto;
+            i { display: block; height: 100%; background: var(--fiq-accent); } } }
+    // Egen kompakt Gantt
+    .fiq_hm_cgantt { position: relative; padding-top: 2px; }
+    .fiq_hm_cg_axis { position: relative; height: 15px; margin-left: 130px; margin-bottom: 4px; border-bottom: 1px solid var(--fiq-bd); }
+    .fiq_hm_cg_tick { position: absolute; top: 0; transform: translateX(-50%); font-size: 9.5px; color: var(--fiq-mut); white-space: nowrap; }
+    .fiq_hm_cg_row { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; font-size: 12px; border-radius: 4px;
+        &:hover { background: #f7f8f9; } }
+    .fiq_hm_cg_lbl { flex: 0 0 122px; width: 122px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fiq_hm_cg_track { position: relative; flex: 1; height: 16px; background: #f7f8f9; border-radius: 4px;
+        background-image: linear-gradient(90deg, var(--fiq-bd) 1px, transparent 1px); background-size: 14.28% 100%; }
+    .fiq_hm_cg_bar { position: absolute; top: 2px; height: 12px; min-width: 3px; background: rgba(56,180,74,.28); border: 1px solid var(--fiq-accent); border-radius: 4px; overflow: hidden; }
+    .fiq_hm_cg_fill { display: block; height: 100%; background: var(--fiq-accent); }
+    .fiq_hm_cg_nodate { position: absolute; left: 6px; top: 1px; font-size: 9.5px; color: var(--fiq-mut); font-style: italic; }
     .fiq_hm_foot { text-align: center; color: var(--fiq-mut); font-size: 11px; padding: 6px 0 2px;
         strong { color: var(--fiq-side); }
         .fiq_hm_footlogo { height: 14px; vertical-align: middle; margin: 0 3px; } }
@@ -110,9 +156,12 @@
         .fiq_hm_chip_x { cursor: pointer; color: var(--fiq-mut); &:hover { color: #c0392b; } } }
     .fiq_hm_gantt { font-size: 11px; color: var(--fiq-mut); border: 1px solid var(--fiq-bd); border-radius: 6px; padding: 1px 7px; white-space: nowrap;
         &:hover { color: var(--fiq-accent); border-color: var(--fiq-accent); } }
+    // Prosjekt-søkefelt (rett over prosjektoversikt)
+    .fiq_hm_psok { width: 100%; box-sizing: border-box; margin: 0 0 10px; padding: 6px 10px; border: 1px solid var(--fiq-bd); border-radius: 8px; font: inherit; font-size: 12px; }
     // Menneskelig syntaks: prosjekt-/oppgavenummer
     .fiq_hm_no { font-family: monospace; font-size: 11px; color: var(--fiq-mut); background: #f0f1f3;
         border: 1px solid var(--fiq-bd); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
+    .fiq_hm_din { border: 1px solid var(--fiq-bd); border-radius: 6px; padding: 2px 5px; font: inherit; font-size: 11px; color: var(--fiq-side); background: #fff; max-width: 122px; }
     .fiq_hm_task { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; font-size: 12px;
         &:hover { background: var(--fiq-s2, #f7f8f9); }
         .fiq_hm_task_n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -161,6 +210,8 @@
             .fiq_hm_dot { position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 50%; border: 2px solid #fff;
                 &.online { background: #22c55e; } &.away { background: #eab308; } &.offline { background: #9ca3af; } } }
         .fiq_hm_pnavn { font-size: 11.5px; white-space: nowrap; } }
+    .fiq_hm_chip_click { cursor: pointer; transition: border-color .12s, background .12s;
+        &:hover { border-color: var(--fiq-accent); background: rgba(56,180,74,.06); } }
 
     // ============ Krever handling nå ============
     .fiq_hm_krev { border: 1px solid #f2c1bb; background: #fdf3f1;
@@ -186,6 +237,17 @@
         &.fiq_hm_bs_add { border-style: dashed; color: var(--fiq-mut); } }
 
     // ============ Spør AI om hjelp (bar) ============
+    .fiq_hm_topfield { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 150px; }
+    .fiq_hm_topfield .fiq_hm_filtersok { flex: none; width: 100%; min-width: 0; box-sizing: border-box; }
+    .fiq_hm_toplbl { font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--fiq-mut); font-weight: 600; }
+    .fiq_hm_airow { display: flex; gap: 6px; }
+    .fiq_hm_airow .fiq_hm_filtersok { flex: 1; }
+    .fiq_hm_aifield { border-left: 2px solid var(--fiq-bd); padding-left: 10px; }
+    .fiq_hm_airesp { margin-bottom: 12px; }
+    .fiq_hm_airesp_h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .fiq_hm_airesp_t { font-weight: 600; font-size: 12px; color: var(--fiq-side); }
+    .fiq_hm_airesp_x { cursor: pointer; color: var(--fiq-mut); } .fiq_hm_airesp_x:hover { color: #c0392b; }
+    .fiq_hm_airesp_b { white-space: pre-wrap; font-size: 12.5px; line-height: 1.5; color: var(--fiq-side); max-height: 200px; overflow-y: auto; }
     .fiq_hm_aibar { display: flex; align-items: center; gap: 10px;
         .fiq_hm_ai_ic { font-size: 16px; }
         .fiq_hm_ai_in { flex: 1; padding: 8px 12px; border: 1px solid var(--fiq-bd); border-radius: 10px; font: inherit; font-size: 13px; }
