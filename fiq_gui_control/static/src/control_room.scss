@@ -339,10 +339,13 @@
         .h_prj { flex: 0 0 150px; text-align: left; }
         .h_timer { flex: 0 0 52px; }
         .h_status { flex: 0 0 78px; }
-        .h_prog { flex: 0 0 96px; text-align: right; } }
+        .h_prog { flex: 0 0 96px; text-align: left; } }
     .fiq_hm_statcol { flex: 0 0 78px; }
+    .fiq_hm_progcol { flex: 0 0 96px; display: inline-flex; justify-content: flex-start; }
     .fiq_hm_warnbtn { cursor: pointer;
         &:hover { text-decoration: underline; } }
+    .fiq_hm_openbtn { font-size: 10.5px; color: var(--fiq-mut); border: 1px solid var(--fiq-bd); border-radius: 10px; padding: 1px 7px; cursor: pointer; white-space: nowrap;
+        &:hover { color: var(--fiq-accent); border-color: var(--fiq-accent); } }
 
     // Dokument-forhåndsvisning (knapp, IKKE lenke — nedlasting er skrudd av)
     .fiq_hm_dokbtn { border: 0; background: transparent; text-align: left; cursor: pointer; font: inherit; width: 100%;

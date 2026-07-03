@@ -335,8 +335,11 @@
                                             </span>
                                             <span class="fiq_hm_statcol">
                                                 <span t-if="t.overdue" class="fiq_hm_warn fiq_hm_warnbtn" t-on-click.stop="() =&gt; this.openRecord('project.task', t.id)" title="Åpne oppgaven i Odoo">⚠ forsinket</span>
+                                                <span t-else="" class="fiq_hm_openbtn" t-on-click.stop="() =&gt; this.openRecord('project.task', t.id)" title="Åpne oppgaven i Odoo">⤢ Åpne</span>
                                             </span>
-                                            <t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="t.progress"/><t t-set="shape" t-value="state.progressShape"/><t t-set="hrs" t-value="t.estH ? (t.logH + '/' + t.estH + ' t') : ''"/></t>
+                                            <span class="fiq_hm_progcol">
+                                                <t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="t.progress"/><t t-set="shape" t-value="state.progressShape"/><t t-set="hrs" t-value="t.estH ? (t.logH + '/' + t.estH + ' t') : ''"/></t>
+                                            </span>
                                         </div>
                                         <t t-if="state.expanded['project.task:' + t.id]">
                                             <t t-foreach="state.children['project.task:' + t.id] or []" t-as="c" t-key="c.id">
