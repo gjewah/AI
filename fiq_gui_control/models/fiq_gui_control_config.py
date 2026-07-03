@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 import re
 from datetime import timedelta
 from odoo import models, fields, api, _
@@ -86,7 +87,21 @@ class FiqControlRoomConfig(models.Model):
             # Hvem kan kjøre modul-oppgradering fra brikken (FIQ-admin ELLER Settings-admin)
             "can_upgrade": (self.env.user.has_group("fiq_gui_control.group_admin")
                             or self.env.user.has_group("base.group_system")),
+            # SP-lenker per fagområde (config-drevet, PER FIRMA): systemparameter
+            # fiq_gui_control.sp_urls.<company_id> (fallback .sp_urls) = JSON {"1": "https://…", "8.50": "https://…"}
+            "sp_urls": self._sp_urls(comp),
         }
+
+    @api.model
+    def _sp_urls(self, comp):
+        ICP = self.env["ir.config_parameter"].sudo()
+        raw = ICP.get_param("fiq_gui_control.sp_urls.%s" % comp.id) \
+            or ICP.get_param("fiq_gui_control.sp_urls", "{}")
+        try:
+            data = json.loads(raw)
+            return data if isinstance(data, dict) else {}
+        except Exception:
+            return {}
 
     @api.model
     def _module_versions(self):

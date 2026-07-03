@@ -53,10 +53,12 @@
     .fiq_hm_side {
         background: var(--fiq-side); border-radius: 12px; padding: 10px; color: #c4ccd4; min-height: 0; overflow-y: auto; overflow-x: hidden;
         .fiq_hm_side_brand { display: flex; align-items: center; color: #fff; font-weight: 600; padding: 5px 6px 12px; }
-        .fiq_hm_glbl { font-size: 10px; letter-spacing: .07em; text-transform: uppercase; opacity: .55; padding: 8px; }
+        // Seksjonsoverskrifter: MER kontrast; Styring-punkter: STØRRE skrift (mobil-lesbart)
+        .fiq_hm_glbl { font-size: 11.5px; letter-spacing: .07em; text-transform: uppercase; color: #eef2f5; font-weight: 700; opacity: 1; padding: 8px;
+            border-bottom: 1px solid rgba(255,255,255,.14); margin-bottom: 4px; }
         .fiq_hm_nav {
-            display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 8px;
-            cursor: pointer; color: #aeb7c0;
+            display: flex; align-items: center; gap: 9px; padding: 8px 9px; border-radius: 8px;
+            cursor: pointer; color: #c9d2da; font-size: 14px;
             .b { width: 4px; height: 16px; border-radius: 2px; background: var(--fiq-accent); }
             .fiq_hm_navico { width: 18px; height: 18px; object-fit: contain; flex: 0 0 auto; }
             &:hover { background: #262f37; color: #e8edf1; }
@@ -329,13 +331,17 @@
         .fiq_hm_aname { flex: 1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .fiq_hm_achev { border: 0; background: transparent; color: #8b93a1; cursor: pointer; font-size: 10px; padding: 2px 5px; line-height: 1; flex: 0 0 auto;
             &:hover { color: #fff; } } }
-    // SP-flis: ÉN per rad, kompakt 72 px + TYDELIG nedtrekk (hvit bakgrunn, svart skrift)
-    .fiq_hm_atile { width: 100%; max-width: 170px; margin: 0; cursor: pointer; border-radius: 8px; padding: 3px 4px;
-        box-sizing: border-box; overflow: hidden; display: flex; align-items: center; gap: 6px;
+    // SP-flis: nedtrekket UNDER ikonet (stablet); 🌐 = SP-lenke (config-drevet per firma)
+    .fiq_hm_atile { width: 100%; max-width: 150px; margin: 0; cursor: pointer; border-radius: 8px; padding: 4px;
+        box-sizing: border-box; overflow: hidden; display: flex; flex-direction: column; gap: 4px;
         &:hover { background: #262f37; }
         &.on { background: #262f37; box-shadow: inset 0 0 0 2px rgba(255,255,255,.4); }
-        .fiq_hm_aimg_big { width: 72px; height: auto; flex: 0 0 auto; border-radius: 6px; display: block; }
-        .fiq_hm_asel { flex: 1; min-width: 0; box-sizing: border-box; font: inherit; font-size: 11px; font-weight: 600;
+        .fiq_hm_atile_top { position: relative; display: flex; justify-content: center;
+            .fiq_hm_splink { position: absolute; top: 0; right: 0; border: 1px solid #3a444e; background: #262f37;
+                border-radius: 6px; cursor: pointer; font-size: 11px; padding: 1px 4px; line-height: 1.3;
+                &:hover { border-color: var(--fiq-accent); } } }
+        .fiq_hm_aimg_big { width: 72px; height: auto; border-radius: 6px; display: block; }
+        .fiq_hm_asel { width: 100%; min-width: 0; box-sizing: border-box; font: inherit; font-size: 11px; font-weight: 600;
             background: #fff; color: #111; border: 1px solid #9aa3ad; border-radius: 6px; padding: 3px 4px; cursor: pointer;
             &:hover { border-color: var(--fiq-accent); }
             &:focus { border-color: var(--fiq-accent); outline: none; } } }

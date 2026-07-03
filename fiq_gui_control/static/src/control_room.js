@@ -186,6 +186,7 @@ export class FiqControlRoom extends Component {
             this.state.verFiles = cfg.version_files || "";
             this._autoMin = cfg.auto_refresh_min || 5;
             this.state.canUpgrade = !!cfg.can_upgrade;
+            this.state.spUrls = cfg.sp_urls || {};
         } catch (e) {
             // keep defaults (everything visible) if the model is not ready
         }
@@ -564,6 +565,17 @@ export class FiqControlRoom extends Component {
     // Nedtrekk i sidemenyen (åpne/lukk underområder for et fagområde)
     toggleArea(nr) {
         this.state.areaOpen[nr] = !this.state.areaOpen[nr];
+    }
+
+    // SP-lenke for et fagområde (config-drevet per firma; eksakt nr vinner over toppnr)
+    spUrl(nr) {
+        const u = this.state.spUrls || {};
+        return u[nr] || u[(nr || "").split(".")[0]] || "";
+    }
+
+    openSp(nr) {
+        const url = this.spUrl(nr);
+        if (url) { window.open(url, "_blank"); }
     }
 
     // Nedtrekksliste under SP-flisen: velg underområde («» = hele området)

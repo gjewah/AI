@@ -83,7 +83,10 @@
                             <!-- Kompakt SP-flis (glossy MedBib-ikon, lesbar innstøpt tekst) + nedtrekk for underområder -->
                             <div t-att-class="(state.view === 'oversikt' and state.projArea === a.nr) ? 'fiq_hm_atile on' : 'fiq_hm_atile'"
                                  t-att-title="a.nr + ' ' + a.name" t-on-click="() => this.pickArea(a.nr, a.id)">
-                                <img class="fiq_hm_aimg_big" t-att-src="'/fiq_gui_control/static/img/sp/' + a.nr.split('.')[0] + '.png'" t-att-alt="a.nr + ' ' + a.name" t-on-error="(ev) =&gt; ev.target.style.display = 'none'"/>
+                                <div class="fiq_hm_atile_top">
+                                    <img class="fiq_hm_aimg_big" t-att-src="'/fiq_gui_control/static/img/sp/' + a.nr.split('.')[0] + '.png'" t-att-alt="a.nr + ' ' + a.name" t-on-error="(ev) =&gt; ev.target.style.display = 'none'"/>
+                                    <button t-if="spUrl(a.nr)" class="fiq_hm_splink" t-on-click.stop="() =&gt; this.openSp(a.nr)" t-att-title="'Åpne SP-området ' + a.nr + ' i SharePoint'">🌐</button>
+                                </div>
                                 <select t-if="a.subs.length" class="fiq_hm_asel" t-on-click.stop="() =&gt; {}" t-on-change="(ev) =&gt; this.pickAreaSub(a, ev.target.value)">
                                     <option value="">Velg fagområde</option>
                                     <t t-foreach="a.subs" t-as="s" t-key="s.id">
