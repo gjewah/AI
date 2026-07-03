@@ -86,6 +86,8 @@ export class FiqControlRoom extends Component {
             actions: {},          // {nøkkel: xmlid|false} – hvilke Odoo-handlinger som finnes (guardet)
             aiQuery: "",          // «Spør AI om hjelp»-feltet
             aiAnswer: "",         // svar fra Claude via fiq.ai
+            verInstalled: "",     // installert modulversjon (DB — endres av «Oppgrader» i Apper)
+            verFiles: "",         // fil-versjon på serveren (avvik → varsle «trykk Oppgrader»)
             view: "oversikt",     // main content: oversikt (overview) | kommunikasjon (communication)
             rightView: "liste",   // right panel: liste | gantt (Liste default = safe first render)
             selected: null,       // {model,id,name} for inspektor-panel
@@ -123,6 +125,8 @@ export class FiqControlRoom extends Component {
             if (cfg.logo) this.state.logo = cfg.logo;
             if (cfg.progress_shape) this.state.progressShape = cfg.progress_shape;
             if (cfg.progress_metric) this.state.progressMetric = cfg.progress_metric;
+            this.state.verInstalled = cfg.version_installed || "";
+            this.state.verFiles = cfg.version_files || "";
         } catch (e) {
             // keep defaults (everything visible) if the model is not ready
         }
@@ -456,6 +460,23 @@ export class FiqControlRoom extends Component {
         this.state.presence = presence;
         this.state.actions = actions;
         this.state.loading = false;
+    }
+
+    // Versjonsfelt ved Oppdater-knappen: «v6.17.0» (uten 19.0-prefiks). Avvik mellom
+    // installert (DB) og filene på serveren → oransje varsel «trykk Oppgrader i Apper».
+    get verVis() {
+        const strip = (v) => (v || "").replace(/^\d+\.\d+\./, "");
+        const inst = strip(this.state.verInstalled);
+        const fil = strip(this.state.verFiles);
+        if (!inst && !fil) { return null; }
+        const avvik = fil && inst !== fil;
+        return {
+            text: "v" + (inst || "?"),
+            avvik,
+            title: avvik
+                ? _t("Filene på serveren er v") + fil + _t(" — trykk «Oppgrader» på Control room i Apper")
+                : _t("Installert versjon"),
+        };
     }
 
     // Tidsbasert hilsen (norsk)

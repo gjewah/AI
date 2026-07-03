@@ -2,6 +2,7 @@
 import re
 from datetime import timedelta
 from odoo import models, fields, api, _
+from odoo.modules.module import get_manifest
 
 WIDGETS = ["kpis", "projects", "kommunikasjon", "activity", "tasks", "chart", "copilot", "quick"]
 
@@ -75,7 +76,27 @@ class FiqControlRoomConfig(models.Model):
             "logo": ("data:image/png;base64,%s" % logo) if logo else False,
             "progress_shape": ICP.get_param("fiq_gui_control.progress_shape", "bar"),
             "progress_metric": ICP.get_param("fiq_gui_control.progress_metric", "timer"),
+            # Versjon: installert (DB, endres av «Oppgrader» i Apper) + filene på disk.
+            # Avvik → GUI-et varsler «trykk Oppgrader» (fanger filer-nyere-enn-DB-fella).
+            "version_installed": self._module_versions()[0],
+            "version_files": self._module_versions()[1],
         }
+
+    @api.model
+    def _module_versions(self):
+        """(installert DB-versjon, fil-versjon) for fiq_gui_control — defensivt."""
+        installed = files = ""
+        try:
+            mod = self.env["ir.module.module"].sudo().search(
+                [("name", "=", "fiq_gui_control")], limit=1)
+            installed = mod.latest_version or ""
+        except Exception:
+            pass
+        try:
+            files = (get_manifest("fiq_gui_control") or {}).get("version", "")
+        except Exception:
+            pass
+        return installed, files
 
     @api.model
     def set_widget(self, widget, value):

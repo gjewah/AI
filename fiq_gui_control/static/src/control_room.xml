@@ -40,6 +40,9 @@
                 </div>
 
                 <button class="btn fiq_hm_refresh" t-att-class="state.refreshing ? 'fiq_hm_refresh spin' : 'fiq_hm_refresh'" t-on-click="() =&gt; this.refresh()" t-att-disabled="state.refreshing" title="Hent live data på nytt"><span class="fiq_hm_refresh_i">⟳</span> <t t-esc="state.refreshing ? 'Oppdaterer …' : 'Oppdater'"/></button>
+                <span t-if="verVis" t-att-class="verVis.avvik ? 'fiq_hm_ver avvik' : 'fiq_hm_ver'" t-att-title="verVis.title">
+                    <t t-esc="verVis.text"/><t t-if="verVis.avvik"> ⚠</t>
+                </span>
                 <button class="btn fiq_hm_gear" t-on-click="() => this.toggleCustomize()">⚙ Tilpass</button>
             </div>
 
