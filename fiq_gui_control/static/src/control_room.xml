@@ -105,7 +105,7 @@
                                     t-att-class="state.kommPeriod === pp[0] ? 'on' : ''"
                                     t-on-click="() => this.setKommPeriod(pp[0])" t-esc="pp[1]"/>
                         </div>
-                        <div class="fiq_hm_topfield">
+                        <div class="fiq_hm_topfield fiq_hm_sokfield">
                             <span class="fiq_hm_toplbl">Søk</span>
                             <span class="fiq_hm_srch">
                                 <input class="fiq_hm_filtersok" placeholder="Firma, person, prosjekt, oppgave …"

@@ -51,7 +51,7 @@
     @media (max-width: 760px) { .fiq_hm_wrap { grid-template-columns: 1fr; } }
 
     .fiq_hm_side {
-        background: var(--fiq-side); border-radius: 12px; padding: 10px; color: #c4ccd4; min-height: 0; overflow-y: auto;
+        background: var(--fiq-side); border-radius: 12px; padding: 10px; color: #c4ccd4; min-height: 0; overflow-y: auto; overflow-x: hidden;
         .fiq_hm_side_brand { display: flex; align-items: center; color: #fff; font-weight: 600; padding: 5px 6px 12px; }
         .fiq_hm_glbl { font-size: 10px; letter-spacing: .07em; text-transform: uppercase; opacity: .55; padding: 8px; }
         .fiq_hm_nav {
@@ -310,7 +310,10 @@
         .fiq_hm_pseg { display: inline-flex; border: 1px solid var(--fiq-bd); border-radius: 8px; overflow: hidden; background: #fff;
             button { border: 0; background: #fff; color: var(--fiq-mut); padding: 5px 13px; cursor: pointer; font: inherit; font-size: 11.5px;
                 &.on { background: var(--fiq-accent); color: #fff; } } }
-        .fiq_hm_filtersok { flex: 1; min-width: 180px; padding: 6px 11px; border: 1px solid var(--fiq-bd); border-radius: 9px; font: inherit; font-size: 12px; background: #fff; } }
+        .fiq_hm_filtersok { flex: 1; min-width: 180px; padding: 6px 11px; border: 1px solid #b9c6d6; border-radius: 9px; font: inherit; font-size: 12px; background: #f7fafc;
+            &:focus { border-color: var(--fiq-accent); background: #fff; outline: none; box-shadow: 0 0 0 2px rgba(56,180,74,.12); } } }
+    // SØK-feltet i topplinja: bredere enn AI-feltet
+    .fiq_hm_sokfield { flex: 2; min-width: 260px; }
 
     // ============ Sidemeny: fagområder som rader (lang strek) m/ nedtrekk ============
     .fiq_hm_alist { display: flex; flex-direction: column; padding: 2px 2px 8px; }
@@ -321,17 +324,22 @@
         .fiq_hm_asq { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 20px; border-radius: 5px;
             font-size: 10px; font-weight: 700; color: #fff; background: var(--sp, #555); flex: 0 0 auto; padding: 0 3px;
             &.dk { color: #1f2228; } }
-        // Stor SP-flis (256 px bred) — glossy MedBib-ikon m/ lesbar innstøpt tekst
-        .fiq_hm_atile { width: 100%; max-width: 256px; margin: 0 auto 8px; cursor: pointer; border-radius: 10px; padding: 5px;
-            box-sizing: border-box;
-            &:hover { background: #262f37; }
-            &.on { background: #262f37; box-shadow: inset 0 0 0 2px rgba(255,255,255,.4); }
-            .fiq_hm_aimg_big { width: 100%; height: auto; border-radius: 8px; display: block; }
-            .fiq_hm_atile_foot { display: flex; align-items: center; gap: 6px; padding: 4px 2px 0; color: #c4ccd4; font-size: 11.5px;
-                .fiq_hm_aname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } } }
         .fiq_hm_aname { flex: 1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .fiq_hm_achev { border: 0; background: transparent; color: #8b93a1; cursor: pointer; font-size: 10px; padding: 2px 5px; line-height: 1; flex: 0 0 auto;
             &:hover { color: #fff; } } }
+    // Stor SP-flis (256 px bred, TOPPNIVÅ-selektor — riktig format) — glossy MedBib-ikon
+    .fiq_hm_atile { width: 100%; max-width: 256px; margin: 0 auto 8px; cursor: pointer; border-radius: 10px; padding: 5px;
+        box-sizing: border-box; overflow: hidden;
+        &:hover { background: #262f37; }
+        &.on { background: #262f37; box-shadow: inset 0 0 0 2px rgba(255,255,255,.4); }
+        .fiq_hm_aimg_big { width: 100%; max-width: 246px; height: auto; border-radius: 8px; display: block; }
+        .fiq_hm_asq { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 20px; border-radius: 5px;
+            font-size: 10px; font-weight: 700; color: #fff; background: var(--sp, #555); flex: 0 0 auto; padding: 0 3px;
+            &.dk { color: #1f2228; } }
+        .fiq_hm_atile_foot { display: flex; align-items: center; gap: 6px; padding: 4px 2px 0; color: #c4ccd4; font-size: 11.5px;
+            .fiq_hm_aname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .fiq_hm_achev { border: 0; background: transparent; color: #8b93a1; cursor: pointer; font-size: 11px; padding: 2px 5px; line-height: 1; flex: 0 0 auto;
+                &:hover { color: #fff; } } } }
     .fiq_hm_asub { display: flex; align-items: center; gap: 7px; padding: 4px 6px 4px 26px; cursor: pointer; color: #9aa3ad; font-size: 11.5px; border-radius: 6px;
         &:hover { background: #262f37; color: #fff; }
         &.on { background: #262f37; color: #fff; }
