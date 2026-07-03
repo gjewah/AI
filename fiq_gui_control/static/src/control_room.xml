@@ -364,10 +364,16 @@
                                     <input type="date" class="fiq_hm_din" t-att-value="state.anchorDate" t-on-change="(ev) =&gt; this.setAnchor(ev.target.value)" title="Referansedato for perioden (Dag/Uke/Måned regnes fra denne)"/>
                                     <button class="fiq_hm_ext fiq_hm_step" t-on-click="() =&gt; this.stepAnchor(1)" title="Neste periode">▸</button>
                                 </div>
-                                <span class="fiq_hm_srch fiq_hm_srch_blk">
-                                    <input class="fiq_hm_psok" placeholder="Søk i prosjekter (navn eller nr.) …" t-att-value="state.projQuery" t-on-input="(ev) =&gt; this.setProjQuery(ev.target.value)"/>
-                                    <span t-if="state.projQuery" class="fiq_hm_srch_x" t-on-click="() =&gt; this.setProjQuery('')" title="Tøm søk">✕</span>
-                                </span>
+                                <div class="fiq_hm_tsok">
+                                    <span class="fiq_hm_srch fiq_hm_tsok_no">
+                                        <input class="fiq_hm_psok" placeholder="Prosj.nr …" t-att-value="state.projNoQuery" t-on-input="(ev) =&gt; this.setProjNoQuery(ev.target.value)"/>
+                                        <span t-if="state.projNoQuery" class="fiq_hm_srch_x" t-on-click="() =&gt; this.setProjNoQuery('')" title="Tøm">✕</span>
+                                    </span>
+                                    <span class="fiq_hm_srch">
+                                        <input class="fiq_hm_psok" placeholder="Søk i prosjekter (fritekst) …" t-att-value="state.projQuery" t-on-input="(ev) =&gt; this.setProjQuery(ev.target.value)"/>
+                                        <span t-if="state.projQuery" class="fiq_hm_srch_x" t-on-click="() =&gt; this.setProjQuery('')" title="Tøm søk">✕</span>
+                                    </span>
+                                </div>
                                 <!-- Fagområde-filtre (rad 1 = toppområder fra prosjekt-treet; rad 2 = undergrupper) -->
                                 <div class="fiq_hm_pfilter">
                                     <button t-att-class="!state.projArea ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-on-click="() =&gt; this.setProjArea('')">Alle</button>
@@ -421,7 +427,7 @@
                                         </tbody>
                                     </table>
                                 </t>
-                                <t t-else=""><div class="fiq_hm_empty" t-esc="state.projQuery ? 'Ingen prosjekter matcher søket.' : 'Ingen aktive prosjekter ennå.'"/></t>
+                                <t t-else=""><div class="fiq_hm_empty" t-esc="(state.projQuery or state.projNoQuery) ? 'Ingen prosjekter matcher søket.' : 'Ingen aktive prosjekter ennå.'"/></t>
                             </div>
                             <div t-if="state.show.tasks" t-att-class="'fiq_hm_card' + (state.collapsed.oppgaver ? ' fiq_hm_collapsed' : '')"><div class="fiq_hm_ch"><h4>Mine oppgaver</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('oppgaver')" t-esc="state.collapsed.oppgaver ? 'Vis ▸' : 'Skjul ▾'"/></div>
                                 <!-- Oppgavesøk: nummer + fritekst (to felt, server-søk) -->

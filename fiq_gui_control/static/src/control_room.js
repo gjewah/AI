@@ -81,7 +81,8 @@ export class FiqControlRoom extends Component {
             finansLines: [],      // detaljlinjer for Finans-boksen (fakturaer som krever handling)
             collapsed: this._loadCollapsed(),
             projects: [],
-            projQuery: "",        // project search over the project overview
+            projQuery: "",        // project search over the project overview (fritekst)
+            projNoQuery: "",      // prosjektsøk: nummer (sequence_code)
             projArea: "",         // fagområde-filter (fagområdenr, f.eks. "6" el. "2.20") – tom = alle
             projAreaId: false,    // område-PROSJEKTETS id → hierarki-filter (child_of via project_parent)
             areas: [],            // fagområde-treet fra Odoo prosjekt-hierarkiet (get_areas)
@@ -234,6 +235,11 @@ export class FiqControlRoom extends Component {
             domain.push("|", "|", ["date_start", "=", false], ["date", "=", false],
                 "&", ["date_start", "<", iso(win.e)], ["date", ">=", iso(win.s)]);
         }
+        // To-felts søk: nummer (sequence_code, fallback navn-prefiks) + fritekst (navn)
+        const no = (this.state.projNoQuery || "").trim();
+        if (no) {
+            domain.push([pOpt.includes("sequence_code") ? "sequence_code" : "name", "ilike", no]);
+        }
         if (q) {
             const flds = ["name", ...(pOpt.includes("sequence_code") ? ["sequence_code"] : [])];
             const ors = [];
@@ -242,7 +248,7 @@ export class FiqControlRoom extends Component {
             domain = domain.concat(ors);
         }
         const precs = await this._read("project.project", domain,
-            ["name", "task_count", "date_start", "date", ...pOpt], { limit: (q || area) ? 40 : 8, order: "create_date desc" });
+            ["name", "task_count", "date_start", "date", ...pOpt], { limit: (q || no || area) ? 40 : 8, order: "create_date desc" });
         const rows = precs.map((p) => ({
             id: p.id, no: p.sequence_code || "", name: p.name,
             taskCount: p.task_count || 0,
@@ -539,11 +545,17 @@ export class FiqControlRoom extends Component {
         this.state.taskMile = (this.state.taskMile === name) ? "" : name;
     }
 
-    // Project search field (right above the project overview) - debounced server search
+    // Project search fields (right above the project overview) - debounced server search
     setProjQuery(v) {
         this.state.projQuery = v;
         clearTimeout(this._projTmr);
         this._projTmr = setTimeout(() => this._loadProjects(v), 200);
+    }
+
+    setProjNoQuery(v) {
+        this.state.projNoQuery = v;
+        clearTimeout(this._projTmr);
+        this._projTmr = setTimeout(() => this._loadProjects(this.state.projQuery), 200);
     }
 
     // Fagområde-filter i prosjektoversikten. Klikk = hierarki-filter (child_of områdets
