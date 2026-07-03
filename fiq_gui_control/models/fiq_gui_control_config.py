@@ -429,6 +429,46 @@ class FiqControlRoomConfig(models.Model):
         return out
 
     @api.model
+    def get_dagens(self):
+        """«Møter og aktiviteter i dag» for innlogget bruker — panel ved siden av
+        Til stede nå. Møter = calendar.event i dag; aktiviteter = mail.activity
+        (forfalte + kommende). Defensivt/felt-guardet."""
+        out = {"moter": [], "aktiviteter": []}
+        now = fields.Datetime.now()
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = start + timedelta(days=1)
+        try:
+            evs = self.env["calendar.event"].search([
+                ("partner_ids", "in", self.env.user.partner_id.ids),
+                ("start", "<", end), ("stop", ">=", start)], order="start", limit=15)
+            for e in evs:
+                st = fields.Datetime.context_timestamp(e, e.start) if e.start else None
+                sl = fields.Datetime.context_timestamp(e, e.stop) if e.stop else None
+                out["moter"].append({
+                    "id": e.id, "name": e.name or "",
+                    "tid": st.strftime("%H:%M") if st else "",
+                    "slutt": sl.strftime("%H:%M") if sl else "",
+                })
+        except Exception:
+            pass
+        try:
+            today = fields.Date.context_today(self)
+            for a in self.env["mail.activity"].search(
+                    [("user_id", "=", self.env.uid)], order="date_deadline", limit=15):
+                out["aktiviteter"].append({
+                    "id": a.id,
+                    "name": a.summary or (a.activity_type_id.name or _("Aktivitet")),
+                    "frist": str(a.date_deadline or ""),
+                    "forsinket": bool(a.date_deadline and a.date_deadline < today),
+                    "model": a.res_model or "",
+                    "res_id": a.res_id or 0,
+                    "res_name": a.res_name or "",
+                })
+        except Exception:
+            pass
+        return out
+
+    @api.model
     def get_presence(self):
         """«Til stede nå»: interne brukere med SAMMENSATT status som farger HELE kortet:
            🟢 grønn = Til stede · 🟠 oransje = I møte / Ute · 🔴 rød = Fraværende / Ikke møtt.

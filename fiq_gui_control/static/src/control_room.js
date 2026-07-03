@@ -100,6 +100,7 @@ export class FiqControlRoom extends Component {
             kommSender: null,     // {id, name} – filter on a single sender
             dashboards: [],       // Odoo native dashboards/analyses (only the ones that exist)
             presence: [],         // «Til stede nå» – interne brukere + tilgjengelighets-status
+            dagens: { moter: [], aktiviteter: [] }, // «Møter og aktiviteter i dag»-panelet
             actions: {},          // {nøkkel: xmlid|false} – hvilke Odoo-handlinger som finnes (guardet)
             aiQuery: "",          // «Spør AI om hjelp»-feltet
             aiAnswer: "",         // svar fra Claude via fiq.ai
@@ -727,6 +728,10 @@ export class FiqControlRoom extends Component {
         // «Til stede nå» – interne brukere + tilgjengelighets-status
         let presence = [];
         try { presence = await this.orm.call("fiq.gui.control.config", "get_presence", []); } catch (e) {}
+
+        // «Møter og aktiviteter i dag» (panel ved siden av Til stede nå)
+        try { this.state.dagens = await this.orm.call("fiq.gui.control.config", "get_dagens", []); }
+        catch (e) { this.state.dagens = { moter: [], aktiviteter: [] }; }
 
         // Fagområde-treet fra prosjekt-hierarkiet (sidemeny + filter-chips) m/ kanoniske farger
         try {

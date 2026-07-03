@@ -169,7 +169,8 @@
                     <!-- =================== OVERSIKT (Leder: rapport-opp / styring ved unntak) =================== -->
                     <t t-if="!state.loading and state.view === 'oversikt'">
 
-                        <!-- (1) Til stede nå -->
+                        <!-- (1) Til stede nå + Møter/aktiviteter i dag (side ved side) -->
+                        <div class="fiq_hm_lists">
                         <div t-att-class="'fiq_hm_card' + (state.collapsed.presence ? ' fiq_hm_collapsed' : '')">
                             <div class="fiq_hm_ch"><h4>👥 Til stede nå</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('presence')" t-esc="state.collapsed.presence ? 'Vis ▸' : 'Skjul ▾'"/></div>
                             <t t-if="state.presence.length">
@@ -190,6 +191,33 @@
                                 </div>
                             </t>
                             <t t-else=""><div class="fiq_hm_empty">Ingen registrerte interne brukere.</div></t>
+                        </div>
+                        <!-- Møter og aktiviteter i dag (eget vindu ved siden av brukerne) -->
+                        <div t-att-class="'fiq_hm_card' + (state.collapsed.dagens ? ' fiq_hm_collapsed' : '')">
+                            <div class="fiq_hm_ch"><h4>📅 Møter og aktiviteter i dag</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('dagens')" t-esc="state.collapsed.dagens ? 'Vis ▸' : 'Skjul ▾'"/></div>
+                            <div class="fiq_hm_dag2">
+                                <div>
+                                    <div class="fiq_hm_dag_h">Møter <button class="fiq_hm_ext fiq_hm_dag_open" t-on-click="() =&gt; this.runAction('kalender')" title="Åpne kalenderen">⤢</button></div>
+                                    <t t-if="state.dagens.moter.length">
+                                        <div t-foreach="state.dagens.moter" t-as="m" t-key="m.id" class="fiq_hm_dagrow" t-on-click="() =&gt; this.openRecord('calendar.event', m.id)">
+                                            <span class="fiq_hm_dagtid"><t t-esc="m.tid"/><t t-if="m.slutt">–<t t-esc="m.slutt"/></t></span>
+                                            <span class="fiq_hm_dagnavn" t-esc="m.name"/>
+                                        </div>
+                                    </t>
+                                    <t t-else=""><div class="fiq_hm_empty">Ingen møter i dag.</div></t>
+                                </div>
+                                <div>
+                                    <div class="fiq_hm_dag_h">Aktiviteter <button class="fiq_hm_ext fiq_hm_dag_open" t-on-click="() =&gt; this.runAction('aktivitet')" title="Åpne aktivitetene">⤢</button></div>
+                                    <t t-if="state.dagens.aktiviteter.length">
+                                        <div t-foreach="state.dagens.aktiviteter" t-as="ak" t-key="ak.id" class="fiq_hm_dagrow" t-on-click="() =&gt; ak.model and ak.res_id ? this.openRecord(ak.model, ak.res_id) : this.runAction('aktivitet')">
+                                            <span t-att-class="ak.forsinket ? 'fiq_hm_dagtid rod' : 'fiq_hm_dagtid'" t-esc="ak.frist"/>
+                                            <span class="fiq_hm_dagnavn"><t t-esc="ak.name"/><t t-if="ak.res_name"> · <t t-esc="ak.res_name"/></t></span>
+                                        </div>
+                                    </t>
+                                    <t t-else=""><div class="fiq_hm_empty">Ingen aktiviteter.</div></t>
+                                </div>
+                            </div>
+                        </div>
                         </div>
 
                         <!-- Statuslinje: KPI + krever-handling som klikkbare knapper -->
