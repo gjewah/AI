@@ -172,8 +172,14 @@
     .fiq_hm_din_g { width: 96px; box-sizing: border-box; border: 1px solid var(--fiq-bd); border-radius: 5px; padding: 1px 2px; font: inherit; font-size: 9px; color: var(--fiq-side); background: #fff; }
     .fiq_hm_cg_track { position: relative; flex: 1; height: 16px; background: #f7f8f9; border-radius: 4px;
         background-image: linear-gradient(90deg, var(--fiq-bd) 1px, transparent 1px); background-size: 14.28% 100%; }
-    .fiq_hm_cg_bar { position: absolute; top: 2px; height: 12px; min-width: 3px; background: rgba(56,180,74,.28); border: 1px solid var(--fiq-accent); border-radius: 4px; overflow: hidden; }
-    .fiq_hm_cg_fill { display: block; height: 100%; background: var(--fiq-accent); }
+    // Stolpe: HVIT grunnlinje som fylles etter fremdrift; farge = tids-status
+    // (grønn = i rute · gul = i fare · rød = over frist · mørk grønn = utført)
+    .fiq_hm_cg_head { font-size: 10.5px; color: var(--fiq-mut); font-weight: 600; margin: 0 0 2px 208px; }
+    .fiq_hm_cg_bar { position: absolute; top: 2px; height: 12px; min-width: 3px; background: #fff; border: 1px solid #c9cdd4; border-radius: 4px; overflow: hidden; }
+    .fiq_hm_cg_fill { display: block; height: 100%; background: var(--fiq-accent);
+        &.green { background: #38B44A; } &.yellow { background: #f0b429; } &.red { background: #e0483a; } &.done { background: #27500A; } }
+    .fiq_hm_cg_pct { position: absolute; top: 1px; font-size: 9px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--fiq-mut); white-space: nowrap;
+        &.red { color: #e0483a; } &.yellow { color: #b45309; } &.done { color: #27500A; } }
     .fiq_hm_cg_nodate { position: absolute; left: 6px; top: 1px; font-size: 9.5px; color: var(--fiq-mut); font-style: italic; }
     .fiq_hm_foot { text-align: center; color: var(--fiq-mut); font-size: 11px; padding: 6px 0 2px;
         strong { color: var(--fiq-side); }
@@ -297,6 +303,12 @@
         font: inherit; font-size: 11px; padding: 3px 9px; border-radius: 7px; white-space: nowrap;
         &:hover { border-color: var(--fiq-accent); background: #fff; }
         &.on { border-color: var(--fiq-accent); background: rgba(56,180,74,.10); color: var(--fiq-side); } }
+
+    // Periode-speil + datovelger over prosjektoversikten
+    .fiq_hm_pperiod { display: flex; align-items: center; gap: 8px; margin: 0 0 8px;
+        .fiq_hm_pseg { display: inline-flex; border: 1px solid var(--fiq-bd); border-radius: 8px; overflow: hidden; background: #fff;
+            button { border: 0; background: #fff; color: var(--fiq-mut); padding: 3px 10px; cursor: pointer; font: inherit; font-size: 11px;
+                &.on { background: var(--fiq-accent); color: #fff; } } } }
 
     // Oppgavesøk: to felt (nummer + fritekst)
     .fiq_hm_tsok { display: flex; gap: 6px; margin: 0 0 8px;

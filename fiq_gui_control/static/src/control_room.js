@@ -28,6 +28,16 @@ function spColor(nr) {
     return { color: c, dk: SP_DARK_TEXT.includes(c) };
 }
 
+const MND = ["Januar", "Februar", "Mars", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Desember"];
+
+function isoWeek(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
 export class FiqControlRoom extends Component {
     static template = "fiq_gui_control.ControlRoom";
     static props = ["*"];
@@ -83,6 +93,7 @@ export class FiqControlRoom extends Component {
             taskMile: "",         // filter: valgt milepæl ("" = alle)
             komm: [],
             kommPeriod: "uke",
+            anchorDate: new Date().toISOString().slice(0, 10), // datovelger: referansedato for perioden
             kommQuery: "",
             kommDir: "alle",      // alle | mottatt | sendt (direction "sent from")
             kommSender: null,     // {id, name} – filter on a single sender
@@ -196,6 +207,13 @@ export class FiqControlRoom extends Component {
         let domain = [["active", "=", true]];
         if (this.state.projAreaId) { domain.push(["id", "child_of", this.state.projAreaId]); }
         else if (area) { domain.push(["name", "=ilike", area + "%"]); }
+        // Periode-filter: planlagt periode overlapper vinduet; prosjekter UTEN datoer vises alltid
+        const win = this._periodWindow();
+        if (win) {
+            const iso = (d) => d.toISOString().slice(0, 10);
+            domain.push("|", "|", ["date_start", "=", false], ["date", "=", false],
+                "&", ["date_start", "<", iso(win.e)], ["date", ">=", iso(win.s)]);
+        }
         if (q) {
             const flds = ["name", ...(pOpt.includes("sequence_code") ? ["sequence_code"] : [])];
             const ors = [];
@@ -758,9 +776,30 @@ export class FiqControlRoom extends Component {
 
     async setKommPeriod(p) {
         this.state.kommPeriod = p;
+        this._loadProjects(this.state.projQuery);   // perioden gjelder også prosjektlista
         try {
             this.state.komm = await this.orm.call("fiq.gui.control.config", "get_kommunikasjon", [p]);
         } catch (e) { this.state.komm = []; }
+    }
+
+    // Datovelger: referansedato som perioden (Dag/Uke/Måned) regnes ut fra
+    setAnchor(v) {
+        this.state.anchorDate = v || new Date().toISOString().slice(0, 10);
+        this._loadProjects(this.state.projQuery);
+    }
+
+    // Perioden som konkret tidsvindu (null = «Alle» → ingen datofilter)
+    _periodWindow() {
+        const p = this.state.kommPeriod;
+        if (p === "alle") { return null; }
+        const a = this.state.anchorDate ? new Date(this.state.anchorDate + "T12:00:00") : new Date();
+        const d0 = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+        if (p === "dag") { const e = new Date(d0); e.setDate(d0.getDate() + 1); return { s: d0, e }; }
+        if (p === "maaned") { return { s: new Date(a.getFullYear(), a.getMonth(), 1), e: new Date(a.getFullYear(), a.getMonth() + 1, 1) }; }
+        const dow = (d0.getDay() + 6) % 7;
+        const s = new Date(d0); s.setDate(d0.getDate() - dow);
+        const e = new Date(s); e.setDate(s.getDate() + 7);
+        return { s, e };
     }
 
     async replyTo(messageId, replyAll) {
@@ -1017,7 +1056,7 @@ export class FiqControlRoom extends Component {
     // ---- Egen kompakt Gantt (høyre panel). Vindu styres av periode-toggle (kommPeriod). ----
     get ganttWindow() {
         const p = this.state.kommPeriod;
-        const now = new Date();
+        const now = this.state.anchorDate ? new Date(this.state.anchorDate + "T12:00:00") : new Date();
         let start, end;
         if (p === "alle") {
             start = new Date(now.getFullYear(), 0, 1);
@@ -1037,6 +1076,16 @@ export class FiqControlRoom extends Component {
         return { start: start.getTime(), end: end.getTime() };
     }
 
+    // Kontekstlinje over aksen: ukenummer + måned + år (avhengig av periode)
+    get ganttHeader() {
+        const p = this.state.kommPeriod;
+        const { start } = this.ganttWindow;
+        const s = new Date(start);
+        if (p === "alle") { return String(s.getFullYear()); }
+        if (p === "maaned") { return MND[s.getMonth()] + " " + s.getFullYear(); }
+        return "Uke " + isoWeek(s) + " · " + MND[s.getMonth()] + " " + s.getFullYear();
+    }
+
     get ganttTicks() {
         const p = this.state.kommPeriod;
         const { start, end } = this.ganttWindow;
@@ -1048,14 +1097,19 @@ export class FiqControlRoom extends Component {
             const mn = ["Jan","Feb","Mar","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Des"];
             for (let m = 0; m < 12; m++) ticks.push({ label: mn[m], left: pct(new Date(y, m, 1).getTime()) });
         } else if (p === "maaned") {
+            // Ukenummer per uke i måneden
             let d = new Date(start);
             while (d.getTime() < end) {
-                ticks.push({ label: d.getDate() + ".", left: pct(d.getTime()) });
+                ticks.push({ label: "U" + isoWeek(d), left: pct(d.getTime()) });
                 const nx = new Date(d); nx.setDate(d.getDate() + 7); d = nx;
             }
         } else {
+            // Ukedag + dato (Ma 29.6 …)
             const wd = ["Ma","Ti","On","To","Fr","Lø","Sø"];
-            for (let i = 0; i < 7; i++) ticks.push({ label: wd[i], left: pct(start + i * 86400000) });
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(start + i * 86400000);
+                ticks.push({ label: wd[i] + " " + d.getDate() + "." + (d.getMonth() + 1), left: pct(start + i * 86400000) });
+            }
         }
         return ticks;
     }
@@ -1063,6 +1117,7 @@ export class FiqControlRoom extends Component {
     get ganttRows() {
         const { start, end } = this.ganttWindow;
         const span = (end - start) || 1;
+        const nowTs = Date.now();
         return this.progRows.map((p) => {
             const s = p.start ? new Date(p.start).getTime() : null;
             const e = p.end ? new Date(p.end).getTime() : null;
@@ -1073,8 +1128,19 @@ export class FiqControlRoom extends Component {
             const be = e !== null ? e : s;
             let left = Math.max(0, Math.min(100, ((bs - start) / span) * 100));
             let right = Math.max(0, Math.min(100, ((be - start) / span) * 100));
+            // Tids-status: grønn = i rute · gul = i fare (bak forventet) · rød = over frist · mørk grønn = utført
+            const prog = p.progress || 0;
+            let farge = "green";
+            if (prog >= 100) { farge = "done"; }
+            else if (be < nowTs) { farge = "red"; }
+            else if (bs < nowTs && be > bs) {
+                const forventet = ((nowTs - bs) / (be - bs)) * 100;
+                farge = (prog + 10 >= forventet) ? "green" : "yellow";
+            }
+            const widthPct = Math.max(1.5, right - left);
             return { id: p.id, no: p.no, name: p.name, hasDates: true, start: p.start || false, end: p.end || false,
-                     leftPct: left, widthPct: Math.max(1.5, right - left), progress: p.progress };
+                     leftPct: left, widthPct, progress: prog, farge,
+                     pctLeft: Math.min(92, left + widthPct) };
         });
     }
 

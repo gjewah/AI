@@ -224,6 +224,15 @@
                                     <input class="fiq_hm_psok" placeholder="Søk i prosjekter (navn eller nr.) …" t-att-value="state.projQuery" t-on-input="(ev) =&gt; this.setProjQuery(ev.target.value)"/>
                                     <span t-if="state.projQuery" class="fiq_hm_srch_x" t-on-click="() =&gt; this.setProjQuery('')" title="Tøm søk">✕</span>
                                 </span>
+                                <!-- Periode (speiler topplinja) + datovelger: planlagt periode i vinduet; uten datoer vises alltid -->
+                                <div class="fiq_hm_pperiod">
+                                    <div class="fiq_hm_pseg">
+                                        <button t-foreach="[['dag','Dag'],['uke','Uke'],['maaned','Måned'],['alle','Alle']]" t-as="pp" t-key="pp[0]"
+                                                t-att-class="state.kommPeriod === pp[0] ? 'on' : ''"
+                                                t-on-click="() =&gt; this.setKommPeriod(pp[0])" t-esc="pp[1]"/>
+                                    </div>
+                                    <input type="date" class="fiq_hm_din" t-att-value="state.anchorDate" t-on-change="(ev) =&gt; this.setAnchor(ev.target.value)" title="Referansedato for perioden (Dag/Uke/Måned regnes fra denne)"/>
+                                </div>
                                 <!-- Fagområde-filtre (rad 1 = toppområder fra prosjekt-treet; rad 2 = undergrupper) -->
                                 <div class="fiq_hm_pfilter">
                                     <button t-att-class="!state.projArea ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-on-click="() =&gt; this.setProjArea('')">Alle</button>
@@ -378,6 +387,7 @@
                                         <t t-else=""><div class="fiq_hm_empty" t-esc="state.progLevel === 'oppgave' ? 'Ingen oppgaver i prosjektet.' : 'Ingen prosjekter.'"/></t>
                                     </t>
                                     <div t-if="state.rightView === 'gantt'" class="fiq_hm_cgantt">
+                                        <div class="fiq_hm_cg_head" t-esc="ganttHeader"/>
                                         <div class="fiq_hm_cg_axis">
                                             <t t-foreach="ganttTicks" t-as="tk" t-key="tk_index">
                                                 <span class="fiq_hm_cg_tick" t-att-style="'left:' + tk.left + '%'" t-esc="tk.label"/>
@@ -394,10 +404,12 @@
                                                         </span>
                                                     </span>
                                                     <span class="fiq_hm_cg_track">
-                                                        <span t-if="g.hasDates" class="fiq_hm_cg_bar" t-att-style="'left:' + g.leftPct + '%; width:' + g.widthPct + '%'" t-att-title="g.name">
-                                                            <span class="fiq_hm_cg_fill" t-att-style="'width:' + g.progress + '%'"/>
+                                                        <span t-if="g.hasDates" class="fiq_hm_cg_bar" t-att-style="'left:' + g.leftPct + '%; width:' + g.widthPct + '%'"
+                                                              t-att-title="g.name + ' — ' + g.progress + ' % (' + (g.farge === 'red' ? 'over frist' : g.farge === 'yellow' ? 'i fare' : g.farge === 'done' ? 'utført' : 'i rute') + ')'">
+                                                            <span t-att-class="'fiq_hm_cg_fill ' + g.farge" t-att-style="'width:' + g.progress + '%'"/>
                                                         </span>
-                                                        <span t-else="" class="fiq_hm_cg_nodate">ingen datoer</span>
+                                                        <span t-if="g.hasDates" t-att-class="'fiq_hm_cg_pct ' + g.farge" t-att-style="'left: calc(' + g.pctLeft + '% + 5px)'" t-esc="g.progress + '%'"/>
+                                                        <span t-if="!g.hasDates" class="fiq_hm_cg_nodate">ingen datoer</span>
                                                     </span>
                                                 </div>
                                             </t>
