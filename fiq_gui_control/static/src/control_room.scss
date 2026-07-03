@@ -262,7 +262,7 @@
     .fiq_hm_task { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; font-size: 12px;
         &:hover { background: var(--fiq-s2, #f7f8f9); }
         .fiq_hm_task_n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .fiq_hm_task_p { color: var(--fiq-mut); font-size: 11px; flex: 0 0 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .fiq_hm_task_p { color: var(--fiq-mut); font-size: 11px; flex: 0 0 150px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .fiq_hm_dl { font-size: 11px; color: var(--fiq-mut); &.over { color: #c0392b; font-weight: 500; } }
         .fiq_hm_warn { font-size: 10.5px; color: #c0392b; background: #fdecea; border-radius: 10px; padding: 1px 7px; } }
     // Fagområde-visning (Prosjekt/CRM/Salgsmuligheter/Salgsordre/Regnskap + SP-områder) – integrert plassholder
@@ -328,14 +328,18 @@
         .fiq_hm_psok { margin: 0; }
         .fiq_hm_tsok_no { flex: 0 0 110px; } }
 
-    // Kolonneoverskrifter for oppgavelista
+    // Kolonneoverskrifter for oppgavelista (BOLD; Prosjekt venstrejustert, Fremdrift ytterst høyre)
     .fiq_hm_th { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--fiq-bd);
-        font-size: 11px; color: var(--fiq-mut);
+        font-size: 11px; color: var(--fiq-side); font-weight: 700;
         .h_no { flex: 0 0 52px; }
         .h_name { flex: 1; }
-        .h_prj { flex: 0 0 110px; }
-        .h_est { flex: 0 0 64px; }
-        .h_prog { flex: 0 0 96px; } }
+        .h_prj { flex: 0 0 150px; text-align: left; }
+        .h_timer { flex: 0 0 52px; }
+        .h_status { flex: 0 0 78px; }
+        .h_prog { flex: 0 0 96px; text-align: right; } }
+    .fiq_hm_statcol { flex: 0 0 78px; }
+    .fiq_hm_warnbtn { cursor: pointer;
+        &:hover { text-decoration: underline; } }
 
     // Dokument-forhåndsvisning (knapp, IKKE lenke — nedlasting er skrudd av)
     .fiq_hm_dokbtn { border: 0; background: transparent; text-align: left; cursor: pointer; font: inherit; width: 100%;

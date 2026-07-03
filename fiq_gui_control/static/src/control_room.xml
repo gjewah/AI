@@ -309,12 +309,13 @@
                                         <button t-att-class="state.taskMile === mc.name ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-on-click="() =&gt; this.toggleTaskMile(mc.name)">🏁 <t t-esc="mc.name"/> <span class="fiq_hm_stchip_n" t-esc="mc.count"/></button>
                                     </t>
                                 </div>
-                                <!-- Kolonneoverskrifter -->
+                                <!-- Kolonneoverskrifter (bold; Prosjekt venstre, Fremdrift ytterst høyre) -->
                                 <div class="fiq_hm_th">
                                     <span class="h_no">Nr.</span>
                                     <span class="h_name">Oppgave</span>
                                     <span class="h_prj">Prosjekt</span>
-                                    <span t-if="state.hasHours" class="h_est">Est.</span>
+                                    <span t-if="state.hasHours" class="h_timer">Timer</span>
+                                    <span class="h_status">Status</span>
                                     <span class="h_prog">Fremdrift</span>
                                 </div>
                                 <t t-if="filteredMyTasks.length">
@@ -325,10 +326,12 @@
                                             <span class="fiq_hm_task_n" t-esc="t.name" t-on-click="() =&gt; this.selectEl('project.task', t.id, t.name)"/>
                                             <span class="fiq_hm_task_p" t-esc="t.project"/>
                                             <span t-if="state.hasHours" class="fiq_hm_est" title="Estimerte (antatte) timer – juster; fremdrift = førte ÷ estimerte">
-                                                <input type="number" step="0.5" min="0" class="fiq_hm_esti" t-att-value="t.estH || ''" t-on-change="(ev) =&gt; this.setTaskEst(t.id, ev.target.value)"/><span class="fiq_hm_estu">t est.</span>
+                                                <input type="number" step="0.5" min="0" class="fiq_hm_esti" t-att-value="t.estH || ''" t-on-change="(ev) =&gt; this.setTaskEst(t.id, ev.target.value)"/>
+                                            </span>
+                                            <span class="fiq_hm_statcol">
+                                                <span t-if="t.overdue" class="fiq_hm_warn fiq_hm_warnbtn" t-on-click.stop="() =&gt; this.openRecord('project.task', t.id)" title="Åpne oppgaven i Odoo">⚠ forsinket</span>
                                             </span>
                                             <t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="t.progress"/><t t-set="shape" t-value="state.progressShape"/><t t-set="hrs" t-value="t.estH ? (t.logH + '/' + t.estH + ' t') : ''"/></t>
-                                            <span t-if="t.overdue" class="fiq_hm_warn">⚠ forsinket</span>
                                         </div>
                                         <t t-if="state.expanded['project.task:' + t.id]">
                                             <t t-foreach="state.children['project.task:' + t.id] or []" t-as="c" t-key="c.id">
