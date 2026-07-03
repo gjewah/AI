@@ -50,6 +50,7 @@ export class FiqControlRoom extends Component {
             collapsed: this._loadCollapsed(),
             projects: [],
             projQuery: "",        // project search over the project overview
+            projArea: "",         // fagområde-filter (fagområdenr, f.eks. "6") – tom = alle
             myTasks: [],
             komm: [],
             kommPeriod: "uke",
@@ -129,16 +130,19 @@ export class FiqControlRoom extends Component {
         // a query searches ALL active projects by name and (if present) sequence_code.
         const pOpt = this._pOpt || [];
         const q = (query || "").trim();
+        const area = this.state.projArea;
+        // Implisitt AND-liste. Fagområde-filter = navn starter med fagområdenr (f.eks. "6%").
         let domain = [["active", "=", true]];
+        if (area) { domain.push(["name", "=ilike", area + "%"]); }
         if (q) {
             const flds = ["name", ...(pOpt.includes("sequence_code") ? ["sequence_code"] : [])];
             const ors = [];
             for (let i = 0; i < flds.length - 1; i++) ors.push("|");
             flds.forEach((f) => ors.push([f, "ilike", q]));
-            domain = ["&", ["active", "=", true], ...ors];
+            domain = domain.concat(ors);
         }
         const precs = await this._read("project.project", domain,
-            ["name", "task_count", "date_start", "date", ...pOpt], { limit: q ? 30 : 8, order: "create_date desc" });
+            ["name", "task_count", "date_start", "date", ...pOpt], { limit: (q || area) ? 30 : 8, order: "create_date desc" });
         this.state.projects = precs.map((p) => ({
             id: p.id, no: p.sequence_code || "", name: p.name,
             taskCount: p.task_count || 0,
@@ -258,6 +262,13 @@ export class FiqControlRoom extends Component {
         this.state.projQuery = v;
         clearTimeout(this._projTmr);
         this._projTmr = setTimeout(() => this._loadProjects(v), 200);
+    }
+
+    // Fagområde-filter i prosjektoversikten. Klikk = filtrer på fagområdenr;
+    // klikk på aktivt filter igjen = tilbake til alle.
+    setProjArea(nr) {
+        this.state.projArea = (this.state.projArea === nr) ? "" : nr;
+        this._loadProjects(this.state.projQuery);
     }
 
     // Klikk pa en kollega i «Til stede na» -> apne Discuss-chat (DM) med personen.

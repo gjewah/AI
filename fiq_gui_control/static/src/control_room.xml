@@ -207,6 +207,13 @@
                                     <input class="fiq_hm_psok" placeholder="Søk i prosjekter (navn eller nr.) …" t-att-value="state.projQuery" t-on-input="(ev) =&gt; this.setProjQuery(ev.target.value)"/>
                                     <span t-if="state.projQuery" class="fiq_hm_srch_x" t-on-click="() =&gt; this.setProjQuery('')" title="Tøm søk">✕</span>
                                 </span>
+                                <!-- Fagområde-filtre (lettere oversikt): Alle + 1 LED, 2 AD, 4 LOG, 5 MAR, 6 Salg, 8 FAG -->
+                                <div class="fiq_hm_pfilter">
+                                    <button t-att-class="!state.projArea ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-on-click="() =&gt; this.setProjArea('')">Alle</button>
+                                    <t t-foreach="fagomrader" t-as="o" t-key="o.view">
+                                        <button t-att-class="state.projArea === o.nr ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-att-style="'--sp:' + o.farge + ';'" t-on-click="() =&gt; this.setProjArea(o.nr)"><span class="fiq_hm_pfc_nr" t-esc="o.nr"/> <t t-esc="o.navn"/></button>
+                                    </t>
+                                </div>
                                 <t t-if="state.projects.length">
                                     <table>
                                         <thead><tr><th>Nr.</th><th>Prosjekt</th><th>Fremdrift</th><th>Oppg</th><th></th></tr></thead>

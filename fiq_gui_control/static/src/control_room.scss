@@ -212,6 +212,13 @@
             &:hover { color: #c0392b; } } }
     .fiq_hm_srch_blk { margin: 0 0 10px;
         .fiq_hm_psok { margin: 0; } }
+    // Fagområde-filtre i prosjektoversikten
+    .fiq_hm_pfilter { display: flex; flex-wrap: wrap; gap: 5px; margin: 0 0 10px; }
+    .fiq_hm_pfc { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--fiq-bd); background: #fff; border-radius: 999px; padding: 2px 10px; cursor: pointer; font: inherit; font-size: 11px; color: var(--fiq-side);
+        .fiq_hm_pfc_nr { display: inline-flex; align-items: center; justify-content: center; min-width: 15px; height: 15px; border-radius: 4px; background: var(--sp, #6b7280); color: #fff; font-size: 9px; font-weight: 700; }
+        &:hover { border-color: var(--fiq-accent); }
+        &.on { border-color: var(--fiq-accent); background: var(--fiq-accent); color: #fff;
+            .fiq_hm_pfc_nr { background: rgba(255,255,255,.3); } } }
     // Menneskelig syntaks: prosjekt-/oppgavenummer
     .fiq_hm_no { font-family: monospace; font-size: 11px; color: var(--fiq-mut); background: #f0f1f3;
         border: 1px solid var(--fiq-bd); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
