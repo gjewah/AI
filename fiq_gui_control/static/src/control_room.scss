@@ -228,8 +228,9 @@
         .fiq_hm_chip_x { cursor: pointer; color: var(--fiq-mut); &:hover { color: #c0392b; } } }
     .fiq_hm_gantt { font-size: 11px; color: var(--fiq-mut); border: 1px solid var(--fiq-bd); border-radius: 6px; padding: 1px 7px; white-space: nowrap;
         &:hover { color: var(--fiq-accent); border-color: var(--fiq-accent); } }
-    // Prosjekt-søkefelt (rett over prosjektoversikt)
-    .fiq_hm_psok { width: 100%; box-sizing: border-box; margin: 0 0 10px; padding: 6px 10px; border: 1px solid var(--fiq-bd); border-radius: 8px; font: inherit; font-size: 12px; }
+    // Søkefelt: LYS RAMME så de skiller seg ut (prosjekter + oppgaver)
+    .fiq_hm_psok { width: 100%; box-sizing: border-box; margin: 0 0 10px; padding: 6px 10px; border: 1px solid #b9c6d6; border-radius: 8px; font: inherit; font-size: 12px; background: #f7fafc;
+        &:focus { border-color: var(--fiq-accent); background: #fff; outline: none; box-shadow: 0 0 0 2px rgba(56,180,74,.12); } }
     // Søkefelt-wrapper med X (tøm-filter). Rad: input + X.
     .fiq_hm_srch { display: flex; align-items: center; gap: 5px; width: 100%;
         > input { flex: 1 1 auto; width: auto !important; min-width: 0; }
@@ -301,6 +302,9 @@
         .fiq_hm_asq { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 20px; border-radius: 5px;
             font-size: 10px; font-weight: 700; color: #fff; background: var(--sp, #555); flex: 0 0 auto; padding: 0 3px;
             &.dk { color: #1f2228; } }
+        // SP-ikon (glossy MedBib-flis) oppå farget nr-firkant (fallback hvis bildet mangler)
+        .fiq_hm_aico { position: relative; display: inline-flex; align-items: center; flex: 0 0 auto;
+            .fiq_hm_aimg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); height: 22px; width: auto; border-radius: 4px; } }
         .fiq_hm_aname { flex: 1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .fiq_hm_achev { border: 0; background: transparent; color: #8b93a1; cursor: pointer; font-size: 10px; padding: 2px 5px; line-height: 1; flex: 0 0 auto;
             &:hover { color: #fff; } } }

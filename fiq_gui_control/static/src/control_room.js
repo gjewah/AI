@@ -660,13 +660,15 @@ export class FiqControlRoom extends Component {
         // Category KPIs (report-up / management by exception): Kommunikasjon · Prosjekt · Salg · Finans · HMS/KS
         const received = komm.filter((k) => k.direction === "mottatt");
         const overdueN = myTasks.filter((t) => t.overdue).length;
+        // SP-farge per boks (venstre-aksent, jf. fargekartet — samme familie som stolpemenyen)
+        const KPI_FARGE = { komm: "#8b93a1", prosjekt: "#548235", salg: "#CC0000", finans: "#4472C4", hms: "#0070C0" };
         this.state.kpis = [
             { key: "komm", v: String(komm.length), l: _t("Kommunikasjon"), sub: received.length + " " + _t("ubesvart"), dot: received.length ? "red" : "green" },
             { key: "prosjekt", v: String(active), l: _t("Prosjekt"), sub: overdueN + " " + _t("forsinket"), dot: overdueN ? "amber" : "green" },
             { key: "salg", v: String(salg), l: _t("Salg"), sub: _t("ok"), dot: "green" },
             { key: "finans", v: String(finForsinket.length + finLev.length), l: _t("Finans"), sub: finForsinket.length + " " + _t("forsinket") + " · " + finLev.length + " " + _t("til godkj."), dot: finForsinket.length ? "red" : (finLev.length ? "amber" : "green") },
             { key: "hms", v: "—", l: _t("HMS/KS"), sub: _t("avvik"), dot: "grey" },
-        ];
+        ].map((k) => ({ ...k, farge: KPI_FARGE[k.key] || "#e3e5e9" }));
         if (!this.state.selectedKpi) {
             const red = this.state.kpis.find((k) => k.dot === "red");
             this.state.selectedKpi = red ? red.key : "komm";

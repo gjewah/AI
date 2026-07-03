@@ -73,7 +73,11 @@
                         <t t-foreach="sideAreas" t-as="a" t-key="a.id || a.nr">
                             <div t-att-class="(state.view === 'oversikt' and state.projArea === a.nr) ? 'fiq_hm_arow on' : 'fiq_hm_arow'"
                                  t-att-title="a.nr + ' ' + a.name" t-on-click="() => this.pickArea(a.nr, a.id)">
-                                <span t-att-class="a.dk ? 'fiq_hm_asq dk' : 'fiq_hm_asq'" t-att-style="'--sp:' + a.color + ';'" t-esc="a.nr"/>
+                                <!-- SP-områdeikon (glossy 3D-flis fra MedBib); farget nr-firkant = fallback bak -->
+                                <span class="fiq_hm_aico">
+                                    <span t-att-class="a.dk ? 'fiq_hm_asq dk' : 'fiq_hm_asq'" t-att-style="'--sp:' + a.color + ';'" t-esc="a.nr"/>
+                                    <img class="fiq_hm_aimg" t-att-src="'/fiq_gui_control/static/img/sp/' + a.nr.split('.')[0] + '.png'" t-att-alt="a.nr" t-on-error="(ev) =&gt; ev.target.style.display = 'none'"/>
+                                </span>
                                 <span class="fiq_hm_aname" t-esc="a.name"/>
                                 <button t-if="a.subs.length" class="fiq_hm_achev" t-att-title="state.areaOpen[a.nr] ? 'Lukk underområder' : 'Vis underområder'"
                                         t-on-click.stop="() => this.toggleArea(a.nr)" t-esc="state.areaOpen[a.nr] ? '▾' : '▸'"/>
@@ -172,7 +176,7 @@
                         <!-- Statuslinje: KPI + krever-handling som klikkbare knapper -->
                         <div t-if="state.show.kpis" class="fiq_hm_statusrow">
                             <t t-foreach="state.kpis" t-as="k" t-key="k.key">
-                                <div t-att-class="state.selectedKpi === k.key ? 'fiq_hm_kpi on' : 'fiq_hm_kpi'" t-on-click="() =&gt; this.selectKpi(k.key)">
+                                <div t-att-class="state.selectedKpi === k.key ? 'fiq_hm_kpi on' : 'fiq_hm_kpi'" t-att-style="'border-left: 4px solid ' + k.farge + ';'" t-on-click="() =&gt; this.selectKpi(k.key)">
                                     <div class="v" t-esc="k.v"/>
                                     <div class="l"><span t-att-class="'fiq_hm_kdot ' + (k.dot || '')"/><t t-esc="k.l"/><t t-if="k.sub"> · <t t-esc="k.sub"/></t></div>
                                 </div>
@@ -225,11 +229,7 @@
                         <div class="fiq_hm_lists">
                             <div t-if="state.show.projects" t-att-class="'fiq_hm_card' + (state.collapsed.prosjekt ? ' fiq_hm_collapsed' : '')">
                                 <div class="fiq_hm_ch"><h4>Prosjektoversikt</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('prosjekt')" t-esc="state.collapsed.prosjekt ? 'Vis ▸' : 'Skjul ▾'"/></div>
-                                <span class="fiq_hm_srch fiq_hm_srch_blk">
-                                    <input class="fiq_hm_psok" placeholder="Søk i prosjekter (navn eller nr.) …" t-att-value="state.projQuery" t-on-input="(ev) =&gt; this.setProjQuery(ev.target.value)"/>
-                                    <span t-if="state.projQuery" class="fiq_hm_srch_x" t-on-click="() =&gt; this.setProjQuery('')" title="Tøm søk">✕</span>
-                                </span>
-                                <!-- Periode (speiler topplinja) + datovelger: planlagt periode i vinduet; uten datoer vises alltid -->
+                                <!-- Periode + datovelger FØRST, deretter søk (Gjermund 2026-07-03) -->
                                 <div class="fiq_hm_pperiod">
                                     <div class="fiq_hm_pseg">
                                         <button t-foreach="[['dag','Dag'],['uke','Uke'],['maaned','Måned'],['alle','Alle']]" t-as="pp" t-key="pp[0]"
@@ -238,6 +238,10 @@
                                     </div>
                                     <input type="date" class="fiq_hm_din" t-att-value="state.anchorDate" t-on-change="(ev) =&gt; this.setAnchor(ev.target.value)" title="Referansedato for perioden (Dag/Uke/Måned regnes fra denne)"/>
                                 </div>
+                                <span class="fiq_hm_srch fiq_hm_srch_blk">
+                                    <input class="fiq_hm_psok" placeholder="Søk i prosjekter (navn eller nr.) …" t-att-value="state.projQuery" t-on-input="(ev) =&gt; this.setProjQuery(ev.target.value)"/>
+                                    <span t-if="state.projQuery" class="fiq_hm_srch_x" t-on-click="() =&gt; this.setProjQuery('')" title="Tøm søk">✕</span>
+                                </span>
                                 <!-- Fagområde-filtre (rad 1 = toppområder fra prosjekt-treet; rad 2 = undergrupper) -->
                                 <div class="fiq_hm_pfilter">
                                     <button t-att-class="!state.projArea ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-on-click="() =&gt; this.setProjArea('')">Alle</button>
