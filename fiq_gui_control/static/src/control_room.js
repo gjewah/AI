@@ -65,7 +65,7 @@ export class FiqControlRoom extends Component {
             rightView: "liste",   // right panel: liste | gantt (Liste default = safe first render)
             selected: null,       // {model,id,name} for inspektor-panel
             inspTab: "beskrivelse",
-            selDesc: "",          // ekte beskrivelse for valgt element (Detaljer-panelet)
+            selDet: { beskrivelse: "", logg: [], epost: [], dok: [] }, // Detaljer-panelet: ekte innhold pr fane
             progressShape: "bar", // lag 2: per-linje fremdrift – "bar" | "ring" (config-drevet)
             progressMetric: "timer", // STANDARD timer (ført ÷ estimert) | auto | deloppgaver | stadium
             hasHours: false,      // finnes allocated_hours/effective_hours (hr_timesheet)? → vis estimat-felt
@@ -643,11 +643,15 @@ export class FiqControlRoom extends Component {
     // Full post apnes med openRecord (⤢).
     async selectEl(model, id, name) {
         this.state.selected = { model, id, name };
-        this.state.selDesc = "";
+        this.state.selDet = { beskrivelse: "", logg: [], epost: [], dok: [] };
+        this.state.inspTab = "beskrivelse";
         try {
-            const recs = await this.orm.read(model, [id], ["description"]);
-            if (recs && recs[0]) { this.state.selDesc = this._stripHtml(recs[0].description || ""); }
-        } catch (e) { /* description-feltet finnes kanskje ikke -> tomt */ }
+            const d = await this.orm.call("fiq.gui.control.config", "get_detaljer", [model, id]);
+            if (d) {
+                d.beskrivelse = this._stripHtml(d.beskrivelse || "");
+                this.state.selDet = d;
+            }
+        } catch (e) { /* ingen tilgang / tomt -> behold tomt objekt */ }
     }
 
     // Enkel HTML->tekst for beskrivelses-feltet (html) i inspektoren

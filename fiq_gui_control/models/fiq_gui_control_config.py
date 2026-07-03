@@ -248,6 +248,45 @@ class FiqControlRoomConfig(models.Model):
         return out
 
     @api.model
+    def get_detaljer(self, model, res_id):
+        """Detaljer-panelet (inspektor): beskrivelse + logg (interne meldinger) +
+        e-post + dokumenter (vedlegg) for valgt post. Kjøres som brukeren →
+        record rules styrer tilgang. Alt defensivt/felt-guardet."""
+        out = {"beskrivelse": "", "logg": [], "epost": [], "dok": []}
+        try:
+            rec = self.env[model].browse(res_id)
+            if not rec.exists():
+                return out
+            if "description" in rec._fields:
+                out["beskrivelse"] = rec.description or ""
+            # Logg + e-post (mail.message på posten)
+            msgs = self.env["mail.message"].search(
+                [("model", "=", model), ("res_id", "=", res_id),
+                 ("message_type", "in", ["email", "comment", "notification"])],
+                order="date desc", limit=30)
+            for m in msgs:
+                author = m.author_id.display_name if m.author_id else (m.email_from or "—")
+                item = {
+                    "id": m.id,
+                    "author": author,
+                    "date": m.date.strftime("%d.%m %H:%M") if m.date else "",
+                    "text": (m.preview or "").strip()[:200],
+                }
+                if m.message_type == "email":
+                    item["subject"] = (m.subject or "").strip()
+                    out["epost"].append(item)
+                else:
+                    out["logg"].append(item)
+            # Dokumenter (vedlegg)
+            atts = self.env["ir.attachment"].search(
+                [("res_model", "=", model), ("res_id", "=", res_id)], order="id desc", limit=30)
+            for a in atts:
+                out["dok"].append({"id": a.id, "name": a.name or _("Dokument")})
+        except Exception:
+            pass
+        return out
+
+    @api.model
     def get_presence(self):
         """«Til stede nå»: interne brukere med SAMMENSATT status som farger HELE kortet:
            🟢 grønn = Til stede · 🟠 oransje = I møte / Ute · 🔴 rød = Fraværende / Ikke møtt.

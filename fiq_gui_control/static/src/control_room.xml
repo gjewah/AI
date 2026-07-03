@@ -326,11 +326,35 @@
                                         </div>
                                         <div class="fiq_hm_insp_body">
                                             <t t-if="state.inspTab === 'beskrivelse'">
-                                                <span t-if="state.selDesc" t-esc="state.selDesc"/>
+                                                <span t-if="state.selDet.beskrivelse" t-esc="state.selDet.beskrivelse"/>
                                                 <span t-else="" class="fiq_hm_insp_mut">Ingen beskrivelse på posten.</span>
                                             </t>
+                                            <t t-elif="state.inspTab === 'logg'">
+                                                <t t-if="state.selDet.logg.length">
+                                                    <div t-foreach="state.selDet.logg" t-as="l" t-key="l.id" class="fiq_hm_insp_l">
+                                                        <span class="fiq_hm_insp_la"><t t-esc="l.author"/> · <t t-esc="l.date"/></span>
+                                                        <span class="fiq_hm_insp_lt" t-esc="l.text"/>
+                                                    </div>
+                                                </t>
+                                                <t t-else=""><span class="fiq_hm_insp_mut">Ingen logg på posten.</span></t>
+                                            </t>
+                                            <t t-elif="state.inspTab === 'epost'">
+                                                <t t-if="state.selDet.epost.length">
+                                                    <div t-foreach="state.selDet.epost" t-as="e" t-key="e.id" class="fiq_hm_insp_l">
+                                                        <span class="fiq_hm_insp_la"><t t-esc="e.author"/> · <t t-esc="e.date"/></span>
+                                                        <span class="fiq_hm_insp_lt"><strong t-esc="e.subject"/> <t t-esc="e.text"/></span>
+                                                    </div>
+                                                </t>
+                                                <t t-else=""><span class="fiq_hm_insp_mut">Ingen e-post på posten.</span></t>
+                                            </t>
+                                            <t t-elif="state.inspTab === 'dok'">
+                                                <t t-if="state.selDet.dok.length">
+                                                    <a t-foreach="state.selDet.dok" t-as="d" t-key="d.id" class="fiq_hm_insp_dok" t-att-href="'/web/content/' + d.id + '?download=true'" target="_blank"><t t-esc="d.name"/></a>
+                                                </t>
+                                                <t t-else=""><span class="fiq_hm_insp_mut">Ingen dokumenter på posten.</span></t>
+                                            </t>
                                             <t t-else="">
-                                                <span class="fiq_hm_insp_mut">«<t t-esc="state.inspTab"/>» kobles til posten (neste lag). Bruk ⤢ for å åpne hele posten i Odoo.</span>
+                                                <span class="fiq_hm_insp_mut">Full chat/samtale: åpne posten i Odoo med ⤢.</span>
                                             </t>
                                         </div>
                                     </t>
