@@ -239,10 +239,13 @@ export class FiqControlRoom extends Component {
     // Klikk pa en kollega i «Til stede na» -> apne Discuss-chat (DM) med personen.
     // Bruker mail.store hvis tilgjengelig (mail er dep via project); ellers stille no-op.
     openColleagueChat(pr) {
-        const store = this.env.services["mail.store"];
-        if (store && pr.partner_id) {
-            store.openChat({ partnerId: pr.partner_id });
-        }
+        // Åpne Discuss-DM uten å forstyrre kontrollrommets render (feil svelges).
+        try {
+            const store = this.env.services["mail.store"];
+            if (store && pr.partner_id) {
+                store.openChat({ partnerId: pr.partner_id });
+            }
+        } catch (e) { /* mail ikke klar – ignorer */ }
     }
 
     async loadData() {

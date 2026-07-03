@@ -73,7 +73,7 @@
         &:hover { background: #f7f8f9; }
         .fiq_hm_detail_dot { width: 7px; height: 7px; border-radius: 50%; background: #e0483a; flex: 0 0 auto; }
         .fiq_hm_detail_t { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } }
-    .fiq_hm_photo { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; display: block; }
+    .fiq_hm_photo { position: absolute; top: 0; left: 0; width: 26px; height: 26px; border-radius: 50%; object-fit: cover; display: block; background: #fff; }
 
     .fiq_hm_cols { display: grid; grid-template-columns: 1fr 1.25fr; gap: 12px; }
     .fiq_hm_lists { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
