@@ -70,6 +70,18 @@
     .fiq_hm_photo { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; display: block; }
 
     .fiq_hm_cols { display: grid; grid-template-columns: 1fr 1.25fr; gap: 12px; }
+    .fiq_hm_lists { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 900px) { .fiq_hm_lists { grid-template-columns: 1fr; } }
+    .fiq_hm_work { display: grid; grid-template-columns: 4fr 1fr; gap: 12px; margin-top: 12px; align-items: start; }
+    @media (max-width: 900px) { .fiq_hm_work { grid-template-columns: 1fr; } }
+    .fiq_hm_insp { position: sticky; top: 8px; }
+    .fiq_hm_insp_sel { font-weight: 600; font-size: 13px; margin: 2px 0 9px; color: var(--fiq-side); }
+    .fiq_hm_insp_tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+    .fiq_hm_insp_tabs button { border: 1px solid var(--fiq-bd); background: #fff; color: var(--fiq-mut); border-radius: 7px; padding: 3px 8px; font: inherit; font-size: 11px; cursor: pointer; }
+    .fiq_hm_insp_tabs button.on { background: var(--fiq-accent); color: #fff; border-color: var(--fiq-accent); }
+    .fiq_hm_insp_body { font-size: 12.5px; color: var(--fiq-mut); line-height: 1.5; }
+    .fiq_hm_selrow { background: rgba(56,180,74,.08); }
+    tr.fiq_hm_selrow td:first-child { box-shadow: inset 3px 0 0 var(--fiq-accent); }
     @media (max-width: 760px) { .fiq_hm_cols { grid-template-columns: 1fr; } }
     .fiq_hm_colL, .fiq_hm_colR { display: flex; flex-direction: column; gap: 12px; }
 

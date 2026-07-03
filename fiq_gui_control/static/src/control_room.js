@@ -62,6 +62,8 @@ export class FiqControlRoom extends Component {
             aiAnswer: "",         // svar fra Claude via fiq.ai
             view: "oversikt",     // main content: oversikt (overview) | kommunikasjon (communication)
             rightView: "liste",   // right panel: liste | gantt (Liste default = safe first render)
+            selected: null,       // {model,id,name} for inspektor-panel
+            inspTab: "beskrivelse",
             loading: true,
         });
 
@@ -448,6 +450,15 @@ export class FiqControlRoom extends Component {
 
     setRightView(v) {
         this.state.rightView = v;
+    }
+
+    // Velg element -> vises i inspektor-panelet (20 %). Full post apnes med openRecord.
+    selectEl(model, id, name) {
+        this.state.selected = { model, id, name };
+    }
+
+    setInspTab(t) {
+        this.state.inspTab = t;
     }
 
     // ---- Egen kompakt Gantt (høyre panel). Vindu styres av periode-toggle (kommPeriod). ----
