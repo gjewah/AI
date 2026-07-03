@@ -64,6 +64,8 @@ export class FiqControlRoom extends Component {
             rightView: "liste",   // right panel: liste | gantt (Liste default = safe first render)
             selected: null,       // {model,id,name} for inspektor-panel
             inspTab: "beskrivelse",
+            progressShape: "bar", // lag 2: per-linje fremdrift – "bar" | "ring" (config-drevet)
+            progressMetric: "auto", // auto | timer | deloppgaver | stadium (config-drevet)
             loading: true,
         });
 
@@ -84,6 +86,8 @@ export class FiqControlRoom extends Component {
             this.state.companyId = cfg.company_id || false;
             if (cfg.accent) this.state.accent = cfg.accent;
             if (cfg.logo) this.state.logo = cfg.logo;
+            if (cfg.progress_shape) this.state.progressShape = cfg.progress_shape;
+            if (cfg.progress_metric) this.state.progressMetric = cfg.progress_metric;
         } catch (e) {
             // keep defaults (everything visible) if the model is not ready
         }
@@ -129,8 +133,22 @@ export class FiqControlRoom extends Component {
             id: p.id, no: p.sequence_code || "", name: p.name,
             taskCount: p.task_count || 0,
             start: p.date_start || false, end: p.date || false,
-            progress: Math.min(100, (p.task_count || 0) * 8), status: _t("In progress"),
+            progress: 0, status: _t("In progress"),
         }));
+        // Ekte, config-drevet fremdrift per prosjekt (lag 2) – erstatter tidligere placeholder
+        await this._fillProgress("project.project", this.state.projects);
+    }
+
+    async _fillProgress(model, rows) {
+        // Config-drevet per-linje fremdrift (0-100). Defensiv: 0 ved feil (portabelt).
+        const ids = rows.map((r) => r.id);
+        if (!ids.length) { return; }
+        let map = {};
+        try {
+            map = await this.orm.call("fiq.gui.control.config", "get_progress",
+                [model, ids, this.state.progressMetric]);
+        } catch (e) { return; }
+        rows.forEach((r) => { r.progress = Math.max(0, Math.min(100, Math.round(map[r.id] || 0))); });
     }
 
     // Project search field (right above the project overview) - debounced server search
@@ -170,7 +188,10 @@ export class FiqControlRoom extends Component {
             pfrom: (t.planned_date_begin || "").slice(0, 10),
             pto: (t.date_deadline || "").slice(0, 10),
             overdue: !!(t.date_deadline && t.date_deadline < today),
+            progress: 0,
         }));
+        // Ekte, config-drevet fremdrift per oppgave (lag 2)
+        await this._fillProgress("project.task", myTasks);
         try { openTasks = await this.orm.searchCount("project.task", [["user_ids", "in", [user.userId]]]); } catch (e) {}
 
         // Communication view (email/messages on records) – filtered by period

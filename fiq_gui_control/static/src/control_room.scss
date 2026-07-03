@@ -122,6 +122,14 @@
         .fiq_hm_rname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .track { width: 90px; height: 8px; background: #f0f1f3; border-radius: 4px; overflow: hidden; flex: 0 0 auto;
             i { display: block; height: 100%; background: var(--fiq-accent); } } }
+    // Per-linje fremdrift (lag 2): mini-bar ELLER prosent-ring (config-drevet)
+    .fiq_hm_pbar { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto;
+        .fiq_hm_pbar_t { width: 58px; height: 8px; background: #f0f1f3; border-radius: 4px; overflow: hidden;
+            i { display: block; height: 100%; background: var(--fiq-accent); border-radius: 4px; } }
+        b { font-size: 10px; font-weight: 600; color: var(--fiq-mut); min-width: 30px; font-variant-numeric: tabular-nums; } }
+    .fiq_hm_ring { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; flex: 0 0 auto;
+        background: conic-gradient(var(--fiq-accent) calc(var(--p, 0) * 1%), #e9ebef 0);
+        .fiq_hm_ring_t { display: flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 50%; background: #fff; font-size: 8px; font-weight: 700; color: var(--fiq-side); font-variant-numeric: tabular-nums; } }
     // Egen kompakt Gantt
     .fiq_hm_cgantt { position: relative; padding-top: 2px; }
     .fiq_hm_cg_axis { position: relative; height: 15px; margin-left: 130px; margin-bottom: 4px; border-bottom: 1px solid var(--fiq-bd); }

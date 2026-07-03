@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
+    <!-- Gjenbrukbar per-linje fremdrift (lag 2): bar ELLER ring, config-drevet.
+         Kall med:  <t t-call="fiq_gui_control.ProgressMini">
+                        <t t-set="pct" t-value="rad.progress"/>
+                        <t t-set="shape" t-value="state.progressShape"/>
+                    </t> -->
+    <t t-name="fiq_gui_control.ProgressMini">
+        <span t-if="shape === 'ring'" class="fiq_hm_ring" t-att-style="'--p:' + (pct || 0)" t-att-title="(pct || 0) + ' % fullført'">
+            <span class="fiq_hm_ring_t" t-esc="pct || 0"/>
+        </span>
+        <span t-else="" class="fiq_hm_pbar" t-att-title="(pct || 0) + ' % fullført'">
+            <span class="fiq_hm_pbar_t"><i t-att-style="'width:' + (pct || 0) + '%'"/></span>
+            <b t-esc="(pct || 0) + '%'"/>
+        </span>
+    </t>
     <t t-name="fiq_gui_control.ControlRoom">
         <div class="fiq_hm" t-att-style="'--fiq-accent:' + state.accent + ';'">
             <!-- Topplinje -->
@@ -184,7 +198,7 @@
                                 <input class="fiq_hm_psok" placeholder="Søk i prosjekter (navn eller nr.) …" t-att-value="state.projQuery" t-on-input="(ev) =&gt; this.setProjQuery(ev.target.value)"/>
                                 <t t-if="state.projects.length">
                                     <table>
-                                        <thead><tr><th>Nr.</th><th>Prosjekt</th><th>Planlagt fra</th><th>Planlagt til</th><th>Oppg</th><th></th></tr></thead>
+                                        <thead><tr><th>Nr.</th><th>Prosjekt</th><th>Planlagt fra</th><th>Planlagt til</th><th>Fremdrift</th><th>Oppg</th><th></th></tr></thead>
                                         <tbody>
                                             <t t-foreach="state.projects" t-as="p" t-key="p.id">
                                                 <tr t-att-class="(state.selected and state.selected.model === 'project.project' and state.selected.id === p.id) ? 'fiq_hm_selrow' : ''">
@@ -192,6 +206,9 @@
                                                     <td t-on-click="() =&gt; this.selectEl('project.project', p.id, p.name)" t-esc="p.name"/>
                                                     <td><input type="date" class="fiq_hm_din" t-att-value="p.start || ''" t-on-change="(ev) =&gt; this.setProjDate(p.id, 'date_start', ev.target.value)"/></td>
                                                     <td><input type="date" class="fiq_hm_din" t-att-value="p.end || ''" t-on-change="(ev) =&gt; this.setProjDate(p.id, 'date', ev.target.value)"/></td>
+                                                    <td t-on-click="() =&gt; this.selectEl('project.project', p.id, p.name)">
+                                                        <t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="p.progress"/><t t-set="shape" t-value="state.progressShape"/></t>
+                                                    </td>
                                                     <td t-on-click="() =&gt; this.openProjectTasks(p.id)" t-esc="p.taskCount"/>
                                                     <td><span class="fiq_hm_gantt" t-on-click="() =&gt; this.openProjectTasks(p.id, 'gantt')" title="Åpne planlegging">🗓 Planlegging</span></td>
                                                 </tr>
@@ -208,6 +225,7 @@
                                             <span class="fiq_hm_no" t-esc="t.no" t-on-click="() =&gt; this.selectEl('project.task', t.id, t.name)"/>
                                             <span class="fiq_hm_task_n" t-esc="t.name" t-on-click="() =&gt; this.selectEl('project.task', t.id, t.name)"/>
                                             <span class="fiq_hm_task_p" t-esc="t.project"/>
+                                            <t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="t.progress"/><t t-set="shape" t-value="state.progressShape"/></t>
                                             <input type="date" class="fiq_hm_din" t-att-value="t.pfrom || ''" t-on-change="(ev) =&gt; this.setTaskDate(t.id, 'planned_date_begin', ev.target.value)" title="Planlagt fra"/>
                                             <input type="date" class="fiq_hm_din" t-att-value="t.pto || ''" t-on-change="(ev) =&gt; this.setTaskDate(t.id, 'date_deadline', ev.target.value)" title="Planlagt til"/>
                                             <span t-if="t.overdue" class="fiq_hm_warn">⚠ forsinket</span>
@@ -236,7 +254,7 @@
                                                 <div t-att-class="'fiq_hm_rrow' + ((state.selected and state.selected.model === 'project.project' and state.selected.id === p.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.selectEl('project.project', p.id, p.name)">
                                                     <span class="fiq_hm_no" t-esc="p.no"/>
                                                     <span class="fiq_hm_rname" t-esc="p.name"/>
-                                                    <span class="track"><i t-att-style="'width:' + p.progress + '%'"/></span>
+                                                    <t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="p.progress"/><t t-set="shape" t-value="state.progressShape"/></t>
                                                 </div>
                                             </t>
                                         </t>

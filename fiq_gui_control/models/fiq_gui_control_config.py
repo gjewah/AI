@@ -58,6 +58,9 @@ class FiqControlRoomConfig(models.Model):
             logo = logo.decode() if isinstance(logo, bytes) else logo
         # Companies the user may switch to (company picker)
         companies = [{"id": c.id, "name": c.name} for c in self.env.user.company_ids]
+        # Config-drevet per-linje fremdrift (lag 2): form (bar/ring) + metrikk. Fornuftige
+        # defaults, overstyrbare via system-parametere (Innstillinger → Teknisk → Parametere).
+        ICP = self.env["ir.config_parameter"].sudo()
         return {
             "id": rec.id,
             "level": rec.level,
@@ -69,6 +72,8 @@ class FiqControlRoomConfig(models.Model):
             "companies": companies,
             "accent": comp.fiq_control_accent or "#38B44A",
             "logo": ("data:image/png;base64,%s" % logo) if logo else False,
+            "progress_shape": ICP.get_param("fiq_gui_control.progress_shape", "bar"),
+            "progress_metric": ICP.get_param("fiq_gui_control.progress_metric", "auto"),
         }
 
     @api.model
@@ -76,6 +81,117 @@ class FiqControlRoomConfig(models.Model):
         if widget in WIDGETS:
             self._get_or_create_current().write({"show_" + widget: bool(value)})
         return True
+
+    # ---- Config-drevet per-linje fremdrift (lag 2) ---------------------------
+    # Fremdrift 0-100 per oppgave/prosjekt. Portabelt (felt-guard via _fields) +
+    # defensivt (0 ved feil). Oppdateres «innen rimelighetens grenser» = ved last,
+    # ikke sanntid. metric: auto|timer|deloppgaver|stadium.
+    @api.model
+    def get_progress(self, model, ids, metric=None):
+        ids = [i for i in (ids or []) if i]
+        if not ids:
+            return {}
+        if not metric:
+            metric = self.env["ir.config_parameter"].sudo().get_param(
+                "fiq_gui_control.progress_metric", "auto")
+        if model == "project.task":
+            recs = self.env["project.task"].browse(ids).exists()
+            return {t.id: self._task_progress(t, metric) for t in recs}
+        if model == "project.project":
+            return self._project_progress(ids)
+        return {}
+
+    def _stage_is_done(self, stage):
+        if not stage:
+            return False
+        if "fold" in stage._fields and stage.fold:
+            return True
+        if "is_closed" in stage._fields and getattr(stage, "is_closed", False):
+            return True
+        return False
+
+    def _task_progress(self, task, metric):
+        if metric == "timer":
+            return self._task_hours(task) or 0
+        if metric == "deloppgaver":
+            return self._task_subtasks(task) or 0
+        if metric == "stadium":
+            return self._task_stage(task)
+        # auto: timer -> deloppgaver -> stadium (bruk det første som gir signal)
+        v = self._task_hours(task)
+        if v is not None:
+            return v
+        v = self._task_subtasks(task)
+        if v is not None:
+            return v
+        return self._task_stage(task)
+
+    def _task_hours(self, task):
+        """Native project.task.progress (krever hr_timesheet + tildelte timer)."""
+        f = task._fields
+        if "progress" in f and "allocated_hours" in f:
+            try:
+                if (task.allocated_hours or 0) > 0:
+                    return max(0, min(100, int(round(task.progress or 0))))
+            except Exception:
+                pass
+        return None
+
+    def _task_subtasks(self, task):
+        """Andel ferdige deloppgaver (stadium fold/is_closed)."""
+        if "child_ids" in task._fields:
+            try:
+                kids = task.child_ids
+                if kids:
+                    done = sum(
+                        1 for k in kids
+                        if self._stage_is_done(k.stage_id if "stage_id" in k._fields else False)
+                    )
+                    return int(round(done * 100.0 / len(kids)))
+            except Exception:
+                pass
+        return None
+
+    def _task_stage(self, task):
+        """Posisjon i stadierekka (ferdig=100, ellers proporsjonalt)."""
+        if "stage_id" not in task._fields or not task.stage_id:
+            return 0
+        if self._stage_is_done(task.stage_id):
+            return 100
+        try:
+            ordered = self.env["project.task.type"].search([], order="sequence, id").ids
+            sid = task.stage_id.id
+            if sid in ordered and len(ordered) > 1:
+                return int(round(ordered.index(sid) * 100.0 / (len(ordered) - 1)))
+        except Exception:
+            pass
+        return 10  # i et stadium, men uten rekkefølge-signal
+
+    def _project_progress(self, ids):
+        """Prosjekt-fremdrift = andel ferdige oppgaver (ferdig-stadium)."""
+        Task = self.env["project.task"]
+        Stage = self.env["project.task.type"]
+        out = {pid: 0 for pid in ids}
+        try:
+            total = {}
+            for grp in Task._read_group([("project_id", "in", ids)], ["project_id"], ["__count"]):
+                if grp[0]:
+                    total[grp[0].id] = grp[1]
+            done_dom = [("project_id", "in", ids)]
+            if "fold" in Stage._fields:
+                done_dom.append(("stage_id.fold", "=", True))
+            elif "is_closed" in Stage._fields:
+                done_dom.append(("stage_id.is_closed", "=", True))
+            done = {}
+            for grp in Task._read_group(done_dom, ["project_id"], ["__count"]):
+                if grp[0]:
+                    done[grp[0].id] = grp[1]
+            for pid in ids:
+                n = total.get(pid, 0)
+                out[pid] = int(round(done.get(pid, 0) * 100.0 / n)) if n else 0
+        except Exception:
+            pass
+        return out
 
     @api.model
     def get_presence(self):
