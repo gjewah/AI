@@ -67,6 +67,7 @@ export class FiqControlRoom extends Component {
             progressShape: "bar", // lag 2: per-linje fremdrift – "bar" | "ring" (config-drevet)
             progressMetric: "auto", // auto | timer | deloppgaver | stadium (config-drevet)
             loading: true,
+            refreshing: false,    // «⟳ Oppdater» – henter live data på nytt uten å blanke skjermen
         });
 
         onWillStart(async () => {
@@ -463,6 +464,15 @@ export class FiqControlRoom extends Component {
     // Open one of Odoo's native dashboards/analyses in-page (SSOT)
     openDashboard(xmlid) {
         this.action.doAction(xmlid);
+    }
+
+    // «⟳ Oppdater» – hent live data på nytt (KPI, prosjekter, oppgaver, fremdrift, kommunikasjon)
+    // uten å blanke hele skjermen. Ny data settes inn i state når kallene svarer.
+    async refresh() {
+        if (this.state.refreshing) { return; }
+        this.state.refreshing = true;
+        try { await this.loadData(); }
+        finally { this.state.refreshing = false; }
     }
 
     setView(v) {

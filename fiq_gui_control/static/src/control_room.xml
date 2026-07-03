@@ -39,6 +39,7 @@
                     <button t-att-class="state.mode === 'enkel' ? 'on' : ''" t-on-click="() => this.setMode('enkel')">Enkel</button>
                 </div>
 
+                <button class="btn fiq_hm_refresh" t-att-class="state.refreshing ? 'fiq_hm_refresh spin' : 'fiq_hm_refresh'" t-on-click="() =&gt; this.refresh()" t-att-disabled="state.refreshing" title="Hent live data på nytt"><span class="fiq_hm_refresh_i">⟳</span> <t t-esc="state.refreshing ? 'Oppdaterer …' : 'Oppdater'"/></button>
                 <button class="btn fiq_hm_gear" t-on-click="() => this.toggleCustomize()">⚙ Tilpass</button>
             </div>
 

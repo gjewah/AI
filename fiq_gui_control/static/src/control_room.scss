@@ -26,6 +26,12 @@
     }
     .fiq_hm_greet { color: var(--fiq-mut); margin-right: auto; }
     .fiq_hm_gear { font-size: 12px; }
+    .fiq_hm_refresh { font-size: 12px; display: inline-flex; align-items: center; gap: 5px;
+        &[disabled] { opacity: .7; cursor: default; }
+        .fiq_hm_refresh_i { display: inline-block; font-size: 14px; line-height: 1; }
+        &.spin .fiq_hm_refresh_i { animation: fiq_hm_spin 0.8s linear infinite; } }
+    @keyframes fiq_hm_spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .fiq_hm_refresh.spin .fiq_hm_refresh_i { animation: none; } }
 
     .fiq_hm_cust {
         background: #f0f1f3; border: 1px dashed #cfd3da; border-radius: 10px;
