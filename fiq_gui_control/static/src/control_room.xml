@@ -62,6 +62,9 @@
                     <div class="fiq_hm_glbl">Styring</div>
                     <div t-att-class="state.view === 'oversikt' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('oversikt')"><span class="b"/>Kontrollrom</div>
                     <div t-att-class="state.view === 'kommunikasjon' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('kommunikasjon')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/epost.png"/>Kommunikasjon</div>
+                    <!-- MVP: native kalender + aktiviteter (todelt «Dagens møter»-flate kommer som egen bygging) -->
+                    <div class="fiq_hm_nav" t-on-click="() => this.runAction('kalender')" title="Åpne kalenderen (native Odoo)"><span class="b"/>Kalender</div>
+                    <div class="fiq_hm_nav" t-on-click="() => this.runAction('aktivitet')" title="Åpne aktivitetene dine (native Odoo)"><span class="b"/>Aktiviteter</div>
                     <div t-att-class="state.view === 'hmsks' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('hmsks')"><span class="b"/>HMS/KS</div>
                     <div t-att-class="state.view === 'airmm' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('airmm')"><span class="b"/>AI-RMM</div>
 
@@ -396,14 +399,26 @@
                                         </t>
                                     </div>
                                     <t t-if="state.rightView === 'liste'">
+                                        <!-- Kolonnetitler (bold) for fremdrift-lista -->
+                                        <div class="fiq_hm_rth">
+                                            <span class="r_no">Nr.</span>
+                                            <span class="r_name" t-esc="state.progLevel === 'oppgave' ? 'Oppgave' : 'Prosjekt'"/>
+                                            <t t-if="state.progLevel === 'oppgave'">
+                                                <span class="r_ansv">Ansvarlig</span>
+                                                <span class="r_stage">Stadium</span>
+                                            </t>
+                                            <span class="r_dat">Fra</span>
+                                            <span class="r_dat">Til</span>
+                                            <span class="r_prog">Fremdrift</span>
+                                        </div>
                                         <t t-if="progRows.length">
                                             <t t-foreach="progRows" t-as="p" t-key="p.id">
                                                 <div t-if="p.isHead" class="fiq_hm_ghead">👤 <t t-esc="p.name"/> <span class="fiq_hm_stchip_n" t-esc="p.count"/></div>
                                                 <div t-else="" t-att-class="'fiq_hm_rrow' + ((state.selected and state.selected.model === progModel and state.selected.id === p.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.pickRow(p)">
                                                     <span class="fiq_hm_no" t-esc="p.no"/>
                                                     <span class="fiq_hm_rname" t-esc="p.name"/>
-                                                    <span t-if="state.progLevel === 'oppgave' and p.ansvarlig" class="fiq_hm_stagetag fiq_hm_ansv" t-att-title="'Ansvarlig: ' + p.ansvarlig">👤 <t t-esc="p.ansvarlig"/></span>
-                                                    <span t-if="state.progLevel === 'oppgave' and p.stage" class="fiq_hm_stagetag" t-esc="p.stage"/>
+                                                    <span t-if="state.progLevel === 'oppgave'" class="fiq_hm_stagetag fiq_hm_ansv" t-att-title="'Ansvarlig: ' + (p.ansvarlig || '—')">👤 <t t-esc="p.ansvarlig || '—'"/></span>
+                                                    <span t-if="state.progLevel === 'oppgave'" class="fiq_hm_stagetag fiq_hm_stg" t-esc="p.stage || '—'"/>
                                                     <input type="date" class="fiq_hm_din" t-att-value="p.start || ''" t-on-click.stop="() =&gt; {}" t-on-change="(ev) =&gt; this.setRowDate(p, 'from', ev.target.value)" title="Planlagt fra"/>
                                                     <input type="date" class="fiq_hm_din" t-att-value="p.end || ''" t-on-click.stop="() =&gt; {}" t-on-change="(ev) =&gt; this.setRowDate(p, 'to', ev.target.value)" title="Planlagt til"/>
                                                     <t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="p.progress"/><t t-set="shape" t-value="state.progressShape"/><t t-set="hrs" t-value="p.estH ? (p.logH + '/' + p.estH + ' t') : ''"/></t>

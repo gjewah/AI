@@ -532,6 +532,9 @@ class FiqControlRoomConfig(models.Model):
             "tilbud": "sale.action_quotations",
             "kunde": "base.action_partner_form",
             "dokument": "documents.document_action",
+            # Kalender + aktiviteter (MVP: native views; den todelte «Dagens møter»-flaten kommer)
+            "kalender": "calendar.action_calendar_event",
+            "aktivitet": "mail.mail_activity_action",
         }
         out = {}
         for key, xmlid in candidates.items():

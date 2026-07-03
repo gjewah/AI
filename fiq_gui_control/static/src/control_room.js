@@ -959,7 +959,8 @@ export class FiqControlRoom extends Component {
             const ans = await this.orm.call("fiq.ai", "chat", [q]);
             this.state.aiAnswer = ans || _t("(tomt svar)");
         } catch (e) {
-            this.state.aiAnswer = _t("AI ikke tilgjengelig ennå — installer modulen fiq_ai og sett Anthropic API-nøkkel.");
+            // Vis den EKTE feilen (ikke generisk melding) — avgjørende for feilsøking
+            this.state.aiAnswer = _t("AI-feil: ") + this._errMsg(e);
         }
     }
 

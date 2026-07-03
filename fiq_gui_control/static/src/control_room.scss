@@ -114,7 +114,7 @@
     .fiq_hm_card { background: #fff; border: 1px solid var(--fiq-bd); border-radius: 11px; padding: 12px;
         h4 { margin: 0 0 10px; font-size: 13px; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th { text-align: left; color: var(--fiq-mut); font-weight: 400; padding: 6px 5px; border-bottom: 1px solid var(--fiq-bd); }
+        th { text-align: left; color: var(--fiq-side); font-weight: 700; padding: 6px 5px; border-bottom: 1px solid var(--fiq-bd); }
         td { padding: 7px 5px; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; }
         .prog { height: 7px; border-radius: 4px; background: #f0f1f3; overflow: hidden; min-width: 60px;
             i { display: block; height: 100%; background: var(--fiq-accent); } }
@@ -145,7 +145,17 @@
     .fiq_hm_delt { margin: 0 0 10px; border: 1px solid var(--fiq-bd); border-radius: 8px; padding: 7px 9px;
         .fiq_hm_delt_l { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; padding: 2px 0;
             strong { font-weight: 600; } } }
-    .fiq_hm_ansv { max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+    .fiq_hm_ansv { flex: 0 0 130px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; }
+    .fiq_hm_stg { flex: 0 0 90px; max-width: 90px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; text-align: center; }
+    // Kolonnetitler (bold) for fremdrift-lista — bredder speiler radene
+    .fiq_hm_rth { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--fiq-bd);
+        font-size: 11px; color: var(--fiq-side); font-weight: 700;
+        .r_no { flex: 0 0 52px; }
+        .r_name { flex: 1; }
+        .r_ansv { flex: 0 0 130px; }
+        .r_stage { flex: 0 0 90px; text-align: center; }
+        .r_dat { flex: 0 0 122px; }
+        .r_prog { flex: 0 0 100px; } }
     .fiq_hm_proglvl { font-size: 11.5px; color: var(--fiq-mut); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     // Stadie-velger (oppgave-drill): brikker for å vise/skjule stadier
     .fiq_hm_stagesel { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 10px;
