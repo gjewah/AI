@@ -146,13 +146,17 @@
         .fiq_hm_delt_l { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; padding: 2px 0;
             strong { font-weight: 600; } } }
     .fiq_hm_ansv { flex: 0 0 130px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; }
-    .fiq_hm_stg { flex: 0 0 90px; max-width: 90px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; text-align: center; }
+    .fiq_hm_stg { flex: 0 0 90px; max-width: 90px; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; text-align: center; font-weight: 600;
+        &.st_ai { color: #7030A0; border-color: #7030A0; background: #f5effb; }
+        &.st_done { color: #27500A; border-color: #38B44A; background: #f0fdf4; }
+        &.st_prog { color: #185FA5; border-color: #378ADD; background: #eef6fd; }
+        &.st_def { color: var(--fiq-side); } }
     // Kolonnetitler (bold) for fremdrift-lista — bredder speiler radene
     .fiq_hm_rth { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--fiq-bd);
         font-size: 11px; color: var(--fiq-side); font-weight: 700;
         .r_no { flex: 0 0 52px; }
-        .r_name { flex: 1; }
         .r_ansv { flex: 0 0 130px; }
+        .r_name { flex: 1; }
         .r_stage { flex: 0 0 90px; text-align: center; }
         .r_dat { flex: 0 0 122px; }
         .r_prog { flex: 0 0 100px; } }
@@ -186,7 +190,12 @@
     // Egen kompakt Gantt
     .fiq_hm_cgantt { position: relative; padding-top: 2px; }
     .fiq_hm_cg_axis { position: relative; height: 15px; margin-left: 208px; margin-bottom: 4px; border-bottom: 1px solid var(--fiq-bd); }
-    .fiq_hm_cg_tick { position: absolute; top: 0; transform: translateX(-50%); font-size: 9.5px; color: var(--fiq-mut); white-space: nowrap; }
+    .fiq_hm_cg_tick { position: absolute; top: 0; transform: translateX(-50%); font-size: 9.5px; color: var(--fiq-side); font-weight: 700; white-space: nowrap; }
+    // Milepæl-rad (◆) over tidslinjen
+    .fiq_hm_cg_miles { display: flex; align-items: center; gap: 8px; padding: 2px 0;
+        .fiq_hm_cg_mlbl { flex: 0 0 200px; width: 200px; font-size: 10px; font-weight: 700; color: var(--fiq-side); }
+        .fiq_hm_cg_mtrack { position: relative; flex: 1; height: 14px; }
+        .fiq_hm_cg_mile { position: absolute; top: -1px; transform: translateX(-50%); color: #7030A0; font-size: 12px; cursor: default; } }
     .fiq_hm_cg_row { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; font-size: 12px; border-radius: 4px;
         &:hover { background: #f7f8f9; } }
     .fiq_hm_cg_lbl { flex: 0 0 200px; width: 200px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }

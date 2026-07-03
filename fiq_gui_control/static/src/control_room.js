@@ -121,6 +121,8 @@ export class FiqControlRoom extends Component {
             progTasks: [],        // oppgavene til valgt prosjekt (m/ fremdrift) når progLevel = "oppgave"
             progProjId: false,    // valgt prosjekt for oppgave-drill
             progSubs: false,      // vis deloppgaver i fremdrift-drillen (av = kun hovedoppgaver)
+            progGroup: "ansvarlig", // grupper oppgave-fremdrift på: ansvarlig | mile (milepæl)
+            progMiles: [],        // prosjektets milepæler (navn + frist) → ◆ i Gantt
             selDelt: null,        // Detaljer: deltagerliste (null = skjult)
             progProjName: "",
             aiStageNames: [],     // navn på AI-merkede stadier (fiq_ai_stage) – for velgeren
@@ -282,12 +284,17 @@ export class FiqControlRoom extends Component {
 
     // Drill: last oppgavene til ETT prosjekt (m/ config-drevet fremdrift) for oppgave-nivå
     async _loadProgTasks(pid) {
-        const tOpt = await this._optFields("project.task", ["code"]);
+        const tOpt = await this._optFields("project.task", ["code", "milestone_id"]);
         const dom = [["project_id", "=", pid]];
         if (!this.state.progSubs) { dom.push(["parent_id", "=", false]); }  // kun hovedoppgaver
         const recs = await this._read("project.task", dom,
             ["name", "date_deadline", "planned_date_begin", "stage_id", "user_ids", ...tOpt],
             { limit: 80, order: "planned_date_begin asc, id asc" });
+        // Prosjektets milepæler (◆ i Gantt + gruppering) — guardet
+        try {
+            this.state.progMiles = await this._read("project.milestone",
+                [["project_id", "=", pid]], ["name", "deadline"], { limit: 40, order: "deadline asc" });
+        } catch (e) { this.state.progMiles = []; }
         // Ansvarlig-navn (user_ids gir kun id-er) — batch-oppslag
         const uidSet = new Set();
         recs.forEach((t) => (t.user_ids || []).forEach((u) => uidSet.add(u)));
@@ -306,6 +313,7 @@ export class FiqControlRoom extends Component {
                 start: (t.planned_date_begin || "").slice(0, 10) || false,
                 end: (t.date_deadline || "").slice(0, 10) || false,
                 stage: t.stage_id ? t.stage_id[1] : "",
+                mile: t.milestone_id ? t.milestone_id[1] : "",
                 ansvarlig: first + (uids.length > 1 ? " +" + (uids.length - 1) : ""),
                 progress: 0,
             };
@@ -376,19 +384,48 @@ export class FiqControlRoom extends Component {
         if (this.state.progLevel !== "oppgave") { return this.state.projects; }
         const hidden = this.state.stageHidden;
         const rows = this.state.progTasks.filter((t) => !hidden[t.stage || ""]);
+        const byMile = this.state.progGroup === "mile";
+        const icon = byMile ? "🏁" : "👤";
         const groups = {}, order = [];
         rows.forEach((t) => {
-            const k = t.ansvarlig || "(uten ansvarlig)";
+            const k = byMile ? (t.mile || "(uten milepæl)") : (t.ansvarlig || "(uten ansvarlig)");
             if (!(k in groups)) { groups[k] = []; order.push(k); }
             groups[k].push(t);
         });
         order.sort((a, b) => a.localeCompare(b));
         const out = [];
         order.forEach((k) => {
-            out.push({ isHead: true, id: "h:" + k, name: k, count: groups[k].length });
+            out.push({ isHead: true, id: "h:" + k, name: k, count: groups[k].length, icon });
             out.push(...groups[k]);
         });
         return out;
+    }
+
+    setProgGroup(g) {
+        this.state.progGroup = g;
+    }
+
+    // Tydelige stadium-brikker: farge etter type (AI = lilla, utført = grønn, pågående = blå)
+    stageCls(name) {
+        const n = (name || "").toLowerCase();
+        if ((this.state.aiStageNames || []).includes(name)) { return "st_ai"; }
+        if (/utf|ferdig|done|fullf/.test(n)) { return "st_done"; }
+        if (/pågå|progress|arbeid/.test(n)) { return "st_prog"; }
+        return "st_def";
+    }
+
+    // Milepæl-markører (◆) i Gantt-vinduet
+    get ganttMiles() {
+        if (this.state.progLevel !== "oppgave") { return []; }
+        const { start, end } = this.ganttWindow;
+        const span = (end - start) || 1;
+        return (this.state.progMiles || []).map((m) => {
+            if (!m.deadline) { return null; }
+            const t = new Date(m.deadline).getTime();
+            const left = ((t - start) / span) * 100;
+            if (left < 0 || left > 100) { return null; }
+            return { name: m.name, deadline: m.deadline, leftPct: left };
+        }).filter(Boolean);
     }
 
     get progModel() {

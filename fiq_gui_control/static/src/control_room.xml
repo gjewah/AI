@@ -387,6 +387,10 @@
                                         <t t-else="">
                                             <button class="fiq_hm_ext" t-on-click="() =&gt; this.backToProjects()" title="Tilbake til prosjektfremdrift">◂ Prosjekter</button>
                                             <button t-att-class="state.progSubs ? 'fiq_hm_ext on' : 'fiq_hm_ext'" t-on-click="() =&gt; this.toggleProgSubs()" t-att-title="state.progSubs ? 'Deloppgaver vises — klikk for kun hovedoppgaver' : 'Vis også deloppgaver'">Deloppgaver<t t-if="state.progSubs"> ✓</t></button>
+                                            <div class="fiq_hm_rseg" title="Gruppér på ansvarlig eller milepæl">
+                                                <button t-att-class="state.progGroup === 'ansvarlig' ? 'on' : ''" t-on-click="() =&gt; this.setProgGroup('ansvarlig')">👤</button>
+                                                <button t-att-class="state.progGroup === 'mile' ? 'on' : ''" t-on-click="() =&gt; this.setProgGroup('mile')">🏁</button>
+                                            </div>
                                             <span class="fiq_hm_proglvl" t-att-title="state.progProjName" t-esc="state.progProjName"/>
                                         </t>
                                         <button class="fiq_hm_ext" t-on-click="() =&gt; this.openProsjektKontrollrom()" title="Åpne Prosjekt-kontrollrommet (utvidet)">⤢ Utvidet</button>
@@ -406,23 +410,21 @@
                                         <!-- Kolonnetitler (bold) for fremdrift-lista -->
                                         <div class="fiq_hm_rth">
                                             <span class="r_no">Nr.</span>
+                                            <span t-if="state.progLevel === 'oppgave'" class="r_ansv">Ansvarlig</span>
                                             <span class="r_name" t-esc="state.progLevel === 'oppgave' ? 'Oppgave' : 'Prosjekt'"/>
-                                            <t t-if="state.progLevel === 'oppgave'">
-                                                <span class="r_ansv">Ansvarlig</span>
-                                                <span class="r_stage">Stadium</span>
-                                            </t>
+                                            <span t-if="state.progLevel === 'oppgave'" class="r_stage">Stadium</span>
                                             <span class="r_dat">Fra</span>
                                             <span class="r_dat">Til</span>
                                             <span class="r_prog">Fremdrift</span>
                                         </div>
                                         <t t-if="progRows.length">
                                             <t t-foreach="progRows" t-as="p" t-key="p.id">
-                                                <div t-if="p.isHead" class="fiq_hm_ghead">👤 <t t-esc="p.name"/> <span class="fiq_hm_stchip_n" t-esc="p.count"/></div>
+                                                <div t-if="p.isHead" class="fiq_hm_ghead"><t t-esc="p.icon || '👤'"/> <t t-esc="p.name"/> <span class="fiq_hm_stchip_n" t-esc="p.count"/></div>
                                                 <div t-else="" t-att-class="'fiq_hm_rrow' + ((state.selected and state.selected.model === progModel and state.selected.id === p.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.pickRow(p)">
                                                     <span class="fiq_hm_no" t-esc="p.no"/>
-                                                    <span class="fiq_hm_rname" t-esc="p.name"/>
                                                     <span t-if="state.progLevel === 'oppgave'" class="fiq_hm_stagetag fiq_hm_ansv" t-att-title="'Ansvarlig: ' + (p.ansvarlig || '—')">👤 <t t-esc="p.ansvarlig || '—'"/></span>
-                                                    <span t-if="state.progLevel === 'oppgave'" class="fiq_hm_stagetag fiq_hm_stg" t-esc="p.stage || '—'"/>
+                                                    <span class="fiq_hm_rname" t-esc="p.name"/>
+                                                    <span t-if="state.progLevel === 'oppgave'" t-att-class="'fiq_hm_stagetag fiq_hm_stg ' + stageCls(p.stage)" t-esc="p.stage || '—'"/>
                                                     <input type="date" class="fiq_hm_din" t-att-value="p.start || ''" t-on-click.stop="() =&gt; {}" t-on-change="(ev) =&gt; this.setRowDate(p, 'from', ev.target.value)" title="Planlagt fra"/>
                                                     <input type="date" class="fiq_hm_din" t-att-value="p.end || ''" t-on-click.stop="() =&gt; {}" t-on-change="(ev) =&gt; this.setRowDate(p, 'to', ev.target.value)" title="Planlagt til"/>
                                                     <t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="p.progress"/><t t-set="shape" t-value="state.progressShape"/><t t-set="hrs" t-value="p.estH ? (p.logH + '/' + p.estH + ' t') : ''"/></t>
@@ -433,6 +435,13 @@
                                     </t>
                                     <div t-if="state.rightView === 'gantt'" class="fiq_hm_cgantt">
                                         <div class="fiq_hm_cg_head" t-esc="ganttHeader"/>
+                                        <!-- Milepæler (◆) på tidslinjen -->
+                                        <div t-if="ganttMiles.length" class="fiq_hm_cg_miles">
+                                            <span class="fiq_hm_cg_mlbl">🏁 Milepæler</span>
+                                            <span class="fiq_hm_cg_mtrack">
+                                                <span t-foreach="ganttMiles" t-as="m" t-key="m_index" class="fiq_hm_cg_mile" t-att-style="'left:' + m.leftPct + '%'" t-att-title="m.name + ' · ' + m.deadline">◆</span>
+                                            </span>
+                                        </div>
                                         <div class="fiq_hm_cg_axis">
                                             <t t-foreach="ganttTicks" t-as="tk" t-key="tk_index">
                                                 <span class="fiq_hm_cg_tick" t-att-style="'left:' + tk.left + '%'" t-esc="tk.label"/>
@@ -440,7 +449,7 @@
                                         </div>
                                         <t t-if="ganttRows.length">
                                             <t t-foreach="ganttRows" t-as="g" t-key="g.id">
-                                                <div t-if="g.isHead" class="fiq_hm_ghead">👤 <t t-esc="g.name"/> <span class="fiq_hm_stchip_n" t-esc="g.count"/></div>
+                                                <div t-if="g.isHead" class="fiq_hm_ghead"><t t-esc="g.icon || '👤'"/> <t t-esc="g.name"/> <span class="fiq_hm_stchip_n" t-esc="g.count"/></div>
                                                 <div t-else="" t-att-class="'fiq_hm_cg_row' + ((state.selected and state.selected.model === progModel and state.selected.id === g.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.pickRow(g)">
                                                     <span class="fiq_hm_cg_lbl">
                                                         <span class="fiq_hm_cg_name" t-att-title="g.name" t-esc="g.name"/>
