@@ -384,6 +384,15 @@ class FiqControlRoomConfig(models.Model):
         return out
 
     @api.model
+    def action_upgrade_module(self):
+        """«Oppgrader» rett fra Kontrollrommet — samme som Oppgrader-knappen i Apper.
+        Tilgang styres av Odoos egne rettigheter på ir.module.module (admin)."""
+        mod = self.env["ir.module.module"].search([("name", "=", "fiq_gui_control")], limit=1)
+        if mod and mod.state == "installed":
+            mod.button_immediate_upgrade()
+        return True
+
+    @api.model
     def get_deltagere(self, model, res_id):
         """Detaljer: prosjektdeltagere — prosjektleder + oppgave-ansvarlige. Kobles til
         fiq.project.role (rolle-innehavere) når rollemodellen er bygd. Defensivt."""

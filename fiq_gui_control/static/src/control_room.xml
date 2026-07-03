@@ -44,7 +44,12 @@
                         t-att-title="state.autoRefresh ? ('Auto-oppdatering PÅ — henter live data hvert ' + autoMin + '. minutt. Klikk for å skru av.') : ('Skru på auto-oppdatering (hvert ' + autoMin + '. minutt)')">
                     Auto <t t-if="state.autoRefresh">✓</t>
                 </button>
-                <span t-if="verVis" t-att-class="verVis.avvik ? 'fiq_hm_ver avvik' : 'fiq_hm_ver'" t-att-title="verVis.title">
+                <!-- Versjonsbrikke: ved avvik blir den en OPPGRADER-knapp (admin) rett i Kontrollrommet -->
+                <button t-if="verVis and verVis.avvik and state.isAdmin" class="fiq_hm_ver avvik fiq_hm_verbtn" t-att-disabled="state.upgrading"
+                        t-on-click="() =&gt; this.upgradeModule()" t-att-title="verVis.title">
+                    <t t-esc="state.upgrading ? 'Oppgraderer …' : (verVis.text + ' → Oppgrader')"/>
+                </button>
+                <span t-elif="verVis" t-att-class="verVis.avvik ? 'fiq_hm_ver avvik' : 'fiq_hm_ver'" t-att-title="verVis.title">
                     <t t-esc="verVis.text"/><t t-if="verVis.avvik"> ⚠</t>
                 </span>
                 <button class="btn fiq_hm_gear" t-on-click="() => this.toggleCustomize()">⚙ Innstillinger</button>

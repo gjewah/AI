@@ -30,6 +30,9 @@
     .fiq_hm_ver { font-family: monospace; font-size: 10.5px; color: var(--fiq-mut); background: #f0f1f3;
         border: 1px solid var(--fiq-bd); border-radius: 6px; padding: 2px 7px; white-space: nowrap; cursor: default;
         &.avvik { color: #b45309; background: #fffbeb; border-color: #f59e0b; } }
+    .fiq_hm_verbtn { cursor: pointer; font: inherit; font-family: monospace; font-size: 10.5px;
+        &:hover { background: #fef3c7; }
+        &[disabled] { opacity: .7; cursor: wait; } }
     .fiq_hm_refresh { font-size: 12px; display: inline-flex; align-items: center; gap: 5px;
         &[disabled] { opacity: .7; cursor: default; }
         .fiq_hm_refresh_i { display: inline-block; font-size: 14px; line-height: 1; }

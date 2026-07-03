@@ -103,8 +103,9 @@ export class FiqControlRoom extends Component {
             actions: {},          // {nøkkel: xmlid|false} – hvilke Odoo-handlinger som finnes (guardet)
             aiQuery: "",          // «Spør AI om hjelp»-feltet
             aiAnswer: "",         // svar fra Claude via fiq.ai
-            verInstalled: "",     // installert modulversjon (DB — endres av «Oppgrader» i Apper)
-            verFiles: "",         // fil-versjon på serveren (avvik → varsle «trykk Oppgrader»)
+            verInstalled: "",     // installert modulversjon (DB — endres av «Oppgrader»)
+            verFiles: "",         // fil-versjon på serveren (avvik → Oppgrader-knapp i brikken)
+            upgrading: false,     // modul-oppgradering pågår (fra versjonsbrikken)
             view: "oversikt",     // main content: oversikt (overview) | kommunikasjon (communication)
             rightView: "liste",   // right panel: liste | gantt (Liste default = safe first render)
             selected: null,       // {model,id,name} for inspektor-panel
@@ -715,6 +716,19 @@ export class FiqControlRoom extends Component {
                 ? _t("Filene på serveren er v") + fil + _t(" — trykk «Oppgrader» på Control room i Apper")
                 : _t("Installert versjon"),
         };
+    }
+
+    // Oppgrader modulen rett fra versjonsbrikken (admin) — laster siden på nytt etterpå
+    async upgradeModule() {
+        if (this.state.upgrading) { return; }
+        this.state.upgrading = true;
+        try {
+            await this.orm.call("fiq.gui.control.config", "action_upgrade_module", []);
+            window.location.reload();
+        } catch (e) {
+            this.state.upgrading = false;
+            this.notification.add(_t("Oppgradering feilet — ") + this._errMsg(e), { type: "danger" });
+        }
     }
 
     // Tidsbasert hilsen (norsk)
