@@ -72,7 +72,7 @@
                     <div class="fiq_hm_nav" t-on-click="() => this.runAction('kalender')" title="Åpne kalenderen (native Odoo)"><span class="b"/>Kalender</div>
                     <div class="fiq_hm_nav" t-on-click="() => this.runAction('aktivitet')" title="Åpne aktivitetene dine (native Odoo)"><span class="b"/>Aktiviteter</div>
                     <div t-att-class="state.view === 'hmsks' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('hmsks')"><span class="b"/>HMS/KS</div>
-                    <div t-att-class="state.view === 'airmm' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('airmm')"><span class="b"/>AI-RMM</div>
+                    <div t-att-class="state.view === 'airmm' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('airmm')"><span class="b"/>AI Kontrollrom</div>
 
                     <!-- Fagområder under: én rad per område (lang strek) + nedtrekk for underområder.
                          Treet leses fra Odoo prosjekt-hierarkiet (SSOT) — ingen hardkodet liste. -->
@@ -139,6 +139,24 @@
                         </div>
                     </div>
                     <div t-if="state.loading" class="fiq_hm_loading">Laster …</div>
+
+                    <!-- =================== AI KONTROLLROM (MVP: status + test + veikart) =================== -->
+                    <div t-if="!state.loading and state.view === 'airmm'" class="fiq_hm_card fiq_hm_aikr">
+                        <h4>🟣 AI Kontrollrom</h4>
+                        <div class="fiq_hm_aikr_status">
+                            <span class="fiq_hm_kdot green"/> <strong>Claude-kobling aktiv</strong> — «Spør AI» i topplinja bruker denne.
+                            <button class="fiq_hm_ext" t-on-click="() =&gt; { state.aiQuery = 'Svar med maks 5 ord: er AI-koblingen OK?'; this.askAi(); }">Test AI-koblingen</button>
+                        </div>
+                        <div class="fiq_hm_aikr_kommer">
+                            <strong>Kommer i denne flaten (designet, bygges trinnvis):</strong>
+                            <ul>
+                                <li>🟢🟠🔴 Godkjenningskø — beslutninger fra AI samlet ett sted, med stående-regel-svar</li>
+                                <li>AI-oppgaver «on the fly» — be AI utføre, følg status her</li>
+                                <li>ROI-måling — spart tid (AI vs. menneske) per oppgave</li>
+                                <li>AI-forbruk og kostnader per periode</li>
+                            </ul>
+                        </div>
+                    </div>
 
                     <!-- Fagflate-visning (Prosjekt/CRM/… + SP-områder) som integrert placeholder i skallet -->
                     <div t-if="!state.loading and area" class="fiq_hm_card fiq_hm_area">

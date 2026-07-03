@@ -1292,7 +1292,6 @@ export class FiqControlRoom extends Component {
     get area() {
         const map = {
             hmsks: { color: "#0070C0", title: "HMS/KS" },
-            airmm: { color: "#7030A0", title: "AI-RMM" },
             prosjekt: { icon: "prj.png", title: _t("Prosjekter") },
             crm: { icon: "crm.png", title: "CRM" },
             salgsmuligheter: { icon: "crm_leads.png", title: _t("Salgsmuligheter") },
