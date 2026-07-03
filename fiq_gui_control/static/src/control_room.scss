@@ -147,6 +147,9 @@
         &.off { opacity: .45; text-decoration: line-through; background: #f7f8f9; }
         &:hover { border-color: var(--fiq-accent); } }
     .fiq_hm_stagetag { font-size: 10px; color: var(--fiq-mut); background: #f0f1f3; border: 1px solid var(--fiq-bd); border-radius: 10px; padding: 0 7px; white-space: nowrap; flex: 0 0 auto; }
+    // Gruppe-overskrift (ansvarlig) i oppgave-fremdrift (liste + Gantt)
+    .fiq_hm_ghead { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--fiq-side);
+        padding: 8px 0 3px; border-bottom: 1px solid var(--fiq-bd); }
     .fiq_hm_rrow { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--fiq-bd); cursor: pointer; font-size: 12px;
         &:hover { background: #f7f8f9; }
         .fiq_hm_rname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

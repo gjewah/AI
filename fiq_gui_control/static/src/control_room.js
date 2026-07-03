@@ -278,15 +278,30 @@ export class FiqControlRoom extends Component {
     async _loadProgTasks(pid) {
         const tOpt = await this._optFields("project.task", ["code"]);
         const recs = await this._read("project.task", [["project_id", "=", pid]],
-            ["name", "date_deadline", "planned_date_begin", "stage_id", ...tOpt],
+            ["name", "date_deadline", "planned_date_begin", "stage_id", "user_ids", ...tOpt],
             { limit: 60, order: "planned_date_begin asc, id asc" });
-        const rows = recs.map((t) => ({
-            id: t.id, no: t.code || "", name: t.name,
-            start: (t.planned_date_begin || "").slice(0, 10) || false,
-            end: (t.date_deadline || "").slice(0, 10) || false,
-            stage: t.stage_id ? t.stage_id[1] : "",
-            progress: 0,
-        }));
+        // Ansvarlig-navn (user_ids gir kun id-er) — batch-oppslag
+        const uidSet = new Set();
+        recs.forEach((t) => (t.user_ids || []).forEach((u) => uidSet.add(u)));
+        const uname = {};
+        if (uidSet.size) {
+            try {
+                const us = await this._read("res.users", [["id", "in", [...uidSet]]], ["name"], {});
+                us.forEach((u) => { uname[u.id] = u.name; });
+            } catch (e) {}
+        }
+        const rows = recs.map((t) => {
+            const uids = t.user_ids || [];
+            const first = uids.length ? (uname[uids[0]] || "") : "";
+            return {
+                id: t.id, no: t.code || "", name: t.name,
+                start: (t.planned_date_begin || "").slice(0, 10) || false,
+                end: (t.date_deadline || "").slice(0, 10) || false,
+                stage: t.stage_id ? t.stage_id[1] : "",
+                ansvarlig: first + (uids.length > 1 ? " +" + (uids.length - 1) : ""),
+                progress: 0,
+            };
+        });
         await this._fillProgress("project.task", rows);
         this.state.progTasks = rows;
     }
@@ -322,6 +337,7 @@ export class FiqControlRoom extends Component {
 
     // Klikk på en rad i fremdrift-panelet: prosjekt-nivå -> drill; oppgave-nivå -> velg oppgave.
     pickRow(row) {
+        if (row.isHead) { return; }
         if (this.state.progLevel === "oppgave") {
             this.selectEl("project.task", row.id, row.name);
         } else {
@@ -330,11 +346,25 @@ export class FiqControlRoom extends Component {
     }
 
     // Kilden Prosjektfremdrift-panelet itererer over (prosjekter ELLER valgt prosjekts
-    // oppgaver). På oppgave-nivå filtreres skjulte stadier bort (stadie-velgeren).
+    // oppgaver). På oppgave-nivå filtreres skjulte stadier bort OG det grupperes på
+    // ANSVARLIG (Gjermund 2026-07-03) — prosjekt-nivået grupperes IKKE.
     get progRows() {
         if (this.state.progLevel !== "oppgave") { return this.state.projects; }
         const hidden = this.state.stageHidden;
-        return this.state.progTasks.filter((t) => !hidden[t.stage || ""]);
+        const rows = this.state.progTasks.filter((t) => !hidden[t.stage || ""]);
+        const groups = {}, order = [];
+        rows.forEach((t) => {
+            const k = t.ansvarlig || "(uten ansvarlig)";
+            if (!(k in groups)) { groups[k] = []; order.push(k); }
+            groups[k].push(t);
+        });
+        order.sort((a, b) => a.localeCompare(b));
+        const out = [];
+        order.forEach((k) => {
+            out.push({ isHead: true, id: "h:" + k, name: k, count: groups[k].length });
+            out.push(...groups[k]);
+        });
+        return out;
     }
 
     get progModel() {
@@ -1119,6 +1149,7 @@ export class FiqControlRoom extends Component {
         const span = (end - start) || 1;
         const nowTs = Date.now();
         return this.progRows.map((p) => {
+            if (p.isHead) { return p; }
             const s = p.start ? new Date(p.start).getTime() : null;
             const e = p.end ? new Date(p.end).getTime() : null;
             if (s === null && e === null) {

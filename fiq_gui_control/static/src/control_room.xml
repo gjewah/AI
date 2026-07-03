@@ -374,7 +374,8 @@
                                     <t t-if="state.rightView === 'liste'">
                                         <t t-if="progRows.length">
                                             <t t-foreach="progRows" t-as="p" t-key="p.id">
-                                                <div t-att-class="'fiq_hm_rrow' + ((state.selected and state.selected.model === progModel and state.selected.id === p.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.pickRow(p)">
+                                                <div t-if="p.isHead" class="fiq_hm_ghead">👤 <t t-esc="p.name"/> <span class="fiq_hm_stchip_n" t-esc="p.count"/></div>
+                                                <div t-else="" t-att-class="'fiq_hm_rrow' + ((state.selected and state.selected.model === progModel and state.selected.id === p.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.pickRow(p)">
                                                     <span class="fiq_hm_no" t-esc="p.no"/>
                                                     <span class="fiq_hm_rname" t-esc="p.name"/>
                                                     <span t-if="state.progLevel === 'oppgave' and p.stage" class="fiq_hm_stagetag" t-esc="p.stage"/>
@@ -395,7 +396,8 @@
                                         </div>
                                         <t t-if="ganttRows.length">
                                             <t t-foreach="ganttRows" t-as="g" t-key="g.id">
-                                                <div t-att-class="'fiq_hm_cg_row' + ((state.selected and state.selected.model === progModel and state.selected.id === g.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.pickRow(g)">
+                                                <div t-if="g.isHead" class="fiq_hm_ghead">👤 <t t-esc="g.name"/> <span class="fiq_hm_stchip_n" t-esc="g.count"/></div>
+                                                <div t-else="" t-att-class="'fiq_hm_cg_row' + ((state.selected and state.selected.model === progModel and state.selected.id === g.id) ? ' fiq_hm_selrow' : '')" t-on-click="() =&gt; this.pickRow(g)">
                                                     <span class="fiq_hm_cg_lbl">
                                                         <span class="fiq_hm_cg_name" t-att-title="g.name" t-esc="g.name"/>
                                                         <span class="fiq_hm_cg_dates">
