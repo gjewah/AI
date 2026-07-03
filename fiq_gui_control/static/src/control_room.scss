@@ -374,6 +374,9 @@
                 &.on { background: var(--fiq-accent); color: #fff; } } } }
 
     // Oppgavesøk: to felt (nummer + fritekst)
+    // Sorterbare kolonneoverskrifter (klikk = ▲/▼, klikk igjen = av)
+    .fiq_hm_thc { cursor: pointer; user-select: none;
+        &:hover { color: var(--fiq-acc, #38B44A); } }
     .fiq_hm_tsok { display: flex; gap: 6px; margin: 0 0 8px;
         .fiq_hm_psok { margin: 0; }
         .fiq_hm_tsok_no { flex: 0 0 110px; } }

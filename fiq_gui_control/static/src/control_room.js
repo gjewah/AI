@@ -92,6 +92,9 @@ export class FiqControlRoom extends Component {
             children: {},         // lazy-lastede barn: {"model:id": [rader]}
             myTasks: [],
             taskNoQuery: "",      // oppgavesøk: nummer (code)
+            taskCols: this._loadTaskCols(),  // kolonnevalg Mine oppgaver (huskes per nettleser)
+            taskColsEdit: false,  // kolonnevelger åpen
+            taskSort: { key: "", dir: 1 },   // klikk på kolonneoverskrift = sortér
             taskTextQuery: "",    // oppgavesøk: fritekst
             taskStage: "",        // filter: valgt stadium ("" = alle)
             taskMile: "",         // filter: valgt milepæl ("" = alle)
@@ -534,7 +537,55 @@ export class FiqControlRoom extends Component {
 
     get filteredMyTasks() {
         const st = this.state.taskStage, mi = this.state.taskMile;
-        return this.state.myTasks.filter((t) => (!st || t.stage === st) && (!mi || t.mile === mi));
+        const rows = this.state.myTasks.filter((t) => (!st || t.stage === st) && (!mi || t.mile === mi));
+        const s = this.state.taskSort;
+        if (s.key) {
+            const k = s.key, d = s.dir;
+            rows.sort((a, b) => {
+                if (k === "estH" || k === "progress") { return ((+a[k] || 0) - (+b[k] || 0)) * d; }
+                return String(a[k] || "").localeCompare(String(b[k] || ""), "nb", { numeric: true }) * d;
+            });
+        }
+        return rows;
+    }
+
+    // ---- Kolonnevalg + sortering (Mine oppgaver) — huskes per nettleser ----
+    _loadTaskCols() {
+        const def = { project: true, hours: true, status: true, progress: true };
+        try {
+            const raw = JSON.parse(localStorage.getItem("fiq_hm_taskcols") || "null");
+            return raw && typeof raw === "object" ? Object.assign(def, raw) : def;
+        } catch (e) { return def; }
+    }
+
+    toggleTaskCol(key) {
+        this.state.taskCols[key] = !this.state.taskCols[key];
+        try { localStorage.setItem("fiq_hm_taskcols", JSON.stringify(this.state.taskCols)); } catch (e) { /* ok */ }
+    }
+
+    // Grid-definisjonen (CSS-variabel) følger valgte kolonner → header og rader i flukt
+    get taskColsVar() {
+        const c = this.state.taskCols;
+        let v = "64px minmax(0, 1fr)";
+        if (c.project) { v += " minmax(120px, 170px)"; }
+        if (c.hours) { v += " 56px"; }
+        if (c.status) { v += " 88px"; }
+        if (c.progress) { v += " 100px"; }
+        return v;
+    }
+
+    setTaskSort(key) {
+        const s = this.state.taskSort;
+        if (s.key === key) {
+            if (s.dir === 1) { s.dir = -1; } else { this.state.taskSort = { key: "", dir: 1 }; }
+        } else {
+            this.state.taskSort = { key, dir: 1 };
+        }
+    }
+
+    sortInd(key) {
+        const s = this.state.taskSort;
+        return s.key === key ? (s.dir > 0 ? " ▲" : " ▼") : "";
     }
 
     toggleTaskStage(name) {

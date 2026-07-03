@@ -158,7 +158,7 @@
                         <div t-if="state.isAdmin" class="fiq_hm_aikr_url">
                             <button t-if="!state.cockpitEdit" class="fiq_hm_ext" t-on-click="() =&gt; this.toggleCockpitEdit()">⚙ Endre cockpit-adresse</button>
                             <t t-if="state.cockpitEdit">
-                                <input class="fiq_hm_urlinp" type="text" t-model="state.cockpitUrlDraft" placeholder="https://claude.ai/code/artifact/…" t-on-keydown="(ev) =&gt; { if (ev.key === 'Enter') this.saveCockpitUrl(); }"/>
+                                <input class="fiq_hm_urlinp" type="text" t-model="state.cockpitUrlDraft" placeholder="https://claude.ai/code/artifact/…" t-on-keydown="(ev) =&gt; ev.key === 'Enter' ? this.saveCockpitUrl() : null"/>
                                 <button class="fiq_hm_ext" t-on-click="() =&gt; this.saveCockpitUrl()">Lagre</button>
                                 <button class="fiq_hm_ext" t-on-click="() =&gt; { state.cockpitEdit = false; }">Avbryt</button>
                             </t>
@@ -429,7 +429,12 @@
                                 </t>
                                 <t t-else=""><div class="fiq_hm_empty" t-esc="(state.projQuery or state.projNoQuery) ? 'Ingen prosjekter matcher søket.' : 'Ingen aktive prosjekter ennå.'"/></t>
                             </div>
-                            <div t-if="state.show.tasks" t-att-class="'fiq_hm_card' + (state.collapsed.oppgaver ? ' fiq_hm_collapsed' : '')"><div class="fiq_hm_ch"><h4>Mine oppgaver</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('oppgaver')" t-esc="state.collapsed.oppgaver ? 'Vis ▸' : 'Skjul ▾'"/></div>
+                            <div t-if="state.show.tasks" t-att-class="'fiq_hm_card' + (state.collapsed.oppgaver ? ' fiq_hm_collapsed' : '')" t-att-style="'--fiq-taskcols:' + taskColsVar"><div class="fiq_hm_ch"><h4>Mine oppgaver</h4><button class="fiq_hm_coll" t-on-click="() =&gt; { state.taskColsEdit = !state.taskColsEdit; }" title="Velg kolonner">⚙</button><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('oppgaver')" t-esc="state.collapsed.oppgaver ? 'Vis ▸' : 'Skjul ▾'"/></div>
+                                <div t-if="state.taskColsEdit" class="fiq_hm_pfilter">
+                                    <t t-foreach="[['project','Prosjekt'],['hours','Timer'],['status','Status'],['progress','Fremdrift']]" t-as="cc" t-key="cc[0]">
+                                        <button t-att-class="state.taskCols[cc[0]] ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-on-click="() =&gt; this.toggleTaskCol(cc[0])" t-esc="cc[1]"/>
+                                    </t>
+                                </div>
                                 <!-- Oppgavesøk: nummer + fritekst (to felt, server-søk) -->
                                 <div class="fiq_hm_tsok">
                                     <span class="fiq_hm_srch fiq_hm_tsok_no">
@@ -452,12 +457,12 @@
                                 </div>
                                 <!-- Kolonneoverskrifter — deler grid-definisjon med radene (kan ikke komme ut av flukt) -->
                                 <div class="fiq_hm_th">
-                                    <span>Nr.</span>
-                                    <span>Oppgave</span>
-                                    <span>Prosjekt</span>
-                                    <span t-esc="state.hasHours ? 'Timer' : ''"/>
-                                    <span>Status</span>
-                                    <span>Fremdrift</span>
+                                    <span class="fiq_hm_thc" t-on-click="() =&gt; this.setTaskSort('no')" title="Sortér">Nr.<t t-esc="sortInd('no')"/></span>
+                                    <span class="fiq_hm_thc" t-on-click="() =&gt; this.setTaskSort('name')" title="Sortér">Oppgave<t t-esc="sortInd('name')"/></span>
+                                    <span t-if="state.taskCols.project" class="fiq_hm_thc" t-on-click="() =&gt; this.setTaskSort('project')" title="Sortér">Prosjekt<t t-esc="sortInd('project')"/></span>
+                                    <span t-if="state.taskCols.hours" class="fiq_hm_thc" t-on-click="() =&gt; this.setTaskSort('estH')" title="Sortér" t-esc="(state.hasHours ? 'Timer' : '') + sortInd('estH')"/>
+                                    <span t-if="state.taskCols.status" class="fiq_hm_thc" t-on-click="() =&gt; this.setTaskSort('deadline')" title="Sortér på frist">Status<t t-esc="sortInd('deadline')"/></span>
+                                    <span t-if="state.taskCols.progress" class="fiq_hm_thc" t-on-click="() =&gt; this.setTaskSort('progress')" title="Sortér">Fremdrift<t t-esc="sortInd('progress')"/></span>
                                 </div>
                                 <t t-if="filteredMyTasks.length">
                                     <t t-foreach="filteredMyTasks" t-as="t" t-key="t.id">
@@ -469,15 +474,15 @@
                                                 <span class="fiq_hm_no" t-esc="t.no" t-on-click="() =&gt; this.selectEl('project.task', t.id, t.name)"/>
                                             </span>
                                             <span class="fiq_hm_task_n" t-esc="t.name" t-on-click="() =&gt; this.selectEl('project.task', t.id, t.name)"/>
-                                            <span class="fiq_hm_task_p" t-esc="t.project"/>
-                                            <span class="fiq_hm_est" title="Estimerte (antatte) timer – juster; fremdrift = førte ÷ estimerte">
+                                            <span t-if="state.taskCols.project" class="fiq_hm_task_p" t-esc="t.project"/>
+                                            <span t-if="state.taskCols.hours" class="fiq_hm_est" title="Estimerte (antatte) timer – juster; fremdrift = førte ÷ estimerte">
                                                 <input t-if="state.hasHours" type="number" step="0.5" min="0" class="fiq_hm_esti" t-att-value="t.estH || ''" t-on-change="(ev) =&gt; this.setTaskEst(t.id, ev.target.value)"/>
                                             </span>
-                                            <span class="fiq_hm_statcol">
+                                            <span t-if="state.taskCols.status" class="fiq_hm_statcol">
                                                 <span t-if="t.overdue" class="fiq_hm_warn fiq_hm_warnbtn" t-on-click.stop="() =&gt; this.openRecord('project.task', t.id)" title="Åpne oppgaven i Odoo">⚠ forsinket</span>
                                                 <span t-else="" class="fiq_hm_openbtn" t-on-click.stop="() =&gt; this.openRecord('project.task', t.id)" title="Åpne oppgaven i Odoo">⤢ Åpne</span>
                                             </span>
-                                            <span class="fiq_hm_progcol">
+                                            <span t-if="state.taskCols.progress" class="fiq_hm_progcol">
                                                 <t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="t.progress"/><t t-set="shape" t-value="state.progressShape"/><t t-set="hrs" t-value="t.estH ? (t.logH + '/' + t.estH + ' t') : ''"/></t>
                                             </span>
                                         </div>
@@ -486,9 +491,9 @@
                                                 <div class="fiq_hm_task fiq_hm_childrow" t-on-click="() =&gt; this.selectEl('project.task', c.id, c.name)">
                                                     <span class="fiq_hm_tcell_no"><span class="fiq_hm_slot"><span class="fiq_hm_childind">↳</span></span><span class="fiq_hm_no" t-esc="c.no"/></span>
                                                     <span class="fiq_hm_task_n" t-esc="c.name"/>
-                                                    <span/><span/>
-                                                    <span class="fiq_hm_statcol"><span class="fiq_hm_openbtn" t-on-click.stop="() =&gt; this.openRecord('project.task', c.id)" title="Åpne oppgaven i Odoo">⤢ Åpne</span></span>
-                                                    <span/>
+                                                    <span t-if="state.taskCols.project"/><span t-if="state.taskCols.hours"/>
+                                                    <span t-if="state.taskCols.status" class="fiq_hm_statcol"><span class="fiq_hm_openbtn" t-on-click.stop="() =&gt; this.openRecord('project.task', c.id)" title="Åpne oppgaven i Odoo">⤢ Åpne</span></span>
+                                                    <span t-if="state.taskCols.progress"/>
                                                 </div>
                                             </t>
                                         </t>
