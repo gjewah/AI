@@ -324,7 +324,15 @@
                                         <div class="fiq_hm_insp_tabs">
                                             <button t-foreach="[['beskrivelse','Beskrivelse'],['logg','Logg'],['chat','Chat'],['epost','E-post'],['dok','Dokumenter']]" t-as="tb" t-key="tb[0]" t-att-class="state.inspTab === tb[0] ? 'on' : ''" t-on-click="() =&gt; this.setInspTab(tb[0])" t-esc="tb[1]"/>
                                         </div>
-                                        <div class="fiq_hm_insp_body">Innhold for «<t t-esc="state.inspTab"/>» kobles til posten (neste lag).</div>
+                                        <div class="fiq_hm_insp_body">
+                                            <t t-if="state.inspTab === 'beskrivelse'">
+                                                <span t-if="state.selDesc" t-esc="state.selDesc"/>
+                                                <span t-else="" class="fiq_hm_insp_mut">Ingen beskrivelse på posten.</span>
+                                            </t>
+                                            <t t-else="">
+                                                <span class="fiq_hm_insp_mut">«<t t-esc="state.inspTab"/>» kobles til posten (neste lag). Bruk ⤢ for å åpne hele posten i Odoo.</span>
+                                            </t>
+                                        </div>
                                     </t>
                                     <t t-else=""><div class="fiq_hm_empty">Velg en oppgave eller et prosjekt for å se detaljer her.</div></t>
                                 </div>

@@ -64,6 +64,7 @@ export class FiqControlRoom extends Component {
             rightView: "liste",   // right panel: liste | gantt (Liste default = safe first render)
             selected: null,       // {model,id,name} for inspektor-panel
             inspTab: "beskrivelse",
+            selDesc: "",          // ekte beskrivelse for valgt element (Detaljer-panelet)
             progressShape: "bar", // lag 2: per-linje fremdrift – "bar" | "ring" (config-drevet)
             progressMetric: "timer", // STANDARD timer (ført ÷ estimert) | auto | deloppgaver | stadium
             hasHours: false,      // finnes allocated_hours/effective_hours (hr_timesheet)? → vis estimat-felt
@@ -465,7 +466,14 @@ export class FiqControlRoom extends Component {
     }
 
     openProjects() {
-        this.action.doAction("project.open_view_project_all");
+        // Robust: eget act_window (ikke avhengig av en bestemt xmlid som kan mangle)
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: _t("Prosjekter"),
+            res_model: "project.project",
+            views: [[false, "kanban"], [false, "list"], [false, "form"]],
+            target: "current",
+        });
     }
 
     // Melding når en funksjon ennå ikke er ferdig (3-ukers-estimat + 75 % buffer)
@@ -606,9 +614,25 @@ export class FiqControlRoom extends Component {
         this.state.rightView = v;
     }
 
-    // Velg element -> vises i inspektor-panelet (20 %). Full post apnes med openRecord.
-    selectEl(model, id, name) {
+    // Velg element -> vises i inspektor-panelet (Detaljer). Henter ekte beskrivelse.
+    // Full post apnes med openRecord (⤢).
+    async selectEl(model, id, name) {
         this.state.selected = { model, id, name };
+        this.state.selDesc = "";
+        try {
+            const recs = await this.orm.read(model, [id], ["description"]);
+            if (recs && recs[0]) { this.state.selDesc = this._stripHtml(recs[0].description || ""); }
+        } catch (e) { /* description-feltet finnes kanskje ikke -> tomt */ }
+    }
+
+    // Enkel HTML->tekst for beskrivelses-feltet (html) i inspektoren
+    _stripHtml(html) {
+        if (!html) { return ""; }
+        try {
+            const d = document.createElement("div");
+            d.innerHTML = html;
+            return (d.textContent || d.innerText || "").trim();
+        } catch (e) { return String(html).replace(/<[^>]*>/g, " ").trim(); }
     }
 
     setInspTab(t) {
