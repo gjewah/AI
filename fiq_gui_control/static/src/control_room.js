@@ -187,6 +187,7 @@ export class FiqControlRoom extends Component {
             this._autoMin = cfg.auto_refresh_min || 5;
             this.state.canUpgrade = !!cfg.can_upgrade;
             this.state.spUrls = cfg.sp_urls || {};
+            this.state.aiCockpitUrl = cfg.ai_cockpit_url || "";
         } catch (e) {
             // keep defaults (everything visible) if the model is not ready
         }
@@ -565,6 +566,11 @@ export class FiqControlRoom extends Component {
     // Nedtrekk i sidemenyen (åpne/lukk underområder for et fagområde)
     toggleArea(nr) {
         this.state.areaOpen[nr] = !this.state.areaOpen[nr];
+    }
+
+    // AI-cockpiten (Artifact, interim): åpnes fra AI Kontrollrom-flaten
+    openCockpit() {
+        if (this.state.aiCockpitUrl) { window.open(this.state.aiCockpitUrl, "_blank"); }
     }
 
     // SP-lenke for et fagområde (config-drevet per firma; eksakt nr vinner over toppnr)

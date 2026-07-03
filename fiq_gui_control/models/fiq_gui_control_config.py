@@ -90,6 +90,8 @@ class FiqControlRoomConfig(models.Model):
             # SP-lenker per fagområde (config-drevet, PER FIRMA): systemparameter
             # fiq_gui_control.sp_urls.<company_id> (fallback .sp_urls) = JSON {"1": "https://…", "8.50": "https://…"}
             "sp_urls": self._sp_urls(comp),
+            # AI-cockpit (Artifact, interim til full Odoo-bygging): config-drevet URL
+            "ai_cockpit_url": ICP.get_param("fiq_gui_control.ai_cockpit_url", ""),
         }
 
     @api.model

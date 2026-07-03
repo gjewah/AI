@@ -145,7 +145,11 @@
 
                     <!-- =================== AI KONTROLLROM (MVP: status + test + veikart) =================== -->
                     <div t-if="!state.loading and state.view === 'airmm'" class="fiq_hm_card fiq_hm_aikr">
-                        <h4>🟣 AI Kontrollrom</h4>
+                        <!-- Hele overskriftsraden er klikkbar («usynlig knapp») + tydelig knapp -->
+                        <div class="fiq_hm_ch fiq_hm_aikr_h" t-att-style="state.aiCockpitUrl ? 'cursor:pointer' : ''" t-on-click="() =&gt; this.openCockpit()" t-att-title="state.aiCockpitUrl ? 'Åpne cockpiten (fremdrifts-hub)' : ''">
+                            <h4>🟣 AI Kontrollrom</h4>
+                            <button t-if="state.aiCockpitUrl" class="fiq_hm_cockbtn" t-on-click.stop="() =&gt; this.openCockpit()">🟣 Åpne cockpiten — fremdrifts-hub ↗</button>
+                        </div>
                         <div class="fiq_hm_aikr_status">
                             <span class="fiq_hm_kdot green"/> <strong>Claude-kobling aktiv</strong> — «Spør AI» i topplinja bruker denne.
                             <button class="fiq_hm_ext" t-on-click="() =&gt; { state.aiQuery = 'Svar med maks 5 ord: er AI-koblingen OK?'; this.askAi(); }">Test AI-koblingen</button>

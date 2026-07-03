@@ -474,6 +474,9 @@
     .fiq_hm_statusrow_inn { margin-top: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 
     // AI Kontrollrom (MVP)
+    .fiq_hm_cockbtn { border: 2px solid #7030A0; background: #7030A0; color: #fff; border-radius: 9px;
+        padding: 6px 16px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
+        &:hover { background: #5a2680; border-color: #5a2680; } }
     .fiq_hm_aikr { border-left: 4px solid #7030A0;
         .fiq_hm_aikr_status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 4px 0 10px; font-size: 12.5px; }
         .fiq_hm_aikr_kommer { font-size: 12px; color: var(--fiq-side);
