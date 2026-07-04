@@ -750,3 +750,10 @@
     margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--fiq-bd); font-size: 12px; }
 .fiq_hm .fiq_cp_gfold { flex: 0 0 12px; color: var(--fiq-mut); font-size: 11px; }
 .fiq_hm .fiq_cp_gh { cursor: pointer; }
+
+// Mørk modus: LESBARE nedtrekk i cockpit-toppmenyen + asel generelt
+.fiq_hm.fiq_hm_dark .fiq_hm_asel, .fiq_hm.fiq_hm_dark .fiq_cp_menu select {
+    background: #262b37 !important; color: #dde2ea !important; border-color: #3a4150 !important;
+    option { background: #262b37; color: #dde2ea; }
+}
+.fiq_hm.fiq_hm_dark .fiq_cp_mlbl { color: #9aa3b2; }

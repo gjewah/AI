@@ -86,6 +86,8 @@ export class FiqControlRoom extends Component {
             dashEdit: false,       // tilpassnings-modus for Mitt dashbord
             darkMap: this._loadDarkMap(),  // 🌙 mørk bakgrunn PER KONTROLLPANEL (view) — huskes
             aktQuery: "",                  // aktivitets-søk (samme linje som filter + gruppér)
+            dagVis: "begge",              // Møter og aktiviteter: begge | moter | akt
+            aktGrpFold: {},                // foldede grupperingsoverskrifter {gruppenavn: true}
             level: "balansert",
             show,
             kpis: [],
@@ -1198,8 +1200,17 @@ export class FiqControlRoom extends Component {
         rows.forEach((a) => { const k = key(a); if (!(k in map)) { map[k] = []; order.push(k); } map[k].push(a); });
         order.sort((x, y) => x.localeCompare(y));
         const out = [];
-        order.forEach((k) => { out.push({ isHead: true, id: "ah:" + k, name: k, count: map[k].length }); out.push(...map[k]); });
+        order.forEach((k) => {
+            const folded = !!this.state.aktGrpFold[k];
+            out.push({ isHead: true, id: "ah:" + k, name: k, count: map[k].length, folded });
+            if (!folded) { out.push(...map[k]); }
+        });
         return out;
+    }
+
+    // Kollaps/ekspander en grupperingsoverskrift i aktivitetslisten
+    toggleAktGrp(name) {
+        this.state.aktGrpFold[name] = !this.state.aktGrpFold[name];
     }
 
     // «Utsett til»: +N dager fra fristen ELLER eksplisitt ny dato (på valgt aktivitet)
@@ -1474,7 +1485,7 @@ export class FiqControlRoom extends Component {
         await this._loadCpDiagram();
     }
 
-    // Diagram over ALLE prosjekter i valgt scope (kunde / 0.00 IQ / alle)
+    // Diagram over ALLE prosjekter i valgt scope (kunde/hjerne = toppnivå-rot / 0.00 IQ / alle)
     async _loadCpDiagram() {
         const k = this.state.cpKunde;
         try {
@@ -1499,13 +1510,14 @@ export class FiqControlRoom extends Component {
         this.state.cpMode = m;
     }
 
-    // Prosjektvelgeren viser bare valgt kundes prosjekter (eller 0.-serien for IQ)
+    // Prosjektvelgeren viser bare valgt kundes/hjernes prosjekter (diagrammet ER scope-listen)
     get cpProjOptions() {
         const s = this.state.cpScope;
         if (!s) { return []; }
         const k = this.state.cpKunde;
-        return s.prosjekter.filter((p) =>
-            (!k) || (k === "iq" ? (p.name || "").startsWith("0.") : p.partner_id === parseInt(k)));
+        if (!k) { return s.prosjekter; }
+        if (k === "iq") { return s.prosjekter.filter((p) => (p.name || "").startsWith("0.")); }
+        return this.state.cpDiagram.map((d) => ({ id: d.id, no: d.no, name: d.name }));
     }
 
     get cpDiagramMax() {

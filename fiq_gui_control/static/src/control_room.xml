@@ -193,7 +193,7 @@
                                     <option t-att-value="ku.id" t-att-selected="state.cpKunde == ku.id ? 'selected' : undefined" t-esc="ku.name"/>
                                 </t>
                             </select>
-                            <span class="fiq_cp_mlbl">Prosjekt/prosess</span>
+                            <span class="fiq_cp_mlbl">Prosjekt/Prosess</span>
                             <select class="fiq_hm_asel fiq_cp_projsel" t-on-change="(ev) =&gt; this.setCpProj(ev.target.value)">
                                 <option value="" t-att-selected="!state.cpProj ? 'selected' : undefined">Alle (diagram)</option>
                                 <t t-foreach="cpProjOptions" t-as="po" t-key="po.id">
@@ -344,7 +344,7 @@
                         </div>
                         <!-- Møter og aktiviteter (eget vindu ved siden av brukerne) -->
                         <div t-att-class="'fiq_hm_card' + (state.collapsed.dagens ? ' fiq_hm_collapsed' : '')">
-                            <div class="fiq_hm_ch"><h4>📅 Møter og aktiviteter (<t t-esc="periodeTekst"/><t t-if="state.selPerson"> · <t t-esc="state.selPerson.name"/></t>)</h4><span class="fiq_hm_chbtns"><button class="fiq_hm_ext" t-on-click="() =&gt; this.runAction('kalender')" title="Åpne kalenderen (native Odoo)">🗓 Kalender</button><button class="fiq_hm_ext" t-on-click="() =&gt; this.runAction('aktivitet')" title="Åpne aktivitetene dine (native Odoo)">⚡ Aktiviteter</button><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('dagens')" t-esc="state.collapsed.dagens ? 'Vis ▸' : 'Skjul ▾'"/></span></div>
+                            <div class="fiq_hm_ch"><h4>📅 Møter og aktiviteter (<t t-esc="periodeTekst"/><t t-if="state.selPerson"> · <t t-esc="state.selPerson.name"/></t>)</h4><span class="fiq_hm_chbtns"><div class="fiq_hm_pseg" title="Vis begge, bare møter eller bare aktiviteter"><button t-att-class="state.dagVis === 'begge' ? 'on' : ''" t-on-click="() =&gt; { state.dagVis = 'begge'; }">Begge</button><button t-att-class="state.dagVis === 'moter' ? 'on' : ''" t-on-click="() =&gt; { state.dagVis = 'moter'; }">Møter</button><button t-att-class="state.dagVis === 'akt' ? 'on' : ''" t-on-click="() =&gt; { state.dagVis = 'akt'; }">Aktiviteter</button></div><button class="fiq_hm_ext" t-on-click="() =&gt; this.runAction('kalender')" title="Åpne kalenderen (native Odoo)">🗓 Kalender</button><button class="fiq_hm_ext" t-on-click="() =&gt; this.runAction('aktivitet')" title="Åpne aktivitetene dine (native Odoo)">⚡ Aktiviteter</button><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('dagens')" t-esc="state.collapsed.dagens ? 'Vis ▸' : 'Skjul ▾'"/></span></div>
                             <div class="fiq_hm_dagwrap">
                                 <div class="fiq_hm_daglists">
                                     <div class="fiq_hm_dag_h">Møter
@@ -390,7 +390,7 @@
                                     </div>
                                     <t t-if="filtAktiviteter.length">
                                         <t t-foreach="aktGruppert" t-as="ak" t-key="ak.id">
-                                            <div t-if="ak.isHead" class="fiq_hm_ghead">🏷 <t t-esc="ak.name"/> <span class="fiq_hm_stchip_n" t-esc="ak.count"/></div>
+                                            <div t-if="ak.isHead" class="fiq_hm_ghead fiq_hm_ghead_click" t-on-click="() =&gt; this.toggleAktGrp(ak.name)" title="Kollaps/ekspander gruppen"><span class="fiq_cp_gfold" t-esc="ak.folded ? '▸' : '▾'"/>🏷 <t t-esc="ak.name"/> <span class="fiq_hm_stchip_n" t-esc="ak.count"/></div>
                                             <div t-else="" t-att-class="(state.selAkt and state.selAkt.id === ak.id) ? 'fiq_hm_dagrow on' : 'fiq_hm_dagrow'" t-on-click="() =&gt; this.velgAkt(ak)">
                                                 <span t-att-class="ak.forsinket ? 'fiq_hm_dagtid rod' : 'fiq_hm_dagtid'" t-esc="ak.frist"/>
                                                 <span class="fiq_hm_dagnavn"><t t-esc="ak.name"/><t t-if="ak.res_name"> · <t t-esc="ak.res_name"/></t></span>

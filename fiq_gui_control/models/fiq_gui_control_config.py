@@ -435,43 +435,40 @@ class FiqControlRoomConfig(models.Model):
     # ---- AI-cockpit: scope-meny (Kunde / Prosjekt-Prosess / 0.00 IQ) -------------------
     @api.model
     def get_cockpit_scope(self):
-        """Toppmenyen i cockpiten: kunder m/ prosjekter + prosjektliste (uten maler).
-        «0.00 IQ» = plattform-serien (navneprefiks 0.) som eget kundevalg."""
+        """Toppmenyen i cockpiten. «Kunder» = KUNDENE AV AI-LØSNINGEN (hjernene under IQ),
+        dvs. toppnivå-røttene i prosjekt-treet (0.00 IQ, 0.040 VD, …) — IKKE res.partner.
+        + full prosjektliste (uten maler)."""
         P = self.env["project.project"]
         f = P._fields
         dom = [("active", "=", True)]
         if "is_template" in f:
             dom.append(("is_template", "=", False))
+        kunder = []
+        if "parent_id" in f:
+            for r in P.search(dom + [("parent_id", "=", False)], order="name"):
+                kunder.append({"id": r.id, "name": r.name or ""})
         projs = P.search(dom, order="name")
-        kunder, seen = [], set()
-        for p in projs:
-            pa = p.partner_id if "partner_id" in f else False
-            if pa and pa.id not in seen:
-                seen.add(pa.id)
-                kunder.append({"id": pa.id, "name": pa.display_name})
-        kunder.sort(key=lambda k: k["name"])
         return {
             "kunder": kunder,
             "prosjekter": [{
                 "id": p.id,
                 "no": (p.sequence_code if "sequence_code" in f else "") or "",
                 "name": p.name or "",
-                "partner_id": (p.partner_id.id if "partner_id" in f and p.partner_id else False),
             } for p in projs],
         }
 
     @api.model
-    def get_cockpit_diagram(self, partner_id=False, iq=False):
+    def get_cockpit_diagram(self, root_id=False, iq=False):
         """Fremdrifts-/forbruksdiagram over ALLE prosjekter i valgt scope:
-        per prosjekt {no, name, pct, est, logged}. Kunde-filter = partner_id;
-        iq=True = 0.00 IQ-serien (navneprefiks «0.»). Uten filter = alle."""
+        per prosjekt {no, name, pct, est, logged}. root_id = valgt kunde/hjerne
+        (toppnivå-rot; child_of). iq=True = 0.00 IQ-serien (navneprefiks «0.»)."""
         P = self.env["project.project"]
         f = P._fields
         dom = [("active", "=", True)]
         if "is_template" in f:
             dom.append(("is_template", "=", False))
-        if partner_id and "partner_id" in f:
-            dom.append(("partner_id", "=", int(partner_id)))
+        if root_id:
+            dom += [("id", "child_of", int(root_id)), ("id", "!=", int(root_id))]
         if iq:
             dom.append(("name", "=ilike", "0.%"))
         projs = P.search(dom, order="name", limit=120)
