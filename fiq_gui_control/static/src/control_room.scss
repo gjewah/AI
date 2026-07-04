@@ -850,3 +850,6 @@
 .fiq_hm.fiq_hm_dark .fiq_hm_bigbtn { background: #232836; color: #e6eaf1; border-color: #3a4150;
     &:hover { border-color: var(--fiq-accent); background: #262b37; } }
 .fiq_hm.fiq_hm_dark .fiq_hm_bigbtn_sha { background: #3d3117; border-color: #8a6d1a; }
+
+// Innstillinger-knappen i «lagre»-tilstand (panelet åpent)
+.fiq_hm .fiq_hm_gear_on { background: var(--fiq-accent) !important; color: #fff !important; border-color: var(--fiq-accent) !important; }

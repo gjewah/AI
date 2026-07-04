@@ -1016,9 +1016,11 @@ export class FiqControlRoom extends Component {
         window.location.href = url.toString();
     }
 
-    // Simple/Full mode: "enkel" shows the essentials, "total" shows advanced widgets too
+    // Enkel/Total: Enkel = arbeider-flaten (store knapper) — hopper alltid til oversikten
+    // slik at byttet er synlig uansett hvilken flate man står i
     setMode(m) {
         this.state.mode = m;
+        if (m === "enkel" && this.state.view !== "oversikt") { this.setView("oversikt"); }
     }
 
     setKommDir(d) {
@@ -1123,23 +1125,24 @@ export class FiqControlRoom extends Component {
         window.location.reload();
     }
 
-    // Enkel-flatens store arbeider-knapper: native handling, rull til kort, eller «kommer»
-    enkelDo(key) {
+    // Enkel-flatens store arbeider-knapper: ALLTID en ekte handling (aldri bare varsel)
+    async enkelDo(key) {
         if (key === "oppgaver") {
             const el = document.querySelector(".fiq_blk_projects");
             if (el) { el.scrollIntoView({ behavior: "smooth" }); }
             return;
         }
-        if (key === "ks") {
-            this.notification.add(_t("KS-flaten bygges nå (godkjenningskjeden KS → PL kommer med rollemodellen)."), { type: "info" });
-            return;
+        if (key === "sha" || key === "befaring") {
+            // Åpner prosjektets oppgaver direkte (SHA Byggeplass / Befaring og FDV)
+            const name = key === "sha" ? "SHA Byggeplass" : "Befaring og FDV";
+            try {
+                const r = await this.orm.searchRead(
+                    "project.project", [["name", "ilike", name]], ["id"], { limit: 1 });
+                if (r.length) { this.openProjectTasks(r[0].id); return; }
+            } catch (e) { /* faller til godkjenningskøen under */ }
         }
-        if (key === "sha") {
-            this.notification.add(_t("SHA for byggeplass bygges for SDV — spesifikasjon fra bransjestandarder er under arbeid."), { type: "info" });
-            return;
-        }
-        if (key === "befaring") {
-            this.notification.add(_t("Befaringsmodulen (foto per rom/sted) kommer — se prosjektet Befaring og FDV i AI Kontrollrom."), { type: "info" });
+        if (key === "ks" || key === "sha" || key === "befaring") {
+            this.runAction("godkjenning");
             return;
         }
         this.runAction(key);

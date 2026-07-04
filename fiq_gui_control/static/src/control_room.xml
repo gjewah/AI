@@ -59,7 +59,7 @@
                     <t t-esc="verVis.text"/><t t-if="verVis.avvik"> ⚠</t>
                 </span>
                 <button class="btn fiq_hm_gear" t-on-click="() => this.toggleDark()" t-att-title="isDark ? 'Bytt til lys bakgrunn (dette panelet)' : 'Bytt til mørk bakgrunn (dette panelet)'" t-esc="isDark ? '☀' : '🌙'"/>
-                <button class="btn fiq_hm_gear" t-on-click="() => this.toggleCustomize()">⚙ Innstillinger</button>
+                <button t-att-class="state.customize ? 'btn fiq_hm_gear fiq_hm_gear_on' : 'btn fiq_hm_gear'" t-on-click="() => this.toggleCustomize()" t-esc="state.customize ? '✔ Lagre og lukk' : '⚙ Innstillinger'"/>
             </div>
 
             <div class="fiq_hm_wrap">
