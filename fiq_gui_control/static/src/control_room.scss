@@ -853,3 +853,18 @@
 
 // Innstillinger-knappen i «lagre»-tilstand (panelet åpent)
 .fiq_hm .fiq_hm_gear_on { background: var(--fiq-accent) !important; color: #fff !important; border-color: var(--fiq-accent) !important; }
+
+// 🖥 AI Økter-seksjonen (status + svarfelt) — 4.03
+.fiq_hm .fiq_cp_okter { border: 1px solid var(--fiq-bd); border-radius: 10px; padding: 10px 12px; margin: 0 0 12px; }
+.fiq_hm .fiq_cp_okter_h { font-size: 11px; letter-spacing: .1em; font-weight: 700; color: #7030A0; margin-bottom: 6px; }
+.fiq_hm .fiq_cp_okt { border-top: 1px solid #f0edf5; padding: 5px 0;
+    &:first-of-type { border-top: 0; } }
+.fiq_hm .fiq_cp_okt_rad { display: flex; gap: 8px; align-items: center;
+    .fiq_cp_okt_n { flex: 1; font-weight: 600; font-size: 12.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fiq_cp_okt_tid { color: var(--fiq-mut); font-size: 11px; } }
+.fiq_hm .fiq_cp_okt_m { color: var(--fiq-mut); font-size: 11.5px; padding: 2px 0 0 4px; }
+.fiq_hm .fiq_cp_okt_svar { display: flex; gap: 6px; margin-top: 5px;
+    .fiq_hm_psok { flex: 1; margin: 0; } }
+.fiq_hm.fiq_hm_dark .fiq_cp_okter { border-color: var(--fiq-bd); }
+.fiq_hm.fiq_hm_dark .fiq_cp_okt { border-top-color: #2b3040; }
+.fiq_hm.fiq_hm_dark .fiq_cp_okter_h { color: #cbb4f5; }

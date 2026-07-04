@@ -442,6 +442,44 @@ class FiqControlRoomConfig(models.Model):
             "fiq_gui_control.ai_cockpit_url", url)
         return url
 
+    # ---- AI Økter: øktene/agentene rapporterer hit (prosjekt «AI Økter (MP)») ----------
+    @api.model
+    def get_okter(self):
+        """Økt-listen i AI KTRL: oppgavene i «AI Økter (MP)» m/ status + siste rapport.
+        Kommunikasjon: Gjermund svarer i flaten → message_post på øktens oppgave."""
+        out = []
+        try:
+            proj = self.env["project.project"].search(
+                [("name", "ilike", "AI Økter")], limit=1)
+            if not proj:
+                return out
+            Msg = self.env["mail.message"]
+            for t in self.env["project.task"].search(
+                    [("project_id", "=", proj.id)], order="id"):
+                m = Msg.search(
+                    [("model", "=", "project.task"), ("res_id", "=", t.id),
+                     ("message_type", "in", ["comment", "notification"])],
+                    order="date desc", limit=1)
+                out.append({
+                    "id": t.id,
+                    "name": t.name or "",
+                    "ferdig": self._stage_is_done(t.stage_id),
+                    "sist": m.date.strftime("%d.%m %H:%M") if m and m.date else "",
+                    "melding": (m.preview or "").strip()[:160] if m else "",
+                })
+        except Exception:
+            pass
+        return out
+
+    @api.model
+    def post_okt_melding(self, task_id, text):
+        """Send melding til en økt: legges i øktens chatter — øktene leser ved hver synk."""
+        t = self.env["project.task"].browse(task_id).exists()
+        if not t or not (text or "").strip():
+            return False
+        t.message_post(body=text.strip())
+        return True
+
     # ---- AI-cockpit: scope-meny (Kunde / Prosjekt-Prosess / 0.00 IQ) -------------------
     @api.model
     def get_cockpit_scope(self):

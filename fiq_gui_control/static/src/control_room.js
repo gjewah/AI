@@ -82,6 +82,9 @@ export class FiqControlRoom extends Component {
             cpMode: "fremdrift",  // fremdrift | forbruk
             cpDiagram: [],         // diagram-rader (alle prosjekter i scope)
             cpFold: {},            // foldede cockpit-grupper {prosjektId: true}
+            okter: [],             // AI Økter: øktenes status + siste rapport
+            oktSvar: {},           // svar-utkast per økt {taskId: tekst}
+            oktSel: 0,             // åpen svarlinje (taskId)
             cpGrp: true,           // «Alle»: gruppér diagrammet på kunde/hjerne
             cpDiagFold: {},        // foldede diagram-grupper {rotId: true}
             dashSel: this._loadDashSel(),  // Mitt dashbord: valgte xmlids (huskes per nettleser)
@@ -1539,6 +1542,9 @@ export class FiqControlRoom extends Component {
         } catch (e) {
             this.state.cp = { groups: [], tot: { done: 0, pag: 0, vent: 0, tot: 0, pct: 0 }, krever: [], root: "" };
         }
+        try {
+            this.state.okter = await this.orm.call("fiq.gui.control.config", "get_okter", []);
+        } catch (e) { this.state.okter = []; }
         if (!this.state.cpScope) {
             try {
                 this.state.cpScope = await this.orm.call("fiq.gui.control.config", "get_cockpit_scope", []);
@@ -1718,6 +1724,20 @@ export class FiqControlRoom extends Component {
                 (flt !== "apen" || t.st !== "ferdig"));
             return Object.assign({}, g, { tasks });
         }).filter((g) => g.tasks.length || flt === "alle");
+    }
+
+    // Svar til en økt: legges i øktens chatter (øktene leser ved hver synk)
+    async sendOktSvar(taskId) {
+        const txt = (this.state.oktSvar[taskId] || "").trim();
+        if (!txt) { return; }
+        try {
+            await this.orm.call("fiq.gui.control.config", "post_okt_melding", [taskId, txt]);
+            this.state.oktSvar[taskId] = "";
+            this.state.oktSel = 0;
+            this.state.okter = await this.orm.call("fiq.gui.control.config", "get_okter", []);
+        } catch (e) {
+            this.notification.add(_t("Kunne ikke sende — ") + this._errMsg(e), { type: "danger" });
+        }
     }
 
     async cpToggle(taskId) {

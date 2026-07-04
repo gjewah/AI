@@ -194,6 +194,24 @@
                                 <button class="fiq_hm_ext" t-on-click="() =&gt; { state.cockpitEdit = false; }">Avbryt</button>
                             </t>
                         </div>
+                        <!-- 🖥 AI ØKTER: øktene rapporterer hit; svar går i øktens chatter (4.03) -->
+                        <div t-if="state.okter.length" class="fiq_cp_okter">
+                            <div class="fiq_cp_okter_h">🖥 AI ØKTER — status og direktiver</div>
+                            <div t-foreach="state.okter" t-as="ok" t-key="ok.id" class="fiq_cp_okt">
+                                <div class="fiq_cp_okt_rad">
+                                    <span t-att-class="'fiq_cp_st ' + (ok.ferdig ? 'ferdig' : 'pagar')" t-esc="ok.ferdig ? 'Fullført' : 'Pågår'"/>
+                                    <span class="fiq_cp_okt_n" t-esc="ok.name"/>
+                                    <span class="fiq_cp_okt_tid mono" t-esc="ok.sist"/>
+                                    <button class="fiq_hm_ext" t-on-click="() =&gt; { state.oktSel = state.oktSel === ok.id ? 0 : ok.id; }">💬 Svar</button>
+                                    <button class="fiq_hm_ext" t-on-click="() =&gt; this.openRecord('project.task', ok.id)" title="Full logg i Odoo">⤢</button>
+                                </div>
+                                <div t-if="ok.melding" class="fiq_cp_okt_m" t-esc="ok.melding"/>
+                                <div t-if="state.oktSel === ok.id" class="fiq_cp_okt_svar">
+                                    <input class="fiq_hm_psok" placeholder="Skriv direktiv/melding til økten — den leser ved neste synk …" t-att-value="state.oktSvar[ok.id] || ''" t-on-input="(ev) =&gt; { state.oktSvar[ok.id] = ev.target.value; }" t-on-keydown="(ev) =&gt; ev.key === 'Enter' ? this.sendOktSvar(ok.id) : null"/>
+                                    <button class="fiq_hm_ext" t-on-click="() =&gt; this.sendOktSvar(ok.id)">Send</button>
+                                </div>
+                            </div>
+                        </div>
                         <!-- 🧭 Cockpit-toppmeny: Kunde · Prosjekt/Prosess · Fremdrift/Forbruk -->
                         <div class="fiq_cp_menu">
                             <span class="fiq_cp_mlbl">Kunde</span>
