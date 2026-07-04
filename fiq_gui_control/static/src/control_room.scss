@@ -488,6 +488,40 @@
         .fiq_hm_aikr_status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 4px 0 10px; font-size: 12.5px; }
         .fiq_hm_aikr_kommer { font-size: 12px; color: var(--fiq-side);
             ul { margin: 6px 0 0 18px; padding: 0; li { margin: 3px 0; color: var(--fiq-mut); } } }
+        // ---- AI-cockpit (fremdrifts-hub, Artifact-malen i lys drakt) ----
+        .fiq_cp_sum { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; padding: 6px 0 10px; }
+        .fiq_cp_ring { width: 92px; height: 92px; border-radius: 50%; flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
+            .fiq_cp_ring_i { width: 72px; height: 72px; border-radius: 50%; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;
+                b { font-size: 19px; } small { font-size: 8px; letter-spacing: .12em; color: var(--fiq-mut); } } }
+        .fiq_cp_sumtx { flex: 1; min-width: 220px; }
+        .fiq_cp_chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+        .fiq_cp_chip { border: 1px solid var(--fiq-bd); border-radius: 999px; padding: 2px 10px; font-size: 11.5px;
+            &.g { color: #1d7a4f; background: #e8f7ef; } &.y { color: #8a6d00; background: #fdf6dd; } &.m { color: var(--fiq-mut); background: #f2f2f5; } }
+        .fiq_cp_krev { border: 1px solid #f2c1bb; background: #fdf3f1; border-radius: 10px; padding: 10px 12px; margin: 0 0 10px; }
+        .fiq_cp_krev_h { font-size: 11px; letter-spacing: .1em; color: #c0392b; font-weight: 700; margin-bottom: 6px;
+            .n { background: #c0392b; color: #fff; border-radius: 999px; padding: 0 7px; } }
+        .fiq_cp_krow { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; cursor: pointer; font-size: 12.5px;
+            &:hover { background: #fbe9e6; } .fiq_cp_ktx { flex: 1; } }
+        .fiq_cp_visrow { display: flex; gap: 8px; align-items: center; margin: 0 0 10px; .fiq_cp_vlbl { font-size: 10px; letter-spacing: .14em; color: var(--fiq-mut); } }
+        .fiq_cp_grp { border: 1px solid var(--fiq-bd); border-radius: 10px; margin: 0 0 9px; overflow: hidden; }
+        .fiq_cp_gh { display: flex; gap: 10px; align-items: center; padding: 8px 12px; background: #faf8fd;
+            .fiq_cp_gnr { background: #efe7f7; color: #7030A0; border-radius: 6px; padding: 1px 7px; font-size: 11px; font-weight: 700; }
+            .fiq_cp_gt { flex: 1; font-weight: 600; font-size: 13px; }
+            .fiq_cp_gp { display: flex; gap: 8px; align-items: center; color: var(--fiq-mut); font-size: 11.5px; } }
+        .fiq_cp_bar { width: 110px; height: 5px; border-radius: 3px; background: #ece7f3; overflow: hidden; display: inline-block;
+            i { display: block; height: 100%; background: #7030A0; } }
+        .fiq_cp_row { display: flex; gap: 8px; align-items: baseline; padding: 6px 12px; border-top: 1px solid #f0edf5; font-size: 12.5px;
+            &:hover { background: #faf8fd; }
+            .fiq_cp_tx { flex: 1; min-width: 0; cursor: pointer; }
+            &.done .fiq_cp_tx { color: var(--fiq-mut); text-decoration: line-through; } }
+        .fiq_cp_cb { flex: 0 0 15px; width: 15px; height: 15px; border: 1.5px solid #c9c2d8; border-radius: 4px; cursor: pointer; position: relative; top: 2px;
+            &:hover { border-color: #7030A0; } }
+        .fiq_cp_row.done .fiq_cp_cb { background: #27ae60; border-color: #27ae60;
+            &::after { content: "✓"; position: absolute; inset: -3px 0 0 1px; color: #fff; font-size: 11px; font-weight: 700; } }
+        .fiq_cp_who { border-radius: 6px; padding: 1px 7px; font-size: 10px; font-weight: 600; flex: 0 0 auto;
+            &.du { background: #efe7f7; color: #7030A0; } &.ai { background: #e3f2fa; color: #1f7a9e; } }
+        .fiq_cp_st { flex: 0 0 auto; font-size: 10.5px; border-radius: 999px; padding: 1px 8px; background: #f2f2f5; color: var(--fiq-mut);
+            &.ferdig { color: #1d7a4f; background: #e8f7ef; } &.pagar { color: #8a6d00; background: #fdf6dd; } }
         .fiq_hm_aikr_url { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 2px 0 10px;
             .fiq_hm_urlinp { flex: 1; min-width: 260px; max-width: 560px; border: 1px solid var(--fiq-line);
                 border-radius: 8px; padding: 5px 10px; font-size: 12.5px;

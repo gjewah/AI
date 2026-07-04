@@ -163,6 +163,53 @@
                                 <button class="fiq_hm_ext" t-on-click="() =&gt; { state.cockpitEdit = false; }">Avbryt</button>
                             </t>
                         </div>
+                        <!-- Fremdrifts-hub: ekte oppgavedata etter Artifact-cockpit-malen -->
+                        <t t-if="state.cp and state.cp.tot.tot">
+                            <div class="fiq_cp_sum">
+                                <div class="fiq_cp_ring" t-att-style="'background: conic-gradient(#7030A0 ' + state.cp.tot.pct + '%, #ece7f3 0)'"><span class="fiq_cp_ring_i"><b><t t-esc="state.cp.tot.pct"/>%</b><small>FULLFØRT</small></span></div>
+                                <div class="fiq_cp_sumtx">
+                                    <strong><t t-esc="state.cp.tot.done"/> av <t t-esc="state.cp.tot.tot"/> oppgaver ferdig</strong> — <t t-esc="state.cp.root"/>
+                                    <div class="fiq_cp_chips">
+                                        <span class="fiq_cp_chip g">Ferdig <b t-esc="state.cp.tot.done"/></span>
+                                        <span class="fiq_cp_chip y">Pågår <b t-esc="state.cp.tot.pag"/></span>
+                                        <span class="fiq_cp_chip m">Venter <b t-esc="state.cp.tot.vent"/></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div t-if="state.cp.krever.length" class="fiq_cp_krev">
+                                <div class="fiq_cp_krev_h">⚠ KREVER HANDLING NÅ — DINE OPPGAVER <span class="n" t-esc="state.cp.krever.length"/></div>
+                                <div t-foreach="state.cp.krever" t-as="k" t-key="k.id" class="fiq_cp_krow" t-on-click="() =&gt; this.selectEl('project.task', k.id, k.name)">
+                                    <span class="fiq_hm_no" t-esc="k.no"/><span class="fiq_cp_who du">👤 Du</span>
+                                    <span class="fiq_cp_ktx" t-esc="k.name"/>
+                                    <span t-if="k.over" class="fiq_hm_warn">⚠ forsinket</span>
+                                </div>
+                            </div>
+                            <div class="fiq_cp_visrow"><span class="fiq_cp_vlbl">VIS</span>
+                                <div class="fiq_hm_pseg">
+                                    <button t-att-class="state.cpFilter === 'alle' ? 'on' : ''" t-on-click="() =&gt; this.setCpFilter('alle')">Alle</button>
+                                    <button t-att-class="state.cpFilter === 'du' ? 'on' : ''" t-on-click="() =&gt; this.setCpFilter('du')">Mine 👤</button>
+                                    <button t-att-class="state.cpFilter === 'ai' ? 'on' : ''" t-on-click="() =&gt; this.setCpFilter('ai')">AI 🤖</button>
+                                    <button t-att-class="state.cpFilter === 'apen' ? 'on' : ''" t-on-click="() =&gt; this.setCpFilter('apen')">Gjenstår</button>
+                                </div>
+                                <button class="fiq_hm_ext" title="Oppdater" t-on-click="() =&gt; this.loadCockpit()">⟳</button>
+                            </div>
+                            <div t-foreach="cpGroups" t-as="g" t-key="g.id" class="fiq_cp_grp">
+                                <div class="fiq_cp_gh">
+                                    <span class="fiq_cp_gnr" t-esc="g.no"/>
+                                    <span class="fiq_cp_gt" t-esc="g.name"/>
+                                    <span class="fiq_cp_gp"><span class="mono"><t t-esc="g.done"/>/<t t-esc="g.total"/></span><span class="fiq_cp_bar"><i t-att-style="'width:' + pctOf(g.done, g.total) + '%'"/></span></span>
+                                </div>
+                                <div t-foreach="g.tasks" t-as="ct" t-key="ct.id" t-att-class="'fiq_cp_row' + (ct.st === 'ferdig' ? ' done' : '')">
+                                    <span class="fiq_cp_cb" t-on-click.stop="() =&gt; this.cpToggle(ct.id)" t-att-title="ct.st === 'ferdig' ? 'Gjenåpne oppgaven' : 'Merk som utført'"/>
+                                    <span class="fiq_hm_no" t-esc="ct.no" t-on-click="() =&gt; this.selectEl('project.task', ct.id, ct.name)"/>
+                                    <span class="fiq_cp_tx" t-esc="ct.name" t-on-click="() =&gt; this.selectEl('project.task', ct.id, ct.name)"/>
+                                    <span t-att-class="'fiq_cp_who ' + ct.who" t-esc="ct.who === 'du' ? '👤 Du' : '🤖 AI'"/>
+                                    <span t-att-class="'fiq_cp_st ' + ct.st" t-esc="ct.stage"/>
+                                    <span class="fiq_hm_openbtn" t-on-click.stop="() =&gt; this.openRecord('project.task', ct.id)" title="Åpne i Odoo">⤢</span>
+                                </div>
+                            </div>
+                        </t>
+                        <div t-if="state.cp and !state.cp.tot.tot" class="fiq_hm_empty">Fremdrifts-hub: sett systemparameteren fiq_gui_control.cockpit_project_id til rotprosjektets id, så vises oppgavene her.</div>
                         <div class="fiq_hm_aikr_kommer">
                             <strong>Kommer i denne flaten (designet, bygges trinnvis):</strong>
                             <ul>

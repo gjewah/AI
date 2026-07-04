@@ -432,6 +432,101 @@ class FiqControlRoomConfig(models.Model):
             "fiq_gui_control.ai_cockpit_url", url)
         return url
 
+    # ---- AI-cockpit (fremdrifts-hub) — speiler Artifact-cockpiten mot ekte oppgaver -----
+    @api.model
+    def get_cockpit(self):
+        """Cockpit-flaten i AI Kontrollrom: grupper (rotprosjekt + underprosjekter) med
+        oppgaver, Du/AI-merke, status og «krever handling». Config-drevet: systemparameter
+        `fiq_gui_control.cockpit_project_id` = rotprosjektets id. Defensivt/felt-guardet."""
+        ICP = self.env["ir.config_parameter"].sudo()
+        out = {"groups": [], "tot": {"done": 0, "pag": 0, "vent": 0, "tot": 0, "pct": 0},
+               "krever": [], "root": ""}
+        try:
+            pid = int(ICP.get_param("fiq_gui_control.cockpit_project_id", "0") or 0)
+        except Exception:
+            pid = 0
+        if not pid:
+            return out
+        P = self.env["project.project"]
+        root = P.browse(pid).exists()
+        if not root:
+            return out
+        out["root"] = root.name or ""
+        projects = list(root)
+        if "parent_id" in P._fields:
+            projects += list(P.search(
+                [("parent_id", "=", root.id), ("active", "=", True)], order="id"))
+        Task = self.env["project.task"]
+        f = Task._fields
+        today = fields.Date.context_today(self)
+        stmap = {"ferdig": "done", "pagar": "pag", "venter": "vent"}
+        for p in projects:
+            tasks = Task.search([("project_id", "=", p.id)], order="id")
+            if not tasks:
+                continue
+            rows, done = [], 0
+            for t in tasks:
+                stage = t.stage_id if "stage_id" in f and t.stage_id else False
+                st = "ferdig" if self._stage_is_done(stage) else "venter"
+                nm = (stage.name or "").lower() if stage else ""
+                if st != "ferdig" and ("pågår" in nm or "progress" in nm or "doing" in nm):
+                    st = "pagar"
+                if st == "ferdig":
+                    done += 1
+                over = False
+                try:
+                    over = bool(t.date_deadline
+                                and fields.Date.to_date(str(t.date_deadline)[:10]) < today)
+                except Exception:
+                    over = False
+                rows.append({
+                    "id": t.id,
+                    "no": (t.code if "code" in f else "") or "",
+                    "name": t.name or "",
+                    "who": "du" if t.user_ids else "ai",
+                    "st": st,
+                    "stage": stage.name if stage else "",
+                    "over": over,
+                })
+                out["tot"]["tot"] += 1
+                out["tot"][stmap[st]] += 1
+            out["groups"].append({
+                "id": p.id,
+                "no": (p.sequence_code if "sequence_code" in P._fields else "") or "",
+                "name": p.name or "",
+                "done": done, "total": len(rows), "tasks": rows,
+            })
+        mine = [r for g in out["groups"] for r in g["tasks"]
+                if r["who"] == "du" and r["st"] != "ferdig"]
+        mine.sort(key=lambda r: (not r["over"], r["no"]))
+        out["krever"] = mine[:4]
+        t = out["tot"]
+        t["pct"] = int(round(t["done"] * 100.0 / t["tot"])) if t["tot"] else 0
+        return out
+
+    @api.model
+    def cockpit_toggle(self, task_id):
+        """Kryss av i cockpiten: flytt oppgaven til prosjektets ferdig-stadium
+        (fold/is_closed); allerede ferdig → tilbake til første åpne stadium.
+        Kjøres som brukeren → tilgangsregler styrer."""
+        t = self.env["project.task"].browse(task_id).exists()
+        if not t:
+            return False
+        Stage = self.env["project.task.type"]
+        dom = [("project_ids", "in", t.project_id.id)] \
+            if "project_ids" in Stage._fields and t.project_id else []
+        stages = Stage.search(dom, order="sequence, id")
+        if not stages:
+            return False
+        done_st = stages.filtered(lambda s: self._stage_is_done(s))
+        open_st = stages.filtered(lambda s: not self._stage_is_done(s))
+        if self._stage_is_done(t.stage_id):
+            if open_st:
+                t.write({"stage_id": open_st[0].id})
+        elif done_st:
+            t.write({"stage_id": done_st[0].id})
+        return True
+
     @api.model
     def get_deltagere(self, model, res_id):
         """Detaljer: prosjektdeltagere — prosjektleder + oppgave-ansvarlige. Kobles til

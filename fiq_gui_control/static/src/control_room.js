@@ -74,6 +74,8 @@ export class FiqControlRoom extends Component {
             isAdmin: false,
             cockpitEdit: false,    // redigerer cockpit-URL (AI Kontrollrom-flaten)
             cockpitUrlDraft: "",
+            cp: null,              // AI-cockpit: grupper/oppgaver fra get_cockpit
+            cpFilter: "alle",     // VIS-filter: alle | du | ai | apen
             level: "balansert",
             show,
             kpis: [],
@@ -1416,6 +1418,47 @@ export class FiqControlRoom extends Component {
 
     setView(v) {
         this.state.view = v;
+        if (v === "airmm" && !this.state.cp) { this.loadCockpit(); }
+    }
+
+    // ---- AI-cockpit (fremdrifts-hub): ekte project.task-data, Artifact-malen ----
+    async loadCockpit() {
+        try {
+            this.state.cp = await this.orm.call("fiq.gui.control.config", "get_cockpit", []);
+        } catch (e) {
+            this.state.cp = { groups: [], tot: { done: 0, pag: 0, vent: 0, tot: 0, pct: 0 }, krever: [], root: "" };
+        }
+    }
+
+    setCpFilter(f) {
+        this.state.cpFilter = f;
+    }
+
+    pctOf(done, total) {
+        return Math.round((done || 0) * 100 / (total || 1));
+    }
+
+    // Grupper filtrert etter VIS-valget (Alle / Mine 👤 / AI 🤖 / Gjenstår)
+    get cpGroups() {
+        const cp = this.state.cp;
+        if (!cp) { return []; }
+        const flt = this.state.cpFilter;
+        return cp.groups.map((g) => {
+            const tasks = g.tasks.filter((t) =>
+                (flt !== "du" || t.who === "du") &&
+                (flt !== "ai" || t.who === "ai") &&
+                (flt !== "apen" || t.st !== "ferdig"));
+            return Object.assign({}, g, { tasks });
+        }).filter((g) => g.tasks.length || flt === "alle");
+    }
+
+    async cpToggle(taskId) {
+        try {
+            await this.orm.call("fiq.gui.control.config", "cockpit_toggle", [taskId]);
+            await this.loadCockpit();
+        } catch (e) {
+            this.notification.add(_t("Kunne ikke endre status — ") + this._errMsg(e), { type: "danger" });
+        }
     }
 
     setRightView(v) {
