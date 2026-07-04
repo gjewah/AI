@@ -757,3 +757,14 @@
     option { background: #262b37; color: #dde2ea; }
 }
 .fiq_hm.fiq_hm_dark .fiq_cp_mlbl { color: #9aa3b2; }
+
+// Diagram-gruppeoverskrift (kunde/hjerne ved «Alle»)
+.fiq_hm .fiq_cp_diag_head { display: flex; gap: 10px; align-items: center; padding: 7px 12px; cursor: pointer;
+    background: var(--fiq-accent-soft, #eaf5ed); border-top: 1px solid var(--fiq-bd); font-size: 12.5px; font-weight: 700;
+    &:first-child { border-top: 0; }
+    .fiq_cp_diag_hn { flex: 0 1 320px; min-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fiq_cp_diag_track { flex: 1; position: relative; height: 10px; border-radius: 5px; background: #ece7f3; overflow: hidden;
+        i { position: absolute; inset: 0 auto 0 0; display: block; background: #7030A0; border-radius: 5px; } }
+    .fiq_cp_diag_pct { flex: 0 0 76px; text-align: right; } }
+.fiq_hm.fiq_hm_dark .fiq_cp_diag_head { background: #232836; border-top-color: #2b3040;
+    .fiq_cp_diag_track { background: #2b3140; } }

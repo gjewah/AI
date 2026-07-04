@@ -473,15 +473,26 @@ class FiqControlRoomConfig(models.Model):
             dom.append(("name", "=ilike", "0.%"))
         projs = P.search(dom, order="name", limit=120)
         prog = self._project_progress(projs.ids, "timer") if projs else {}
+
+        def _root(p):
+            cur, hop = p, 0
+            while "parent_id" in f and cur.parent_id and hop < 20:
+                cur = cur.parent_id
+                hop += 1
+            return cur
+
         out = []
         for p in projs:
             pr = prog.get(p.id) or self._mk(0)
+            rt = _root(p)
             out.append({
                 "id": p.id,
                 "no": (p.sequence_code if "sequence_code" in f else "") or "",
                 "name": p.name or "",
                 "pct": pr["pct"], "est": pr["est"], "logged": pr["logged"],
                 "taskCount": (p.task_count if "task_count" in f else 0) or 0,
+                # Gruppering på kunde/hjerne (toppnivå-rot) ved «Alle»
+                "root_id": rt.id, "root_name": rt.name or "", "is_root": rt.id == p.id,
             })
         return out
 

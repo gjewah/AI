@@ -82,6 +82,8 @@ export class FiqControlRoom extends Component {
             cpMode: "fremdrift",  // fremdrift | forbruk
             cpDiagram: [],         // diagram-rader (alle prosjekter i scope)
             cpFold: {},            // foldede cockpit-grupper {prosjektId: true}
+            cpGrp: true,           // «Alle»: gruppér diagrammet på kunde/hjerne
+            cpDiagFold: {},        // foldede diagram-grupper {rotId: true}
             dashSel: this._loadDashSel(),  // Mitt dashbord: valgte xmlids (huskes per nettleser)
             dashEdit: false,       // tilpassnings-modus for Mitt dashbord
             darkMap: this._loadDarkMap(),  // 🌙 mørk bakgrunn PER KONTROLLPANEL (view) — huskes
@@ -1518,6 +1520,44 @@ export class FiqControlRoom extends Component {
         if (!k) { return s.prosjekter; }
         if (k === "iq") { return s.prosjekter.filter((p) => (p.name || "").startsWith("0.")); }
         return this.state.cpDiagram.map((d) => ({ id: d.id, no: d.no, name: d.name }));
+    }
+
+    // Diagrammet gruppert på kunde/hjerne ved «Alle» (samlelinje + fold per rot)
+    get cpDiagramView() {
+        const rows = this.state.cpDiagram;
+        if (this.state.cpKunde || !this.state.cpGrp) { return rows; }
+        const groups = {}, order = [];
+        rows.forEach((r) => {
+            const k = r.root_id || r.id;
+            if (!(k in groups)) {
+                groups[k] = { name: r.root_name || r.name, members: [], est: 0, logged: 0, pctSum: 0 };
+                order.push(k);
+            }
+            if (!r.is_root) { groups[k].members.push(r); }
+            groups[k].est += r.est || 0;
+            groups[k].logged += r.logged || 0;
+            groups[k].pctSum += r.pct || 0;
+        });
+        const out = [];
+        order.forEach((k) => {
+            const g = groups[k];
+            if (!g.members.length) {
+                const solo = rows.find((r) => r.is_root && r.id === k);
+                if (solo) { out.push(solo); }
+                return;
+            }
+            const folded = !!this.state.cpDiagFold[k];
+            const pct = g.est > 0 ? Math.min(100, Math.round(g.logged * 100 / g.est))
+                : Math.round(g.pctSum / g.members.length);
+            out.push({ isHead: true, id: "dh:" + k, key: k, name: g.name, count: g.members.length,
+                folded, pct, est: Math.round(g.est * 10) / 10, logged: Math.round(g.logged * 10) / 10 });
+            if (!folded) { out.push(...g.members); }
+        });
+        return out;
+    }
+
+    toggleCpDiag(k) {
+        this.state.cpDiagFold[k] = !this.state.cpDiagFold[k];
     }
 
     get cpDiagramMax() {

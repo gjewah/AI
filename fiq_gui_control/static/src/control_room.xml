@@ -204,22 +204,32 @@
                                 <button t-att-class="state.cpMode === 'fremdrift' ? 'on' : ''" t-on-click="() =&gt; this.setCpMode('fremdrift')">Fremdrift</button>
                                 <button t-att-class="state.cpMode === 'forbruk' ? 'on' : ''" t-on-click="() =&gt; this.setCpMode('forbruk')" title="Forbruksmåling: førte vs. estimerte timer">Forbruk (timer)</button>
                             </div>
+                            <button t-if="!state.cpKunde" t-att-class="state.cpGrp ? 'fiq_hm_ext on' : 'fiq_hm_ext'" t-on-click="() =&gt; { state.cpGrp = !state.cpGrp; }" title="Gruppér diagrammet på kunde/hjerne">🏷 Gruppér<t t-if="state.cpGrp"> ✓</t></button>
                         </div>
                         <!-- 📊 Fremdrifts-/forbruksdiagram over ALLE prosjekter i valgt scope -->
                         <t t-if="!state.cpProj">
                             <div t-if="state.cpDiagram.length" class="fiq_cp_diag">
-                                <div t-foreach="state.cpDiagram" t-as="dp" t-key="dp.id" class="fiq_cp_diag_row" t-on-click="() =&gt; this.setCpProj(String(dp.id))" t-att-title="'Vis oppgavene i ' + dp.name">
-                                    <span class="fiq_hm_no" t-esc="dp.no"/>
-                                    <span class="fiq_cp_diag_n" t-esc="dp.name"/>
-                                    <t t-if="state.cpMode === 'fremdrift'">
+                                <t t-foreach="cpDiagramView" t-as="dp" t-key="dp.id">
+                                    <div t-if="dp.isHead" class="fiq_cp_diag_head" t-on-click="() =&gt; this.toggleCpDiag(dp.key)" title="Kollaps/ekspander kunden/hjernen">
+                                        <span class="fiq_cp_gfold" t-esc="dp.folded ? '▸' : '▾'"/>
+                                        <span class="fiq_cp_diag_hn" t-esc="dp.name"/>
+                                        <span class="fiq_hm_stchip_n" t-esc="dp.count"/>
                                         <span class="fiq_cp_diag_track"><i t-att-style="'width:' + dp.pct + '%'"/></span>
-                                        <span class="fiq_cp_diag_pct mono" t-esc="dp.pct + '%'"/>
-                                    </t>
-                                    <t t-else="">
-                                        <span class="fiq_cp_diag_track forbruk"><i t-att-style="'width:' + pctOf(dp.logged, cpDiagramMax) + '%'"/><b t-att-style="'left:' + pctOf(dp.est, cpDiagramMax) + '%'" title="Estimert"/></span>
-                                        <span class="fiq_cp_diag_pct mono" t-esc="dp.logged + '/' + dp.est + ' t'"/>
-                                    </t>
-                                </div>
+                                        <span class="fiq_cp_diag_pct mono" t-esc="state.cpMode === 'fremdrift' ? (dp.pct + '%') : (dp.logged + '/' + dp.est + ' t')"/>
+                                    </div>
+                                    <div t-else="" class="fiq_cp_diag_row" t-on-click="() =&gt; this.setCpProj(String(dp.id))" t-att-title="'Vis oppgavene i ' + dp.name">
+                                        <span class="fiq_hm_no" t-esc="dp.no"/>
+                                        <span class="fiq_cp_diag_n" t-esc="dp.name"/>
+                                        <t t-if="state.cpMode === 'fremdrift'">
+                                            <span class="fiq_cp_diag_track"><i t-att-style="'width:' + dp.pct + '%'"/></span>
+                                            <span class="fiq_cp_diag_pct mono" t-esc="dp.pct + '%'"/>
+                                        </t>
+                                        <t t-else="">
+                                            <span class="fiq_cp_diag_track forbruk"><i t-att-style="'width:' + pctOf(dp.logged, cpDiagramMax) + '%'"/><b t-att-style="'left:' + pctOf(dp.est, cpDiagramMax) + '%'" title="Estimert"/></span>
+                                            <span class="fiq_cp_diag_pct mono" t-esc="dp.logged + '/' + dp.est + ' t'"/>
+                                        </t>
+                                    </div>
+                                </t>
                             </div>
                             <div t-else="" class="fiq_hm_empty">Ingen prosjekter i valgt utvalg.</div>
                         </t>
