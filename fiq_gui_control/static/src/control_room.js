@@ -168,6 +168,8 @@ export class FiqControlRoom extends Component {
             progMiles: [],        // prosjektets milepæler (navn + frist) → ◆ i Gantt
             selDelt: null,        // Detaljer: deltagerliste (null = skjult)
             progProjName: "",
+            recent: [],           // 📌 siste N prosjekter med aktivitet (hurtigknapper)
+            recentN: 5,           // 📌 antall (huskes per bruker, server-lagret)
             projLock: null,       // 🔒 låst gruppering {nr, id} — grunnfilter for Prosjektoversikt (server-lagret)
             vbox: null,           // 🪟 flyttbar detaljboks (Gantt-/listelinje): datoer/timer/%-fremdrift
             aiStageNames: [],     // navn på AI-merkede stadier (fiq_ai_stage) – for velgeren
@@ -180,6 +182,7 @@ export class FiqControlRoom extends Component {
         onWillStart(async () => {
             await this.loadConfig();   // FIQ access/setup layer (per user, server-persisted)
             await this.loadData();
+            await this._loadRecent();
             // 🧊 gjenopprett visnings-avhengig data etter frys
             if (this.state.view === "airmm" && !this.state.cp) { await this.loadCockpit(); }
             if (this.state.progLevel === "oppgave" && this.state.progProjId) {
@@ -236,7 +239,8 @@ export class FiqControlRoom extends Component {
         const nav = this.state.navOrder.length ? "|nav:" + this.state.navOrder.join(",") : "";
         const lock = this.state.projLock
             ? "|lock:" + this.state.projLock.nr + ":" + (this.state.projLock.id || "") : "";
-        return this.state.blockOrder.join(",") + nav + lock;
+        const rec = "|recent:" + (this.state.recentN || 5);
+        return this.state.blockOrder.join(",") + nav + lock + rec;
     }
 
     // 🔒 Lås prosjektvisningen til valgt gruppering — alle filtre virker innenfor (server-lagret)
@@ -250,6 +254,33 @@ export class FiqControlRoom extends Component {
         try {
             await this.orm.call("fiq.gui.control.config", "set_widget_order", [this._orderString()]);
         } catch (e) { /* låsen gjelder uansett i denne økten */ }
+        await this._loadRecent();
+    }
+
+    // 📌 Siste N prosjekter med aktivitet — hurtigknapper (N i Innstillinger)
+    async _loadRecent() {
+        try {
+            const root = this.state.projLock ? this.state.projLock.id : false;
+            this.state.recent = await this.orm.call("fiq.gui.control.config", "get_recent_projects",
+                [this.state.recentN || 5, root || false]);
+        } catch (e) { this.state.recent = []; }
+    }
+
+    async setRecentN(v) {
+        this.state.recentN = Math.max(1, Math.min(parseInt(v, 10) || 5, 12));
+        try {
+            await this.orm.call("fiq.gui.control.config", "set_widget_order", [this._orderString()]);
+        } catch (e) { /* gjelder uansett i denne økten */ }
+        await this._loadRecent();
+    }
+
+    async openRecent(r) {
+        this.state.view = "oversikt";
+        this.state.selected = { model: "project.project", id: r.id, name: r.name };
+        this.state.progProjId = r.id;
+        this.state.progProjName = r.name || "";
+        await this._loadProgTasks(r.id);
+        this.state.progLevel = "oppgave";
     }
 
     // 🪟 Flyttbar detaljboks: klikk på Gantt-/listelinje → sett variabler
@@ -373,6 +404,8 @@ export class FiqControlRoom extends Component {
                 const [lnr, lid] = lockDel.replace("lock:", "").split(":");
                 this.state.projLock = lnr ? { nr: lnr, id: parseInt(lid, 10) || false } : null;
             }
+            const recDel = deler.find((d) => d.startsWith("recent:")) || "";
+            if (recDel) { this.state.recentN = parseInt(recDel.replace("recent:", ""), 10) || 5; }
             // 🔒 låst gruppering = grunnfilter (med mindre frossen tilstand alt har valgt noe)
             if (this.state.projLock && !this.state.projArea) {
                 this.state.projArea = this.state.projLock.nr;

@@ -2803,3 +2803,15 @@ msgstr "Erstatter timebasert fremdrift"
 #: model:ir.model.fields.selection,name:fiq_gui_control.selection__project_task__fiq_pct_mode__adder
 msgid "Added on top of the hour-based progress"
 msgstr "Legges til timebasert fremdrift"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Recent projects"
+msgstr "Siste prosjekter"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Number of recent projects"
+msgstr "Antall siste prosjekter"

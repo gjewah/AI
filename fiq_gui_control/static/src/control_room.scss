@@ -923,3 +923,14 @@
 .fiq_hm.fiq_hm_dark .fiq_hm_vbox_x { color: #9aa3b0; }
 .fiq_hm .fiq_hm_cg_track { cursor: pointer; }
 .fiq_hm .fiq_hm_vboxopen { cursor: pointer; }
+
+/* ============ v6.67: 📌 siste N prosjekter — dominante hurtigknapper ============ */
+.fiq_hm .fiq_hm_recent { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
+.fiq_hm .fiq_hm_recbtn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px;
+  border: 2px solid var(--fiq-accent, #38B44A); border-radius: 10px; background: #fff; cursor: pointer;
+  font-weight: 700; font-size: 13px; color: #22303c; max-width: 260px; }
+.fiq_hm .fiq_hm_recbtn .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fiq_hm .fiq_hm_recbtn:hover { background: var(--fiq-accent, #38B44A); color: #fff; }
+.fiq_hm.fiq_hm_dark .fiq_hm_recbtn { background: #1e222c; color: #dde2ea; }
+.fiq_hm.fiq_hm_dark .fiq_hm_recbtn:hover { background: var(--fiq-accent); color: #fff; }
+.fiq_hm .fiq_hm_cust_recent { margin-top: 8px; display: flex; gap: 10px; align-items: center; }

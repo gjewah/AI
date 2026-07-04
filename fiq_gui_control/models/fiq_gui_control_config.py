@@ -105,6 +105,27 @@ class FiqControlRoomConfig(models.Model):
         return True
 
     @api.model
+    def get_recent_projects(self, n=5, root_id=False):
+        """📌 De N siste prosjektene med AKTIVITET (oppgave-endringer), evt. innenfor låst gruppering."""
+        n = max(1, min(int(n or 5), 12))
+        dom = [("project_id.active", "=", True)]
+        if root_id:
+            dom.append(("project_id", "child_of", int(root_id)))
+        out, seen = [], set()
+        for t in self.env["project.task"].search(dom, order="write_date desc", limit=400):
+            p = t.project_id
+            if not p or p.id in seen:
+                continue
+            seen.add(p.id)
+            if "is_template" in p._fields and p.is_template:
+                continue
+            no = p.sequence_code if "sequence_code" in p._fields else ""
+            out.append({"id": p.id, "name": p.name, "no": no or ""})
+            if len(out) >= n:
+                break
+        return out
+
+    @api.model
     def _sp_urls(self, comp):
         ICP = self.env["ir.config_parameter"].sudo()
         raw = ICP.get_param("fiq_gui_control.sp_urls.%s" % comp.id) \

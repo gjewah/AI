@@ -173,6 +173,12 @@
                                 </label>
                             </t>
                         </div>
+                        <!-- 📌 Antall siste prosjekter (hurtigknappene i Prosjektoversikt) -->
+                        <div class="fiq_hm_cust_recent">
+                            <strong>📌 Recent projects</strong>
+                            <span>Number of recent projects</span>
+                            <input type="number" min="1" max="12" class="fiq_hm_esti" t-att-value="state.recentN" t-on-change="(ev) =&gt; this.setRecentN(ev.target.value)"/>
+                        </div>
                         <!-- Versjon og oppgradering: status + hvorfor Oppgrader-knappen ev. mangler -->
                         <div class="fiq_hm_cust_ver">
                             <span>Version: installed <b class="mono" t-esc="state.verInstalled"/> · files <b class="mono" t-esc="state.verFiles"/></span>
@@ -619,6 +625,15 @@
                                     </span>
                                 </div>
                                 <!-- Fagområde-filtre (rad 1 = toppområder fra prosjekt-treet; rad 2 = undergrupper) -->
+                                <!-- 📌 Siste N prosjekter med aktivitet (N settes i Innstillinger) -->
+                                <div t-if="state.recent.length" class="fiq_hm_recent">
+                                    <t t-foreach="state.recent" t-as="r" t-key="r.id">
+                                        <button class="fiq_hm_recbtn" t-on-click="() =&gt; this.openRecent(r)" t-att-title="tr('Show the tasks in ') + r.name">
+                                            <span t-if="r.no" class="fiq_hm_no" t-esc="r.no"/>
+                                            <span class="t" t-esc="r.name"/>
+                                        </button>
+                                    </t>
+                                </div>
                                 <div class="fiq_hm_pfilter">
                                     <button t-att-class="state.projLock ? 'fiq_hm_lock on' : 'fiq_hm_lock'" t-on-click="() =&gt; this.toggleProjLock()"
                                             t-att-title="state.projLock ? tr('Unlock the project view') : tr('Lock the project view to this grouping — all filters work within it')">
