@@ -1168,7 +1168,7 @@ export class FiqControlRoom extends Component {
         if (!g) { return rows; }
         const key = (a) => g === "type" ? (a.type || "(uten type)")
             : g === "element" ? (a.res_name || "(uten element)")
-            : g === "modell" ? (a.model || "(uten)")
+            : g === "modell" ? (a.modell_navn || a.model || "(uten tilhørighet)")
             : g === "frist" ? (a.frist || "(uten frist)")
             : (a.forsinket ? "Forfalt" : "Kommende");
         const map = {}, order = [];

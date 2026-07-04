@@ -315,7 +315,7 @@
                                             <option value="" t-att-selected="!state.aktGruppe ? 'selected' : undefined">Gruppér: ingen</option>
                                             <option value="type" t-att-selected="state.aktGruppe === 'type' ? 'selected' : undefined">Type</option>
                                             <option value="element" t-att-selected="state.aktGruppe === 'element' ? 'selected' : undefined">Element</option>
-                                            <option value="modell" t-att-selected="state.aktGruppe === 'modell' ? 'selected' : undefined">Dokumenttype</option>
+                                            <option value="modell" t-att-selected="state.aktGruppe === 'modell' ? 'selected' : undefined">Tilhørighet (Salg/Prosjekt/…)</option>
                                             <option value="frist" t-att-selected="state.aktGruppe === 'frist' ? 'selected' : undefined">Frist</option>
                                             <option value="status" t-att-selected="state.aktGruppe === 'status' ? 'selected' : undefined">Status</option>
                                         </select>
@@ -334,6 +334,7 @@
                                             <div t-else="" t-att-class="(state.selAkt and state.selAkt.id === ak.id) ? 'fiq_hm_dagrow on' : 'fiq_hm_dagrow'" t-on-click="() =&gt; this.velgAkt(ak)">
                                                 <span t-att-class="ak.forsinket ? 'fiq_hm_dagtid rod' : 'fiq_hm_dagtid'" t-esc="ak.frist"/>
                                                 <span class="fiq_hm_dagnavn"><t t-esc="ak.name"/><t t-if="ak.res_name"> · <t t-esc="ak.res_name"/></t></span>
+                                                <span t-if="ak.modell_navn" class="fiq_hm_akt_mod" t-att-title="'Tilhørighet: ' + ak.modell_navn" t-esc="ak.modell_navn"/>
                                             </div>
                                         </t>
                                     </t>

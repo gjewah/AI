@@ -680,3 +680,12 @@
 }
 .fiq_hm.fiq_hm_dark { color: #dde2ea;
     input, select, textarea, button { color: #dde2ea; } }
+
+// 🏷 Gruppér-kontrollen: UMISKJENNELIG (accent-ramme + fet skrift) + tilhørighets-brikke per rad
+.fiq_hm .fiq_hm_grpsel { border: 1.5px solid var(--fiq-accent, #38B44A) !important; font-weight: 700;
+    border-radius: 8px; padding: 2px 6px; min-width: 130px; cursor: pointer; }
+.fiq_hm .fiq_hm_akt_mod { flex: 0 0 auto; margin-left: auto; font-size: 10px; font-weight: 600;
+    background: var(--fiq-accent-soft, #eaf5ed); border: 1px solid var(--fiq-accent-line, #b7dfc2);
+    border-radius: 999px; padding: 1px 8px; color: #22303c; white-space: nowrap; }
+.fiq_hm.fiq_hm_dark .fiq_hm_akt_mod { background: #262b37; color: #dde2ea; border-color: #3a4150; }
+.fiq_hm.fiq_hm_dark .fiq_hm_grpsel { background: #262b37 !important; }
