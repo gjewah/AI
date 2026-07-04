@@ -78,6 +78,8 @@ export class FiqControlRoom extends Component {
             cpFilter: "alle",     // VIS-filter: alle | du | ai | apen
             dashSel: this._loadDashSel(),  // Mitt dashbord: valgte xmlids (huskes per nettleser)
             dashEdit: false,       // tilpassnings-modus for Mitt dashbord
+            darkMap: this._loadDarkMap(),  // 🌙 mørk bakgrunn PER KONTROLLPANEL (view) — huskes
+            aktQuery: "",                  // aktivitets-søk (samme linje som filter + gruppér)
             level: "balansert",
             show,
             kpis: [],
@@ -1146,9 +1148,16 @@ export class FiqControlRoom extends Component {
 
     get filtAktiviteter() {
         const f = this.state.aktFilter;
-        const rows = this.state.kal.aktiviteter || [];
-        if (f === "skjul") { return rows.filter((a) => !a.forsinket); }
-        if (f === "kun") { return rows.filter((a) => a.forsinket); }
+        let rows = this.state.kal.aktiviteter || [];
+        if (f === "skjul") { rows = rows.filter((a) => !a.forsinket); }
+        if (f === "kun") { rows = rows.filter((a) => a.forsinket); }
+        // Søk (samme linje som filter + gruppér): emne, element, type, tilhørighet
+        const q = (this.state.aktQuery || "").trim().toLowerCase();
+        if (q) {
+            rows = rows.filter((a) =>
+                ((a.name || "") + " " + (a.res_name || "") + " " + (a.type || "") + " "
+                    + (a.modell_navn || "")).toLowerCase().indexOf(q) !== -1);
+        }
         return rows;
     }
 
@@ -1179,6 +1188,9 @@ export class FiqControlRoom extends Component {
             this.notification.add(_t("Aktiviteten er utsatt."), { type: "success" });
             this.state.utsettDager = "";
             await this._loadKalender();
+            // Pek valgt aktivitet til den FERSKE raden (detaljboksen viser ny frist)
+            const rows = this.state.kal.aktiviteter || [];
+            this.state.selAkt = rows.find((r) => r.id === a.id) || null;
         } catch (e) {
             this.notification.add(_t("Kunne ikke utsette — ") + this._errMsg(e), { type: "danger" });
         }
@@ -1438,6 +1450,40 @@ export class FiqControlRoom extends Component {
 
     pctOf(done, total) {
         return Math.round((done || 0) * 100 / (total || 1));
+    }
+
+    // Rot-stil: accent + FERDIGREGNEDE tone-varianter (rgba) — robust i alle nettlesere
+    // (color-mix i CSS viste seg upålitelig gjennom asset-kompilatoren)
+    get rootStyle() {
+        const accent = this.state.accent || "#38B44A";
+        let hex = accent.replace("#", "");
+        if (hex.length === 3) { hex = hex.split("").map((c) => c + c).join(""); }
+        const n = parseInt(hex, 16) || 0;
+        const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+        return "--fiq-accent:" + accent
+            + ";--fiq-accent-soft:rgba(" + r + "," + g + "," + b + ",.10)"
+            + ";--fiq-accent-line:rgba(" + r + "," + g + "," + b + ",.38)"
+            + ";--fiq-accent-tile:rgba(" + r + "," + g + "," + b + ",.05);";
+    }
+
+    // 🌙 Mørk bakgrunn PER KONTROLLPANEL (view): eget valg per flate (huskes);
+    // standard = Odoos color_scheme-cookie. Toggle øverst + under Innstillinger.
+    _loadDarkMap() {
+        try {
+            const raw = JSON.parse(localStorage.getItem("fiq_hm_darkmap") || "{}");
+            return raw && typeof raw === "object" ? raw : {};
+        } catch (e) { return {}; }
+    }
+
+    get isDark() {
+        const m = this.state.darkMap, v = this.state.view;
+        if (v in m) { return !!m[v]; }
+        try { return document.cookie.indexOf("color_scheme=dark") !== -1; } catch (e) { return false; }
+    }
+
+    toggleDark() {
+        this.state.darkMap[this.state.view] = !this.isDark;
+        try { localStorage.setItem("fiq_hm_darkmap", JSON.stringify(this.state.darkMap)); } catch (e) { /* ok */ }
     }
 
     // ---- Mitt dashbord: valgfrie elementer/rapporter (fra get_dashboards, huskes) ----

@@ -595,8 +595,22 @@ class FiqControlRoomConfig(models.Model):
         try:
             today = fields.Date.context_today(self)
             end_d = str(end)[:10]
+            mdl_names = {}
             for a in Act.search([("user_id", "=", uid), ("date_deadline", "<=", end_d)],
                                 order="date_deadline", limit=30):
+                # Tilhørighet: modellens VISNINGSNAVN (Salg, Kontakt, Prosjekt …), ikke teknisk navn
+                mn = a.res_model or ""
+                if mn and mn not in mdl_names:
+                    try:
+                        mdl_names[mn] = self.env["ir.model"]._get(mn).name or mn
+                    except Exception:
+                        mdl_names[mn] = mn
+                note = ""
+                try:
+                    from odoo.tools import html2plaintext
+                    note = (html2plaintext(a.note or "") or "").strip()[:400]
+                except Exception:
+                    note = ""
                 out["aktiviteter"].append({
                     "id": a.id,
                     "name": a.summary or (a.activity_type_id.name or _("Aktivitet")),
@@ -604,8 +618,11 @@ class FiqControlRoomConfig(models.Model):
                     "frist": str(a.date_deadline or ""),
                     "forsinket": bool(a.date_deadline and a.date_deadline < today),
                     "model": a.res_model or "",
+                    "modell_navn": mdl_names.get(mn, ""),
                     "res_id": a.res_id or 0,
                     "res_name": a.res_name or "",
+                    "ansvarlig": a.user_id.name or "",
+                    "note": note,
                 })
         except Exception:
             pass

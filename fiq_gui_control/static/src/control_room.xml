@@ -21,7 +21,7 @@
         </button>
     </t>
     <t t-name="fiq_gui_control.ControlRoom">
-        <div class="fiq_hm" t-att-style="'--fiq-accent:' + state.accent + ';'">
+        <div t-att-class="'fiq_hm' + (isDark ? ' fiq_hm_dark' : '')" t-att-style="rootStyle">
             <!-- Topplinje -->
             <div class="fiq_hm_top">
                 <div class="fiq_hm_brand">
@@ -58,6 +58,7 @@
                 <span t-elif="verVis" t-att-class="verVis.avvik ? 'fiq_hm_ver avvik' : 'fiq_hm_ver'" t-att-title="verVis.title">
                     <t t-esc="verVis.text"/><t t-if="verVis.avvik"> ⚠</t>
                 </span>
+                <button class="btn fiq_hm_gear" t-on-click="() => this.toggleDark()" t-att-title="isDark ? 'Bytt til lys bakgrunn (dette panelet)' : 'Bytt til mørk bakgrunn (dette panelet)'" t-esc="isDark ? '☀' : '🌙'"/>
                 <button class="btn fiq_hm_gear" t-on-click="() => this.toggleCustomize()">⚙ Innstillinger</button>
             </div>
 
@@ -131,6 +132,10 @@
                     <div t-if="state.customize" class="fiq_hm_cust">
                         <strong>Innstillinger – velg innhold i kontrollrommet</strong>
                         <div class="fiq_hm_toggles">
+                            <label class="fiq_hm_darktoggle">
+                                <input type="checkbox" t-att-checked="isDark" t-on-change="() =&gt; this.toggleDark()"/>
+                                <span>🌙 Mørk bakgrunn (dette panelet)</span>
+                            </label>
                             <t t-foreach="['kpis','projects','kommunikasjon','activity','tasks','chart','copilot','quick']" t-as="w" t-key="w">
                                 <label>
                                     <input type="checkbox" t-att-checked="state.show[w]" t-on-change="() => this.toggleWidget(w)"/>
@@ -295,8 +300,12 @@
                                     <div class="fiq_hm_dag_h fiq_hm_dag_h2">Aktiviteter
                                         <button class="fiq_hm_ext fiq_hm_dag_open" t-att-disabled="!state.selAkt" t-on-click="() =&gt; this.openSelAkt()" title="Åpne valgt aktivitet i Odoo">⤢ Åpne valgt aktivitet</button>
                                     </div>
-                                    <!-- Filter: forfalte av/på + gruppering via Odoo native -->
+                                    <!-- SØK + FILTER + GRUPPÉR på samme linje (som native) -->
                                     <div class="fiq_hm_aktfilter">
+                                        <span class="fiq_hm_srch fiq_hm_aktsok">
+                                            <input class="fiq_hm_psok" placeholder="Søk i aktiviteter …" t-att-value="state.aktQuery" t-on-input="(ev) =&gt; { state.aktQuery = ev.target.value; }"/>
+                                            <span t-if="state.aktQuery" class="fiq_hm_srch_x" t-on-click="() =&gt; { state.aktQuery = ''; }" title="Tøm">✕</span>
+                                        </span>
                                         <div class="fiq_hm_pseg">
                                             <button t-att-class="state.aktFilter === 'alle' ? 'on' : ''" t-on-click="() =&gt; this.setAktFilter('alle')">Alle</button>
                                             <button t-att-class="state.aktFilter === 'skjul' ? 'on' : ''" t-on-click="() =&gt; this.setAktFilter('skjul')" title="Skjul forfalte aktiviteter">Uten forfalte</button>
@@ -356,6 +365,19 @@
                                                 t-att-class="'fiq_hm_kal_d' + (dg.im ? '' : ' ute') + (dg.has ? ' mote' : '') + (dg.sel ? ' sel' : '')"
                                                 t-att-title="dg.has ? 'Møter denne dagen — klikk for å vise' : dg.iso"
                                                 t-on-click="() =&gt; this.pickKalDag(dg.iso)" t-esc="dg.d"/>
+                                    </div>
+                                    <!-- Valgt aktivitet: tilhørighet · emne · beskrivelse · ansvarlig · REDIGERBAR dato -->
+                                    <div class="fiq_hm_akt_det">
+                                        <t t-if="state.selAkt">
+                                            <div class="fiq_hm_akt_det_h">Valgt aktivitet</div>
+                                            <div class="l"><span class="k">Tilhørighet</span><span t-esc="state.selAkt.modell_navn || '—'"/></div>
+                                            <div class="l"><span class="k">Emne</span><span t-esc="state.selAkt.name"/></div>
+                                            <div t-if="state.selAkt.res_name" class="l"><span class="k">Element</span><span class="fiq_hm_akt_lnk" t-on-click="() =&gt; this.openSelAkt()" t-att-title="'Åpne ' + state.selAkt.res_name + ' i Odoo'" t-esc="state.selAkt.res_name"/></div>
+                                            <div class="l"><span class="k">Ansvarlig</span><span t-esc="state.selAkt.ansvarlig || '—'"/></div>
+                                            <div t-if="state.selAkt.note" class="fiq_hm_akt_note" t-esc="state.selAkt.note"/>
+                                            <div class="l"><span class="k">Frist</span><input type="date" class="fiq_hm_din" t-att-value="state.selAkt.frist" t-on-change="(ev) =&gt; ev.target.value ? this.utsettAkt(false, ev.target.value) : null" title="Endre fristen direkte"/></div>
+                                        </t>
+                                        <t t-else=""><div class="fiq_hm_akt_hint">Velg en aktivitet i listen — detaljene vises her.</div></t>
                                     </div>
                                 </div>
                             </div>

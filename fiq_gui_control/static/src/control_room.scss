@@ -110,8 +110,8 @@
     // Fungerer fordi headeren alltid er første barn i .fiq_hm_card (padding 12px).
     .fiq_hm_ch { display: flex; align-items: center; justify-content: space-between; gap: 8px;
         margin: -12px -12px 10px; padding: 8px 12px;
-        background: color-mix(in srgb, var(--fiq-accent, #38B44A) 10%, #fff);
-        border-bottom: 2px solid color-mix(in srgb, var(--fiq-accent, #38B44A) 35%, #fff);
+        background: var(--fiq-accent-soft, #eaf5ed);
+        border-bottom: 2px solid var(--fiq-accent-line, #b7dfc2);
         border-radius: 11px 11px 0 0;
         h4 { margin: 0; font-size: 14px; } }
     .fiq_hm_chbtns { display: flex; gap: 6px; align-items: center; }
@@ -121,7 +121,7 @@
     .fiq_hm_dash_tile { position: relative; display: flex; gap: 8px; align-items: center;
         border: 1px solid var(--fiq-bd); border-radius: 10px; padding: 12px 26px 12px 12px;
         cursor: pointer; font-size: 12.5px; font-weight: 600;
-        background: color-mix(in srgb, var(--fiq-accent, #38B44A) 5%, #fff);
+        background: var(--fiq-accent-tile, #f5faf6);
         .fiq_hm_dash_lbl { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         &:hover { border-color: var(--fiq-accent, #38B44A); box-shadow: 0 1px 6px rgba(0, 0, 0, .08); }
         .fiq_hm_dash_x { position: absolute; top: 3px; right: 3px; border: 0; background: none;
@@ -450,9 +450,14 @@
     .fiq_hm_dagwrap { display: grid; grid-template-columns: minmax(0, 1fr) 196px; gap: 12px; font-size: 12px; }
     @media (max-width: 900px) { .fiq_hm_dagwrap { grid-template-columns: 1fr; } }
     .fiq_hm_daglists { min-width: 0;
-        .fiq_hm_dag_h { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 11.5px; margin-bottom: 4px;
+        // Tittellinjer «Møter»/«Aktiviteter» = farget bånd (kontrast, matcher kortoverskriftene)
+        .fiq_hm_dag_h { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 12px; margin-bottom: 6px;
+            background: var(--fiq-accent-soft, #eaf5ed); border-bottom: 2px solid var(--fiq-accent-line, #b7dfc2);
+            border-radius: 8px 8px 0 0; padding: 5px 9px;
             .fiq_hm_dag_open { padding: 1px 8px; font-size: 10.5px; margin-left: auto; } }
-        .fiq_hm_dag_h2 { margin-top: 12px; border-top: 1px solid var(--fiq-bd); padding-top: 8px; }
+        .fiq_hm_dag_h2 { margin-top: 12px; }
+        .fiq_hm_aktsok { flex: 1 1 150px; min-width: 120px;
+            .fiq_hm_psok { margin: 0; padding: 3px 8px; font-size: 11.5px; } }
         .fiq_hm_aktfilter { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 6px;
             .fiq_hm_pseg { display: inline-flex; border: 1px solid var(--fiq-bd); border-radius: 8px; overflow: hidden; background: #fff;
                 button { border: 0; background: #fff; color: var(--fiq-mut); padding: 2px 9px; cursor: pointer; font: inherit; font-size: 10.5px;
@@ -601,3 +606,62 @@
     border-radius: 8px; padding: 5px 14px; margin: 0 6px; font: inherit; font-size: 12.5px;
     font-weight: 700; cursor: pointer; white-space: nowrap; letter-spacing: .01em;
     &:hover { background: #2c9440; border-color: #227a33; } }
+
+// ============ 🌙 MØRK BAKGRUNN (eget valg under ⚙ Innstillinger; arver Odoos dark mode) ============
+.fiq_hm.fiq_hm_dark {
+    --fiq-bd: #353b48;
+    --fiq-mut: #9aa3b2;
+    background: #14161d;
+    color: #dde2ea;
+
+    .fiq_hm_top, .fiq_hm_card { background: #1e222c; border-color: var(--fiq-bd); }
+    .fiq_hm_ch { background: rgba(255, 255, 255, .05); border-bottom-color: var(--fiq-accent-line); }
+    .fiq_hm_coll { background: #1e222c; color: #dde2ea; }
+    .fiq_hm_coll:hover { background: var(--fiq-accent); color: #fff; }
+    input, select, textarea { background: #262b37; color: #dde2ea; border-color: #3a4150; }
+    .fiq_hm_ext, .fiq_hm_pseg button, .fiq_hm_pfc, .fiq_hm_vbtn, .fiq_hm_refresh, .fiq_hm_gear, .fiq_hm_auto,
+    .fiq_hm_kal_step, .fiq_hm_kal_sel, .fiq_hm_bs_btn, .fiq_hm_firma, .fiq_hm_exp, .fiq_hm_openbtn
+        { background: #262b37; color: #dde2ea; border-color: #3a4150; }
+    .fiq_hm_pseg button.on, .fiq_hm_pfc.on { background: var(--fiq-accent); color: #fff; border-color: var(--fiq-accent); }
+    .fiq_hm_ver { background: #262b37; color: var(--fiq-mut); }
+    .fiq_hm_kpi, .fiq_hm_dash_tile { background: #232836; border-color: var(--fiq-bd); }
+    .fiq_hm_cust, .fiq_hm_detail, .fiq_hm_utsett, .fiq_hm_aktfilter { background: #1a1e27; border-color: var(--fiq-bd); }
+    .fiq_hm_th, .fiq_hm_rth { color: #cdd3dd; }
+    .fiq_hm_task:hover, .fiq_hm_rrow:hover, .fiq_hm_dagrow:hover, .fiq_hm_komm:hover, .fiq_cp_row:hover { background: #242938; }
+    .fiq_hm_selrow { background: #2a3040 !important; }
+    table th, table td { border-color: var(--fiq-bd); }
+    .fiq_hm_empty, .fiq_hm_insp_mut { color: var(--fiq-mut); }
+    .fiq_cp_grp { border-color: var(--fiq-bd); }
+    .fiq_cp_gh { background: #232836; }
+    .fiq_cp_row { border-top-color: #2b3040; }
+    .fiq_cp_ring .fiq_cp_ring_i { background: #1e222c; }
+    .fiq_cp_chip { border-color: var(--fiq-bd); background: #262b37; }
+    .fiq_cp_krev { background: #2b2126; border-color: #6e3a33; }
+    .fiq_cp_krow:hover { background: #362a2e; }
+    .fiq_hm_cg_bar { background: #262b37; }
+    .fiq_hm_airesp { background: #232836; }
+    .fiq_hm_dag_h, .fiq_hm_gantt { color: #cdd3dd; }
+    .fiq_hm_kal_d { background: #232836; border-color: var(--fiq-bd); color: #cdd3dd; }
+    .fiq_hm_kal_d.ute { opacity: .38; }
+}
+
+// Mørk modus: aktivitets-detaljboksen + tittelbånd
+.fiq_hm.fiq_hm_dark {
+    .fiq_hm_akt_det { border-color: var(--fiq-bd);
+        .fiq_hm_akt_note { background: #262b37; } }
+    .fiq_hm_dag_h, .fiq_hm_akt_det_h { background: rgba(255, 255, 255, .05); }
+}
+
+// Valgt aktivitet — detaljboks under kalenderen (tilhørighet/emne/beskrivelse/ansvarlig/redigerbar dato)
+.fiq_hm .fiq_hm_akt_det { border: 1px solid var(--fiq-bd); border-radius: 10px; margin-top: 10px; padding: 9px 10px; font-size: 12px;
+    .fiq_hm_akt_det_h { font-weight: 700; font-size: 10.5px; letter-spacing: .08em; margin: -9px -10px 7px;
+        background: var(--fiq-accent-soft, #eaf5ed); border-bottom: 2px solid var(--fiq-accent-line, #b7dfc2);
+        border-radius: 9px 9px 0 0; padding: 5px 10px; }
+    .l { display: flex; gap: 8px; align-items: baseline; padding: 2px 0;
+        .k { flex: 0 0 72px; color: var(--fiq-mut); font-size: 10.5px; letter-spacing: .04em; } }
+    .fiq_hm_akt_lnk { cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+        &:hover { color: var(--fiq-accent); } }
+    .fiq_hm_akt_note { margin: 5px 0; padding: 6px 8px; background: #f6f7f9; border-radius: 7px;
+        color: var(--fiq-mut); font-size: 11.5px; white-space: pre-line; max-height: 110px; overflow-y: auto; }
+    .fiq_hm_akt_hint { color: var(--fiq-mut); font-size: 11.5px; }
+    .fiq_hm_din { width: 100%; } }
