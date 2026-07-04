@@ -868,3 +868,6 @@
 .fiq_hm.fiq_hm_dark .fiq_cp_okter { border-color: var(--fiq-bd); }
 .fiq_hm.fiq_hm_dark .fiq_cp_okt { border-top-color: #2b3040; }
 .fiq_hm.fiq_hm_dark .fiq_cp_okter_h { color: #cbb4f5; }
+
+// Fremdrift-kortets header som farget bånd (mange knapper → tillat brytning)
+.fiq_hm .fiq_hm_ch.fiq_hm_rhead { flex-wrap: wrap; }

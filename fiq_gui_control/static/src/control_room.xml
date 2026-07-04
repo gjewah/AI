@@ -709,8 +709,8 @@
                         <!-- Arbeidsflate: 80 % Gantt/Liste + 20 % inspektor -->
                         <div class="fiq_hm_work fiq_blk_chart" t-att-style="'order:' + bo('chart')">
                             <div class="fiq_hm_work_main">
-                                <div t-if="state.show.chart" class="fiq_hm_card">
-                                    <div class="fiq_hm_rhead">
+                                <div t-if="state.show.chart" t-att-class="'fiq_hm_card' + (state.collapsed.fremdrift ? ' fiq_hm_collapsed' : '')">
+                                    <div class="fiq_hm_ch fiq_hm_rhead">
                                         <h4 t-esc="state.progLevel === 'oppgave' ? 'Oppgavefremdrift' : 'Prosjektfremdrift'"/>
                                         <div class="fiq_hm_rseg">
                                             <button t-att-class="state.rightView === 'liste' ? 'on' : ''" t-on-click="() =&gt; this.setRightView('liste')">Liste</button>
@@ -729,6 +729,7 @@
                                             <span class="fiq_hm_proglvl" t-att-title="state.progProjName" t-esc="state.progProjName"/>
                                         </t>
                                         <button class="fiq_hm_ext" t-on-click="() =&gt; this.openProsjektKontrollrom()" title="Åpne Prosjekt-kontrollrommet (utvidet)">⤢ Utvidet</button>
+                                        <button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('fremdrift')" t-esc="state.collapsed.fremdrift ? 'Vis ▸' : 'Skjul ▾'"/>
                                     </div>
                                     <!-- Stadie-velger (kun oppgave-drill): velg hvilke stadier som vises. AI-stadier først. -->
                                     <div t-if="state.progLevel === 'oppgave' and progStageChips.length" class="fiq_hm_stagesel">
