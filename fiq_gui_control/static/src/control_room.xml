@@ -797,6 +797,25 @@
                                         <button class="fiq_hm_ext" t-on-click="() =&gt; this.openProsjektKontrollrom()" title="Open the Project control room (expanded)">⤢ Expanded</button>
                                         <button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('fremdrift')" t-esc="state.collapsed.fremdrift ? tr('Show ▸') : tr('Hide ▾')"/>
                                     </div>
+                                    <!-- ‖ SAMME filterlinje som i Prosjektoversikt (duplisert, IKKE flyttet — speiler hverandre) -->
+                                    <div class="fiq_hm_rfilter">
+                                        <div class="fiq_hm_pseg">
+                                            <button t-foreach="[['dag','Day'],['uke','Week'],['maaned','Month'],['alle','All']]" t-as="rp" t-key="rp[0]"
+                                                    t-att-class="state.kommPeriod === rp[0] ? 'on' : ''"
+                                                    t-on-click="() =&gt; this.setKommPeriod(rp[0])" t-esc="tr(rp[1])"/>
+                                        </div>
+                                        <button class="fiq_hm_ext fiq_hm_step" t-on-click="() =&gt; this.stepAnchor(-1)" title="Previous period">◂</button>
+                                        <input type="date" class="fiq_hm_din" t-att-value="state.anchorDate" t-on-change="(ev) =&gt; this.setAnchor(ev.target.value)" title="Reference date for the period (Day/Week/Month counted from this)"/>
+                                        <button class="fiq_hm_ext fiq_hm_step" t-on-click="() =&gt; this.stepAnchor(1)" title="Next period">▸</button>
+                                        <span class="fiq_hm_srch fiq_hm_tsok_no">
+                                            <input class="fiq_hm_psok" placeholder="Proj. no. …" t-att-value="state.projNoQuery" t-on-input="(ev) =&gt; this.setProjNoQuery(ev.target.value)"/>
+                                            <span t-if="state.projNoQuery" class="fiq_hm_srch_x" t-on-click="() =&gt; this.setProjNoQuery('')" title="Clear">✕</span>
+                                        </span>
+                                        <span class="fiq_hm_srch">
+                                            <input class="fiq_hm_psok" placeholder="Search projects (free text) …" t-att-value="state.projQuery" t-on-input="(ev) =&gt; this.setProjQuery(ev.target.value)"/>
+                                            <span t-if="state.projQuery" class="fiq_hm_srch_x" t-on-click="() =&gt; this.setProjQuery('')" title="Clear search">✕</span>
+                                        </span>
+                                    </div>
                                     <!-- Stadie-velger (kun oppgave-drill): velg hvilke stadier som vises. AI-stadier først. -->
                                     <div t-if="state.progLevel === 'oppgave' and progStageChips.length" class="fiq_hm_stagesel">
                                         <span class="fiq_hm_stagesel_l">Show stages:</span>

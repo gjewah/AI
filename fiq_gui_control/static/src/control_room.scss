@@ -963,3 +963,17 @@
 .fiq_hm.fiq_hm_dark .fiq_hm_dagtid.rod { color: #ff6b5e; }
 .fiq_hm.fiq_hm_dark .fiq_hm_no { background: #262b37; color: #ffffff; }
 .fiq_hm.fiq_hm_dark ::placeholder { color: #9aa3b2; opacity: 1; }
+
+/* ============ v6.69: kollaps = FULL BREDDE + duplisert filterlinje + lyse dark-overskrifter ==== */
+/* Kollapsede kort paa hovedflaten (kolonne-flex) skal ALDRI krympe i bredden — header-linja
+   skal ligge der den laa (Gjermund: «glir kortere ved minimering, finner den ikke igjen»). */
+.fiq_hm .fiq_hm_main > .fiq_hm_collapsed { align-self: stretch; width: 100%; }
+.fiq_hm .fiq_hm_rfilter { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 8px; }
+
+/* Dark mode: overskrifter/headinger i LYSE farger (rene hvite titler + lys aksent paa baand) */
+.fiq_hm.fiq_hm_dark .fiq_hm_ch h4 { color: #ffffff; }
+.fiq_hm.fiq_hm_dark .fiq_hm_ch { background: rgba(255, 255, 255, .10); }
+.fiq_hm.fiq_hm_dark .fiq_hm_dag_h, .fiq_hm.fiq_hm_dark .fiq_hm_bs_h,
+.fiq_hm.fiq_hm_dark .fiq_hm_akt_det_h, .fiq_hm.fiq_hm_dark .fiq_cp_okter_h,
+.fiq_hm.fiq_hm_dark .fiq_hm_ghead, .fiq_hm.fiq_hm_dark thead th,
+.fiq_hm.fiq_hm_dark .fiq_hm_stagesel_l { color: #ffffff; }
