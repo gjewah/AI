@@ -764,13 +764,27 @@ class FiqControlRoomConfig(models.Model):
         except Exception:
             attendance_avail = False
 
+        # Bus-ferskhet: utlogging/lukket fane slutter å oppdatere last_poll → offline
+        # etter ~3 min (im_status alene henger igjen lenge etter utlogging).
+        bus_map = {}
+        try:
+            now = fields.Datetime.now()
+            for bp in self.env["bus.presence"].sudo().search([("user_id", "in", users.ids)]):
+                fresh = bool(bp.last_poll and (now - bp.last_poll).total_seconds() < 180)
+                bus_map[bp.user_id.id] = (bp.status or "offline") if fresh else "offline"
+        except Exception:
+            bus_map = {}
+
         out = []
         for u in users:
-            # im_status er et computed felt (krever bus). Les defensivt.
-            try:
-                raw = u.im_status or "offline"
-            except Exception:
-                raw = "offline"
+            if u.id in bus_map:
+                raw = bus_map[u.id]
+            else:
+                # Fallback: im_status (computed, krever bus). Les defensivt.
+                try:
+                    raw = u.im_status or "offline"
+                except Exception:
+                    raw = "offline"
             if raw.startswith("online"):
                 im = "online"
             elif raw.startswith("away"):

@@ -814,3 +814,23 @@
         .fiq_hm_ord_n { flex: 1; font-weight: 600; }
         .fiq_hm_ext { padding: 1px 9px; } } }
 .fiq_hm .fiq_hm_foot { order: 99; }
+
+// ============ ENKEL-modus (interim, jf. UTKAST 01): kun essensen ============
+// Viser: Møter og aktiviteter + Mine oppgaver (+ topplinje m/ Søk og Spør AI).
+// Skjuler: Til stede-kortet, Beslutningsstøtte, Prosjektoversikt, Mitt dashbord, Fremdrift/Gantt.
+.fiq_hm.fiq_hm_enkel {
+    .fiq_blk_quick, .fiq_blk_dash, .fiq_blk_chart { display: none !important; }
+    .fiq_blk_activity > div:first-child { display: none; }   // Til stede-kortet
+    .fiq_blk_activity, .fiq_blk_projects { grid-template-columns: 1fr; }
+    .fiq_blk_projects > div:first-child { display: none; }   // Prosjektoversikt-kortet
+}
+
+// ============ DARK: kontrastfeiing runde 3 (Gruppér-nedtrekket m.fl.) ============
+.fiq_hm.fiq_hm_dark {
+    .fiq_hm_grpsel, .fiq_hm_subsel, .fiq_hm_kal_sel, select {
+        color: #dde2ea !important; background: #262b37 !important; border-color: #3a4150;
+        option { color: #dde2ea; background: #262b37; } }
+    input:not([type="checkbox"]), textarea { color: #dde2ea !important; background: #262b37 !important; border-color: #3a4150; }
+    .fiq_hm_psok, .fiq_hm_filtersok, .fiq_hm_ksearch, .fiq_hm_esti, .fiq_hm_din, .fiq_hm_din_g {
+        color: #dde2ea !important; background: #262b37 !important; }
+}

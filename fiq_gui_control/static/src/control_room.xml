@@ -21,7 +21,7 @@
         </button>
     </t>
     <t t-name="fiq_gui_control.ControlRoom">
-        <div t-att-class="'fiq_hm' + (isDark ? ' fiq_hm_dark' : '')" t-att-style="rootStyle">
+        <div t-att-class="'fiq_hm' + (isDark ? ' fiq_hm_dark' : '') + (state.mode === 'enkel' ? ' fiq_hm_enkel' : '')" t-att-style="rootStyle">
             <!-- Topplinje -->
             <div class="fiq_hm_top">
                 <div class="fiq_hm_brand">
@@ -317,7 +317,7 @@
                     <t t-if="!state.loading and state.view === 'oversikt'">
 
                         <!-- (1) Til stede nå + Møter/aktiviteter i dag (side ved side) -->
-                        <div class="fiq_hm_lists" t-att-style="'order:' + bo('activity')">
+                        <div class="fiq_hm_lists fiq_blk_activity" t-att-style="'order:' + bo('activity')">
                         <div t-att-class="'fiq_hm_card' + (state.collapsed.presence ? ' fiq_hm_collapsed' : '')">
                             <div class="fiq_hm_ch"><h4>👥 Til stede nå</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('presence')" t-esc="state.collapsed.presence ? 'Vis ▸' : 'Skjul ▾'"/></div>
                             <t t-if="state.presence.length">
@@ -469,7 +469,7 @@
                         <!-- (KPI-varslene er flyttet inn under personene i Til stede-kortet) -->
 
                         <!-- (4) Beslutningsstøtte: 4 kolonner tilpassbare knapper -->
-                        <div t-att-class="'fiq_hm_card' + (state.collapsed.beslutning ? ' fiq_hm_collapsed' : '')" t-att-style="'order:' + bo('quick')">
+                        <div t-att-class="'fiq_hm_card fiq_blk_quick' + (state.collapsed.beslutning ? ' fiq_hm_collapsed' : '')" t-att-style="'order:' + bo('quick')">
                             <div class="fiq_hm_ch"><h4>Beslutningsstøtte</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('beslutning')" t-esc="state.collapsed.beslutning ? 'Vis ▸' : 'Skjul ▾'"/></div>
                             <div class="fiq_hm_bs">
                                 <div class="fiq_hm_bs_col">
@@ -498,7 +498,7 @@
                         </div>
 
                         <!-- 📊 Mitt dashbord — VALGFRIE elementer/rapporter (config-drevet, huskes per nettleser) -->
-                        <div t-att-class="'fiq_hm_card' + (state.collapsed.dash ? ' fiq_hm_collapsed' : '')" t-att-style="'order:' + bo('dash')">
+                        <div t-att-class="'fiq_hm_card fiq_blk_dash' + (state.collapsed.dash ? ' fiq_hm_collapsed' : '')" t-att-style="'order:' + bo('dash')">
                             <div class="fiq_hm_ch"><h4>📊 Mitt dashbord</h4><span class="fiq_hm_chbtns">
                                 <button class="fiq_hm_ext" t-on-click="() =&gt; { state.dashEdit = !state.dashEdit; }" title="Legg til eller fjern elementer">⚙ Tilpass</button>
                                 <button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('dash')" t-esc="state.collapsed.dash ? 'Vis ▸' : 'Skjul ▾'"/>
@@ -521,7 +521,7 @@
 
                         <!-- Prosjekt-oversikt + Mine oppgaver (rapport-opp-detalj) -->
                         <!-- Lister: Prosjektoversikt + Mine oppgaver (side om side) -->
-                        <div class="fiq_hm_lists" t-att-style="'order:' + bo('projects')">
+                        <div class="fiq_hm_lists fiq_blk_projects" t-att-style="'order:' + bo('projects')">
                             <div t-if="state.show.projects" t-att-class="'fiq_hm_card' + (state.collapsed.prosjekt ? ' fiq_hm_collapsed' : '')">
                                 <div class="fiq_hm_ch"><h4>Prosjektoversikt</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('prosjekt')" t-esc="state.collapsed.prosjekt ? 'Vis ▸' : 'Skjul ▾'"/></div>
                                 <!-- Periode + datovelger FØRST, deretter søk (Gjermund 2026-07-03) -->
@@ -675,7 +675,7 @@
                         </div>
 
                         <!-- Arbeidsflate: 80 % Gantt/Liste + 20 % inspektor -->
-                        <div class="fiq_hm_work" t-att-style="'order:' + bo('chart')">
+                        <div class="fiq_hm_work fiq_blk_chart" t-att-style="'order:' + bo('chart')">
                             <div class="fiq_hm_work_main">
                                 <div t-if="state.show.chart" class="fiq_hm_card">
                                     <div class="fiq_hm_rhead">
