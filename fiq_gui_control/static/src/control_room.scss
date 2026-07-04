@@ -768,3 +768,23 @@
     .fiq_cp_diag_pct { flex: 0 0 76px; text-align: right; } }
 .fiq_hm.fiq_hm_dark .fiq_cp_diag_head { background: #232836; border-top-color: #2b3040;
     .fiq_cp_diag_track { background: #2b3140; } }
+
+// Dark mode: tekstfarger som fortsatt sviktet (Gjermunds skjermbilde 2026-07-04)
+.fiq_hm.fiq_hm_dark {
+    .fiq_hm_kpi { color: #dde2ea;
+        .v { color: #f2f5fa; }
+        .l { color: #aab3c2; } }
+    .fiq_hm_chip_p { color: #e6eaf1; border-width: 2px;
+        .fiq_hm_pnavn { color: #f2f5fa; }
+        .fiq_hm_pstat { color: #aab3c2; } }
+    .fiq_hm_pres_green { background: #1c3a2b; }
+    .fiq_hm_pres_orange { background: #3d3117; }
+    .fiq_hm_pres_red { background: #3a2326; }
+    .fiq_hm_ini { color: #22303c; }
+    .fiq_hm_toplbl { color: #aab3c2; }
+    .fiq_hm_ai_send { background: var(--fiq-accent); color: #fff !important; border-color: var(--fiq-accent); }
+    .fiq_hm_detail_t { color: #e6eaf1; }
+    .fiq_hm_glbl { color: #aab3c2; }
+    .fiq_hm_dagnavn { color: #e6eaf1; }
+    .fiq_hm_hilsen, .fiq_hm_greet { color: #aab3c2; }
+}

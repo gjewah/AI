@@ -443,11 +443,16 @@ class FiqControlRoomConfig(models.Model):
         dom = [("active", "=", True)]
         if "is_template" in f:
             dom.append(("is_template", "=", False))
-        kunder = []
+        # AI-røttene = hjernene (nummerserien «0.» — 0.00 IQ, 0.040 VD, …).
+        # AI KTRL handler KUN om AI-prosjektene, aldri hele prosjektregisteret.
+        kunder, ai_root_ids = [], []
         if "parent_id" in f:
-            for r in P.search(dom + [("parent_id", "=", False)], order="name"):
+            for r in P.search(dom + [("parent_id", "=", False), ("name", "=ilike", "0.%")],
+                              order="name"):
                 kunder.append({"id": r.id, "name": r.name or ""})
-        projs = P.search(dom, order="name")
+                ai_root_ids.append(r.id)
+        pdom = dom + [("id", "child_of", ai_root_ids)] if ai_root_ids else dom + [("id", "=", 0)]
+        projs = P.search(pdom, order="name")
         return {
             "kunder": kunder,
             "prosjekter": [{
@@ -469,8 +474,13 @@ class FiqControlRoomConfig(models.Model):
             dom.append(("is_template", "=", False))
         if root_id:
             dom += [("id", "child_of", int(root_id)), ("id", "!=", int(root_id))]
-        if iq:
+        elif iq:
             dom.append(("name", "=ilike", "0.%"))
+        else:
+            # «Alle» = alle AI-prosjektene (under hjernene/0.-røttene) — ALDRI hele registeret
+            roots = P.search([("parent_id", "=", False), ("name", "=ilike", "0.%"),
+                              ("active", "=", True)]) if "parent_id" in f else P.browse()
+            dom += [("id", "child_of", roots.ids)] if roots else [("id", "=", 0)]
         projs = P.search(dom, order="name", limit=120)
         prog = self._project_progress(projs.ids, "timer") if projs else {}
 
