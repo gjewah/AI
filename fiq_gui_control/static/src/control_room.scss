@@ -5,6 +5,10 @@
     font-size: 14px;               // større grunnskrift — lesbart på mobil
     padding: 14px;
     background: #f4f5f7;
+    // TVING panelets egne tekstfarger — Odoos mørke tema (profil «systemfarger»)
+    // arver ellers LYS tekst inn i det lyse panelet = uleselig grå-på-hvitt
+    color: #22303c;
+    input, select, textarea, button { color: #22303c; }
     min-height: 100%;
     height: 100%;
     box-sizing: border-box;
@@ -25,7 +29,10 @@
         display: flex; align-items: center; justify-content: center; background: var(--fiq-accent);
     }
     .fiq_hm_greet { color: var(--fiq-mut); margin-right: auto; }
-    .fiq_hm_gear { font-size: 12px; }
+    // Topplinje-knapper (Oppdater/Innstillinger/🌙): TYDELIGE — egne farger, arver ALDRI tema
+    .fiq_hm_gear, .fiq_hm_refresh { font-size: 12px; font-weight: 600; color: #22303c !important;
+        background: #fff; border: 1.5px solid #b9c0ca; border-radius: 8px; padding: 4px 11px;
+        &:hover { border-color: var(--fiq-accent); color: var(--fiq-accent) !important; background: #fff; } }
     // Versjonsfelt ved Oppdater-knappen (oransje ⚠ = filer nyere enn installert → Oppgrader i Apper)
     .fiq_hm_ver { font-family: monospace; font-size: 10.5px; color: var(--fiq-mut); background: #f0f1f3;
         border: 1px solid var(--fiq-bd); border-radius: 6px; padding: 2px 7px; white-space: nowrap; cursor: default;
@@ -665,3 +672,11 @@
         color: var(--fiq-mut); font-size: 11.5px; white-space: pre-line; max-height: 110px; overflow-y: auto; }
     .fiq_hm_akt_hint { color: var(--fiq-mut); font-size: 11.5px; }
     .fiq_hm_din { width: 100%; } }
+
+// Mørk modus: topplinje-knappene følger mørkt tema (matcher !important-kontrasten i lys modus)
+.fiq_hm.fiq_hm_dark .fiq_hm_gear, .fiq_hm.fiq_hm_dark .fiq_hm_refresh {
+    color: #dde2ea !important; background: #262b37; border-color: #3a4150;
+    &:hover { border-color: var(--fiq-accent); color: var(--fiq-accent) !important; background: #262b37; }
+}
+.fiq_hm.fiq_hm_dark { color: #dde2ea;
+    input, select, textarea, button { color: #dde2ea; } }
