@@ -788,3 +788,21 @@
     .fiq_hm_dagnavn { color: #e6eaf1; }
     .fiq_hm_hilsen, .fiq_hm_greet { color: #aab3c2; }
 }
+
+// ============ LYS MODUS: sterkere skriftkontrast (Gjermunds piler 2026-07-04) ============
+.fiq_hm {
+    --fiq-mut: #55606e;                       // sekundærtekst: opp fra #6b7280
+    .fiq_hm_pseg button { color: #3a4453; font-weight: 600; }
+    .fiq_hm_ext { color: #22303c; font-weight: 600; }
+    .fiq_hm_kal_d { color: #3a4453; font-weight: 600; }
+    .fiq_hm_kal_sel { color: #22303c; font-weight: 600; }
+    input::placeholder, textarea::placeholder { color: #78818f; opacity: 1; }
+    .fiq_hm_utsett_l { color: #3a4453; font-weight: 600; }
+}
+.fiq_hm.fiq_hm_dark {
+    --fiq-mut: #9aa3b2;
+    .fiq_hm_pseg button { color: #c2cad8; }
+    .fiq_hm_ext { color: #dde2ea; }
+    .fiq_hm_kal_d, .fiq_hm_kal_sel, .fiq_hm_utsett_l { color: #c2cad8; }
+    input::placeholder, textarea::placeholder { color: #7c8492; }
+}
