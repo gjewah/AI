@@ -76,6 +76,8 @@ export class FiqControlRoom extends Component {
             cockpitUrlDraft: "",
             cp: null,              // AI-cockpit: grupper/oppgaver fra get_cockpit
             cpFilter: "alle",     // VIS-filter: alle | du | ai | apen
+            dashSel: this._loadDashSel(),  // Mitt dashbord: valgte xmlids (huskes per nettleser)
+            dashEdit: false,       // tilpassnings-modus for Mitt dashbord
             level: "balansert",
             show,
             kpis: [],
@@ -1436,6 +1438,44 @@ export class FiqControlRoom extends Component {
 
     pctOf(done, total) {
         return Math.round((done || 0) * 100 / (total || 1));
+    }
+
+    // ---- Mitt dashbord: valgfrie elementer/rapporter (fra get_dashboards, huskes) ----
+    _loadDashSel() {
+        try {
+            const raw = JSON.parse(localStorage.getItem("fiq_hm_dash") || "[]");
+            return Array.isArray(raw) ? raw : [];
+        } catch (e) { return []; }
+    }
+
+    _saveDashSel() {
+        try { localStorage.setItem("fiq_hm_dash", JSON.stringify(this.state.dashSel)); } catch (e) { /* ok */ }
+    }
+
+    get myDash() {
+        const map = {};
+        this.state.dashboards.forEach((d) => { map[d.xmlid] = d; });
+        return this.state.dashSel.map((x) => map[x]).filter(Boolean);
+    }
+
+    get dashAvail() {
+        const sel = new Set(this.state.dashSel);
+        return this.state.dashboards.filter((d) => !sel.has(d.xmlid));
+    }
+
+    addDash(xmlid) {
+        if (!xmlid || this.state.dashSel.includes(xmlid)) { return; }
+        this.state.dashSel.push(xmlid);
+        this._saveDashSel();
+    }
+
+    removeDash(xmlid) {
+        this.state.dashSel = this.state.dashSel.filter((x) => x !== xmlid);
+        this._saveDashSel();
+    }
+
+    openDash(xmlid) {
+        this.action.doAction(xmlid);
     }
 
     // Grupper filtrert etter VIS-valget (Alle / Mine 👤 / AI 🤖 / Gjenstår)

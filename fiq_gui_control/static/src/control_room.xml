@@ -69,8 +69,6 @@
                     <div t-att-class="state.view === 'oversikt' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('oversikt')"><span class="b"/>Kontrollrom</div>
                     <div t-att-class="state.view === 'kommunikasjon' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('kommunikasjon')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/epost.png"/>Kommunikasjon</div>
                     <!-- MVP: native kalender + aktiviteter (todelt «Dagens møter»-flate kommer som egen bygging) -->
-                    <div class="fiq_hm_nav" t-on-click="() => this.runAction('kalender')" title="Åpne kalenderen (native Odoo)"><span class="b"/>Kalender</div>
-                    <div class="fiq_hm_nav" t-on-click="() => this.runAction('aktivitet')" title="Åpne aktivitetene dine (native Odoo)"><span class="b"/>Aktiviteter</div>
                     <div t-att-class="state.view === 'hmsks' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('hmsks')"><span class="b"/>HMS/KS</div>
                     <div t-att-class="state.view === 'airmm' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('airmm')"><span class="b"/>AI Kontrollrom</div>
 
@@ -281,7 +279,7 @@
                         </div>
                         <!-- Møter og aktiviteter (eget vindu ved siden av brukerne) -->
                         <div t-att-class="'fiq_hm_card' + (state.collapsed.dagens ? ' fiq_hm_collapsed' : '')">
-                            <div class="fiq_hm_ch"><h4>📅 Møter og aktiviteter (<t t-esc="periodeTekst"/><t t-if="state.selPerson"> · <t t-esc="state.selPerson.name"/></t>)</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('dagens')" t-esc="state.collapsed.dagens ? 'Vis ▸' : 'Skjul ▾'"/></div>
+                            <div class="fiq_hm_ch"><h4>📅 Møter og aktiviteter (<t t-esc="periodeTekst"/><t t-if="state.selPerson"> · <t t-esc="state.selPerson.name"/></t>)</h4><span class="fiq_hm_chbtns"><button class="fiq_hm_ext" t-on-click="() =&gt; this.runAction('kalender')" title="Åpne kalenderen (native Odoo)">🗓 Kalender</button><button class="fiq_hm_ext" t-on-click="() =&gt; this.runAction('aktivitet')" title="Åpne aktivitetene dine (native Odoo)">⚡ Aktiviteter</button><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('dagens')" t-esc="state.collapsed.dagens ? 'Vis ▸' : 'Skjul ▾'"/></span></div>
                             <div class="fiq_hm_dagwrap">
                                 <div class="fiq_hm_daglists">
                                     <div class="fiq_hm_dag_h">Møter
@@ -393,6 +391,28 @@
                                     <button class="fiq_hm_bs_btn fiq_hm_bs_add" t-on-click="() => this.addButton()">＋ Legg til knapp</button>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- 📊 Mitt dashbord — VALGFRIE elementer/rapporter (config-drevet, huskes per nettleser) -->
+                        <div t-att-class="'fiq_hm_card' + (state.collapsed.dash ? ' fiq_hm_collapsed' : '')">
+                            <div class="fiq_hm_ch"><h4>📊 Mitt dashbord</h4><span class="fiq_hm_chbtns">
+                                <button class="fiq_hm_ext" t-on-click="() =&gt; { state.dashEdit = !state.dashEdit; }" title="Legg til eller fjern elementer">⚙ Tilpass</button>
+                                <button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('dash')" t-esc="state.collapsed.dash ? 'Vis ▸' : 'Skjul ▾'"/>
+                            </span></div>
+                            <div t-if="state.dashEdit" class="fiq_hm_dash_add">
+                                <select class="fiq_hm_asel" t-on-change="(ev) =&gt; this.addDash(ev.target.value)">
+                                    <option value="">+ Legg til rapport/dashbord …</option>
+                                    <t t-foreach="dashAvail" t-as="da" t-key="da.xmlid"><option t-att-value="da.xmlid" t-esc="da.label"/></t>
+                                </select>
+                                <span t-if="!dashAvail.length" class="fiq_hm_insp_mut">Alle tilgjengelige elementer er lagt til.</span>
+                            </div>
+                            <div t-if="myDash.length" class="fiq_hm_dash_grid">
+                                <div t-foreach="myDash" t-as="d" t-key="d.xmlid" class="fiq_hm_dash_tile" t-att-title="'Åpne ' + d.label" t-on-click="() =&gt; this.openDash(d.xmlid)">
+                                    <span class="fiq_hm_dash_ico">📈</span><span class="fiq_hm_dash_lbl" t-esc="d.label"/>
+                                    <button t-if="state.dashEdit" class="fiq_hm_dash_x" t-on-click.stop="() =&gt; this.removeDash(d.xmlid)" title="Fjern fra dashbordet">✕</button>
+                                </div>
+                            </div>
+                            <div t-if="!myDash.length" class="fiq_hm_empty">Trykk «⚙ Tilpass» og velg rapportene/dashbordene du vil ha her — valget huskes.</div>
                         </div>
 
                         <!-- Prosjekt-oversikt + Mine oppgaver (rapport-opp-detalj) -->
