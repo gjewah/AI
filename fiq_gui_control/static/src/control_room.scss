@@ -307,7 +307,7 @@
     div.fiq_hm_childrow { padding-left: 16px; }
     .fiq_hm_childind { color: var(--fiq-mut); margin-right: 2px; font-size: 11px; }
     // Menneskelig syntaks: prosjekt-/oppgavenummer
-    .fiq_hm_no { font-family: monospace; font-size: 11px; color: var(--fiq-mut); background: #f0f1f3;
+    .fiq_hm_no { font-family: monospace; font-size: 11px; font-weight: 700; color: #3a4453; background: #e9ecf1; border: 1px solid #d5dae2;
         border: 1px solid var(--fiq-bd); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
     .fiq_hm_din { border: 1px solid var(--fiq-bd); border-radius: 6px; padding: 2px 5px; font: inherit; font-size: 11px; color: var(--fiq-side); background: #fff; max-width: 122px; }
     // Redigerbart estimat (antatte timer) – driver den timebaserte fremdriften
@@ -689,3 +689,33 @@
     border-radius: 999px; padding: 1px 8px; color: #22303c; white-space: nowrap; }
 .fiq_hm.fiq_hm_dark .fiq_hm_akt_mod { background: #262b37; color: #dde2ea; border-color: #3a4150; }
 .fiq_hm.fiq_hm_dark .fiq_hm_grpsel { background: #262b37 !important; }
+
+// ============ STERKERE KONTRASTER (Gjermund 2026-07-04): brikker + tekst, spesielt mørk modus ============
+.fiq_hm {
+    // Lys modus: dypere farger på Du/AI- og status-brikkene
+    .fiq_cp_who.du { background: #e3d5f5; color: #4e1e79; }
+    .fiq_cp_who.ai { background: #cfe9f6; color: #0f5e80; }
+    .fiq_cp_st { background: #e9ecf1; color: #3a4453; }
+    .fiq_cp_st.ferdig { background: #cff0dd; color: #135c3b; }
+    .fiq_cp_st.pagar { background: #f7ecc0; color: #6d5600; }
+    .fiq_cp_row.done .fiq_cp_tx, .fiq_cp_row.done .fiq_hm_no { color: #5d6674; }
+}
+.fiq_hm.fiq_hm_dark {
+    .fiq_hm_no { background: #2e3442; color: #e6eaf1; border-color: #3f4757; }
+    .fiq_cp_tx, .fiq_cp_ktx { color: #e6eaf1; }
+    .fiq_cp_row.done .fiq_cp_tx, .fiq_cp_row.done .fiq_hm_no { color: #98a2b3; }
+    .fiq_cp_who.du { background: #4a3a6b; color: #ddcdfb; }
+    .fiq_cp_who.ai { background: #1f3d4f; color: #a5dcf5; }
+    .fiq_cp_st { background: #2b3140; color: #c2cad8; }
+    .fiq_cp_st.ferdig { background: #1c3a2b; color: #86e3b1; }
+    .fiq_cp_st.pagar { background: #40381a; color: #f2d97e; }
+    .fiq_cp_gh .fiq_cp_gt { color: #eef1f6; }
+    .fiq_cp_gh .fiq_cp_gnr { background: #3a3050; color: #cbb4f5; }
+    .fiq_cp_bar { background: #2b3140; }
+    .fiq_cp_bar i { background: #a78bfa; }
+    .fiq_cp_krev_h { color: #ff8f80; }
+    .fiq_cp_krow { color: #e6eaf1; }
+    .fiq_hm_openbtn, .fiq_hm_warnbtn { color: #e6eaf1; }
+    .fiq_cp_sumtx, .fiq_cp_chip { color: #e6eaf1; }
+    .fiq_hm_empty { color: #98a2b3; }
+}
