@@ -65,21 +65,15 @@
             <div class="fiq_hm_wrap">
                 <!-- Mørk sidemeny -->
                 <aside class="fiq_hm_side">
-                    <!-- STYRING øverst (primær-nav) -->
+                    <!-- STYRING øverst (primær-nav) — rendres fra brukerens rekkefølge (📌 i Innstillinger) -->
                     <div class="fiq_hm_glbl">Styring</div>
-                    <div t-att-class="state.view === 'oversikt' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('oversikt')"><span class="b"/>Kontrollrom</div>
-                    <div t-att-class="state.view === 'kommunikasjon' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('kommunikasjon')"><img class="fiq_hm_navico" src="/fiq_gui_control/static/img/epost.png"/>Kommunikasjon</div>
-                    <!-- MVP: native kalender + aktiviteter (todelt «Dagens møter»-flate kommer som egen bygging) -->
-                    <div t-att-class="state.view === 'hmsks' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('hmsks')"><span class="b"/>HMS/KS</div>
-                    <div t-att-class="state.view === 'airmm' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('airmm')"><span class="b"/>AI Kontrollrom</div>
-                    <!-- De andre kontrollpanelene (vises når modulene er installert; env.ref-guardet) -->
-                    <div t-if="state.actions.gui_prj" class="fiq_hm_nav" t-on-click="() => this.runAction('gui_prj')" title="Åpne Prosjekt-kontrollrommet"><span class="b"/>Prosjekt</div>
-                    <div t-if="state.actions.gui_crm" class="fiq_hm_nav" t-on-click="() => this.runAction('gui_crm')" title="Åpne CRM-kontrollrommet"><span class="b"/>CRM</div>
-                    <div t-if="state.actions.gui_leads" class="fiq_hm_nav" t-on-click="() => this.runAction('gui_leads')" title="Åpne Leads-kontrollrommet"><span class="b"/>Leads</div>
-                    <div t-if="state.actions.gui_so" class="fiq_hm_nav" t-on-click="() => this.runAction('gui_so')" title="Åpne Salgsordre-kontrollrommet"><span class="b"/>Salgsordre</div>
-                    <div t-if="state.actions.gui_epost" class="fiq_hm_nav" t-on-click="() => this.runAction('gui_epost')" title="Åpne E-post-kontrollrommet"><span class="b"/>E-post</div>
-                    <div t-if="state.actions.gui_rgs" class="fiq_hm_nav" t-on-click="() => this.runAction('gui_rgs')" title="Åpne Regnskap-kontrollrommet"><span class="b"/>Regnskap</div>
-                    <div t-if="state.actions.kunnskap" class="fiq_hm_nav" t-on-click="() => this.runAction('kunnskap')" title="Kunnskap: artikler, maler og dokumentasjon (Odoo Knowledge)"><span class="b"/>Kunnskap</div>
+                    <t t-foreach="navItems" t-as="ni" t-key="ni.key">
+                        <div t-att-class="ni.active ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() =&gt; this.navDo(ni.key)" t-att-title="ni.title">
+                            <img t-if="ni.icon" class="fiq_hm_navico" t-att-src="ni.icon"/>
+                            <span t-else="" class="b"/>
+                            <t t-esc="ni.label"/>
+                        </div>
+                    </t>
 
                     <!-- Fagområder under: én rad per område (lang strek) + nedtrekk for underområder.
                          Treet leses fra Odoo prosjekt-hierarkiet (SSOT) — ingen hardkodet liste. -->
@@ -157,6 +151,16 @@
                             <button t-if="state.canUpgrade and state.verInstalled !== state.verFiles" class="fiq_hm_ext" t-att-disabled="state.upgrading" t-on-click="() =&gt; this.upgradeModule()" t-esc="state.upgrading ? 'Oppgraderer …' : '⬆ Oppgrader modulen nå'"/>
                             <span t-if="!state.canUpgrade" class="fiq_hm_insp_mut">⚠ Oppgrader-knappen krever FIQ-admin-rollen på brukeren din — til den er satt gjøres oppgradering under Apper.</span>
                             <button class="fiq_hm_ext" t-on-click="() =&gt; this.reloadGui()" title="Ny GUI-versjon hentes bare ved full sidelast — ⟳ Oppdater henter kun data">🔁 Last GUI-et på nytt (hent ny versjon)</button>
+                        </div>
+                        <!-- 📌 Rekkefølge i STYRING-menyen (per bruker, følger deg på tvers av maskiner) -->
+                        <div class="fiq_hm_cust_order">
+                            <strong>📌 Rekkefølge i Styring-menyen</strong>
+                            <div t-foreach="navItems" t-as="nv" t-key="nv.key" class="fiq_hm_ord_row">
+                                <span class="fiq_hm_ord_pin">📌</span>
+                                <span class="fiq_hm_ord_n" t-esc="nv.label"/>
+                                <button class="fiq_hm_ext" t-on-click="() =&gt; this.moveNav(nv.key, -1)" title="Flytt opp">▲</button>
+                                <button class="fiq_hm_ext" t-on-click="() =&gt; this.moveNav(nv.key, 1)" title="Flytt ned">▼</button>
+                            </div>
                         </div>
                         <!-- 📌 Rekkefølge på flaten (per bruker, følger deg på tvers av maskiner) -->
                         <div class="fiq_hm_cust_order">

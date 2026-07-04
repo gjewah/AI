@@ -93,6 +93,7 @@ export class FiqControlRoom extends Component {
             dashEdit: false,       // tilpassnings-modus for Mitt dashbord
             darkMap: this._loadDarkMap(),  // 🌙 mørk bakgrunn PER KONTROLLPANEL (view) — huskes
             blockOrder: ["activity", "quick", "projects", "dash", "chart"],  // 📌 flate-rekkefølge (per bruker, server-lagret)
+            navOrder: [],          // 📌 Styring-menyens rekkefølge (per bruker, server-lagret)
             aktQuery: "",                  // aktivitets-søk (samme linje som filter + gruppér)
             dagVis: "begge",              // Møter og aktiviteter: begge | moter | akt
             aktGrpFold: {},                // foldede grupperingsoverskrifter {gruppenavn: true}
@@ -216,11 +217,14 @@ export class FiqControlRoom extends Component {
             this.state.canUpgrade = !!cfg.can_upgrade;
             this.state.spUrls = cfg.sp_urls || {};
             this.state.aiCockpitUrl = cfg.ai_cockpit_url || "";
-            // 📌 Blokk-rekkefølge: lagret liste + ev. nye blokker bakerst
-            const saved = (cfg.widget_order || "").split(",").filter(Boolean);
+            // 📌 Rekkefølger: «blokker|nav:menypunkter» i samme felt (bakoverkompatibelt)
+            const deler = (cfg.widget_order || "").split("|");
+            const saved = (deler[0] || "").split(",").filter(Boolean);
             const def = ["activity", "quick", "projects", "dash", "chart"];
             this.state.blockOrder = saved.filter((k) => def.includes(k))
                 .concat(def.filter((k) => !saved.includes(k)));
+            const navDel = deler.find((d) => d.startsWith("nav:")) || "";
+            this.state.navOrder = navDel.replace("nav:", "").split(",").filter(Boolean);
         } catch (e) {
             // keep defaults (everything visible) if the model is not ready
         }
@@ -1153,6 +1157,57 @@ export class FiqControlRoom extends Component {
         this.runAction(key);
     }
 
+    // 📌 STYRING-menyen: rendres fra brukerens rekkefølge (server-lagret som nav:-prefiks
+    // i widget_order-feltet). Punkter uten tilgjengelig handling skjules (env.ref-guard).
+    get navItems() {
+        const DEF = [
+            { key: "kontrollrom", label: _t("Kontrollrom"), view: "oversikt" },
+            { key: "kommunikasjon", label: _t("Kommunikasjon"), view: "kommunikasjon", icon: "/fiq_gui_control/static/img/epost.png" },
+            { key: "hmsks", label: _t("HMS/KS"), view: "hmsks" },
+            { key: "airmm", label: _t("AI Kontrollrom"), view: "airmm" },
+            { key: "gui_prj", label: _t("Prosjekt"), title: _t("Åpne Prosjekt-kontrollrommet") },
+            { key: "gui_crm", label: _t("CRM") },
+            { key: "gui_leads", label: _t("Leads") },
+            { key: "gui_so", label: _t("Salgsordre") },
+            { key: "gui_epost", label: _t("E-post") },
+            { key: "gui_rgs", label: _t("Regnskap") },
+            { key: "kunnskap", label: _t("Kunnskap"), title: _t("Artikler, maler og dokumentasjon") },
+        ];
+        const map = {};
+        DEF.forEach((d) => { map[d.key] = d; });
+        const orden = this.state.navOrder.filter((k) => map[k])
+            .concat(DEF.map((d) => d.key).filter((k) => !this.state.navOrder.includes(k)));
+        return orden.map((k) => map[k])
+            .filter((d) => d.view || this.state.actions[d.key])
+            .map((d) => Object.assign({ active: d.view ? this.state.view === d.view : false }, d));
+    }
+
+    navDo(key) {
+        const it = this.navItems.find((d) => d.key === key);
+        if (it && it.view) { this.setView(it.view); } else { this.runAction(key); }
+    }
+
+    navLabel(key) {
+        const it = this.navItems.find((d) => d.key === key);
+        return it ? it.label : key;
+    }
+
+    async moveNav(key, dir) {
+        const all = this.navItems.map((d) => d.key);
+        const o = this.state.navOrder.filter((k) => all.includes(k))
+            .concat(all.filter((k) => !this.state.navOrder.includes(k)));
+        const i = o.indexOf(key);
+        const j = i + dir;
+        if (i === -1 || j < 0 || j >= o.length) { return; }
+        o[i] = o[j];
+        o[j] = key;
+        this.state.navOrder = o;
+        try {
+            await this.orm.call("fiq.gui.control.config", "set_widget_order",
+                [this.state.blockOrder.join(",") + "|nav:" + o.join(",")]);
+        } catch (e) { /* gjelder uansett i denne økten */ }
+    }
+
     // 📌 Blokk-rekkefølge: CSS order på flatens hovedblokker (flex-kolonnen .fiq_hm_main)
     bo(key) {
         const i = this.state.blockOrder.indexOf(key);
@@ -1178,7 +1233,8 @@ export class FiqControlRoom extends Component {
         o[j] = key;
         this.state.blockOrder = o;
         try {
-            await this.orm.call("fiq.gui.control.config", "set_widget_order", [o.join(",")]);
+            await this.orm.call("fiq.gui.control.config", "set_widget_order",
+                [o.join(",") + (this.state.navOrder.length ? "|nav:" + this.state.navOrder.join(",") : "")]);
         } catch (e) { /* rekkefølgen gjelder uansett i denne økten */ }
     }
 
