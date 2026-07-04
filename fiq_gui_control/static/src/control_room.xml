@@ -240,6 +240,10 @@
                                     <option t-att-value="po.id" t-att-selected="state.cpProj == po.id ? 'selected' : undefined" t-esc="(po.no ? po.no + ' · ' : '') + po.name"/>
                                 </t>
                             </select>
+                            <div class="fiq_hm_pseg" title="AI-plattformprosjekter (tagg «AI-plattform», settes automatisk av Coworker) eller kundens interne prosjekter">
+                                <button t-att-class="state.cpSlag === 'ai' ? 'on' : ''" t-on-click="() =&gt; this.setCpSlag('ai')">AI-plattform</button>
+                                <button t-att-class="state.cpSlag === 'interne' ? 'on' : ''" t-on-click="() =&gt; this.setCpSlag('interne')">Interne</button>
+                            </div>
                             <div class="fiq_hm_pseg">
                                 <button t-att-class="state.cpMode === 'fremdrift' ? 'on' : ''" t-on-click="() =&gt; this.setCpMode('fremdrift')">Fremdrift</button>
                                 <button t-att-class="state.cpMode === 'forbruk' ? 'on' : ''" t-on-click="() =&gt; this.setCpMode('forbruk')" title="Forbruksmåling: førte vs. estimerte timer">Forbruk (timer)</button>
@@ -271,10 +275,11 @@
                                     </div>
                                 </t>
                             </div>
-                            <div t-else="" class="fiq_hm_empty">Ingen prosjekter i valgt utvalg.</div>
+                            <div t-else="" class="fiq_hm_empty">Ingen <t t-esc="state.cpSlag === 'ai' ? 'AI-plattformprosjekter' : 'interne prosjekter'"/> i valgt utvalg ennå — de dukker opp her når Coworker oppretter dem.</div>
                         </t>
-                        <!-- Fremdrifts-hub: ekte oppgavedata etter Artifact-cockpit-malen (valgt prosjekt) -->
-                        <t t-if="state.cp and state.cp.tot.tot and (state.cpProj or !state.cpDiagram.length)">
+                        <!-- Fremdrifts-hub: KUN når et prosjekt er valgt (tom kunde skal ALDRI falle
+                             tilbake til standard-huben — Jarconsult-buggen 2026-07-04) -->
+                        <t t-if="state.cpProj and state.cp and state.cp.tot.tot">
                             <div class="fiq_cp_sum">
                                 <div class="fiq_cp_ring" t-att-style="'background: conic-gradient(#7030A0 ' + state.cp.tot.pct + '%, #ece7f3 0)'"><span class="fiq_cp_ring_i"><b><t t-esc="state.cp.tot.pct"/>%</b><small>FULLFØRT</small></span></div>
                                 <div class="fiq_cp_sumtx">

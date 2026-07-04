@@ -80,6 +80,7 @@ export class FiqControlRoom extends Component {
             cpKunde: "",          // valgt kunde-id ("" = alle, "iq" = 0.00 IQ-serien)
             cpProj: "",           // valgt prosjekt/prosess ("" = alle i scope)
             cpMode: "fremdrift",  // fremdrift | forbruk
+            cpSlag: "ai",         // ai (AI-plattformprosjekter) | interne (Coworker tagger AI-prosjektene)
             cpDiagram: [],         // diagram-rader (alle prosjekter i scope)
             cpFold: {},            // foldede cockpit-grupper {prosjektId: true}
             okter: [],             // AI Økter: øktenes status + siste rapport
@@ -1563,8 +1564,13 @@ export class FiqControlRoom extends Component {
         try {
             this.state.cpDiagram = await this.orm.call(
                 "fiq.gui.control.config", "get_cockpit_diagram",
-                [k && k !== "iq" ? parseInt(k) : false, k === "iq"]);
+                [k && k !== "iq" ? parseInt(k) : false, k === "iq", this.state.cpSlag]);
         } catch (e) { this.state.cpDiagram = []; }
+    }
+
+    setCpSlag(s) {
+        this.state.cpSlag = s;
+        this._loadCpDiagram();
     }
 
     setCpKunde(v) {
@@ -1582,14 +1588,20 @@ export class FiqControlRoom extends Component {
         this.state.cpMode = m;
     }
 
-    // Prosjektvelgeren viser bare valgt kundes/hjernes prosjekter (diagrammet ER scope-listen)
+    // Prosjektvelgeren: valgt kundes prosjekter, filtrert på AI-plattform/Interne-knappen
     get cpProjOptions() {
         const s = this.state.cpScope;
         if (!s) { return []; }
         const k = this.state.cpKunde;
-        if (!k) { return s.prosjekter; }
-        if (k === "iq") { return s.prosjekter.filter((p) => (p.name || "").startsWith("0.")); }
-        return this.state.cpDiagram.map((d) => ({ id: d.id, no: d.no, name: d.name }));
+        const slag = this.state.cpSlag;
+        if (k && k !== "iq") {
+            return this.state.cpDiagram.map((d) => ({ id: d.id, no: d.no, name: d.name }));
+        }
+        let rows = s.prosjekter;
+        if (k === "iq") { rows = rows.filter((p) => (p.name || "").startsWith("0.")); }
+        if (slag === "ai") { rows = rows.filter((p) => p.ai); }
+        if (slag === "interne") { rows = rows.filter((p) => !p.ai); }
+        return rows;
     }
 
     // Diagrammet gruppert på kunde/hjerne ved «Alle» (samlelinje + fold per rot)

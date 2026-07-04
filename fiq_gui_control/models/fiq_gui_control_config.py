@@ -540,17 +540,20 @@ class FiqControlRoomConfig(models.Model):
                 ai_root_ids.append(r.id)
         pdom = dom + [("id", "child_of", ai_root_ids)] if ai_root_ids else dom + [("id", "=", 0)]
         projs = P.search(pdom, order="name")
+        # AI-plattform vs interne: taggen «AI-plattform» (Coworker setter den på alt den oppretter)
+        tag = self.env["project.tags"].search([("name", "=", "AI-plattform")], limit=1)
         return {
             "kunder": kunder,
             "prosjekter": [{
                 "id": p.id,
                 "no": (p.sequence_code if "sequence_code" in f else "") or "",
                 "name": p.name or "",
+                "ai": bool(tag and "tag_ids" in f and tag.id in p.tag_ids.ids),
             } for p in projs],
         }
 
     @api.model
-    def get_cockpit_diagram(self, root_id=False, iq=False):
+    def get_cockpit_diagram(self, root_id=False, iq=False, slag="ai"):
         """Fremdrifts-/forbruksdiagram over ALLE prosjekter i valgt scope:
         per prosjekt {no, name, pct, est, logged}. root_id = valgt kunde/hjerne
         (toppnivå-rot; child_of). iq=True = 0.00 IQ-serien (navneprefiks «0.»)."""
@@ -568,6 +571,13 @@ class FiqControlRoomConfig(models.Model):
             roots = P.search([("parent_id", "=", False), ("name", "=ilike", "0.%"),
                               ("active", "=", True)]) if "parent_id" in f else P.browse()
             dom += [("id", "child_of", roots.ids)] if roots else [("id", "=", 0)]
+        # AI-plattform vs interne (knappen i toppmenyen): taggen «AI-plattform»
+        tag = self.env["project.tags"].search([("name", "=", "AI-plattform")], limit=1)
+        if tag and "tag_ids" in f:
+            if slag == "ai":
+                dom.append(("tag_ids", "in", tag.id))
+            elif slag == "interne":
+                dom.append(("tag_ids", "not in", tag.id))
         projs = P.search(dom, order="name", limit=120)
         prog = self._project_progress(projs.ids, "timer") if projs else {}
 
