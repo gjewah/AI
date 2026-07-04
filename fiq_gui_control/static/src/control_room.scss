@@ -871,3 +871,8 @@
 
 // Fremdrift-kortets header som farget bånd (mange knapper → tillat brytning)
 .fiq_hm .fiq_hm_ch.fiq_hm_rhead { flex-wrap: wrap; }
+
+// Krever handling: prosjekt-brikke foran oppgavenavnet
+.fiq_hm .fiq_cp_krev_p { flex: 0 0 auto; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: 10.5px; font-weight: 700; background: #fbe4e0; color: #8f2f22; border-radius: 999px; padding: 1px 8px; }
+.fiq_hm.fiq_hm_dark .fiq_cp_krev_p { background: #472a26; color: #ffb3a6; }

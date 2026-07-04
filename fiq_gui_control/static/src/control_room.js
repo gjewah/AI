@@ -83,6 +83,7 @@ export class FiqControlRoom extends Component {
             cpDiagram: [],         // diagram-rader (alle prosjekter i scope)
             cpFold: {},            // foldede cockpit-grupper {prosjektId: true}
             okter: [],             // AI Økter: øktenes status + siste rapport
+            krever: [],            // KREVER HANDLING NÅ: dine åpne på tvers av AI-scopet
             oktSvar: {},           // svar-utkast per økt {taskId: tekst}
             oktSel: 0,             // åpen svarlinje (taskId)
             cpGrp: true,           // «Alle»: gruppér diagrammet på kunde/hjerne
@@ -1545,6 +1546,9 @@ export class FiqControlRoom extends Component {
         try {
             this.state.okter = await this.orm.call("fiq.gui.control.config", "get_okter", []);
         } catch (e) { this.state.okter = []; }
+        try {
+            this.state.krever = await this.orm.call("fiq.gui.control.config", "get_krever", []);
+        } catch (e) { this.state.krever = []; }
         if (!this.state.cpScope) {
             try {
                 this.state.cpScope = await this.orm.call("fiq.gui.control.config", "get_cockpit_scope", []);

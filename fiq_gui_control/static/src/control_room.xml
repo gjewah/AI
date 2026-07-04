@@ -194,6 +194,17 @@
                                 <button class="fiq_hm_ext" t-on-click="() =&gt; { state.cockpitEdit = false; }">Avbryt</button>
                             </t>
                         </div>
+                        <!-- ⚠ KREVER HANDLING NÅ — globalt over hele AI-scopet (m/ oppgavenr + prosjekt) -->
+                        <div t-if="state.krever.length" class="fiq_cp_krev">
+                            <div class="fiq_cp_krev_h">⚠ KREVER HANDLING NÅ — DINE OPPGAVER <span class="n" t-esc="state.krever.length"/></div>
+                            <div t-foreach="state.krever" t-as="k" t-key="k.id" class="fiq_cp_krow" t-on-click="() =&gt; this.selectEl('project.task', k.id, k.name)">
+                                <span class="fiq_hm_no" t-esc="k.no"/>
+                                <span class="fiq_cp_krev_p" t-esc="k.prosjekt"/>
+                                <span class="fiq_cp_ktx" t-esc="k.name"/>
+                                <span t-if="k.over" class="fiq_hm_warn">⚠ forsinket</span>
+                                <span class="fiq_hm_openbtn" t-on-click.stop="() =&gt; this.openRecord('project.task', k.id)" title="Åpne i Odoo">⤢</span>
+                            </div>
+                        </div>
                         <!-- 🖥 AI ØKTER: øktene rapporterer hit; svar går i øktens chatter (4.03) -->
                         <div t-if="state.okter.length" class="fiq_cp_okter">
                             <div class="fiq_cp_okter_h">🖥 AI ØKTER — status og direktiver</div>
@@ -275,14 +286,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div t-if="state.cp.krever.length" class="fiq_cp_krev">
-                                <div class="fiq_cp_krev_h">⚠ KREVER HANDLING NÅ — DINE OPPGAVER <span class="n" t-esc="state.cp.krever.length"/></div>
-                                <div t-foreach="state.cp.krever" t-as="k" t-key="k.id" class="fiq_cp_krow" t-on-click="() =&gt; this.selectEl('project.task', k.id, k.name)">
-                                    <span class="fiq_hm_no" t-esc="k.no"/><span class="fiq_cp_who du">👤 Du</span>
-                                    <span class="fiq_cp_ktx" t-esc="k.name"/>
-                                    <span t-if="k.over" class="fiq_hm_warn">⚠ forsinket</span>
-                                </div>
-                            </div>
+                            <!-- (per-prosjekt-krever er erstattet av den GLOBALE seksjonen øverst) -->
                             <div class="fiq_cp_visrow"><span class="fiq_cp_vlbl">VIS</span>
                                 <div class="fiq_hm_pseg">
                                     <button t-att-class="state.cpFilter === 'alle' ? 'on' : ''" t-on-click="() =&gt; this.setCpFilter('alle')">Alle</button>

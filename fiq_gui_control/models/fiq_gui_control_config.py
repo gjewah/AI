@@ -442,6 +442,45 @@ class FiqControlRoomConfig(models.Model):
             "fiq_gui_control.ai_cockpit_url", url)
         return url
 
+    # ---- «KREVER HANDLING NÅ» — globalt over hele AI-scopet (alle 0.-røttene) ----------
+    @api.model
+    def get_krever(self):
+        """Brukerens åpne oppgaver på tvers av AI-prosjektene, m/ OPPGAVENR + PROSJEKT.
+        Forsinkede først. Vises ALLTID øverst i AI KTRL."""
+        out = []
+        try:
+            P = self.env["project.project"]
+            roots = P.search([("parent_id", "=", False), ("name", "=ilike", "0.%"),
+                              ("active", "=", True)])
+            if not roots:
+                return out
+            T = self.env["project.task"]
+            f = T._fields
+            today = fields.Date.context_today(self)
+            for t in T.search([("project_id", "child_of", roots.ids),
+                               ("user_ids", "in", [self.env.uid])],
+                              order="date_deadline asc", limit=60):
+                if self._stage_is_done(t.stage_id if "stage_id" in f else False):
+                    continue
+                over = False
+                try:
+                    over = bool(t.date_deadline
+                                and fields.Date.to_date(str(t.date_deadline)[:10]) < today)
+                except Exception:
+                    over = False
+                out.append({
+                    "id": t.id,
+                    "no": (t.code if "code" in f else "") or "",
+                    "name": t.name or "",
+                    "prosjekt": t.project_id.name or "",
+                    "over": over,
+                })
+            out.sort(key=lambda r: (not r["over"], r["no"]))
+            out = out[:8]
+        except Exception:
+            pass
+        return out
+
     # ---- AI Økter: øktene/agentene rapporterer hit (prosjekt «AI Økter (MP)») ----------
     @api.model
     def get_okter(self):
