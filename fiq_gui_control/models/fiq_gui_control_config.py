@@ -192,6 +192,12 @@ class FiqControlRoomConfig(models.Model):
         return False
 
     def _task_progress(self, task, metric):
+        # 🎚 Manuell %-overstyring (detaljboksen): erstatter eller adderes til timebasert
+        mode = getattr(task, "fiq_pct_mode", False) or "av"
+        if mode != "av":
+            h = self._task_hours(task) or self._mk(0)
+            base = h["pct"] if mode == "adder" else 0
+            return self._mk(base + (task.fiq_manual_pct or 0.0), h["est"], h["logged"])
         # STANDARD timer: førte ÷ estimerte timer
         if metric == "timer":
             h = self._task_hours(task)

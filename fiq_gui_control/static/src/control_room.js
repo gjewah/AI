@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, useState, onWillStart, onWillDestroy } from "@odoo/owl";
+import { Component, useState, onWillStart, onWillDestroy, onMounted } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { user } from "@web/core/user";
@@ -29,6 +29,11 @@ function spColor(nr) {
 }
 
 const mndNames = () => [_t("January"), _t("February"), _t("March"), _t("April"), _t("May"), _t("June"), _t("July"), _t("August"), _t("September"), _t("October"), _t("November"), _t("December")];
+// 🧊 Frys tilstanden: disse state-nøklene gjenopprettes når man kommer tilbake fra native Odoo (samme dag)
+const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj", "cpMode", "cpSlag", "cpGrp",
+    "kommPeriod", "anchorDate", "kommQuery", "kommDir", "projQuery", "projNoQuery", "projArea", "projAreaId",
+    "taskNoQuery", "taskTextQuery", "taskStage", "taskMile", "dagVis", "aktFilter", "aktGruppe", "selectedKpi",
+    "progLevel", "progProjId", "progProjName", "progSubs", "progGroup", "kalMnd", "stageHidden", "dashSel"];
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -163,18 +168,155 @@ export class FiqControlRoom extends Component {
             progMiles: [],        // prosjektets milepæler (navn + frist) → ◆ i Gantt
             selDelt: null,        // Detaljer: deltagerliste (null = skjult)
             progProjName: "",
+            projLock: null,       // 🔒 låst gruppering {nr, id} — grunnfilter for Prosjektoversikt (server-lagret)
+            vbox: null,           // 🪟 flyttbar detaljboks (Gantt-/listelinje): datoer/timer/%-fremdrift
             aiStageNames: [],     // navn på AI-merkede stadier (fiq_ai_stage) – for velgeren
             stageHidden: {},      // {stadienavn: true} = skjult i oppgave-drillen
         });
 
         this.state.autoRefresh = this._loadAuto();
+        this._frozenScroll = this._freezeRestore();
 
         onWillStart(async () => {
             await this.loadConfig();   // FIQ access/setup layer (per user, server-persisted)
             await this.loadData();
+            // 🧊 gjenopprett visnings-avhengig data etter frys
+            if (this.state.view === "airmm" && !this.state.cp) { await this.loadCockpit(); }
+            if (this.state.progLevel === "oppgave" && this.state.progProjId) {
+                await this._loadProgTasks(this.state.progProjId);
+            }
             this._applyAuto();
         });
-        onWillDestroy(() => clearInterval(this._autoTmr));
+        onMounted(() => {
+            this._onHide = () => this._freezeSave();
+            window.addEventListener("beforeunload", this._onHide);
+            document.addEventListener("visibilitychange", this._onHide);
+            if (this._frozenScroll) {
+                setTimeout(() => {
+                    const m = document.querySelector(".fiq_hm_main");
+                    if (m) { m.scrollTop = this._frozenScroll.m || 0; }
+                    window.scrollTo(0, this._frozenScroll.w || 0);
+                }, 250);
+            }
+        });
+        onWillDestroy(() => {
+            clearInterval(this._autoTmr);
+            this._freezeSave();
+            window.removeEventListener("beforeunload", this._onHide);
+            document.removeEventListener("visibilitychange", this._onHide);
+        });
+    }
+
+    // 🧊 Frys/gjenopprett tilstanden (localStorage, nullstilles ved ny dag)
+    _freezeSave() {
+        try {
+            const s = {};
+            FREEZE_KEYS.forEach((k) => { s[k] = this.state[k]; });
+            const m = document.querySelector(".fiq_hm_main");
+            localStorage.setItem("fiq_hm_frozen", JSON.stringify({
+                d: new Date().toISOString().slice(0, 10), s,
+                scroll: { m: m ? m.scrollTop : 0, w: window.scrollY || 0 },
+            }));
+        } catch (e) { /* best-effort */ }
+    }
+
+    _freezeRestore() {
+        try {
+            const raw = JSON.parse(localStorage.getItem("fiq_hm_frozen") || "null");
+            if (!raw || raw.d !== new Date().toISOString().slice(0, 10)) { return null; }
+            FREEZE_KEYS.forEach((k) => {
+                if (raw.s && raw.s[k] !== undefined && raw.s[k] !== null) { this.state[k] = raw.s[k]; }
+            });
+            return raw.scroll || null;
+        } catch (e) { return null; }
+    }
+
+    // 📌 Serialisering av widget_order: "blokker|nav:punkter|lock:nr:id" (bakoverkompatibelt)
+    _orderString() {
+        const nav = this.state.navOrder.length ? "|nav:" + this.state.navOrder.join(",") : "";
+        const lock = this.state.projLock
+            ? "|lock:" + this.state.projLock.nr + ":" + (this.state.projLock.id || "") : "";
+        return this.state.blockOrder.join(",") + nav + lock;
+    }
+
+    // 🔒 Lås prosjektvisningen til valgt gruppering — alle filtre virker innenfor (server-lagret)
+    async toggleProjLock() {
+        if (!this.state.projLock && !this.state.projArea) {
+            this.notification.add(_t("Choose a subject area first, then lock."), { type: "info" });
+            return;
+        }
+        this.state.projLock = this.state.projLock
+            ? null : { nr: this.state.projArea, id: this.state.projAreaId || false };
+        try {
+            await this.orm.call("fiq.gui.control.config", "set_widget_order", [this._orderString()]);
+        } catch (e) { /* låsen gjelder uansett i denne økten */ }
+    }
+
+    // 🪟 Flyttbar detaljboks: klikk på Gantt-/listelinje → sett variabler
+    openVarBox(row) {
+        const task = this.state.progLevel === "oppgave";
+        this.state.vbox = {
+            model: task ? "project.task" : "project.project",
+            task, id: row.id, name: row.name, no: row.no || "",
+            start: row.start || "", end: row.end || "",
+            est: row.estH || 0, logged: row.logH || 0,
+            manual: 0, mode: "av", x: 260, y: 160, saving: false,
+        };
+        if (task) { this._vboxLoad(row.id); }
+    }
+
+    async _vboxLoad(id) {
+        try {
+            const r = await this.orm.read("project.task", [id],
+                ["fiq_manual_pct", "fiq_pct_mode", "allocated_hours", "effective_hours"]);
+            if (r.length && this.state.vbox && this.state.vbox.id === id) {
+                Object.assign(this.state.vbox, {
+                    manual: r[0].fiq_manual_pct || 0, mode: r[0].fiq_pct_mode || "av",
+                    est: r[0].allocated_hours || 0, logged: r[0].effective_hours || 0,
+                });
+            }
+        } catch (e) { /* feltene kommer med modul-oppgraderingen */ }
+    }
+
+    vboxDragStart(ev) {
+        const v = this.state.vbox;
+        if (!v || ev.target.tagName === "BUTTON") { return; }
+        const dx = ev.clientX - v.x, dy = ev.clientY - v.y;
+        const move = (e) => { v.x = e.clientX - dx; v.y = e.clientY - dy; };
+        const up = () => {
+            window.removeEventListener("pointermove", move);
+            window.removeEventListener("pointerup", up);
+        };
+        window.addEventListener("pointermove", move);
+        window.addEventListener("pointerup", up);
+    }
+
+    async saveVarBox() {
+        const v = this.state.vbox;
+        if (!v || v.saving) { return; }
+        v.saving = true;
+        const num = (x) => parseFloat(String(x === undefined || x === null ? "" : x).replace(",", ".")) || 0;
+        try {
+            if (v.task) {
+                await this.orm.write("project.task", [v.id], {
+                    planned_date_begin: v.start || false,
+                    date_deadline: v.end || false,
+                    allocated_hours: num(v.est),
+                    fiq_manual_pct: Math.max(0, Math.min(100, num(v.manual))),
+                    fiq_pct_mode: v.mode || "av",
+                });
+            } else {
+                await this.orm.write("project.project", [v.id], {
+                    date_start: v.start || false, date: v.end || false,
+                });
+            }
+        } catch (e) {
+            v.saving = false;
+            this.notification.add(_t("Could not save — ") + this._errMsg(e), { type: "danger" });
+            return;
+        }
+        this.state.vbox = null;
+        await this.refresh();
     }
 
     // Auto-oppdatering: hent live data automatisk (intervall config-drevet, valg huskes)
@@ -226,6 +368,16 @@ export class FiqControlRoom extends Component {
                 .concat(def.filter((k) => !saved.includes(k)));
             const navDel = deler.find((d) => d.startsWith("nav:")) || "";
             this.state.navOrder = navDel.replace("nav:", "").split(",").filter(Boolean);
+            const lockDel = deler.find((d) => d.startsWith("lock:")) || "";
+            if (lockDel) {
+                const [lnr, lid] = lockDel.replace("lock:", "").split(":");
+                this.state.projLock = lnr ? { nr: lnr, id: parseInt(lid, 10) || false } : null;
+            }
+            // 🔒 låst gruppering = grunnfilter (med mindre frossen tilstand alt har valgt noe)
+            if (this.state.projLock && !this.state.projArea) {
+                this.state.projArea = this.state.projLock.nr;
+                this.state.projAreaId = this.state.projLock.id || false;
+            }
         } catch (e) {
             // keep defaults (everything visible) if the model is not ready
         }
@@ -644,6 +796,7 @@ export class FiqControlRoom extends Component {
     // Fagområde-filter i prosjektoversikten. Klikk = hierarki-filter (child_of områdets
     // prosjekt-id); klikk på aktivt filter igjen = tilbake til alle.
     setProjArea(nr, id) {
+        if (!nr && this.state.projLock) { nr = this.state.projLock.nr; id = this.state.projLock.id; }
         if (this.state.projArea === nr) {
             this.state.projArea = "";
             this.state.projAreaId = false;
@@ -1209,7 +1362,7 @@ export class FiqControlRoom extends Component {
         this.state.navOrder = o;
         try {
             await this.orm.call("fiq.gui.control.config", "set_widget_order",
-                [this.state.blockOrder.join(",") + "|nav:" + o.join(",")]);
+                [this._orderString()]);
         } catch (e) { /* gjelder uansett i denne økten */ }
     }
 
@@ -1239,7 +1392,7 @@ export class FiqControlRoom extends Component {
         this.state.blockOrder = o;
         try {
             await this.orm.call("fiq.gui.control.config", "set_widget_order",
-                [o.join(",") + (this.state.navOrder.length ? "|nav:" + this.state.navOrder.join(",") : "")]);
+                [this._orderString()]);
         } catch (e) { /* rekkefølgen gjelder uansett i denne økten */ }
     }
 

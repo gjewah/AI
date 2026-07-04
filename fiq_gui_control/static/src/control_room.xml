@@ -62,6 +62,34 @@
                 <button t-att-class="state.customize ? 'btn fiq_hm_gear fiq_hm_gear_on' : 'btn fiq_hm_gear'" t-on-click="() => this.toggleCustomize()" t-esc="state.customize ? tr('✔ Save and close') : tr('⚙ Settings')"/>
             </div>
 
+            <!-- 🪟 Flyttbar detaljboks (klikk på Gantt-/listelinje): datoer · timer · % fremdrift -->
+            <div t-if="state.vbox" class="fiq_hm_vbox" t-att-style="'left:' + state.vbox.x + 'px; top:' + state.vbox.y + 'px'">
+                <div class="fiq_hm_vbox_h" t-on-pointerdown="(ev) =&gt; this.vboxDragStart(ev)" title="Drag to move">
+                    <span class="fiq_hm_no" t-esc="state.vbox.no"/>
+                    <span class="fiq_hm_vbox_t" t-esc="state.vbox.name"/>
+                    <button class="fiq_hm_vbox_x" t-on-click="() =&gt; { state.vbox = null; }" title="Close">✕</button>
+                </div>
+                <div class="fiq_hm_vbox_b">
+                    <div class="l"><span class="k">From</span><input type="date" class="fiq_hm_din" t-att-value="state.vbox.start || ''" t-on-change="(ev) =&gt; { state.vbox.start = ev.target.value; }"/></div>
+                    <div class="l"><span class="k">To</span><input type="date" class="fiq_hm_din" t-att-value="state.vbox.end || ''" t-on-change="(ev) =&gt; { state.vbox.end = ev.target.value; }"/></div>
+                    <t t-if="state.vbox.task">
+                        <div class="l"><span class="k">Estimated hours</span><input type="number" min="0" step="0.5" class="fiq_hm_esti" t-att-value="state.vbox.est" t-on-input="(ev) =&gt; { state.vbox.est = ev.target.value; }"/></div>
+                        <div class="l"><span class="k">Logged hours</span><span class="mono" t-esc="state.vbox.logged"/></div>
+                        <div class="l"><span class="k">Manual progress (%)</span><input type="number" min="0" max="100" class="fiq_hm_esti" t-att-value="state.vbox.manual" t-on-input="(ev) =&gt; { state.vbox.manual = ev.target.value; }"/></div>
+                        <div class="l"><span class="k">Applies as</span>
+                            <div class="fiq_hm_pseg">
+                                <button t-att-class="state.vbox.mode === 'av' ? 'on' : ''" t-on-click="() =&gt; { state.vbox.mode = 'av'; }">Off</button>
+                                <button t-att-class="state.vbox.mode === 'erstatt' ? 'on' : ''" t-on-click="() =&gt; { state.vbox.mode = 'erstatt'; }" t-att-title="tr('The percentage replaces hour-based progress')">Replaces hours</button>
+                                <button t-att-class="state.vbox.mode === 'adder' ? 'on' : ''" t-on-click="() =&gt; { state.vbox.mode = 'adder'; }" t-att-title="tr('The percentage is added on top of hour-based progress')">Adds to hours</button>
+                            </div>
+                        </div>
+                    </t>
+                    <div class="fiq_hm_vbox_f">
+                        <button class="fiq_hm_vbox_save" t-att-disabled="state.vbox.saving" t-on-click="() =&gt; this.saveVarBox()" t-esc="state.vbox.saving ? tr('Saving …') : tr('Save')"/>
+                        <button class="fiq_hm_ext" t-on-click="() =&gt; { state.vbox = null; }">Cancel</button>
+                    </div>
+                </div>
+            </div>
             <div class="fiq_hm_wrap">
                 <!-- Mørk sidemeny -->
                 <aside class="fiq_hm_side">
@@ -592,9 +620,13 @@
                                 </div>
                                 <!-- Fagområde-filtre (rad 1 = toppområder fra prosjekt-treet; rad 2 = undergrupper) -->
                                 <div class="fiq_hm_pfilter">
+                                    <button t-att-class="state.projLock ? 'fiq_hm_lock on' : 'fiq_hm_lock'" t-on-click="() =&gt; this.toggleProjLock()"
+                                            t-att-title="state.projLock ? tr('Unlock the project view') : tr('Lock the project view to this grouping — all filters work within it')">
+                                        <t t-esc="state.projLock ? '🔒 ' + state.projLock.nr : '🔓'"/>
+                                    </button>
                                     <button t-att-class="!state.projArea ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-on-click="() =&gt; this.setProjArea('')">All</button>
                                     <t t-foreach="sideAreas" t-as="o" t-key="o.id || o.nr">
-                                        <button t-att-class="(state.projArea === o.nr or chipParent === o.nr) ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-att-style="'--sp:' + o.color + ';'" t-on-click="() =&gt; this.setProjArea(o.nr, o.id)"><span class="fiq_hm_pfc_nr" t-esc="o.nr"/> <t t-esc="o.name"/></button>
+                                        <button t-if="!state.projLock or o.nr === state.projLock.nr or state.projLock.nr.startsWith(o.nr)" t-att-class="(state.projArea === o.nr or chipParent === o.nr) ? 'fiq_hm_pfc on' : 'fiq_hm_pfc'" t-att-style="'--sp:' + o.color + ';'" t-on-click="() =&gt; this.setProjArea(o.nr, o.id)"><span class="fiq_hm_pfc_nr" t-esc="o.nr"/> <t t-esc="o.name"/></button>
                                     </t>
                                 </div>
                                 <!-- Undergruppe = nedtrekksmeny (variant C, Gjermund 2026-07-03) -->
@@ -748,7 +780,7 @@
                                     <div t-if="state.progLevel === 'oppgave' and progStageChips.length" class="fiq_hm_stagesel">
                                         <span class="fiq_hm_stagesel_l">Show stages:</span>
                                         <t t-foreach="progStageChips" t-as="sc" t-key="sc.name">
-                                            <button t-att-class="'fiq_hm_stchip' + (sc.hidden ? ' off' : '') + (sc.ai ? ' ai' : '')" t-on-click="() =&gt; this.toggleStage(sc.name)" t-att-title="(sc.ai ? tr('AI stage · ') : '') + (sc.hidden ? 'hidden' : 'shown')">
+                                            <button t-att-class="'fiq_hm_stchip' + (sc.hidden ? ' off' : '') + (sc.ai ? ' ai' : '')" t-on-click="() =&gt; this.toggleStage(sc.name)" t-att-title="(sc.ai ? tr('AI stage · ') : '') + (sc.hidden ? tr('hidden') : tr('shown'))">
                                                 <span t-if="sc.ai" class="fiq_hm_stchip_ai">✦</span>
                                                 <span class="fiq_hm_stchip_t" t-esc="sc.name"/>
                                                 <span class="fiq_hm_stchip_n" t-esc="sc.count"/>
@@ -776,7 +808,7 @@
                                                     <span t-if="state.progLevel === 'oppgave'" t-att-class="'fiq_hm_stagetag fiq_hm_stg ' + stageCls(p.stage)" t-esc="p.stage || '—'"/>
                                                     <input type="date" class="fiq_hm_din" t-att-value="p.start || ''" t-on-click.stop="() =&gt; {}" t-on-change="(ev) =&gt; this.setRowDate(p, 'from', ev.target.value)" title="Planned from"/>
                                                     <input type="date" class="fiq_hm_din" t-att-value="p.end || ''" t-on-click.stop="() =&gt; {}" t-on-change="(ev) =&gt; this.setRowDate(p, 'to', ev.target.value)" title="Planned to"/>
-                                                    <t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="p.progress"/><t t-set="shape" t-value="state.progressShape"/><t t-set="hrs" t-value="p.estH ? (p.logH + '/' + p.estH + tr(' h')) : ''"/></t>
+                                                    <span class="fiq_hm_vboxopen" t-on-click.stop="() =&gt; this.openVarBox(p)" t-att-title="tr('Open the details box (dates, hours, progress)')"><t t-call="fiq_gui_control.ProgressMini"><t t-set="pct" t-value="p.progress"/><t t-set="shape" t-value="state.progressShape"/><t t-set="hrs" t-value="p.estH ? (p.logH + '/' + p.estH + tr(' h')) : ''"/></t></span>
                                                 </div>
                                             </t>
                                         </t>
@@ -807,9 +839,9 @@
                                                             <input type="date" class="fiq_hm_din_g" t-att-value="g.end || ''" t-on-click.stop="() =&gt; {}" t-on-change="(ev) =&gt; this.setRowDate(g, 'to', ev.target.value)" title="Planned to"/>
                                                         </span>
                                                     </span>
-                                                    <span class="fiq_hm_cg_track">
+                                                    <span class="fiq_hm_cg_track" t-on-click.stop="() =&gt; this.openVarBox(g)" t-att-title="tr('Open the details box (dates, hours, progress)')">
                                                         <span t-if="g.hasDates" class="fiq_hm_cg_bar" t-att-style="'left:' + g.leftPct + '%; width:' + g.widthPct + '%'"
-                                                              t-att-title="g.name + ' — ' + g.progress + ' % (' + (g.farge === 'red' ? tr('past deadline') : g.farge === 'yellow' ? tr('at risk') : g.farge === 'done' ? 'done' : tr('on track')) + ')'">
+                                                              t-att-title="g.name + ' — ' + g.progress + ' % (' + (g.farge === 'red' ? tr('past deadline') : g.farge === 'yellow' ? tr('at risk') : g.farge === 'done' ? tr('done') : tr('on track')) + ')'">
                                                             <span t-att-class="'fiq_hm_cg_fill ' + g.farge" t-att-style="'width:' + g.progress + '%'"/>
                                                         </span>
                                                         <span t-if="g.hasDates" t-att-class="'fiq_hm_cg_pct ' + g.farge" t-att-style="'left: calc(' + g.pctLeft + '% + 5px)'" t-esc="g.progress + '%'"/>

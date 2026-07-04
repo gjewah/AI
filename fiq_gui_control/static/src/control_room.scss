@@ -876,3 +876,50 @@
 .fiq_hm .fiq_cp_krev_p { flex: 0 0 auto; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     font-size: 10.5px; font-weight: 700; background: #fbe4e0; color: #8f2f22; border-radius: 999px; padding: 1px 8px; }
 .fiq_hm.fiq_hm_dark .fiq_cp_krev_p { background: #472a26; color: #ffb3a6; }
+
+/* ============ v6.66: tydelige FUNKSJONSFARGER + fast plass for Vis/Skjul ============
+   Fargespråk (Gjermund 2026-07-04): Vis/Skjul = RAV/GUL (alltid ytterst til høyre i kortheaderen;
+   Vis-tilstand = fylt grønn) · Åpne/hopp-knapper = BLÅ · Lagre/utfør = GRØNN · lås = RAV. */
+.fiq_hm .fiq_hm_ch .fiq_hm_coll { order: 99; margin-left: auto; }
+.fiq_hm .fiq_hm_chbtns { margin-left: auto; }
+.fiq_hm .fiq_hm_chbtns .fiq_hm_coll { margin-left: 6px; }
+.fiq_hm .fiq_hm_coll { border-color: #E8A33D; color: #8a5a10; background: #fff; font-weight: 700; }
+.fiq_hm .fiq_hm_coll:hover { background: #E8A33D; color: #fff; }
+.fiq_hm .fiq_hm_collapsed .fiq_hm_coll { background: #2f9e44; border-color: #2f9e44; color: #fff; }
+.fiq_hm .fiq_hm_collapsed .fiq_hm_coll:hover { background: #257d36; }
+.fiq_hm .fiq_hm_ext { border: 1.5px solid #4a6fa5; color: #2d4d7c; background: #fff; }
+.fiq_hm .fiq_hm_ext:hover, .fiq_hm .fiq_hm_ext.on { background: #4a6fa5; color: #fff; }
+.fiq_hm .fiq_hm_openbtn { color: #4a6fa5; }
+.fiq_hm.fiq_hm_dark .fiq_hm_coll { background: #1e222c; color: #f0c27a; border-color: #E8A33D; }
+.fiq_hm.fiq_hm_dark .fiq_hm_coll:hover { background: #E8A33D; color: #14171e; }
+.fiq_hm.fiq_hm_dark .fiq_hm_collapsed .fiq_hm_coll { background: #2f9e44; color: #fff; border-color: #2f9e44; }
+.fiq_hm.fiq_hm_dark .fiq_hm_ext { background: #1e222c; color: #9fc0ea; border-color: #4a6fa5; }
+.fiq_hm.fiq_hm_dark .fiq_hm_ext:hover, .fiq_hm.fiq_hm_dark .fiq_hm_ext.on { background: #4a6fa5; color: #fff; }
+
+/* 🔒 lås-knappen (Prosjektoversikt) */
+.fiq_hm .fiq_hm_lock { border: 1.5px solid #E8A33D; background: #fff; color: #8a5a10; border-radius: 999px;
+  padding: 2px 10px; cursor: pointer; font-weight: 700; }
+.fiq_hm .fiq_hm_lock.on { background: #E8A33D; color: #fff; }
+.fiq_hm.fiq_hm_dark .fiq_hm_lock { background: #1e222c; color: #f0c27a; }
+.fiq_hm.fiq_hm_dark .fiq_hm_lock.on { background: #E8A33D; color: #14171e; }
+
+/* 🪟 flyttbar detaljboks (Gantt-/listelinje) */
+.fiq_hm_vbox { position: fixed; z-index: 1080; width: 360px; background: #fff; border: 1px solid #d5dbe3;
+  border-radius: 12px; box-shadow: 0 12px 40px rgba(10, 20, 40, .28); color: #22303c; }
+.fiq_hm_vbox_h { display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: grab;
+  background: #f2f5f9; border-bottom: 1px solid #d5dbe3; border-radius: 12px 12px 0 0; font-weight: 700;
+  user-select: none; touch-action: none; }
+.fiq_hm_vbox_t { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fiq_hm_vbox_x { border: 0; background: transparent; cursor: pointer; font-size: 14px; color: #55606e; }
+.fiq_hm_vbox_b { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.fiq_hm_vbox_b .l { display: flex; align-items: center; gap: 8px; }
+.fiq_hm_vbox_b .k { width: 132px; font-weight: 600; color: #55606e; font-size: 12px; }
+.fiq_hm_vbox_f { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+.fiq_hm_vbox_save { background: #2f9e44; border: 0; color: #fff; border-radius: 8px; padding: 6px 14px;
+  font-weight: 700; cursor: pointer; }
+.fiq_hm_vbox_save:hover { background: #257d36; }
+.fiq_hm.fiq_hm_dark .fiq_hm_vbox { background: #171b24; border-color: #39404d; color: #dde2ea; }
+.fiq_hm.fiq_hm_dark .fiq_hm_vbox_h { background: #1e222c; border-bottom-color: #39404d; }
+.fiq_hm.fiq_hm_dark .fiq_hm_vbox_x { color: #9aa3b0; }
+.fiq_hm .fiq_hm_cg_track { cursor: pointer; }
+.fiq_hm .fiq_hm_vboxopen { cursor: pointer; }

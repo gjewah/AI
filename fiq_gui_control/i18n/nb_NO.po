@@ -2682,3 +2682,124 @@ msgstr "👤 Du"
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "🤖 AI"
 msgstr "🤖 AI"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.js:0
+msgid "Choose a subject area first, then lock."
+msgstr "Velg et fagområde først, og lås deretter."
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Saving …"
+msgstr "Lagrer …"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Estimated hours"
+msgstr "Estimerte timer"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Logged hours"
+msgstr "Førte timer"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+#: model:ir.model.fields,field_description:fiq_gui_control.field_project_task__fiq_manual_pct
+msgid "Manual progress (%)"
+msgstr "Manuell fremdrift (%)"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Applies as"
+msgstr "Gjelder som"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Off"
+msgstr "Av"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Replaces hours"
+msgstr "Erstatter timer"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Adds to hours"
+msgstr "Legges til timer"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Drag to move"
+msgstr "Dra for å flytte"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "The percentage replaces hour-based progress"
+msgstr "Prosenten erstatter timebasert fremdrift"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "The percentage is added on top of hour-based progress"
+msgstr "Prosenten legges til timebasert fremdrift"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Open the details box (dates, hours, progress)"
+msgstr "Åpne detaljboksen (datoer, timer, fremdrift)"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Lock the project view to this grouping — all filters work within it"
+msgstr "Lås prosjektvisningen til denne grupperingen — alle filtre virker innenfor"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Unlock the project view"
+msgstr "Lås opp prosjektvisningen"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields,help:fiq_gui_control.field_project_task__fiq_manual_pct
+msgid "Manually assessed progress for this task. Applied according to the progress override mode."
+msgstr "Manuelt vurdert fremdrift for denne oppgaven. Brukes i henhold til overstyringsmodusen."
+
+#. module: fiq_gui_control
+#: model:ir.model.fields,field_description:fiq_gui_control.field_project_task__fiq_pct_mode
+msgid "Progress override"
+msgstr "Fremdrifts-overstyring"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields,help:fiq_gui_control.field_project_task__fiq_pct_mode
+msgid "How the manual percentage is combined with logged/estimated hours in the Control room."
+msgstr "Hvordan den manuelle prosenten kombineres med førte/estimerte timer i Kontrollrommet."
+
+#. module: fiq_gui_control
+#: model:ir.model.fields.selection,name:fiq_gui_control.selection__project_task__fiq_pct_mode__av
+msgid "Off (hours only)"
+msgstr "Av (kun timer)"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields.selection,name:fiq_gui_control.selection__project_task__fiq_pct_mode__erstatt
+msgid "Replaces the hour-based progress"
+msgstr "Erstatter timebasert fremdrift"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields.selection,name:fiq_gui_control.selection__project_task__fiq_pct_mode__adder
+msgid "Added on top of the hour-based progress"
+msgstr "Legges til timebasert fremdrift"

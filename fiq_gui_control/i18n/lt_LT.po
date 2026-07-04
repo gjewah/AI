@@ -2682,3 +2682,124 @@ msgstr "👤 Jūs"
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "🤖 AI"
 msgstr "🤖 AI"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.js:0
+msgid "Choose a subject area first, then lock."
+msgstr "Pirmiausia pasirinkite sritį, tada užrakinkite."
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Saving …"
+msgstr "Įrašoma …"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Estimated hours"
+msgstr "Numatytos valandos"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Logged hours"
+msgstr "Registruotos valandos"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+#: model:ir.model.fields,field_description:fiq_gui_control.field_project_task__fiq_manual_pct
+msgid "Manual progress (%)"
+msgstr "Rankinė pažanga (%)"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Applies as"
+msgstr "Taikoma kaip"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Off"
+msgstr "Išjungta"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Replaces hours"
+msgstr "Pakeičia valandas"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Adds to hours"
+msgstr "Pridedama prie valandų"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Drag to move"
+msgstr "Vilkite, kad perkeltumėte"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "The percentage replaces hour-based progress"
+msgstr "Procentas pakeičia valandomis grįstą pažangą"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "The percentage is added on top of hour-based progress"
+msgstr "Procentas pridedamas prie valandomis grįstos pažangos"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Open the details box (dates, hours, progress)"
+msgstr "Atverti detalių langelį (datos, valandos, pažanga)"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Lock the project view to this grouping — all filters work within it"
+msgstr "Užrakinti projektų rodinį šioje grupėje — visi filtrai veikia jos ribose"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Unlock the project view"
+msgstr "Atrakinti projektų rodinį"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields,help:fiq_gui_control.field_project_task__fiq_manual_pct
+msgid "Manually assessed progress for this task. Applied according to the progress override mode."
+msgstr "Rankiniu būdu įvertinta šios užduoties pažanga. Taikoma pagal perrašymo režimą."
+
+#. module: fiq_gui_control
+#: model:ir.model.fields,field_description:fiq_gui_control.field_project_task__fiq_pct_mode
+msgid "Progress override"
+msgstr "Pažangos perrašymas"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields,help:fiq_gui_control.field_project_task__fiq_pct_mode
+msgid "How the manual percentage is combined with logged/estimated hours in the Control room."
+msgstr "Kaip rankinis procentas derinamas su registruotomis/numatytomis valandomis Valdymo centre."
+
+#. module: fiq_gui_control
+#: model:ir.model.fields.selection,name:fiq_gui_control.selection__project_task__fiq_pct_mode__av
+msgid "Off (hours only)"
+msgstr "Išjungta (tik valandos)"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields.selection,name:fiq_gui_control.selection__project_task__fiq_pct_mode__erstatt
+msgid "Replaces the hour-based progress"
+msgstr "Pakeičia valandomis grįstą pažangą"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields.selection,name:fiq_gui_control.selection__project_task__fiq_pct_mode__adder
+msgid "Added on top of the hour-based progress"
+msgstr "Pridedama prie valandomis grįstos pažangos"
