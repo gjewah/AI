@@ -2,6 +2,7 @@
 import json
 import re
 from datetime import timedelta
+from odoo.tools import html2plaintext
 from odoo import models, fields, api, _
 from odoo.exceptions import AccessError
 from odoo.modules.module import get_manifest
@@ -531,7 +532,7 @@ class FiqControlRoomConfig(models.Model):
                     "name": t.name or "",
                     "ferdig": self._stage_is_done(t.stage_id),
                     "sist": m.date.strftime("%d.%m %H:%M") if m and m.date else "",
-                    "melding": (m.preview or "").strip()[:160] if m else "",
+                    "melding": html2plaintext(m.body or "").strip()[:160] if m and m.body else ((m.preview or "").strip()[:160] if m else ""),
                 })
         except Exception:
             pass
@@ -686,6 +687,7 @@ class FiqControlRoomConfig(models.Model):
                     "st": st,
                     "stage": stage.name if stage else "",
                     "over": over,
+                    "frist": str(t.date_deadline)[:10] if t.date_deadline else "",
                 })
                 out["tot"]["tot"] += 1
                 out["tot"][stmap[st]] += 1

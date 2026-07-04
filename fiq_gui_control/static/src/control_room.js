@@ -34,6 +34,10 @@ const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj
     "kommPeriod", "anchorDate", "kommQuery", "kommDir", "projQuery", "projNoQuery", "projArea", "projAreaId",
     "taskNoQuery", "taskTextQuery", "taskStage", "taskMile", "dagVis", "aktFilter", "aktGruppe", "selectedKpi",
     "progLevel", "progProjId", "progProjName", "progSubs", "progGroup", "kalMnd", "stageHidden", "dashSel"];
+// 🚨 Utdatert-GUI-vakt: bumpes ved HVER versjon — sammenlignes med installert modulversjon
+const GUI_BUILD = "19.0.6.68.0";
+// 🚨 Utdatert-GUI-vakt: bumpes ved HVER versjon — sammenlignes med installert modulversjon
+const GUI_BUILD = "19.0.6.68.0";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -168,6 +172,8 @@ export class FiqControlRoom extends Component {
             progMiles: [],        // prosjektets milepæler (navn + frist) → ◆ i Gantt
             selDelt: null,        // Detaljer: deltagerliste (null = skjult)
             progProjName: "",
+            staleGui: false,      // 🚨 lastet GUI-kode er ELDRE enn installert versjon → banner
+            staleGui: false,      // 🚨 lastet GUI-kode er ELDRE enn installert versjon → banner
             recent: [],           // 📌 siste N prosjekter med aktivitet (hurtigknapper)
             recentN: 5,           // 📌 antall (huskes per bruker, server-lagret)
             projLock: null,       // 🔒 låst gruppering {nr, id} — grunnfilter for Prosjektoversikt (server-lagret)
@@ -284,8 +290,8 @@ export class FiqControlRoom extends Component {
     }
 
     // 🪟 Flyttbar detaljboks: klikk på Gantt-/listelinje → sett variabler
-    openVarBox(row) {
-        const task = this.state.progLevel === "oppgave";
+    openVarBox(row, forceTask) {
+        const task = forceTask || this.state.progLevel === "oppgave";
         this.state.vbox = {
             model: task ? "project.task" : "project.project",
             task, id: row.id, name: row.name, no: row.no || "",
@@ -299,11 +305,14 @@ export class FiqControlRoom extends Component {
     async _vboxLoad(id) {
         try {
             const r = await this.orm.read("project.task", [id],
-                ["fiq_manual_pct", "fiq_pct_mode", "allocated_hours", "effective_hours"]);
+                ["fiq_manual_pct", "fiq_pct_mode", "allocated_hours", "effective_hours",
+                 "planned_date_begin", "date_deadline"]);
             if (r.length && this.state.vbox && this.state.vbox.id === id) {
                 Object.assign(this.state.vbox, {
                     manual: r[0].fiq_manual_pct || 0, mode: r[0].fiq_pct_mode || "av",
                     est: r[0].allocated_hours || 0, logged: r[0].effective_hours || 0,
+                    start: this.state.vbox.start || String(r[0].planned_date_begin || "").slice(0, 10),
+                    end: this.state.vbox.end || String(r[0].date_deadline || "").slice(0, 10),
                 });
             }
         } catch (e) { /* feltene kommer med modul-oppgraderingen */ }
@@ -386,6 +395,10 @@ export class FiqControlRoom extends Component {
             if (cfg.progress_shape) this.state.progressShape = cfg.progress_shape;
             if (cfg.progress_metric) this.state.progressMetric = cfg.progress_metric;
             this.state.verInstalled = cfg.version_installed || "";
+            // 🚨 fanen kjører gammel GUI-kode (typisk «… is not a function»-feil)
+            this.state.staleGui = !!(cfg.version_installed && cfg.version_installed !== GUI_BUILD);
+            // 🚨 fanen kjører gammel GUI-kode (typisk «… is not a function»-feil)
+            this.state.staleGui = !!(cfg.version_installed && cfg.version_installed !== GUI_BUILD);
             this.state.verFiles = cfg.version_files || "";
             this._autoMin = cfg.auto_refresh_min || 5;
             this.state.canUpgrade = !!cfg.can_upgrade;

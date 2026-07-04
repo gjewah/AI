@@ -2815,3 +2815,15 @@ msgstr "Siste prosjekter"
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Number of recent projects"
 msgstr "Antall siste prosjekter"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "A new version is installed"
+msgstr "Ny versjon er installert"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid " — you are viewing an older one. Click here to reload."
+msgstr " — du ser en eldre. Klikk her for å laste på nytt."

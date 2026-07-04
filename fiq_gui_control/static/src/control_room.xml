@@ -62,6 +62,10 @@
                 <button t-att-class="state.customize ? 'btn fiq_hm_gear fiq_hm_gear_on' : 'btn fiq_hm_gear'" t-on-click="() => this.toggleCustomize()" t-esc="state.customize ? tr('✔ Save and close') : tr('⚙ Settings')"/>
             </div>
 
+            <!-- 🚨 Utdatert GUI: fanen kjører eldre kode enn installert versjon -->
+            <div t-if="state.staleGui" class="fiq_hm_stale" t-on-click="() =&gt; this.reloadGui()">
+                ⚠ <b>A new version is installed</b> — you are viewing an older one. Click here to reload.
+            </div>
             <!-- 🪟 Flyttbar detaljboks (klikk på Gantt-/listelinje): datoer · timer · % fremdrift -->
             <div t-if="state.vbox" class="fiq_hm_vbox" t-att-style="'left:' + state.vbox.x + 'px; top:' + state.vbox.y + 'px'">
                 <div class="fiq_hm_vbox_h" t-on-pointerdown="(ev) =&gt; this.vboxDragStart(ev)" title="Drag to move">
@@ -353,6 +357,8 @@
                                     <span class="fiq_cp_tx" t-esc="ct.name" t-on-click="() =&gt; this.selectEl('project.task', ct.id, ct.name)"/>
                                     <span t-att-class="'fiq_cp_who ' + ct.who" t-esc="ct.who === 'du' ? tr('👤 You') : tr('🤖 AI')"/>
                                     <span t-att-class="'fiq_cp_st ' + ct.st" t-esc="ct.stage"/>
+                                    <span t-if="ct.frist" t-att-class="ct.over ? 'fiq_cp_frist rod' : 'fiq_cp_frist'" t-esc="ct.frist"/>
+                                    <span class="fiq_hm_openbtn" t-on-click.stop="() =&gt; this.openVarBox({ id: ct.id, name: ct.name, no: ct.no }, true)" t-att-title="tr('Open the details box (dates, hours, progress)')">⚙</span>
                                     <span class="fiq_hm_openbtn" t-on-click.stop="() =&gt; this.openRecord('project.task', ct.id)" title="Open in Odoo">⤢</span>
                                 </div>
                                 </t>

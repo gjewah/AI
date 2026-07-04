@@ -934,3 +934,32 @@
 .fiq_hm.fiq_hm_dark .fiq_hm_recbtn { background: #1e222c; color: #dde2ea; }
 .fiq_hm.fiq_hm_dark .fiq_hm_recbtn:hover { background: var(--fiq-accent); color: #fff; }
 .fiq_hm .fiq_hm_cust_recent { margin-top: 8px; display: flex; gap: 10px; align-items: center; }
+
+/* ============ v6.68: 🚨 utdatert-GUI-banner + KNALL HVIT tekst i dark mode ============ */
+.fiq_hm_stale { position: sticky; top: 0; z-index: 1090; background: #b3261e; color: #fff;
+  font-weight: 800; text-align: center; padding: 10px 14px; border-radius: 10px; cursor: pointer;
+  margin: 6px 0; box-shadow: 0 6px 20px rgba(0, 0, 0, .35); }
+.fiq_hm_stale:hover { background: #8f1d17; }
+.fiq_cp_frist { font-family: monospace; font-size: 11px; color: #55606e; margin: 0 6px; }
+.fiq_cp_frist.rod { color: #c62828; font-weight: 800; }
+
+/* Dark mode tekst-pakke (Gjermund: «knall hvite og tydelige») — primærtekst REN HVIT,
+   sekundær lys grå. Eksplisitt i mørk modus, arver aldri tema. */
+.fiq_hm.fiq_hm_dark { --fiq-mut: #c9d1dc; color: #ffffff; }
+.fiq_hm.fiq_hm_dark h4, .fiq_hm.fiq_hm_dark strong, .fiq_hm.fiq_hm_dark b,
+.fiq_hm.fiq_hm_dark .fiq_hm_rname, .fiq_hm.fiq_hm_dark .fiq_hm_dagnavn,
+.fiq_hm.fiq_hm_dark .fiq_hm_pnavn, .fiq_hm.fiq_hm_dark .fiq_cp_tx,
+.fiq_hm.fiq_hm_dark .fiq_cp_gt, .fiq_hm.fiq_hm_dark .fiq_cp_diag_n,
+.fiq_hm.fiq_hm_dark .fiq_cp_okt_n, .fiq_hm.fiq_hm_dark .fiq_cp_diag_hn,
+.fiq_hm.fiq_hm_dark table td, .fiq_hm.fiq_hm_dark .fiq_hm_kpi .v,
+.fiq_hm.fiq_hm_dark .fiq_hm_detail_t, .fiq_hm.fiq_hm_dark .fiq_hm_insp_sel,
+.fiq_hm.fiq_hm_dark .fiq_hm_recbtn .t { color: #ffffff; }
+.fiq_hm.fiq_hm_dark .fiq_hm_kpi .l, .fiq_hm.fiq_hm_dark .fiq_hm_pstat,
+.fiq_hm.fiq_hm_dark .fiq_hm_dagtid, .fiq_hm.fiq_hm_dark .fiq_hm_th,
+.fiq_hm.fiq_hm_dark .fiq_hm_rth, .fiq_hm.fiq_hm_dark .fiq_hm_toplbl,
+.fiq_hm.fiq_hm_dark .fiq_cp_mlbl, .fiq_hm.fiq_hm_dark .fiq_hm_glbl,
+.fiq_hm.fiq_hm_dark .fiq_cp_okt_tid, .fiq_hm.fiq_hm_dark .fiq_cp_frist { color: #c9d1dc; }
+.fiq_hm.fiq_hm_dark .fiq_cp_frist.rod { color: #ff6b5e; }
+.fiq_hm.fiq_hm_dark .fiq_hm_dagtid.rod { color: #ff6b5e; }
+.fiq_hm.fiq_hm_dark .fiq_hm_no { background: #262b37; color: #ffffff; }
+.fiq_hm.fiq_hm_dark ::placeholder { color: #9aa3b2; opacity: 1; }
