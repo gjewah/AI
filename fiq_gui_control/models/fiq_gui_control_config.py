@@ -38,6 +38,8 @@ class FiqControlRoomConfig(models.Model):
     show_chart = fields.Boolean("Progress chart", default=True)
     show_copilot = fields.Boolean("AI Copilot", default=True)
     show_quick = fields.Boolean("Quick actions", default=True)
+    # 📌 Rekkefølge på flatens blokker (komma-liste; per bruker, følger på tvers av maskiner)
+    widget_order = fields.Char("Block order", default="")
 
     # Odoo 19: use models.Constraint (not the deprecated _sql_constraints)
     _user_company_uniq = models.Constraint(
@@ -92,7 +94,15 @@ class FiqControlRoomConfig(models.Model):
             "sp_urls": self._sp_urls(comp),
             # AI-cockpit (Artifact, interim til full Odoo-bygging): config-drevet URL
             "ai_cockpit_url": ICP.get_param("fiq_gui_control.ai_cockpit_url", ""),
+            # 📌 Blokk-rekkefølge på flaten (per bruker)
+            "widget_order": rec.widget_order or "",
         }
+
+    @api.model
+    def set_widget_order(self, order):
+        """📌 Lagre brukerens blokk-rekkefølge (komma-liste av blokknøkler)."""
+        self._get_or_create_current().write({"widget_order": order or ""})
+        return True
 
     @api.model
     def _sp_urls(self, comp):
@@ -839,6 +849,8 @@ class FiqControlRoomConfig(models.Model):
             "gui_so": "fiq_gui_crm_so.action_fiq_gui_crm_so",
             "gui_epost": "fiq_gui_epost.action_fiq_gui_epost",
             "gui_rgs": "fiq_gui_rgs.action_fiq_gui_rgs",
+            # Kunnskap: artikler/maler (Odoo Knowledge — hjemmesiden)
+            "kunnskap": "knowledge.ir_actions_server_knowledge_home_page",
         }
         out = {}
         for key, xmlid in candidates.items():

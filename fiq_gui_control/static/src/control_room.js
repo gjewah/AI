@@ -87,6 +87,7 @@ export class FiqControlRoom extends Component {
             dashSel: this._loadDashSel(),  // Mitt dashbord: valgte xmlids (huskes per nettleser)
             dashEdit: false,       // tilpassnings-modus for Mitt dashbord
             darkMap: this._loadDarkMap(),  // 🌙 mørk bakgrunn PER KONTROLLPANEL (view) — huskes
+            blockOrder: ["activity", "quick", "projects", "dash", "chart"],  // 📌 flate-rekkefølge (per bruker, server-lagret)
             aktQuery: "",                  // aktivitets-søk (samme linje som filter + gruppér)
             dagVis: "begge",              // Møter og aktiviteter: begge | moter | akt
             aktGrpFold: {},                // foldede grupperingsoverskrifter {gruppenavn: true}
@@ -210,6 +211,11 @@ export class FiqControlRoom extends Component {
             this.state.canUpgrade = !!cfg.can_upgrade;
             this.state.spUrls = cfg.sp_urls || {};
             this.state.aiCockpitUrl = cfg.ai_cockpit_url || "";
+            // 📌 Blokk-rekkefølge: lagret liste + ev. nye blokker bakerst
+            const saved = (cfg.widget_order || "").split(",").filter(Boolean);
+            const def = ["activity", "quick", "projects", "dash", "chart"];
+            this.state.blockOrder = saved.filter((k) => def.includes(k))
+                .concat(def.filter((k) => !saved.includes(k)));
         } catch (e) {
             // keep defaults (everything visible) if the model is not ready
         }
@@ -1115,6 +1121,35 @@ export class FiqControlRoom extends Component {
     // 🔁 Hent ny GUI-versjon: full sidelast (assets lastes bare ved sidelast, ikke ⟳ Oppdater)
     reloadGui() {
         window.location.reload();
+    }
+
+    // 📌 Blokk-rekkefølge: CSS order på flatens hovedblokker (flex-kolonnen .fiq_hm_main)
+    bo(key) {
+        const i = this.state.blockOrder.indexOf(key);
+        return i === -1 ? 50 : i + 1;
+    }
+
+    blockLabel(k) {
+        return {
+            activity: _t("Til stede + Møter og aktiviteter"),
+            quick: _t("Beslutningsstøtte"),
+            projects: _t("Prosjektoversikt + Mine oppgaver"),
+            dash: _t("Mitt dashbord"),
+            chart: _t("Fremdrift/Gantt + Detaljer"),
+        }[k] || k;
+    }
+
+    async moveBlock(key, dir) {
+        const o = this.state.blockOrder.slice();
+        const i = o.indexOf(key);
+        const j = i + dir;
+        if (i === -1 || j < 0 || j >= o.length) { return; }
+        o[i] = o[j];
+        o[j] = key;
+        this.state.blockOrder = o;
+        try {
+            await this.orm.call("fiq.gui.control.config", "set_widget_order", [o.join(",")]);
+        } catch (e) { /* rekkefølgen gjelder uansett i denne økten */ }
     }
 
     // Fold en cockpit-gruppe (som i Artifact-cockpiten)

@@ -806,3 +806,11 @@
     .fiq_hm_kal_d, .fiq_hm_kal_sel, .fiq_hm_utsett_l { color: #c2cad8; }
     input::placeholder, textarea::placeholder { color: #7c8492; }
 }
+
+// 📌 Rekkefølge-listen i Innstillinger + foten holder seg nederst ved flex-order
+.fiq_hm .fiq_hm_cust_order { margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--fiq-bd); font-size: 12px;
+    .fiq_hm_ord_row { display: flex; gap: 8px; align-items: center; padding: 3px 0;
+        .fiq_hm_ord_pin { flex: 0 0 auto; }
+        .fiq_hm_ord_n { flex: 1; font-weight: 600; }
+        .fiq_hm_ext { padding: 1px 9px; } } }
+.fiq_hm .fiq_hm_foot { order: 99; }
