@@ -76,6 +76,11 @@ export class FiqControlRoom extends Component {
             cockpitUrlDraft: "",
             cp: null,              // AI-cockpit: grupper/oppgaver fra get_cockpit
             cpFilter: "alle",     // VIS-filter: alle | du | ai | apen
+            cpScope: null,         // toppmeny-data: kunder + prosjekter (get_cockpit_scope)
+            cpKunde: "",          // valgt kunde-id ("" = alle, "iq" = 0.00 IQ-serien)
+            cpProj: "",           // valgt prosjekt/prosess ("" = alle i scope)
+            cpMode: "fremdrift",  // fremdrift | forbruk
+            cpDiagram: [],         // diagram-rader (alle prosjekter i scope)
             dashSel: this._loadDashSel(),  // Mitt dashbord: valgte xmlids (huskes per nettleser)
             dashEdit: false,       // tilpassnings-modus for Mitt dashbord
             darkMap: this._loadDarkMap(),  // 🌙 mørk bakgrunn PER KONTROLLPANEL (view) — huskes
@@ -1438,10 +1443,57 @@ export class FiqControlRoom extends Component {
     // ---- AI-cockpit (fremdrifts-hub): ekte project.task-data, Artifact-malen ----
     async loadCockpit() {
         try {
-            this.state.cp = await this.orm.call("fiq.gui.control.config", "get_cockpit", []);
+            this.state.cp = await this.orm.call(
+                "fiq.gui.control.config", "get_cockpit", [this.state.cpProj || false]);
         } catch (e) {
             this.state.cp = { groups: [], tot: { done: 0, pag: 0, vent: 0, tot: 0, pct: 0 }, krever: [], root: "" };
         }
+        if (!this.state.cpScope) {
+            try {
+                this.state.cpScope = await this.orm.call("fiq.gui.control.config", "get_cockpit_scope", []);
+            } catch (e) { this.state.cpScope = { kunder: [], prosjekter: [] }; }
+        }
+        await this._loadCpDiagram();
+    }
+
+    // Diagram over ALLE prosjekter i valgt scope (kunde / 0.00 IQ / alle)
+    async _loadCpDiagram() {
+        const k = this.state.cpKunde;
+        try {
+            this.state.cpDiagram = await this.orm.call(
+                "fiq.gui.control.config", "get_cockpit_diagram",
+                [k && k !== "iq" ? parseInt(k) : false, k === "iq"]);
+        } catch (e) { this.state.cpDiagram = []; }
+    }
+
+    setCpKunde(v) {
+        this.state.cpKunde = v;
+        this.state.cpProj = "";
+        this._loadCpDiagram();
+    }
+
+    setCpProj(v) {
+        this.state.cpProj = v;
+        this.loadCockpit();
+    }
+
+    setCpMode(m) {
+        this.state.cpMode = m;
+    }
+
+    // Prosjektvelgeren viser bare valgt kundes prosjekter (eller 0.-serien for IQ)
+    get cpProjOptions() {
+        const s = this.state.cpScope;
+        if (!s) { return []; }
+        const k = this.state.cpKunde;
+        return s.prosjekter.filter((p) =>
+            (!k) || (k === "iq" ? (p.name || "").startsWith("0.") : p.partner_id === parseInt(k)));
+    }
+
+    get cpDiagramMax() {
+        let m = 0;
+        this.state.cpDiagram.forEach((d) => { if (d.logged > m) { m = d.logged; } if (d.est > m) { m = d.est; } });
+        return m || 1;
     }
 
     setCpFilter(f) {

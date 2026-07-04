@@ -719,3 +719,28 @@
     .fiq_cp_sumtx, .fiq_cp_chip { color: #e6eaf1; }
     .fiq_hm_empty { color: #98a2b3; }
 }
+
+// 🧭 Cockpit-toppmeny + 📊 prosjektdiagram (fremdrift/forbruk)
+.fiq_hm .fiq_cp_menu { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0 0 12px;
+    padding: 8px 10px; border: 1px solid var(--fiq-bd); border-radius: 10px; background: var(--fiq-accent-tile, #f5faf6);
+    .fiq_cp_mlbl { font-size: 10px; letter-spacing: .1em; color: var(--fiq-mut); font-weight: 700; }
+    .fiq_hm_asel { max-width: 240px; }
+    .fiq_cp_projsel { max-width: 340px; } }
+.fiq_hm .fiq_cp_diag { border: 1px solid var(--fiq-bd); border-radius: 10px; overflow: hidden; margin: 0 0 10px; }
+.fiq_hm .fiq_cp_diag_row { display: flex; gap: 10px; align-items: center; padding: 6px 12px; cursor: pointer;
+    border-top: 1px solid #f0edf5; font-size: 12.5px;
+    &:first-child { border-top: 0; }
+    &:hover { background: var(--fiq-accent-tile, #f5faf6); }
+    .fiq_cp_diag_n { flex: 0 1 320px; min-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+    .fiq_cp_diag_track { flex: 1; position: relative; height: 10px; border-radius: 5px; background: #ece7f3; overflow: hidden;
+        i { position: absolute; inset: 0 auto 0 0; display: block; background: #7030A0; border-radius: 5px; }
+        &.forbruk { background: #e9ecf1;
+            i { background: var(--fiq-accent, #38B44A); }
+            b { position: absolute; top: -2px; bottom: -2px; width: 2.5px; background: #22303c; } } }
+    .fiq_cp_diag_pct { flex: 0 0 76px; text-align: right; font-weight: 700; } }
+.fiq_hm.fiq_hm_dark {
+    .fiq_cp_menu { background: #232836; }
+    .fiq_cp_diag_row { border-top-color: #2b3040;
+        &:hover { background: #242938; }
+        .fiq_cp_diag_track { background: #2b3140; &.forbruk { background: #2b3140; b { background: #dde2ea; } } } }
+}

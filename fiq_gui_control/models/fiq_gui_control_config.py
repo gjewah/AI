@@ -432,9 +432,65 @@ class FiqControlRoomConfig(models.Model):
             "fiq_gui_control.ai_cockpit_url", url)
         return url
 
+    # ---- AI-cockpit: scope-meny (Kunde / Prosjekt-Prosess / 0.00 IQ) -------------------
+    @api.model
+    def get_cockpit_scope(self):
+        """Toppmenyen i cockpiten: kunder m/ prosjekter + prosjektliste (uten maler).
+        «0.00 IQ» = plattform-serien (navneprefiks 0.) som eget kundevalg."""
+        P = self.env["project.project"]
+        f = P._fields
+        dom = [("active", "=", True)]
+        if "is_template" in f:
+            dom.append(("is_template", "=", False))
+        projs = P.search(dom, order="name")
+        kunder, seen = [], set()
+        for p in projs:
+            pa = p.partner_id if "partner_id" in f else False
+            if pa and pa.id not in seen:
+                seen.add(pa.id)
+                kunder.append({"id": pa.id, "name": pa.display_name})
+        kunder.sort(key=lambda k: k["name"])
+        return {
+            "kunder": kunder,
+            "prosjekter": [{
+                "id": p.id,
+                "no": (p.sequence_code if "sequence_code" in f else "") or "",
+                "name": p.name or "",
+                "partner_id": (p.partner_id.id if "partner_id" in f and p.partner_id else False),
+            } for p in projs],
+        }
+
+    @api.model
+    def get_cockpit_diagram(self, partner_id=False, iq=False):
+        """Fremdrifts-/forbruksdiagram over ALLE prosjekter i valgt scope:
+        per prosjekt {no, name, pct, est, logged}. Kunde-filter = partner_id;
+        iq=True = 0.00 IQ-serien (navneprefiks «0.»). Uten filter = alle."""
+        P = self.env["project.project"]
+        f = P._fields
+        dom = [("active", "=", True)]
+        if "is_template" in f:
+            dom.append(("is_template", "=", False))
+        if partner_id and "partner_id" in f:
+            dom.append(("partner_id", "=", int(partner_id)))
+        if iq:
+            dom.append(("name", "=ilike", "0.%"))
+        projs = P.search(dom, order="name", limit=120)
+        prog = self._project_progress(projs.ids, "timer") if projs else {}
+        out = []
+        for p in projs:
+            pr = prog.get(p.id) or self._mk(0)
+            out.append({
+                "id": p.id,
+                "no": (p.sequence_code if "sequence_code" in f else "") or "",
+                "name": p.name or "",
+                "pct": pr["pct"], "est": pr["est"], "logged": pr["logged"],
+                "taskCount": (p.task_count if "task_count" in f else 0) or 0,
+            })
+        return out
+
     # ---- AI-cockpit (fremdrifts-hub) — speiler Artifact-cockpiten mot ekte oppgaver -----
     @api.model
-    def get_cockpit(self):
+    def get_cockpit(self, project_id=False):
         """Cockpit-flaten i AI Kontrollrom: grupper (rotprosjekt + underprosjekter) med
         oppgaver, Du/AI-merke, status og «krever handling». Config-drevet: systemparameter
         `fiq_gui_control.cockpit_project_id` = rotprosjektets id. Defensivt/felt-guardet."""
@@ -442,7 +498,8 @@ class FiqControlRoomConfig(models.Model):
         out = {"groups": [], "tot": {"done": 0, "pag": 0, "vent": 0, "tot": 0, "pct": 0},
                "krever": [], "root": ""}
         try:
-            pid = int(ICP.get_param("fiq_gui_control.cockpit_project_id", "0") or 0)
+            pid = int(project_id or 0) \
+                or int(ICP.get_param("fiq_gui_control.cockpit_project_id", "0") or 0)
         except Exception:
             pid = 0
         if not pid:
