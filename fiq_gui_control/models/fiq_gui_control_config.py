@@ -814,6 +814,13 @@ class FiqControlRoomConfig(models.Model):
             # Kalender + aktiviteter (MVP: native views; den todelte «Dagens møter»-flaten kommer)
             "kalender": "calendar.action_calendar_event",
             "aktivitet": "mail.mail_activity_action",
+            # De andre kontrollpanelene (fiq_gui_*-flatene) — vises i Styring-menyen når installert
+            "gui_prj": "fiq_gui_prj.action_fiq_gui_prj",
+            "gui_crm": "fiq_gui_crm.action_fiq_gui_crm",
+            "gui_leads": "fiq_gui_crm_leads.action_fiq_gui_crm_leads",
+            "gui_so": "fiq_gui_crm_so.action_fiq_gui_crm_so",
+            "gui_epost": "fiq_gui_epost.action_fiq_gui_epost",
+            "gui_rgs": "fiq_gui_rgs.action_fiq_gui_rgs",
         }
         out = {}
         for key, xmlid in candidates.items():

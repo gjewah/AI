@@ -744,3 +744,9 @@
         &:hover { background: #242938; }
         .fiq_cp_diag_track { background: #2b3140; &.forbruk { background: #2b3140; b { background: #dde2ea; } } } }
 }
+
+// Innstillinger: versjon/oppgradering + fold-pil i cockpit-grupper
+.fiq_hm .fiq_hm_cust_ver { display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--fiq-bd); font-size: 12px; }
+.fiq_hm .fiq_cp_gfold { flex: 0 0 12px; color: var(--fiq-mut); font-size: 11px; }
+.fiq_hm .fiq_cp_gh { cursor: pointer; }

@@ -72,6 +72,13 @@
                     <!-- MVP: native kalender + aktiviteter (todelt «Dagens møter»-flate kommer som egen bygging) -->
                     <div t-att-class="state.view === 'hmsks' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('hmsks')"><span class="b"/>HMS/KS</div>
                     <div t-att-class="state.view === 'airmm' ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() => this.setView('airmm')"><span class="b"/>AI Kontrollrom</div>
+                    <!-- De andre kontrollpanelene (vises når modulene er installert; env.ref-guardet) -->
+                    <div t-if="state.actions.gui_prj" class="fiq_hm_nav" t-on-click="() => this.runAction('gui_prj')" title="Åpne Prosjekt-kontrollrommet"><span class="b"/>Prosjekt</div>
+                    <div t-if="state.actions.gui_crm" class="fiq_hm_nav" t-on-click="() => this.runAction('gui_crm')" title="Åpne CRM-kontrollrommet"><span class="b"/>CRM</div>
+                    <div t-if="state.actions.gui_leads" class="fiq_hm_nav" t-on-click="() => this.runAction('gui_leads')" title="Åpne Leads-kontrollrommet"><span class="b"/>Leads</div>
+                    <div t-if="state.actions.gui_so" class="fiq_hm_nav" t-on-click="() => this.runAction('gui_so')" title="Åpne Salgsordre-kontrollrommet"><span class="b"/>Salgsordre</div>
+                    <div t-if="state.actions.gui_epost" class="fiq_hm_nav" t-on-click="() => this.runAction('gui_epost')" title="Åpne E-post-kontrollrommet"><span class="b"/>E-post</div>
+                    <div t-if="state.actions.gui_rgs" class="fiq_hm_nav" t-on-click="() => this.runAction('gui_rgs')" title="Åpne Regnskap-kontrollrommet"><span class="b"/>Regnskap</div>
 
                     <!-- Fagområder under: én rad per område (lang strek) + nedtrekk for underområder.
                          Treet leses fra Odoo prosjekt-hierarkiet (SSOT) — ingen hardkodet liste. -->
@@ -143,15 +150,25 @@
                                 </label>
                             </t>
                         </div>
+                        <!-- Versjon og oppgradering: status + hvorfor Oppgrader-knappen ev. mangler -->
+                        <div class="fiq_hm_cust_ver">
+                            <span>Versjon: installert <b class="mono" t-esc="state.verInstalled"/> · filer <b class="mono" t-esc="state.verFiles"/></span>
+                            <button t-if="state.canUpgrade and state.verInstalled !== state.verFiles" class="fiq_hm_ext" t-att-disabled="state.upgrading" t-on-click="() =&gt; this.upgradeModule()" t-esc="state.upgrading ? 'Oppgraderer …' : '⬆ Oppgrader modulen nå'"/>
+                            <span t-if="!state.canUpgrade" class="fiq_hm_insp_mut">⚠ Oppgrader-knappen krever FIQ-admin-rollen på brukeren din — til den er satt gjøres oppgradering under Apper.</span>
+                            <button class="fiq_hm_ext" t-on-click="() =&gt; this.reloadGui()" title="Ny GUI-versjon hentes bare ved full sidelast — ⟳ Oppdater henter kun data">🔁 Last GUI-et på nytt (hent ny versjon)</button>
+                        </div>
                     </div>
                     <div t-if="state.loading" class="fiq_hm_loading">Laster …</div>
 
                     <!-- =================== AI KONTROLLROM (MVP: status + test + veikart) =================== -->
-                    <div t-if="!state.loading and state.view === 'airmm'" class="fiq_hm_card fiq_hm_aikr">
+                    <div t-if="!state.loading and state.view === 'airmm'" t-att-class="'fiq_hm_card fiq_hm_aikr' + (state.collapsed.aikr ? ' fiq_hm_collapsed' : '')">
                         <!-- Hele overskriftsraden er klikkbar («usynlig knapp») + tydelig knapp -->
                         <div class="fiq_hm_ch fiq_hm_aikr_h" t-att-style="state.aiCockpitUrl ? 'cursor:pointer' : ''" t-on-click="() =&gt; this.openCockpit()" t-att-title="state.aiCockpitUrl ? 'Åpne cockpiten (fremdrifts-hub)' : ''">
                             <h4>🟣 AI Kontrollrom</h4>
-                            <button t-if="state.aiCockpitUrl" class="fiq_hm_cockbtn" t-on-click.stop="() =&gt; this.openCockpit()">🟣 Åpne cockpiten — fremdrifts-hub ↗</button>
+                            <span class="fiq_hm_chbtns">
+                                <button t-if="state.aiCockpitUrl" class="fiq_hm_cockbtn" t-on-click.stop="() =&gt; this.openCockpit()">🟣 Åpne cockpiten — fremdrifts-hub ↗</button>
+                                <button class="fiq_hm_coll" t-on-click.stop="() =&gt; this.toggleCollapse('aikr')" t-esc="state.collapsed.aikr ? 'Vis ▸' : 'Skjul ▾'"/>
+                            </span>
                         </div>
                         <div class="fiq_hm_aikr_status">
                             <span class="fiq_hm_kdot green"/> <strong>Claude-kobling aktiv</strong> — «Spør AI» i topplinja bruker denne.
@@ -237,11 +254,13 @@
                                 <button class="fiq_hm_ext" title="Oppdater" t-on-click="() =&gt; this.loadCockpit()">⟳</button>
                             </div>
                             <div t-foreach="cpGroups" t-as="g" t-key="g.id" class="fiq_cp_grp">
-                                <div class="fiq_cp_gh">
+                                <div class="fiq_cp_gh" t-on-click="() =&gt; this.foldCpGroup(g.id)" title="Vis/skjul gruppens oppgaver">
+                                    <span class="fiq_cp_gfold" t-esc="state.cpFold[g.id] ? '▸' : '▾'"/>
                                     <span class="fiq_cp_gnr" t-esc="g.no"/>
                                     <span class="fiq_cp_gt" t-esc="g.name"/>
                                     <span class="fiq_cp_gp"><span class="mono"><t t-esc="g.done"/>/<t t-esc="g.total"/></span><span class="fiq_cp_bar"><i t-att-style="'width:' + pctOf(g.done, g.total) + '%'"/></span></span>
                                 </div>
+                                <t t-if="!state.cpFold[g.id]">
                                 <div t-foreach="g.tasks" t-as="ct" t-key="ct.id" t-att-class="'fiq_cp_row' + (ct.st === 'ferdig' ? ' done' : '')">
                                     <span class="fiq_cp_cb" t-on-click.stop="() =&gt; this.cpToggle(ct.id)" t-att-title="ct.st === 'ferdig' ? 'Gjenåpne oppgaven' : 'Merk som utført'"/>
                                     <span class="fiq_hm_no" t-esc="ct.no" t-on-click="() =&gt; this.selectEl('project.task', ct.id, ct.name)"/>
@@ -250,6 +269,7 @@
                                     <span t-att-class="'fiq_cp_st ' + ct.st" t-esc="ct.stage"/>
                                     <span class="fiq_hm_openbtn" t-on-click.stop="() =&gt; this.openRecord('project.task', ct.id)" title="Åpne i Odoo">⤢</span>
                                 </div>
+                                </t>
                             </div>
                         </t>
                         <div t-if="state.cpProj and state.cp and !state.cp.tot.tot" class="fiq_hm_empty">Ingen oppgaver i valgt prosjekt ennå.</div>

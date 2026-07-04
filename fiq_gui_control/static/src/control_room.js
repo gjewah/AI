@@ -81,6 +81,7 @@ export class FiqControlRoom extends Component {
             cpProj: "",           // valgt prosjekt/prosess ("" = alle i scope)
             cpMode: "fremdrift",  // fremdrift | forbruk
             cpDiagram: [],         // diagram-rader (alle prosjekter i scope)
+            cpFold: {},            // foldede cockpit-grupper {prosjektId: true}
             dashSel: this._loadDashSel(),  // Mitt dashbord: valgte xmlids (huskes per nettleser)
             dashEdit: false,       // tilpassnings-modus for Mitt dashbord
             darkMap: this._loadDarkMap(),  // 🌙 mørk bakgrunn PER KONTROLLPANEL (view) — huskes
@@ -1097,7 +1098,24 @@ export class FiqControlRoom extends Component {
     _setKalMnd(y, m) {
         const d = new Date(y, m, 1);
         this.state.kalMnd = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+        // Kalender-navigasjon flytter også PERIODEN (Gjermund 2026-07-04): møte-/aktivitets-
+        // listene følger vist måned — behold dag-i-måned der det går
+        const cur = this.state.anchorDate ? new Date(this.state.anchorDate + "T12:00:00") : new Date();
+        const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        const day = Math.min(cur.getDate(), last);
+        this.state.anchorDate = this._iso(new Date(d.getFullYear(), d.getMonth(), day));
         this._loadKalender();
+        this._loadProjects(this.state.projQuery);
+    }
+
+    // 🔁 Hent ny GUI-versjon: full sidelast (assets lastes bare ved sidelast, ikke ⟳ Oppdater)
+    reloadGui() {
+        window.location.reload();
+    }
+
+    // Fold en cockpit-gruppe (som i Artifact-cockpiten)
+    foldCpGroup(id) {
+        this.state.cpFold[id] = !this.state.cpFold[id];
     }
 
     stepKalMnd(dir) { this._setKalMnd(this.kalY, this.kalM + dir); }
