@@ -865,6 +865,9 @@ class FiqControlRoomConfig(models.Model):
             "gui_rgs": "fiq_gui_rgs.action_fiq_gui_rgs",
             # Kunnskap: artikler/maler (Odoo Knowledge — hjemmesiden)
             "kunnskap": "knowledge.ir_actions_server_knowledge_home_page",
+            # Enkel-flatens store arbeider-knapper (native der det finnes)
+            "timer": "hr_timesheet.act_hr_timesheet_line",
+            "godkjenning": "approvals.approval_request_action_to_review",
         }
         out = {}
         for key, xmlid in candidates.items():

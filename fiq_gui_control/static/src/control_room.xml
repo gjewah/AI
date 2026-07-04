@@ -317,6 +317,20 @@
                     <t t-if="!state.loading and state.view === 'oversikt'">
 
                         <!-- (1) Til stede nå + Møter/aktiviteter i dag (side ved side) -->
+                        <!-- 📱 ENKEL: store knapper for arbeidere ute (mobil/liten skjerm) -->
+                        <div class="fiq_hm_card fiq_blk_enkelbtns" style="order:0">
+                            <div class="fiq_hm_ch"><h4>🧰 Arbeidsdagen</h4></div>
+                            <div class="fiq_hm_enkelgrid">
+                                <button class="fiq_hm_bigbtn" t-on-click="() =&gt; this.setView('airmm')">🗂<span>Velg prosjekt</span></button>
+                                <button class="fiq_hm_bigbtn" t-on-click="() =&gt; this.enkelDo('oppgaver')">✅<span>Mine oppgaver</span></button>
+                                <button class="fiq_hm_bigbtn" t-on-click="() =&gt; this.enkelDo('timer')">⏱<span>+ Timer</span></button>
+                                <button class="fiq_hm_bigbtn" t-on-click="() =&gt; this.enkelDo('ks')">🛠<span>KS</span></button>
+                                <button class="fiq_hm_bigbtn" t-on-click="() =&gt; this.enkelDo('dokument')">📄<span>Dokumentasjon</span></button>
+                                <button class="fiq_hm_bigbtn" t-on-click="() =&gt; this.enkelDo('godkjenning')">✔<span>Godkjenning</span></button>
+                                <button class="fiq_hm_bigbtn fiq_hm_bigbtn_sha" t-on-click="() =&gt; this.enkelDo('sha')">⚠<span>SHA byggeplass</span></button>
+                                <button class="fiq_hm_bigbtn" t-on-click="() =&gt; this.enkelDo('befaring')">📷<span>Befaring/foto</span></button>
+                            </div>
+                        </div>
                         <div class="fiq_hm_lists fiq_blk_activity" t-att-style="'order:' + bo('activity')">
                         <div t-att-class="'fiq_hm_card' + (state.collapsed.presence ? ' fiq_hm_collapsed' : '')">
                             <div class="fiq_hm_ch"><h4>👥 Til stede nå</h4><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('presence')" t-esc="state.collapsed.presence ? 'Vis ▸' : 'Skjul ▾'"/></div>

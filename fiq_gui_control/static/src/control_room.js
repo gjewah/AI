@@ -1123,6 +1123,28 @@ export class FiqControlRoom extends Component {
         window.location.reload();
     }
 
+    // Enkel-flatens store arbeider-knapper: native handling, rull til kort, eller «kommer»
+    enkelDo(key) {
+        if (key === "oppgaver") {
+            const el = document.querySelector(".fiq_blk_projects");
+            if (el) { el.scrollIntoView({ behavior: "smooth" }); }
+            return;
+        }
+        if (key === "ks") {
+            this.notification.add(_t("KS-flaten bygges nå (godkjenningskjeden KS → PL kommer med rollemodellen)."), { type: "info" });
+            return;
+        }
+        if (key === "sha") {
+            this.notification.add(_t("SHA for byggeplass bygges for SDV — spesifikasjon fra bransjestandarder er under arbeid."), { type: "info" });
+            return;
+        }
+        if (key === "befaring") {
+            this.notification.add(_t("Befaringsmodulen (foto per rom/sted) kommer — se prosjektet Befaring og FDV i AI Kontrollrom."), { type: "info" });
+            return;
+        }
+        this.runAction(key);
+    }
+
     // 📌 Blokk-rekkefølge: CSS order på flatens hovedblokker (flex-kolonnen .fiq_hm_main)
     bo(key) {
         const i = this.state.blockOrder.indexOf(key);

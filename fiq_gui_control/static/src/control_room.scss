@@ -834,3 +834,19 @@
     .fiq_hm_psok, .fiq_hm_filtersok, .fiq_hm_ksearch, .fiq_hm_esti, .fiq_hm_din, .fiq_hm_din_g {
         color: #dde2ea !important; background: #262b37 !important; }
 }
+
+// 📱 Enkel: store arbeider-knapper (kun synlig i Enkel-modus)
+.fiq_hm .fiq_blk_enkelbtns { display: none; }
+.fiq_hm.fiq_hm_enkel .fiq_blk_enkelbtns { display: block; }
+.fiq_hm .fiq_hm_enkelgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+@media (max-width: 760px) { .fiq_hm .fiq_hm_enkelgrid { grid-template-columns: repeat(2, 1fr); } }
+.fiq_hm .fiq_hm_bigbtn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    min-height: 76px; border: 1.5px solid var(--fiq-bd); border-radius: 12px; background: #fff;
+    font: inherit; font-size: 24px; cursor: pointer; color: #22303c;
+    span { font-size: 13px; font-weight: 700; }
+    &:hover { border-color: var(--fiq-accent); background: var(--fiq-accent-tile, #f5faf6); } }
+.fiq_hm .fiq_hm_bigbtn_sha { border-color: #e8a13c; background: #fdf6e7;
+    &:hover { border-color: #d97706; background: #fdf0d5; } }
+.fiq_hm.fiq_hm_dark .fiq_hm_bigbtn { background: #232836; color: #e6eaf1; border-color: #3a4150;
+    &:hover { border-color: var(--fiq-accent); background: #262b37; } }
+.fiq_hm.fiq_hm_dark .fiq_hm_bigbtn_sha { background: #3d3117; border-color: #8a6d1a; }
