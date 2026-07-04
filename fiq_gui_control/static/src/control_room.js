@@ -28,7 +28,8 @@ function spColor(nr) {
     return { color: c, dk: SP_DARK_TEXT.includes(c) };
 }
 
-const MND = ["Januar", "Februar", "Mars", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Desember"];
+const mndNames = () => [_t("January"), _t("February"), _t("March"), _t("April"), _t("May"), _t("June"), _t("July"), _t("August"), _t("September"), _t("October"), _t("November"), _t("December")];
+const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -57,7 +58,7 @@ export class FiqControlRoom extends Component {
             domain: [["project_id.active", "=", true]],
             context: { group_by: ["stage_id"] },
             display: { controlPanel: false },
-            noContentHelp: _t("Ingen planlagte oppgaver."),
+            noContentHelp: _t("No planned tasks."),
         };
 
         const show = {};
@@ -440,7 +441,7 @@ export class FiqControlRoom extends Component {
         const icon = byMile ? "🏁" : "👤";
         const groups = {}, order = [];
         rows.forEach((t) => {
-            const k = byMile ? (t.mile || "(uten milepæl)") : (t.ansvarlig || "(uten ansvarlig)");
+            const k = byMile ? (t.mile || _t("(no milestone)")) : (t.ansvarlig || _t("(no responsible)"));
             if (!(k in groups)) { groups[k] = []; order.push(k); }
             groups[k].push(t);
         });
@@ -491,7 +492,7 @@ export class FiqControlRoom extends Component {
         const hidden = this.state.stageHidden;
         const order = [], map = {};
         this.state.progTasks.forEach((t) => {
-            const nm = t.stage || "(uten stadium)";
+            const nm = t.stage || _t("(no stage)");
             if (!(nm in map)) { map[nm] = { name: nm, ai: ai.has(nm), hidden: !!hidden[nm], count: 0 }; order.push(nm); }
             map[nm].count += 1;
         });
@@ -682,9 +683,9 @@ export class FiqControlRoom extends Component {
                 [this.state.cockpitUrlDraft || ""]);
             this.state.aiCockpitUrl = url || "";
             this.state.cockpitEdit = false;
-            this.notification.add(_t("Cockpit-adressen er lagret."), { type: "success" });
+            this.notification.add(_t("The cockpit address has been saved."), { type: "success" });
         } catch (e) {
-            this.notification.add(_t("Kunne ikke lagre — ") + this._errMsg(e), { type: "danger" });
+            this.notification.add(_t("Could not save — ") + this._errMsg(e), { type: "danger" });
         }
     }
 
@@ -840,8 +841,8 @@ export class FiqControlRoom extends Component {
                 ["name", "partner_id", "invoice_date_due"], { limit: 25, order: "invoice_date_due asc" });
         } catch (e) {}
         this.state.finansLines = [
-            ...finForsinket.map((m) => ({ text: (m.name || _t("Faktura")) + " · " + (m.partner_id ? m.partner_id[1] : "") + " (" + _t("forfalt") + " " + (m.invoice_date_due || "") + ")", model: "account.move", res_id: m.id })),
-            ...finLev.map((m) => ({ text: (m.name || _t("Lev.faktura")) + " · " + (m.partner_id ? m.partner_id[1] : "") + " (" + _t("til godkjenning") + ")", model: "account.move", res_id: m.id })),
+            ...finForsinket.map((m) => ({ text: (m.name || _t("Invoice")) + " · " + (m.partner_id ? m.partner_id[1] : "") + " (" + _t("past due") + " " + (m.invoice_date_due || "") + ")", model: "account.move", res_id: m.id })),
+            ...finLev.map((m) => ({ text: (m.name || _t("Vendor bill")) + " · " + (m.partner_id ? m.partner_id[1] : "") + " (" + _t("for approval") + ")", model: "account.move", res_id: m.id })),
         ];
 
         // Category KPIs (report-up / management by exception): Kommunikasjon · Prosjekt · Salg · Finans · HMS/KS
@@ -850,11 +851,11 @@ export class FiqControlRoom extends Component {
         // SP-farge per boks (venstre-aksent, jf. fargekartet — samme familie som stolpemenyen)
         const KPI_FARGE = { komm: "#8b93a1", prosjekt: "#548235", salg: "#CC0000", finans: "#4472C4", hms: "#0070C0" };
         this.state.kpis = [
-            { key: "komm", v: String(komm.length), l: _t("Kommunikasjon"), sub: received.length + " " + _t("ubesvart"), dot: received.length ? "red" : "green" },
-            { key: "prosjekt", v: String(active), l: _t("Prosjekt"), sub: overdueN + " " + _t("forsinket"), dot: overdueN ? "amber" : "green" },
-            { key: "salg", v: String(salg), l: _t("Salg"), sub: _t("ok"), dot: "green" },
-            { key: "finans", v: String(finForsinket.length + finLev.length), l: _t("Finans"), sub: finForsinket.length + " " + _t("forsinket") + " · " + finLev.length + " " + _t("til godkj."), dot: finForsinket.length ? "red" : (finLev.length ? "amber" : "green") },
-            { key: "hms", v: "—", l: _t("HMS/KS"), sub: _t("avvik"), dot: "grey" },
+            { key: "komm", v: String(komm.length), l: _t("Communication"), sub: received.length + " " + _t("unanswered"), dot: received.length ? "red" : "green" },
+            { key: "prosjekt", v: String(active), l: _t("Projects"), sub: overdueN + " " + _t("overdue"), dot: overdueN ? "amber" : "green" },
+            { key: "salg", v: String(salg), l: _t("Sales"), sub: _t("ok"), dot: "green" },
+            { key: "finans", v: String(finForsinket.length + finLev.length), l: _t("Finance"), sub: finForsinket.length + " " + _t("overdue") + " · " + finLev.length + " " + _t("for appr."), dot: finForsinket.length ? "red" : (finLev.length ? "amber" : "green") },
+            { key: "hms", v: "—", l: _t("HSE/QA"), sub: _t("deviations"), dot: "grey" },
         ].map((k) => ({ ...k, farge: KPI_FARGE[k.key] || "#e3e5e9" }));
         if (!this.state.selectedKpi) {
             const red = this.state.kpis.find((k) => k.dot === "red");
@@ -905,8 +906,8 @@ export class FiqControlRoom extends Component {
             text: "v" + (inst || "?"),
             avvik,
             title: avvik
-                ? _t("Filene på serveren er v") + fil + _t(" — trykk «Oppgrader» på Control room i Apper")
-                : _t("Installert versjon"),
+                ? _t("The files on the server are v") + fil + _t(" — press 'Upgrade' on Control room in Apps")
+                : _t("Installed version"),
         };
     }
 
@@ -919,16 +920,16 @@ export class FiqControlRoom extends Component {
             window.location.reload();
         } catch (e) {
             this.state.upgrading = false;
-            this.notification.add(_t("Oppgradering feilet — ") + this._errMsg(e), { type: "danger" });
+            this.notification.add(_t("Upgrade failed — ") + this._errMsg(e), { type: "danger" });
         }
     }
 
     // Tidsbasert hilsen (norsk)
     get hilsen() {
         const h = new Date().getHours();
-        if (h < 10) return _t("God morgen");
-        if (h < 18) return _t("God dag");
-        return _t("God kveld");
+        if (h < 10) return _t("Good morning");
+        if (h < 18) return _t("Good day");
+        return _t("Good evening");
     }
 
     // Krever handling nå: sammendrag PER KATEGORI (styring ved unntak – rapporter opp,
@@ -938,16 +939,16 @@ export class FiqControlRoom extends Component {
         const received = this.state.komm.filter((k) => k.direction === "mottatt");
         if (received.length) {
             out.push({
-                key: "kat-komm", kategori: _t("Kommunikasjon"), type: "kommunikasjon",
-                text: received.length + " " + _t("ubesvart — venter svar"),
+                key: "kat-komm", kategori: _t("Communication"), type: "kommunikasjon",
+                text: received.length + " " + _t("unanswered — awaiting reply"),
                 view: "kommunikasjon",
             });
         }
         const overdue = this.state.myTasks.filter((t) => t.overdue);
         if (overdue.length) {
             out.push({
-                key: "kat-prosjekt", kategori: _t("Prosjekt"), type: "oppgave",
-                text: overdue.length + " " + _t("forsinkede oppgaver"),
+                key: "kat-prosjekt", kategori: _t("Projects"), type: "oppgave",
+                text: overdue.length + " " + _t("overdue tasks"),
                 model: "project.task", res_id: overdue[0].id,
             });
         }
@@ -1109,7 +1110,11 @@ export class FiqControlRoom extends Component {
     // Måned-/år-navigasjon (std kalenderfunksjoner): ◂ ▸ + nedtrekk + I dag
     get kalY() { return parseInt(this.state.kalMnd.slice(0, 4), 10); }
     get kalM() { return parseInt(this.state.kalMnd.slice(5, 7), 10) - 1; }
-    get mndNavn() { return MND; }
+    get mndNavn() { return mndNames(); }
+    get ukedager() { return dayNames(); }
+    // Mal-uttrykk (ternary/konkat) oversettes IKKE av OWL — tr() slår opp i oversettelses-
+    // ordboka ved kjøretid. Strengene ligger i i18n/*.po (vedlikeholdes ved i18n-vask).
+    tr(s) { return _t(s); }
     get kalAar() {
         const y = this.kalY, out = [];
         for (let i = y - 4; i <= y + 4; i++) { out.push(i); }
@@ -1161,17 +1166,17 @@ export class FiqControlRoom extends Component {
     // i widget_order-feltet). Punkter uten tilgjengelig handling skjules (env.ref-guard).
     get navItems() {
         const DEF = [
-            { key: "kontrollrom", label: _t("Kontrollrom"), view: "oversikt" },
-            { key: "kommunikasjon", label: _t("Kommunikasjon"), view: "kommunikasjon", icon: "/fiq_gui_control/static/img/epost.png" },
-            { key: "hmsks", label: _t("HMS/KS"), view: "hmsks" },
-            { key: "airmm", label: _t("AI Kontrollrom"), view: "airmm" },
-            { key: "gui_prj", label: _t("Prosjekt"), title: _t("Åpne Prosjekt-kontrollrommet") },
+            { key: "kontrollrom", label: _t("Control Room"), view: "oversikt" },
+            { key: "kommunikasjon", label: _t("Communication"), view: "kommunikasjon", icon: "/fiq_gui_control/static/img/epost.png" },
+            { key: "hmsks", label: _t("HSE/QA"), view: "hmsks" },
+            { key: "airmm", label: _t("AI Control room"), view: "airmm" },
+            { key: "gui_prj", label: _t("Projects"), title: _t("Open the Project control room") },
             { key: "gui_crm", label: _t("CRM") },
             { key: "gui_leads", label: _t("Leads") },
-            { key: "gui_so", label: _t("Salgsordre") },
-            { key: "gui_epost", label: _t("E-post") },
-            { key: "gui_rgs", label: _t("Regnskap") },
-            { key: "kunnskap", label: _t("Kunnskap"), title: _t("Artikler, maler og dokumentasjon") },
+            { key: "gui_so", label: _t("Sales orders") },
+            { key: "gui_epost", label: _t("Email") },
+            { key: "gui_rgs", label: _t("Accounting") },
+            { key: "kunnskap", label: _t("Knowledge"), title: _t("Articles, templates and documentation") },
         ];
         const map = {};
         DEF.forEach((d) => { map[d.key] = d; });
@@ -1216,11 +1221,11 @@ export class FiqControlRoom extends Component {
 
     blockLabel(k) {
         return {
-            activity: _t("Til stede + Møter og aktiviteter"),
-            quick: _t("Beslutningsstøtte"),
-            projects: _t("Prosjektoversikt + Mine oppgaver"),
-            dash: _t("Mitt dashbord"),
-            chart: _t("Fremdrift/Gantt + Detaljer"),
+            activity: _t("Present + Meetings and activities"),
+            quick: _t("Decision support"),
+            projects: _t("Project overview + My tasks"),
+            dash: _t("My dashboard"),
+            chart: _t("Progress/Gantt + Details"),
         }[k] || k;
     }
 
@@ -1274,11 +1279,11 @@ export class FiqControlRoom extends Component {
     }
 
     get kalTittel() {
-        return MND[this.kalM] + " " + this.kalY;
+        return mndNames()[this.kalM] + " " + this.kalY;
     }
 
     get periodeTekst() {
-        const m = { dag: "valgt dag", uke: "uken", maaned: "måneden", alle: "året" };
+        const m = { dag: _t("selected day"), uke: _t("the week"), maaned: _t("the month"), alle: _t("the year") };
         return m[this.state.kommPeriod] || "";
     }
 
@@ -1314,11 +1319,11 @@ export class FiqControlRoom extends Component {
         const rows = this.filtAktiviteter;
         const g = this.state.aktGruppe;
         if (!g) { return rows; }
-        const key = (a) => g === "type" ? (a.type || "(uten type)")
-            : g === "element" ? (a.res_name || "(uten element)")
-            : g === "modell" ? (a.modell_navn || a.model || "(uten tilhørighet)")
-            : g === "frist" ? (a.frist || "(uten frist)")
-            : (a.forsinket ? "Forfalt" : "Kommende");
+        const key = (a) => g === "type" ? (a.type || _t("(no type)"))
+            : g === "element" ? (a.res_name || _t("(no element)"))
+            : g === "modell" ? (a.modell_navn || a.model || _t("(no relation)"))
+            : g === "frist" ? (a.frist || _t("(no deadline)"))
+            : (a.forsinket ? _t("Past due") : _t("Upcoming"));
         const map = {}, order = [];
         rows.forEach((a) => { const k = key(a); if (!(k in map)) { map[k] = []; order.push(k); } map[k].push(a); });
         order.sort((x, y) => x.localeCompare(y));
@@ -1342,14 +1347,14 @@ export class FiqControlRoom extends Component {
         if (!a) { return; }
         try {
             await this.orm.call("fiq.gui.control.config", "utsett_aktivitet", [a.id, dager || false, nyDato || false]);
-            this.notification.add(_t("Aktiviteten er utsatt."), { type: "success" });
+            this.notification.add(_t("The activity has been postponed."), { type: "success" });
             this.state.utsettDager = "";
             await this._loadKalender();
             // Pek valgt aktivitet til den FERSKE raden (detaljboksen viser ny frist)
             const rows = this.state.kal.aktiviteter || [];
             this.state.selAkt = rows.find((r) => r.id === a.id) || null;
         } catch (e) {
-            this.notification.add(_t("Kunne ikke utsette — ") + this._errMsg(e), { type: "danger" });
+            this.notification.add(_t("Could not postpone — ") + this._errMsg(e), { type: "danger" });
         }
     }
 
@@ -1413,7 +1418,7 @@ export class FiqControlRoom extends Component {
         // Robust: eget act_window (ikke avhengig av en bestemt xmlid som kan mangle)
         this.action.doAction({
             type: "ir.actions.act_window",
-            name: _t("Prosjekter"),
+            name: _t("All projects"),
             res_model: "project.project",
             views: [[false, "kanban"], [false, "list"], [false, "form"]],
             target: "current",
@@ -1423,7 +1428,7 @@ export class FiqControlRoom extends Component {
     // Melding når en funksjon ennå ikke er ferdig (3-ukers-estimat + 75 % buffer)
     _underUtvikling() {
         this.notification.add(
-            _t("Denne funksjonen er under utvikling — forventes levert: 2026-08-07"),
+            _t("This function is under development — expected delivery: 2026-08-07"),
             { type: "info" }
         );
     }
@@ -1462,13 +1467,13 @@ export class FiqControlRoom extends Component {
     async askAi() {
         const q = (this.state.aiQuery || "").trim();
         if (!q) { return; }
-        this.state.aiAnswer = _t("Tenker …");
+        this.state.aiAnswer = _t("Thinking …");
         try {
             const ans = await this.orm.call("fiq.ai", "chat", [q]);
-            this.state.aiAnswer = ans || _t("(tomt svar)");
+            this.state.aiAnswer = ans || _t("(empty reply)");
         } catch (e) {
             // Vis den EKTE feilen (ikke generisk melding) — avgjørende for feilsøking
-            this.state.aiAnswer = _t("AI-feil: ") + this._errMsg(e);
+            this.state.aiAnswer = _t("AI error: ") + this._errMsg(e);
         }
     }
 
@@ -1499,7 +1504,7 @@ export class FiqControlRoom extends Component {
         try {
             await this.orm.write("project.project", [id], { [field]: value || false });
         } catch (e) {
-            this.notification.add(_t("Kunne ikke lagre datoen — ") + this._errMsg(e), { type: "danger" });
+            this.notification.add(_t("Could not save the date — ") + this._errMsg(e), { type: "danger" });
             return;
         }
         const p = this.state.projects.find((x) => x.id === id);
@@ -1512,7 +1517,7 @@ export class FiqControlRoom extends Component {
         try {
             await this.orm.write("project.task", [id], { [field]: val });
         } catch (e) {
-            this.notification.add(_t("Kunne ikke lagre datoen — ") + this._errMsg(e), { type: "danger" });
+            this.notification.add(_t("Could not save the date — ") + this._errMsg(e), { type: "danger" });
             return;
         }
         const t = this.state.myTasks.find((x) => x.id === id);
@@ -1523,7 +1528,7 @@ export class FiqControlRoom extends Component {
     async setProgTaskDate(id, field, value) {
         const val = value ? value + " 12:00:00" : false;
         try { await this.orm.write("project.task", [id], { [field]: val }); }
-        catch (e) { this.notification.add(_t("Kunne ikke lagre datoen — ") + this._errMsg(e), { type: "danger" }); return; }
+        catch (e) { this.notification.add(_t("Could not save the date — ") + this._errMsg(e), { type: "danger" }); return; }
         const t = this.state.progTasks.find((x) => x.id === id);
         if (t) { if (field === "planned_date_begin") { t.start = value || false; } else { t.end = value || false; } }
     }
@@ -1543,7 +1548,7 @@ export class FiqControlRoom extends Component {
     async setTaskEst(id, value) {
         const h = parseFloat(String(value || "").replace(",", ".")) || 0;
         try { await this.orm.write("project.task", [id], { allocated_hours: h }); }
-        catch (e) { this.notification.add(_t("Kunne ikke lagre estimatet — ") + this._errMsg(e), { type: "danger" }); return; }
+        catch (e) { this.notification.add(_t("Could not save the estimate — ") + this._errMsg(e), { type: "danger" }); return; }
         await this._fillProgress("project.task", this.state.myTasks);
         await this._fillProgress("project.project", this.state.projects);
         if (this.state.progLevel === "oppgave") {
@@ -1558,7 +1563,7 @@ export class FiqControlRoom extends Component {
             : [[false, "list"], [false, "form"]];
         this.action.doAction({
             type: "ir.actions.act_window",
-            name: mode === "gantt" ? _t("Planlegging") : _t("Tasks"),
+            name: mode === "gantt" ? _t("Planning") : _t("Tasks"),
             res_model: "project.task",
             domain: [["project_id", "=", pid]],
             views: views,
@@ -1808,7 +1813,7 @@ export class FiqControlRoom extends Component {
             this.state.oktSel = 0;
             this.state.okter = await this.orm.call("fiq.gui.control.config", "get_okter", []);
         } catch (e) {
-            this.notification.add(_t("Kunne ikke sende — ") + this._errMsg(e), { type: "danger" });
+            this.notification.add(_t("Could not send — ") + this._errMsg(e), { type: "danger" });
         }
     }
 
@@ -1817,7 +1822,7 @@ export class FiqControlRoom extends Component {
             await this.orm.call("fiq.gui.control.config", "cockpit_toggle", [taskId]);
             await this.loadCockpit();
         } catch (e) {
-            this.notification.add(_t("Kunne ikke endre status — ") + this._errMsg(e), { type: "danger" });
+            this.notification.add(_t("Could not change status — ") + this._errMsg(e), { type: "danger" });
         }
     }
 
@@ -1871,7 +1876,7 @@ export class FiqControlRoom extends Component {
             this.fileViewer.open(file, files);
         } else {
             this.notification.add(
-                _t("Denne filtypen kan ikke forhåndsvises her ennå (SharePoint/M365-forhåndsvisning kommer). Nedlasting er skrudd av — versjonskontroll."),
+                _t("This file type cannot be previewed here yet (SharePoint/M365 preview is coming). Download is turned off — version control."),
                 { type: "info" }
             );
         }
@@ -1906,8 +1911,8 @@ export class FiqControlRoom extends Component {
         const { start } = this.ganttWindow;
         const s = new Date(start);
         if (p === "alle") { return String(s.getFullYear()); }
-        if (p === "maaned") { return MND[s.getMonth()] + " " + s.getFullYear(); }
-        return "Uke " + isoWeek(s) + " · " + MND[s.getMonth()] + " " + s.getFullYear();
+        if (p === "maaned") { return mndNames()[s.getMonth()] + " " + s.getFullYear(); }
+        return _t("Week") + " " + isoWeek(s) + " · " + mndNames()[s.getMonth()] + " " + s.getFullYear();
     }
 
     get ganttTicks() {
@@ -1918,18 +1923,18 @@ export class FiqControlRoom extends Component {
         const ticks = [];
         if (p === "alle") {
             const y = new Date(start).getFullYear();
-            const mn = ["Jan","Feb","Mar","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Des"];
+            const mn = [_t("Jan"), _t("Feb"), _t("Mar"), _t("Apr"), _t("May"), _t("Jun"), _t("Jul"), _t("Aug"), _t("Sep"), _t("Oct"), _t("Nov"), _t("Dec")];
             for (let m = 0; m < 12; m++) ticks.push({ label: mn[m], left: pct(new Date(y, m, 1).getTime()) });
         } else if (p === "maaned") {
             // Ukenummer per uke i måneden
             let d = new Date(start);
             while (d.getTime() < end) {
-                ticks.push({ label: "U" + isoWeek(d), left: pct(d.getTime()) });
+                ticks.push({ label: _t("W") + isoWeek(d), left: pct(d.getTime()) });
                 const nx = new Date(d); nx.setDate(d.getDate() + 7); d = nx;
             }
         } else {
             // Ukedag + dato (Ma 29.6 …)
-            const wd = ["Ma","Ti","On","To","Fr","Lø","Sø"];
+            const wd = dayNames();
             for (let i = 0; i < 7; i++) {
                 const d = new Date(start + i * 86400000);
                 ticks.push({ label: wd[i] + " " + d.getDate() + "." + (d.getMonth() + 1), left: pct(start + i * 86400000) });
@@ -1972,19 +1977,19 @@ export class FiqControlRoom extends Component {
     // Metadata (ikon/farge + tittel) for gjeldende fagflate-visning; null for oversikt/kommunikasjon
     get area() {
         const map = {
-            hmsks: { color: "#0070C0", title: "HMS/KS" },
-            prosjekt: { icon: "prj.png", title: _t("Prosjekter") },
-            crm: { icon: "crm.png", title: "CRM" },
-            salgsmuligheter: { icon: "crm_leads.png", title: _t("Salgsmuligheter") },
-            salgsordre: { icon: "crm_so.png", title: _t("Salgsordrer") },
-            regnskap: { icon: "rgs.png", title: _t("Regnskap") },
+            hmsks: { color: "#0070C0", title: _t("HSE/QA") },
+            prosjekt: { icon: "prj.png", title: _t("All projects") },
+            crm: { icon: "crm.png", title: _t("CRM") },
+            salgsmuligheter: { icon: "crm_leads.png", title: _t("Opportunities") },
+            salgsordre: { icon: "crm_so.png", title: _t("Sales Orders") },
+            regnskap: { icon: "rgs.png", title: _t("Accounting") },
             // SP-fagområder (rutenett i sidemenyen) – integrerte placeholders inntil egne flater
-            omr_ledelse: { color: "#0070C0", title: _t("1 Ledelse") },
-            omr_admin: { color: "#6b7280", title: _t("2 Administrasjon") },
-            omr_log: { color: "#70AD47", title: _t("4 Logistikk") },
-            omr_mar: { color: "#ED7D31", title: _t("5 Marked") },
-            omr_salg: { color: "#CC0000", title: _t("6 Salg") },
-            omr_fag: { color: "#7030A0", title: _t("8 Fag") },
+            omr_ledelse: { color: "#0070C0", title: _t("1 Management") },
+            omr_admin: { color: "#6b7280", title: _t("2 Administration") },
+            omr_log: { color: "#70AD47", title: _t("4 Logistics") },
+            omr_mar: { color: "#ED7D31", title: _t("5 Marketing") },
+            omr_salg: { color: "#CC0000", title: _t("6 Sales") },
+            omr_fag: { color: "#7030A0", title: _t("8 Subject areas") },
         };
         return map[this.state.view] || null;
     }
@@ -1992,11 +1997,11 @@ export class FiqControlRoom extends Component {
     // SP-fagområder for sidemeny-rutenettet (nummer + navn + kanonisk farge)
     get fagomrader() {
         return [
-            { view: "omr_ledelse", nr: "1", navn: _t("Ledelse"), farge: "#0070C0" },
+            { view: "omr_ledelse", nr: "1", navn: _t("Management"), farge: "#0070C0" },
             { view: "omr_admin", nr: "2", navn: _t("Admin"), farge: "#6b7280" },
             { view: "omr_log", nr: "4", navn: "LOG", farge: "#70AD47" },
             { view: "omr_mar", nr: "5", navn: "MAR", farge: "#ED7D31" },
-            { view: "omr_salg", nr: "6", navn: _t("Salg"), farge: "#CC0000" },
+            { view: "omr_salg", nr: "6", navn: _t("Sales"), farge: "#CC0000" },
             { view: "omr_fag", nr: "8", navn: "FAG", farge: "#7030A0" },
         ];
     }

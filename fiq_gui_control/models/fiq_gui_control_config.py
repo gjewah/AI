@@ -406,7 +406,7 @@ class FiqControlRoomConfig(models.Model):
                 # mimetype + checksum → forhåndsvisning (FileViewer); ALDRI nedlasting
                 out["dok"].append({
                     "id": a.id,
-                    "name": a.name or _("Dokument"),
+                    "name": a.name or _("Document"),
                     "mimetype": a.mimetype or "",
                     "checksum": a.checksum or "",
                 })
@@ -421,7 +421,7 @@ class FiqControlRoomConfig(models.Model):
         AKKURAT denne modulen, uavhengig av tekniske innstillingsrettigheter."""
         if not (self.env.user.has_group("fiq_gui_control.group_admin")
                 or self.env.user.has_group("base.group_system")):
-            raise AccessError(_("Kun administratorer kan oppgradere Kontrollrommet."))
+            raise AccessError(_("Only administrators can upgrade the Control room."))
         mod = self.env["ir.module.module"].sudo().search([("name", "=", "fiq_gui_control")], limit=1)
         if mod and mod.state == "installed":
             mod.button_immediate_upgrade()
@@ -434,7 +434,7 @@ class FiqControlRoomConfig(models.Model):
         UTEN ny modulversjon. Kontrollert løft: FIQ-admin eller Settings-admin."""
         if not (self.env.user.has_group("fiq_gui_control.group_admin")
                 or self.env.user.has_group("base.group_system")):
-            raise AccessError(_("Kun administratorer kan endre cockpit-adressen."))
+            raise AccessError(_("Only administrators can change the cockpit address."))
         url = (url or "").strip()
         if url and not url.startswith(("https://", "http://")):
             url = "https://" + url
@@ -716,13 +716,13 @@ class FiqControlRoomConfig(models.Model):
                 return out
             seen = set()
             if "user_id" in p._fields and p.user_id:
-                out.append({"name": p.user_id.name, "rolle": _("Prosjektleder")})
+                out.append({"name": p.user_id.name, "rolle": _("Project manager")})
                 seen.add(p.user_id.id)
             for t in self.env["project.task"].search([("project_id", "=", p.id)], limit=200):
                 for u in t.user_ids:
                     if u.id not in seen:
                         seen.add(u.id)
-                        out.append({"name": u.name, "rolle": _("Deltager")})
+                        out.append({"name": u.name, "rolle": _("Participant")})
         except Exception:
             pass
         return out
@@ -785,7 +785,7 @@ class FiqControlRoomConfig(models.Model):
                     note = ""
                 out["aktiviteter"].append({
                     "id": a.id,
-                    "name": a.summary or (a.activity_type_id.name or _("Aktivitet")),
+                    "name": a.summary or (a.activity_type_id.name or _("Activity")),
                     "type": a.activity_type_id.name or "",
                     "frist": str(a.date_deadline or ""),
                     "forsinket": bool(a.date_deadline and a.date_deadline < today),
@@ -886,17 +886,17 @@ class FiqControlRoomConfig(models.Model):
             # «Til stede», UANSETT im_status (im_status er upålitelig uten sanntids-buss,
             # f.eks. på Staging). Deretter im_status som fallback.
             if meeting:
-                farge, tekst = "orange", _("I møte")
+                farge, tekst = "orange", _("In a meeting")
             elif moett:
-                farge, tekst = "green", _("Til stede")
+                farge, tekst = "green", _("Present")
             elif im == "online":
-                farge, tekst = "green", _("Til stede")
+                farge, tekst = "green", _("Present")
             elif im == "away":
-                farge, tekst = "orange", _("Ute")
+                farge, tekst = "orange", _("Out")
             elif attendance_avail:
-                farge, tekst = "red", _("Ikke møtt")
+                farge, tekst = "red", _("Not checked in")
             else:
-                farge, tekst = "red", _("Fraværende")
+                farge, tekst = "red", _("Absent")
 
             name = u.name or u.login or "—"
             parts = [p for p in name.replace("-", " ").split(" ") if p]

@@ -12,6 +12,6 @@ class ProjectTaskType(models.Model):
 
     fiq_ai_stage = fields.Boolean(
         string="AI Stage",
-        help="Merk dette stadiet som en del av FIQ AI-arbeidsflyten. "
-             "Kontrollrommet kan da vise/velge AI-stadiene. Endrer ingen oppgaver.",
+        help="Mark this stage as part of the FIQ AI workflow. "
+             "The Control room can then show/select the AI stages. Does not change any tasks.",
     )

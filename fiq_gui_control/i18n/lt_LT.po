@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fiq_gui_control 19.0\n"
 "Last-Translator: FIQ AS\n"
-"Language-Team: Norwegian Bokmål\n"
-"Language: nb_NO\n"
+"Language-Team: Lithuanian\n"
+"Language: lt_LT\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
@@ -13,133 +13,133 @@ msgstr ""
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid " — press 'Upgrade' on Control room in Apps"
-msgstr " — trykk «Oppgrader» på Control room i Apper"
+msgstr " — spauskite „Naujovinti“ ant Control room skiltyje Programos"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "(empty reply)"
-msgstr "(tomt svar)"
+msgstr "(tuščias atsakymas)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "(no deadline)"
-msgstr "(uten frist)"
+msgstr "(be termino)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "(no element)"
-msgstr "(uten element)"
+msgstr "(be elemento)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "(no milestone)"
-msgstr "(uten milepæl)"
+msgstr "(be gairės)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "(no relation)"
-msgstr "(uten tilhørighet)"
+msgstr "(be sąsajos)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "(no responsible)"
-msgstr "(uten ansvarlig)"
+msgstr "(be atsakingo)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "(no stage)"
-msgstr "(uten stadium)"
+msgstr "(be etapo)"
 
 #. module: fiq_gui_control
 #. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "(no subject)"
-msgstr "(uten emne)"
+msgstr "(be temos)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "(no type)"
-msgstr "(uten type)"
+msgstr "(be tipo)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "+ Add report/dashboard …"
-msgstr "+ Legg til rapport/dashbord …"
+msgstr "+ Pridėti ataskaitą/skydelį …"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "+ Timesheets"
-msgstr "+ Timer"
+msgstr "+ Valandos"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "+ days"
-msgstr "+ dager"
+msgstr "+ dienų"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "0.00 IQ (platform)"
-msgstr "0.00 IQ (plattform)"
+msgstr "0.00 IQ (platforma)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "1 Management"
-msgstr "1 Ledelse"
+msgstr "1 Vadovybė"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "2 Administration"
-msgstr "2 Administrasjon"
+msgstr "2 Administracija"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "4 Logistics"
-msgstr "4 Logistikk"
+msgstr "4 Logistika"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "5 Marketing"
-msgstr "5 Marked"
+msgstr "5 Rinkodara"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "6 Sales"
-msgstr "6 Salg"
+msgstr "6 Pardavimai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "8 Subject areas"
-msgstr "8 Fag"
+msgstr "8 Sritys"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "A new GUI version is only fetched on a full page load — ⟳ Refresh only fetches data"
-msgstr "Ny GUI-versjon hentes bare ved full sidelast — ⟳ Oppdater henter kun data"
+msgstr "Nauja GUI versija įkeliama tik visiškai perkrovus puslapį — ⟳ Atnaujinti įkelia tik duomenis"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "AI Control room"
-msgstr "AI Kontrollrom"
+msgstr "AI valdymo centras"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__show_copilot
@@ -149,37 +149,37 @@ msgstr "AI Copilot"
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_project_task_type__fiq_ai_stage
 msgid "AI Stage"
-msgstr "AI-stadium"
+msgstr "AI etapas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "AI error: "
-msgstr "AI-feil: "
+msgstr "AI klaida: "
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "AI platform"
-msgstr "AI-plattform"
+msgstr "AI platforma"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "AI platform projects (tag «AI-plattform», set automatically by Coworker) or the customer's internal projects"
-msgstr "AI-plattformprosjekter (tagg «AI-plattform», settes automatisk av Coworker) eller kundens interne prosjekter"
+msgstr "AI platformos projektai (žyma «AI-plattform», automatiškai nustatoma Coworker) arba kliento vidiniai projektai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "AI tasks «on the fly» — ask AI to execute, follow status here"
-msgstr "AI-oppgaver «on the fly» — be AI utføre, følg status her"
+msgstr "AI užduotys «on the fly» — paprašykite AI įvykdyti, sekite būseną čia"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "AI usage and costs per period"
-msgstr "AI-forbruk og kostnader per periode"
+msgstr "AI naudojimas ir išlaidos per laikotarpį"
 
 #. module: fiq_gui_control
 #. odoo-javascript
@@ -191,32 +191,32 @@ msgstr "AI 🤖"
 #. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "Absent"
-msgstr "Fraværende"
+msgstr "Išvykęs"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Accounting"
-msgstr "Regnskap"
+msgstr "Apskaita"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Activities"
-msgstr "Aktiviteter"
+msgstr "Veiklos"
 
 #. module: fiq_gui_control
 #. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__show_activity
 msgid "Activity"
-msgstr "Aktivitet"
+msgstr "Veikla"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Add or remove items"
-msgstr "Legg til eller fjern elementer"
+msgstr "Pridėti arba pašalinti elementus"
 
 #. module: fiq_gui_control
 #. odoo-javascript
@@ -228,73 +228,73 @@ msgstr "Admin"
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "All"
-msgstr "Alle"
+msgstr "Visi"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "All (chart)"
-msgstr "Alle (diagram)"
+msgstr "Visi (diagrama)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "All available items have been added."
-msgstr "Alle tilgjengelige elementer er lagt til."
+msgstr "Visi galimi elementai jau pridėti."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "All projects"
-msgstr "Prosjekter"
+msgstr "Visi projektai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Approval"
-msgstr "Godkjenning"
+msgstr "Tvirtinimas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Apr"
-msgstr "Apr"
+msgstr "Bal"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "April"
-msgstr "April"
+msgstr "Balandis"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Articles, templates and documentation"
-msgstr "Artikler, maler og dokumentasjon"
+msgstr "Straipsniai, šablonai ir dokumentacija"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Ask"
-msgstr "Spør"
+msgstr "Klausti"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Ask Claude for help …"
-msgstr "Spør Claude om hjelp …"
+msgstr "Klauskite Claude pagalbos …"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Aug"
-msgstr "Aug"
+msgstr "Rgp"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "August"
-msgstr "August"
+msgstr "Rugpjūtis"
 
 #. module: fiq_gui_control
 #. odoo-javascript
@@ -306,35 +306,35 @@ msgstr "Auto"
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Back to project progress"
-msgstr "Tilbake til prosjektfremdrift"
+msgstr "Atgal į projekto pažangą"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Back to the Control room"
-msgstr "Tilbake til Kontrollrommet"
+msgstr "Atgal į Valdymo centrą"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields.selection,name:fiq_gui_control.selection__fiq_gui_control_config__level__balansert
 msgid "Balanced"
-msgstr "Balansert"
+msgstr "Subalansuotas"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__widget_order
 msgid "Block order"
-msgstr "Blokk-rekkefølge"
+msgstr "Blokų tvarka"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Both"
-msgstr "Begge"
+msgstr "Abu"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "COMPLETED"
-msgstr "FULLFØRT"
+msgstr "UŽBAIGTA"
 
 #. module: fiq_gui_control
 #. odoo-javascript
@@ -346,61 +346,61 @@ msgstr "CRM"
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Cancel"
-msgstr "Avbryt"
+msgstr "Atšaukti"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Change the deadline directly"
-msgstr "Endre fristen direkte"
+msgstr "Keisti terminą tiesiogiai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Choose columns"
-msgstr "Velg kolonner"
+msgstr "Pasirinkti stulpelius"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Claude connection active"
-msgstr "Claude-kobling aktiv"
+msgstr "Claude ryšys aktyvus"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Clear"
-msgstr "Tøm"
+msgstr "Išvalyti"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Clear search"
-msgstr "Tøm søk"
+msgstr "Išvalyti paiešką"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Close"
-msgstr "Lukk"
+msgstr "Uždaryti"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Collapse/expand the customer/brain"
-msgstr "Kollaps/ekspander kunden/hjernen"
+msgstr "Suskleisti/išskleisti klientą/smegenis"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Collapse/expand the group"
-msgstr "Kollaps/ekspander gruppen"
+msgstr "Suskleisti/išskleisti grupę"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Coming to this board (designed, built step by step):"
-msgstr "Kommer i denne flaten (designet, bygges trinnvis):"
+msgstr "Šioje lentoje netrukus (suprojektuota, kuriama žingsnis po žingsnio):"
 
 #. module: fiq_gui_control
 #. odoo-javascript
@@ -408,214 +408,214 @@ msgstr "Kommer i denne flaten (designet, bygges trinnvis):"
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__show_kommunikasjon
 msgid "Communication"
-msgstr "Kommunikasjon"
+msgstr "Komunikacija"
 
 #. module: fiq_gui_control
 #: model:ir.model,name:fiq_gui_control.model_res_company
 msgid "Companies"
-msgstr "Firmaer"
+msgstr "Įmonės"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__company_id
 msgid "Company"
-msgstr "Firma"
+msgstr "Įmonė"
 
 #. module: fiq_gui_control
 #: model:ir.actions.act_window,name:fiq_gui_control.action_fiq_gui_control_branding
 #: model:ir.ui.menu,name:fiq_gui_control.menu_fiq_gui_control_admin_branding
 msgid "Company branding"
-msgstr "Firmaprofil"
+msgstr "Įmonės stilius"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Company, person, project, task …"
-msgstr "Firma, person, prosjekt, oppgave …"
+msgstr "Įmonė, asmuo, projektas, užduotis …"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Consumption tracking: logged vs. estimated hours"
-msgstr "Forbruksmåling: førte vs. estimerte timer"
+msgstr "Sąnaudų sekimas: registruotos vs. numatytos valandos"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Control Room"
-msgstr "Kontrollrom"
+msgstr "Valdymo centras"
 
 #. module: fiq_gui_control
 #: model:ir.actions.client,name:fiq_gui_control.action_fiq_gui_control
 #: model:ir.ui.menu,name:fiq_gui_control.menu_fiq_gui_control_root
 #: model_terms:ir.ui.view,arch_db:fiq_gui_control.view_company_form_fiq_gui_control
 msgid "Control room"
-msgstr "Kontrollrommet"
+msgstr "Valdymo centras"
 
 #. module: fiq_gui_control
 #: model:res.groups,name:fiq_gui_control.group_admin
 msgid "Control room / Administrator"
-msgstr "Kontrollrom / Administrator"
+msgstr "Valdymo centras / Administratorius"
 
 #. module: fiq_gui_control
 #: model:res.groups,name:fiq_gui_control.group_manager
 msgid "Control room / Manager"
-msgstr "Kontrollrom / Leder"
+msgstr "Valdymo centras / Vadovas"
 
 #. module: fiq_gui_control
 #: model:res.groups,name:fiq_gui_control.group_user
 msgid "Control room / User"
-msgstr "Kontrollrom / Bruker"
+msgstr "Valdymo centras / Naudotojas"
 
 #. module: fiq_gui_control
 #: model:ir.ui.menu,name:fiq_gui_control.menu_fiq_gui_control_admin_root
 msgid "Control room Admin"
-msgstr "Kontrollrom-admin"
+msgstr "Valdymo centro administravimas"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_res_company__fiq_control_accent
 msgid "Control room accent color"
-msgstr "Kontrollrommets aksentfarge"
+msgstr "Valdymo centro akcento spalva"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_res_company__fiq_control_logo
 msgid "Control room logo (light variant)"
-msgstr "Kontrollrom-logo (lys variant)"
+msgstr "Valdymo centro logotipas (šviesus variantas)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Could not change status — "
-msgstr "Kunne ikke endre status — "
+msgstr "Nepavyko pakeisti būsenos — "
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Could not postpone — "
-msgstr "Kunne ikke utsette — "
+msgstr "Nepavyko atidėti — "
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Could not save the date — "
-msgstr "Kunne ikke lagre datoen — "
+msgstr "Nepavyko išsaugoti datos — "
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Could not save the estimate — "
-msgstr "Kunne ikke lagre estimatet — "
+msgstr "Nepavyko išsaugoti įverčio — "
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Could not save — "
-msgstr "Kunne ikke lagre — "
+msgstr "Nepavyko išsaugoti — "
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Could not send — "
-msgstr "Kunne ikke sende — "
+msgstr "Nepavyko išsiųsti — "
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Create"
-msgstr "Opprett"
+msgstr "Sukurti"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__create_uid
 msgid "Created by"
-msgstr "Opprettet av"
+msgstr "Sukūrė"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__create_date
 msgid "Created on"
-msgstr "Opprettet den"
+msgstr "Sukurta"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Customer"
-msgstr "Kunde"
+msgstr "Klientas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Customize"
-msgstr "Tilpass"
+msgstr "Tinkinti"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Deadline"
-msgstr "Frist"
+msgstr "Terminas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Dec"
-msgstr "Des"
+msgstr "Gru"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "December"
-msgstr "Desember"
+msgstr "Gruodis"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Decision support"
-msgstr "Beslutningsstøtte"
+msgstr "Sprendimų palaikymas"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__level
 msgid "Detail level"
-msgstr "Detaljnivå"
+msgstr "Detalumo lygis"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields.selection,name:fiq_gui_control.selection__fiq_gui_control_config__level__detaljert
 msgid "Detailed"
-msgstr "Detaljert"
+msgstr "Detalus"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Details"
-msgstr "Detaljer"
+msgstr "Detalės"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__display_name
 #: model:ir.model.fields,field_description:fiq_gui_control.field_project_task_type__display_name
 #: model:ir.model.fields,field_description:fiq_gui_control.field_res_company__display_name
 msgid "Display Name"
-msgstr "Visningsnavn"
+msgstr "Rodomas pavadinimas"
 
 #. module: fiq_gui_control
 #. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "Document"
-msgstr "Dokument"
+msgstr "Dokumentas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Documentation"
-msgstr "Dokumentasjon"
+msgstr "Dokumentacija"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Done"
-msgstr "Ferdig"
+msgstr "Atlikta"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Element"
-msgstr "Element"
+msgstr "Elementas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
@@ -623,19 +623,19 @@ msgstr "Element"
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Email"
-msgstr "E-post"
+msgstr "El. paštas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Estimated"
-msgstr "Estimert"
+msgstr "Numatyta"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Estimated (assumed) hours – adjust; progress = logged ÷ estimated"
-msgstr "Estimerte (antatte) timer – juster; fremdrift = førte ÷ estimerte"
+msgstr "Numatytos (tariamos) valandos – koreguokite; pažanga = registruotos ÷ numatytos"
 
 #. module: fiq_gui_control
 #. odoo-javascript
@@ -646,67 +646,67 @@ msgstr "FIQ"
 #. module: fiq_gui_control
 #: model:ir.model,name:fiq_gui_control.model_fiq_gui_control_config
 msgid "FIQ Control room – user setup"
-msgstr "FIQ Kontrollrom – brukeroppsett"
+msgstr "FIQ valdymo centras – naudotojo sąranka"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Feb"
-msgstr "Feb"
+msgstr "Vas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "February"
-msgstr "Februar"
+msgstr "Vasaris"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Fetch live data again"
-msgstr "Hent live data på nytt"
+msgstr "Iš naujo įkelti tiesioginius duomenis"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Filter on this sender"
-msgstr "Filtrer på denne avsenderen"
+msgstr "Filtruoti pagal šį siuntėją"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Finance"
-msgstr "Finans"
+msgstr "Finansai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Fri"
-msgstr "Fr"
+msgstr "Pn"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "From"
-msgstr "Fra"
+msgstr "Nuo"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Full"
-msgstr "Total"
+msgstr "Pilnas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Full chat/conversation: open the record in Odoo with ⤢."
-msgstr "Full chat/samtale: åpne posten i Odoo med ⤢."
+msgstr "Visas pokalbis: atverkite įrašą Odoo su ⤢."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Full log in Odoo"
-msgstr "Full logg i Odoo"
+msgstr "Visas žurnalas Odoo"
 
 #. module: fiq_gui_control
 #. odoo-javascript
@@ -718,84 +718,84 @@ msgstr "Gantt"
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Go to today"
-msgstr "Gå til i dag"
+msgstr "Eiti į šiandieną"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Good day"
-msgstr "God dag"
+msgstr "Laba diena"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Good evening"
-msgstr "God kveld"
+msgstr "Labas vakaras"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Good morning"
-msgstr "God morgen"
+msgstr "Labas rytas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Governance"
-msgstr "Styring"
+msgstr "Valdysena"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Group by responsible or milestone"
-msgstr "Gruppér på ansvarlig eller milepæl"
+msgstr "Grupuoti pagal atsakingą arba gairę"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Group by: none"
-msgstr "Gruppér: ingen"
+msgstr "Grupuoti: nieko"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Group the chart by customer/brain"
-msgstr "Gruppér diagrammet på kunde/hjerne"
+msgstr "Grupuoti diagramą pagal klientą/smegenis"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Group the list (as in native)"
-msgstr "Gruppér listen (som i native)"
+msgstr "Grupuoti sąrašą (kaip standartinėje Odoo)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "HSE/QA"
-msgstr "HMS/KS"
+msgstr "HSE/KS"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Help"
-msgstr "Hjelp"
+msgstr "Pagalba"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,help:fiq_gui_control.field_res_company__fiq_control_accent
 msgid "Hex color used as the accent in the Control room (active menu, KPI, progress)."
-msgstr "Hex-farge brukt som aksent i Kontrollrommet (aktiv meny, KPI, fremdrift)."
+msgstr "Hex spalva, naudojama kaip akcentas Valdymo centre (aktyvus meniu, KPI, pažanga)."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Hide overdue activities"
-msgstr "Skjul forfalte aktiviteter"
+msgstr "Slėpti vėluojančias veiklas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Hours spent"
-msgstr "Forbruk (timer)"
+msgstr "Sunaudotos valandos"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__id
@@ -808,285 +808,285 @@ msgstr "ID"
 #. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "In a meeting"
-msgstr "I møte"
+msgstr "Susitikime"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "In progress"
-msgstr "Pågår"
+msgstr "Vykdoma"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Installed version"
-msgstr "Installert versjon"
+msgstr "Įdiegta versija"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Internal"
-msgstr "Interne"
+msgstr "Vidiniai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Invoice"
-msgstr "Faktura"
+msgstr "Sąskaita"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Jan"
-msgstr "Jan"
+msgstr "Sau"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "January"
-msgstr "Januar"
+msgstr "Sausis"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Jul"
-msgstr "Jul"
+msgstr "Lie"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "July"
-msgstr "Juli"
+msgstr "Liepa"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Jun"
-msgstr "Jun"
+msgstr "Bir"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "June"
-msgstr "Juni"
+msgstr "Birželis"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__show_kpis
 msgid "KPI row"
-msgstr "KPI-rad"
+msgstr "KPI eilutė"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Knowledge"
-msgstr "Kunnskap"
+msgstr "Žinios"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__write_uid
 msgid "Last Updated by"
-msgstr "Sist oppdatert av"
+msgstr "Paskutinį kartą atnaujino"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__write_date
 msgid "Last Updated on"
-msgstr "Sist oppdatert den"
+msgstr "Paskutinį kartą atnaujinta"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Leads"
-msgstr "Leads"
+msgstr "Iniciatyvos"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "List"
-msgstr "Liste"
+msgstr "Sąrašas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Loading …"
-msgstr "Laster …"
+msgstr "Įkeliama …"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,help:fiq_gui_control.field_res_company__fiq_control_logo
 msgid "Logo shown in the Control room top bar and sidebar. Use a variant that reads on a dark background (white/silver) for the sidebar."
-msgstr "Logo som vises i Kontrollrommets topplinje og sidemeny. Bruk en variant som er lesbar på mørk bakgrunn (hvit/sølv) i sidemenyen."
+msgstr "Logotipas, rodomas Valdymo centro viršutinėje juostoje ir šoniniame meniu. Šoniniam meniu naudokite variantą, įskaitomą tamsiame fone (baltą/sidabrinį)."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Management"
-msgstr "Ledelse"
+msgstr "Vadovybė"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Mar"
-msgstr "Mar"
+msgstr "Kov"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "March"
-msgstr "Mars"
+msgstr "Kovas"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,help:fiq_gui_control.field_project_task_type__fiq_ai_stage
 msgid "Mark this stage as part of the FIQ AI workflow. The Control room can then show/select the AI stages. Does not change any tasks."
-msgstr "Merk dette stadiet som en del av FIQ AI-arbeidsflyten. Kontrollrommet kan da vise/velge AI-stadiene. Endrer ingen oppgaver."
+msgstr "Pažymėkite šį etapą kaip FIQ AI darbo eigos dalį. Valdymo centras tada galės rodyti/pasirinkti AI etapus. Užduočių nekeičia."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "May"
-msgstr "Mai"
+msgstr "Gegužė"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Meetings"
-msgstr "Møter"
+msgstr "Susitikimai"
 
 #. module: fiq_gui_control
 #. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "Message"
-msgstr "Melding"
+msgstr "Žinutė"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Mine 👤"
-msgstr "Mine 👤"
+msgstr "Mano 👤"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Mon"
-msgstr "Ma"
+msgstr "Pr"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Move down"
-msgstr "Flytt ned"
+msgstr "Perkelti žemyn"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Move up"
-msgstr "Flytt opp"
+msgstr "Perkelti aukštyn"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "My dashboard"
-msgstr "Mitt dashbord"
+msgstr "Mano skydelis"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "My tasks"
-msgstr "Mine oppgaver"
+msgstr "Mano užduotys"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Next month"
-msgstr "Neste måned"
+msgstr "Kitas mėnuo"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Next period"
-msgstr "Neste periode"
+msgstr "Kitas laikotarpis"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "No"
-msgstr "Ingen"
+msgstr "Nėra"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "No activities in the period."
-msgstr "Ingen aktiviteter i perioden."
+msgstr "Laikotarpiu veiklų nėra."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "No communication in the selected period."
-msgstr "Ingen kommunikasjon i valgt periode."
+msgstr "Pasirinktu laikotarpiu komunikacijos nėra."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "No description on the record."
-msgstr "Ingen beskrivelse på posten."
+msgstr "Įrašas neturi aprašymo."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "No documents on the record."
-msgstr "Ingen dokumenter på posten."
+msgstr "Įrašas neturi dokumentų."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "No email on the record."
-msgstr "Ingen e-post på posten."
+msgstr "Įrašas neturi el. laiškų."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "No lines to show for the selection."
-msgstr "Ingen linjer å vise for valget."
+msgstr "Pasirinkimui nėra rodytinų eilučių."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "No log on the record."
-msgstr "Ingen logg på posten."
+msgstr "Įrašas neturi žurnalo."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "No meetings in the period."
-msgstr "Ingen møter i perioden."
+msgstr "Laikotarpiu susitikimų nėra."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "No open tasks assigned to you."
-msgstr "Ingen åpne oppgaver tildelt deg."
+msgstr "Jums nepriskirta atvirų užduočių."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "No participants found yet."
-msgstr "Ingen deltagere funnet ennå."
+msgstr "Dalyvių kol kas nerasta."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "No planned tasks."
-msgstr "Ingen planlagte oppgaver."
+msgstr "Suplanuotų užduočių nėra."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "No registered internal users."
-msgstr "Ingen registrerte interne brukere."
+msgstr "Registruotų vidinių naudotojų nėra."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "No tasks in the selected project yet."
-msgstr "Ingen oppgaver i valgt prosjekt ennå."
+msgstr "Pasirinktame projekte užduočių kol kas nėra."
 
 #. module: fiq_gui_control
 #. odoo-javascript
@@ -1098,269 +1098,269 @@ msgstr "Nr."
 #. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "Not checked in"
-msgstr "Ikke møtt"
+msgstr "Neatvykęs"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Nov"
-msgstr "Nov"
+msgstr "Lap"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "November"
-msgstr "November"
+msgstr "Lapkritis"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Oct"
-msgstr "Okt"
+msgstr "Spa"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "October"
-msgstr "Oktober"
+msgstr "Spalis"
 
 #. module: fiq_gui_control
 #: model:ir.model.constraint,message:fiq_gui_control.constraint_fiq_gui_control_config_user_company_uniq
 msgid "One Control room setup per user per company."
-msgstr "Ett Kontrollrom-oppsett per bruker per firma."
+msgstr "Viena Valdymo centro sąranka vienam naudotojui vienoje įmonėje."
 
 #. module: fiq_gui_control
 #. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "Only administrators can change the cockpit address."
-msgstr "Kun administratorer kan endre cockpit-adressen."
+msgstr "Cockpit adresą keisti gali tik administratoriai."
 
 #. module: fiq_gui_control
 #. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "Only administrators can upgrade the Control room."
-msgstr "Kun administratorer kan oppgradere Kontrollrommet."
+msgstr "Naujovinti Valdymo centrą gali tik administratoriai."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Only overdue"
-msgstr "Kun forfalte"
+msgstr "Tik vėluojančios"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Open in Odoo"
-msgstr "Åpne i Odoo"
+msgstr "Atverti Odoo"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Open planning"
-msgstr "Åpne planlegging"
+msgstr "Atverti planavimą"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Open selected activity in Odoo"
-msgstr "Åpne valgt aktivitet i Odoo"
+msgstr "Atverti pasirinktą veiklą Odoo"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Open selected meeting in Odoo"
-msgstr "Åpne valgt møte i Odoo"
+msgstr "Atverti pasirinktą susitikimą Odoo"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Open the Project control room"
-msgstr "Åpne Prosjekt-kontrollrommet"
+msgstr "Atverti Projektų valdymo centrą"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Open the Project control room (expanded)"
-msgstr "Åpne Prosjekt-kontrollrommet (utvidet)"
+msgstr "Atverti Projektų valdymo centrą (išplėstą)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Open the calendar (native Odoo)"
-msgstr "Åpne kalenderen (native Odoo)"
+msgstr "Atverti kalendorių (standartinis Odoo)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Open the record"
-msgstr "Åpne posten"
+msgstr "Atverti įrašą"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Open the task in Odoo"
-msgstr "Åpne oppgaven i Odoo"
+msgstr "Atverti užduotį Odoo"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Open your activities (native Odoo)"
-msgstr "Åpne aktivitetene dine (native Odoo)"
+msgstr "Atverti savo veiklas (standartinis Odoo)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Opportunities"
-msgstr "Salgsmuligheter"
+msgstr "Galimybės"
 
 #. module: fiq_gui_control
 #. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "Out"
-msgstr "Ute"
+msgstr "Išėjęs"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Own view under construction – content will appear here. Expected delivery: 2026-08-07."
-msgstr "Egen flate under utvikling – innhold kommer her. Forventes levert: 2026-08-07."
+msgstr "Atskiras vaizdas kuriamas – turinys atsiras čia. Numatomas pristatymas: 2026-08-07."
 
 #. module: fiq_gui_control
 #. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "Participant"
-msgstr "Deltager"
+msgstr "Dalyvis"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Past due"
-msgstr "Forfalt"
+msgstr "Pradelsta"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Planned from"
-msgstr "Planlagt fra"
+msgstr "Planuota nuo"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Planned to"
-msgstr "Planlagt til"
+msgstr "Planuota iki"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Planning"
-msgstr "Planlegging"
+msgstr "Planavimas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Postpone until:"
-msgstr "Utsett til:"
+msgstr "Atidėti iki:"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Powered by"
-msgstr "Drevet av"
+msgstr "Veikia su"
 
 #. module: fiq_gui_control
 #. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "Present"
-msgstr "Til stede"
+msgstr "Atvykęs"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Present + Meetings and activities"
-msgstr "Til stede + Møter og aktiviteter"
+msgstr "Atvykę + Susitikimai ir veiklos"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Press «⚙ Customize» and choose the reports/dashboards you want here — the choice is remembered."
-msgstr "Trykk «⚙ Tilpass» og velg rapportene/dashbordene du vil ha her — valget huskes."
+msgstr "Spauskite «⚙ Tinkinti» ir pasirinkite norimas ataskaitas/skydelius — pasirinkimas įsimenamas."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Previous month"
-msgstr "Forrige måned"
+msgstr "Ankstesnis mėnuo"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Previous period"
-msgstr "Forrige periode"
+msgstr "Ankstesnis laikotarpis"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Progress"
-msgstr "Fremdrift"
+msgstr "Pažanga"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__show_chart
 msgid "Progress chart"
-msgstr "Fremdriftsgraf"
+msgstr "Pažangos diagrama"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Progress/Gantt + Details"
-msgstr "Fremdrift/Gantt + Detaljer"
+msgstr "Pažanga/Gantt + Detalės"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Proj. no. …"
-msgstr "Prosj.nr …"
+msgstr "Proj. nr. …"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Project"
-msgstr "Prosjekt"
+msgstr "Projektas"
 
 #. module: fiq_gui_control
 #. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "Project manager"
-msgstr "Prosjektleder"
+msgstr "Projekto vadovas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__show_projects
 msgid "Project overview"
-msgstr "Prosjektoversikt"
+msgstr "Projektų apžvalga"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Project overview + My tasks"
-msgstr "Prosjektoversikt + Mine oppgaver"
+msgstr "Projektų apžvalga + Mano užduotys"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Project/Process"
-msgstr "Prosjekt/Prosess"
+msgstr "Projektas/Procesas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Projects"
-msgstr "Prosjekt"
+msgstr "Projektai"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields.selection,name:fiq_gui_control.selection__fiq_gui_control_config__level__pulse
 msgid "Pulse (summary)"
-msgstr "Puls (sammendrag)"
+msgstr "Pulsas (santrauka)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
@@ -1371,55 +1371,55 @@ msgstr "KS"
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__show_quick
 msgid "Quick actions"
-msgstr "Hurtighandlinger"
+msgstr "Spartieji veiksmai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "ROI tracking — time saved (AI vs. human) per task"
-msgstr "ROI-måling — spart tid (AI vs. menneske) per oppgave"
+msgstr "ROI stebėjimas — sutaupytas laikas (AI vs. žmogus) kiekvienai užduočiai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Reference date for the period (Day/Week/Month counted from this)"
-msgstr "Referansedato for perioden (Dag/Uke/Måned regnes fra denne)"
+msgstr "Laikotarpio atskaitos data (Diena/Savaitė/Mėnuo skaičiuojami nuo jos)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Refresh"
-msgstr "Oppdater"
+msgstr "Atnaujinti"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Related to"
-msgstr "Tilhørighet"
+msgstr "Susieta su"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Related to (Sales/Project/…)"
-msgstr "Tilhørighet (Salg/Prosjekt/…)"
+msgstr "Susieta su (Pardavimai/Projektas/…)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Remaining"
-msgstr "Gjenstår"
+msgstr "Liko"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Remove from the dashboard"
-msgstr "Fjern fra dashbordet"
+msgstr "Pašalinti iš skydelio"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Remove sender filter"
-msgstr "Fjern avsender-filter"
+msgstr "Pašalinti siuntėjo filtrą"
 
 #. module: fiq_gui_control
 #. odoo-javascript
@@ -1427,299 +1427,299 @@ msgstr "Fjern avsender-filter"
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Reply"
-msgstr "Svar"
+msgstr "Atsakyti"
 
 #. module: fiq_gui_control
 #. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "Reply all"
-msgstr "Svar alle"
+msgstr "Atsakyti visiems"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Reply all (CC/BCC in composer)"
-msgstr "Svar alle (CC/BCC i komposer)"
+msgstr "Atsakyti visiems (CC/BCC rašyklėje)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Reset person"
-msgstr "Nullstill person"
+msgstr "Atstatyti asmenį"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Responsible"
-msgstr "Ansvarlig"
+msgstr "Atsakingas"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,help:fiq_gui_control.field_fiq_gui_control_config__level
 msgid "Role-based detail level: Pulse (executive) · Balanced (project manager) · Detailed (power)."
-msgstr "Rollebasert detaljnivå: Puls (leder) · Balansert (prosjektleder) · Detaljert (avansert)."
+msgstr "Vaidmeniu pagrįstas detalumo lygis: Pulsas (vadovas) · Subalansuotas (projekto vadovas) · Detalus (pažengęs)."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "SHA construction site"
-msgstr "SHA byggeplass"
+msgstr "SHA statybvietė"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "SHOW"
-msgstr "VIS"
+msgstr "RODYTI"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Sales"
-msgstr "Salg"
+msgstr "Pardavimai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Sales Orders"
-msgstr "Salgsordrer"
+msgstr "Pardavimo užsakymai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Sales orders"
-msgstr "Salgsordre"
+msgstr "Pardavimo užsakymai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Sat"
-msgstr "Lø"
+msgstr "Št"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Save"
-msgstr "Lagre"
+msgstr "Išsaugoti"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Search"
-msgstr "Søk"
+msgstr "Paieška"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Search activities …"
-msgstr "Søk i aktiviteter …"
+msgstr "Ieškoti veiklų …"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Search company, person, project, task …"
-msgstr "Søk i firma, person, prosjekt, oppgave …"
+msgstr "Ieškoti įmonės, asmens, projekto, užduoties …"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Search projects (free text) …"
-msgstr "Søk i prosjekter (fritekst) …"
+msgstr "Ieškoti projektų (laisvas tekstas) …"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Search tasks (free text) …"
-msgstr "Søk i oppgaver (fritekst) …"
+msgstr "Ieškoti užduočių (laisvas tekstas) …"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Select a task or a project to see details here."
-msgstr "Velg en oppgave eller et prosjekt for å se detaljer her."
+msgstr "Pasirinkite užduotį arba projektą, kad čia matytumėte detales."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Select an activity in the list — the details are shown here."
-msgstr "Velg en aktivitet i listen — detaljene vises her."
+msgstr "Pasirinkite veiklą sąraše — detalės rodomos čia."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Select project"
-msgstr "Velg prosjekt"
+msgstr "Pasirinkti projektą"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Select subject area"
-msgstr "Velg fagområde"
+msgstr "Pasirinkti sritį"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Selected activity"
-msgstr "Valgt aktivitet"
+msgstr "Pasirinkta veikla"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Selected person"
-msgstr "Valgt person"
+msgstr "Pasirinktas asmuo"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Send"
-msgstr "Send"
+msgstr "Siųsti"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Sender:"
-msgstr "Avsender:"
+msgstr "Siuntėjas:"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Sep"
-msgstr "Sep"
+msgstr "Rgs"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "September"
-msgstr "September"
+msgstr "Rugsėjis"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Settings – choose content in the Control room"
-msgstr "Innstillinger – velg innhold i kontrollrommet"
+msgstr "Nustatymai – pasirinkite Valdymo centro turinį"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Show both, only meetings or only activities"
-msgstr "Vis begge, bare møter eller bare aktiviteter"
+msgstr "Rodyti abu, tik susitikimus arba tik veiklas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Show only overdue activities"
-msgstr "Vis bare forfalte aktiviteter"
+msgstr "Rodyti tik vėluojančias veiklas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Show stages:"
-msgstr "Vis stadier:"
+msgstr "Rodyti etapus:"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Show task progress (selected project, otherwise the first)"
-msgstr "Vis oppgavefremdrift (valgt prosjekt, ellers første)"
+msgstr "Rodyti užduočių pažangą (pasirinktas projektas, kitaip pirmasis)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Show/hide the group's tasks"
-msgstr "Vis/skjul gruppens oppgaver"
+msgstr "Rodyti/slėpti grupės užduotis"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Showing for:"
-msgstr "Viser for:"
+msgstr "Rodoma:"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Simple"
-msgstr "Enkel"
+msgstr "Paprastas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Site survey/photo"
-msgstr "Befaring/foto"
+msgstr "Apžiūra/foto"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Sort"
-msgstr "Sortér"
+msgstr "Rikiuoti"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Sort by deadline"
-msgstr "Sortér på frist"
+msgstr "Rikiuoti pagal terminą"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Stage"
-msgstr "Stadium"
+msgstr "Etapas"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_res_company__fiq_control_as_home
 msgid "Start in Control room"
-msgstr "Start i Kontrollrommet"
+msgstr "Pradėti Valdymo centre"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Status"
-msgstr "Status"
+msgstr "Būsena"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Subgroup: all"
-msgstr "Undergruppe: alle"
+msgstr "Pogrupis: visi"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Subject"
-msgstr "Emne"
+msgstr "Tema"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Subject areas (SP)"
-msgstr "Fagområder (SP)"
+msgstr "Sritys (SP)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Subtasks"
-msgstr "Deloppgaver"
+msgstr "Antrinės užduotys"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Sun"
-msgstr "Sø"
+msgstr "Sk"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Task"
-msgstr "Oppgave"
+msgstr "Užduotis"
 
 #. module: fiq_gui_control
 #: model:ir.model,name:fiq_gui_control.model_project_task_type
 msgid "Task Stage"
-msgstr "Oppgavestadium"
+msgstr "Užduoties etapas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Task no. …"
-msgstr "Oppg.nr …"
+msgstr "Užd. nr. …"
 
 #. module: fiq_gui_control
 #. odoo-javascript
@@ -1727,128 +1727,128 @@ msgstr "Oppg.nr …"
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__show_tasks
 msgid "Tasks"
-msgstr "Oppg"
+msgstr "Užduotys"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Test the AI connection"
-msgstr "Test AI-koblingen"
+msgstr "Testuoti AI ryšį"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "The activity has been postponed."
-msgstr "Aktiviteten er utsatt."
+msgstr "Veikla atidėta."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "The cockpit address has been saved."
-msgstr "Cockpit-adressen er lagret."
+msgstr "Cockpit adresas išsaugotas."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "The files on the server are v"
-msgstr "Filene på serveren er v"
+msgstr "Failai serveryje yra v"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Thinking …"
-msgstr "Tenker …"
+msgstr "Mąsto …"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "This file type cannot be previewed here yet (SharePoint/M365 preview is coming). Download is turned off — version control."
-msgstr "Denne filtypen kan ikke forhåndsvises her ennå (SharePoint/M365-forhåndsvisning kommer). Nedlasting er skrudd av — versjonskontroll."
+msgstr "Šio failo tipo peržiūra čia dar negalima (SharePoint/M365 peržiūra bus vėliau). Atsisiuntimas išjungtas — versijų kontrolė."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "This function is under development — expected delivery: 2026-08-07"
-msgstr "Denne funksjonen er under utvikling — forventes levert: 2026-08-07"
+msgstr "Ši funkcija kuriama — numatomas pristatymas: 2026-08-07"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Thu"
-msgstr "To"
+msgstr "Kt"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "To"
-msgstr "Til"
+msgstr "Iki"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Today"
-msgstr "I dag"
+msgstr "Šiandien"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Tue"
-msgstr "Ti"
+msgstr "An"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Type"
-msgstr "Type"
+msgstr "Tipas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Upcoming"
-msgstr "Kommende"
+msgstr "Artėjantys"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Upgrade failed — "
-msgstr "Oppgradering feilet — "
+msgstr "Naujovinimas nepavyko — "
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__user_id
 msgid "User"
-msgstr "Bruker"
+msgstr "Naudotojas"
 
 #. module: fiq_gui_control
 #: model:ir.ui.menu,name:fiq_gui_control.menu_fiq_gui_control_admin_config
 msgid "User setup"
-msgstr "Brukeroppsett"
+msgstr "Naudotojo sąranka"
 
 #. module: fiq_gui_control
 #: model:ir.actions.act_window,name:fiq_gui_control.action_fiq_gui_control_config
 msgid "User setup (Control room)"
-msgstr "Brukeroppsett (Kontrollrom)"
+msgstr "Naudotojo sąranka (Valdymo centras)"
 
 #. module: fiq_gui_control
 #: model:ir.ui.menu,name:fiq_gui_control.menu_fiq_gui_control_admin_users
 msgid "Users & access"
-msgstr "Brukere og tilgang"
+msgstr "Naudotojai ir prieiga"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Vendor bill"
-msgstr "Lev.faktura"
+msgstr "Tiekėjo sąskaita"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Version: installed"
-msgstr "Versjon: installert"
+msgstr "Versija: įdiegta"
 
 #. module: fiq_gui_control
 #: model_terms:ir.ui.view,arch_db:fiq_gui_control.view_fiq_gui_control_config_form
 msgid "Visible widgets"
-msgstr "Synlige moduler"
+msgstr "Matomi valdikliai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
@@ -1860,66 +1860,66 @@ msgstr "Vídir"
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "W"
-msgstr "U"
+msgstr "S"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Waiting"
-msgstr "Venter"
+msgstr "Laukiama"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Wed"
-msgstr "On"
+msgstr "Tr"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Week"
-msgstr "Uke"
+msgstr "Savaitė"
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,help:fiq_gui_control.field_res_company__fiq_control_as_home
 msgid "When ON: internal users in this company get the Control room as their start page. When OFF: users keep/get back Odoo's standard start page (unlocks). Admin-controlled — turn on only once the dashboard is verified stable."
-msgstr "PÅ: interne brukere i dette firmaet får Kontrollrommet som startside. AV: brukerne beholder/får tilbake Odoos standard startside (låses opp). Admin-styrt — slå på først når dashbordet er verifisert stabilt."
+msgstr "ĮJUNGTA: šios įmonės vidiniai naudotojai gauna Valdymo centrą kaip pradžios puslapį. IŠJUNGTA: naudotojai išlaiko/atgauna standartinį Odoo pradžios puslapį (atrakinama). Valdo administratorius — įjunkite tik tada, kai skydelis patikrintas ir stabilus."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Without overdue"
-msgstr "Uten forfalte"
+msgstr "Be vėluojančių"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Write a directive/message to the session — it reads it at the next sync …"
-msgstr "Skriv direktiv/melding til økten — den leser ved neste synk …"
+msgstr "Rašykite nurodymą/žinutę sesijai — ji perskaitys per kitą sinchronizaciją …"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "days"
-msgstr "dager"
+msgstr "dienų"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "deviations"
-msgstr "avvik"
+msgstr "neatitiktys"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "for appr."
-msgstr "til godkj."
+msgstr "laukia tvirt."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "for approval"
-msgstr "til godkjenning"
+msgstr "laukia tvirtinimo"
 
 #. module: fiq_gui_control
 #. odoo-javascript
@@ -1931,19 +1931,19 @@ msgstr "https://claude.ai/code/artifact/…"
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "in the selected scope yet — they appear here when Coworker creates them."
-msgstr "i valgt utvalg ennå — de dukker opp her når Coworker oppretter dem."
+msgstr "pasirinktoje aprėptyje kol kas nėra — jie atsiras čia, kai Coworker juos sukurs."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "no dates"
-msgstr "ingen datoer"
+msgstr "be datų"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "of"
-msgstr "av"
+msgstr "iš"
 
 #. module: fiq_gui_control
 #. odoo-javascript
@@ -1955,205 +1955,205 @@ msgstr "ok"
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "or new date:"
-msgstr "eller ny dato:"
+msgstr "arba nauja data:"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "overdue"
-msgstr "forsinket"
+msgstr "vėluoja"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "overdue tasks"
-msgstr "forsinkede oppgaver"
+msgstr "vėluojančios užduotys"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "past due"
-msgstr "forfalt"
+msgstr "pradelsta"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "selected day"
-msgstr "valgt dag"
+msgstr "pasirinkta diena"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "tasks done"
-msgstr "oppgaver ferdig"
+msgstr "užduočių atlikta"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "the month"
-msgstr "måneden"
+msgstr "mėnesiui"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "the week"
-msgstr "uken"
+msgstr "savaitei"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "the year"
-msgstr "året"
+msgstr "metams"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "unanswered"
-msgstr "ubesvart"
+msgstr "neatsakyta"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "unanswered — awaiting reply"
-msgstr "ubesvart — venter svar"
+msgstr "neatsakyta — laukiama atsakymo"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "· Control room"
-msgstr "· Kontrollrom"
+msgstr "· Valdymo centras"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "· files"
-msgstr "· filer"
+msgstr "· failai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "— «Ask AI» in the top bar uses this."
-msgstr "— «Spør AI» i topplinja bruker denne."
+msgstr "— tai naudoja «Klausti AI» viršutinėje juostoje."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "⌂ Back to the Control room"
-msgstr "⌂ Tilbake til Kontrollrommet"
+msgstr "⌂ Atgal į Valdymo centrą"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "▸ Tasks"
-msgstr "▸ Oppgaver"
+msgstr "▸ Užduotys"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "◂ Projects"
-msgstr "◂ Prosjekter"
+msgstr "◂ Projektai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "⚙ Change cockpit address"
-msgstr "⚙ Endre cockpit-adresse"
+msgstr "⚙ Keisti cockpit adresą"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "⚙ Customize"
-msgstr "⚙ Tilpass"
+msgstr "⚙ Tinkinti"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "⚠ ACTION REQUIRED NOW — YOUR TASKS"
-msgstr "⚠ KREVER HANDLING NÅ — DINE OPPGAVER"
+msgstr "⚠ REIKIA VEIKSMŲ DABAR — JŪSŲ UŽDUOTYS"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "⚠ The Upgrade button requires the FIQ admin role on your user — until it is set, upgrade under Apps."
-msgstr "⚠ Oppgrader-knappen krever FIQ-admin-rollen på brukeren din — til den er satt gjøres oppgradering under Apper."
+msgstr "⚠ Naujovinimo mygtukui reikia FIQ admin vaidmens jūsų naudotojui — kol jis nenustatytas, naujovinkite per Programos."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "⚠ overdue"
-msgstr "⚠ forsinket"
+msgstr "⚠ vėluoja"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "⚡ Activities"
-msgstr "⚡ Aktiviteter"
+msgstr "⚡ Veiklos"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "✨ Answer from AI"
-msgstr "✨ Svar fra AI"
+msgstr "✨ AI atsakymas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "✨ Ask AI"
-msgstr "✨ Spør AI"
+msgstr "✨ Klausti AI"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "✨ Ask AI for help"
-msgstr "✨ Spør AI om hjelp"
+msgstr "✨ Prašyti AI pagalbos"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "⤢ Expanded"
-msgstr "⤢ Utvidet"
+msgstr "⤢ Išplėsta"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "⤢ Open"
-msgstr "⤢ Åpne"
+msgstr "⤢ Atverti"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "⤢ Open selected activity"
-msgstr "⤢ Åpne valgt aktivitet"
+msgstr "⤢ Atverti pasirinktą veiklą"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "⤢ Open selected meeting"
-msgstr "⤢ Åpne valgt møte"
+msgstr "⤢ Atverti pasirinktą susitikimą"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "＋ Add button"
-msgstr "＋ Legg til knapp"
+msgstr "＋ Pridėti mygtuką"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "＋ Customer"
-msgstr "＋ Kunde"
+msgstr "＋ Klientas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "＋ New lead"
-msgstr "＋ Nytt leads"
+msgstr "＋ Nauja iniciatyva"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "＋ New project"
-msgstr "＋ Nytt prosjekt"
+msgstr "＋ Naujas projektas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
@@ -2165,517 +2165,517 @@ msgstr "＋ PRJ"
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "＋ Quotation"
-msgstr "＋ Tilbud"
+msgstr "＋ Pasiūlymas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "＋ Sales order"
-msgstr "＋ Salgsordre"
+msgstr "＋ Pardavimo užsakymas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "🌙 Dark background (this panel)"
-msgstr "🌙 Mørk bakgrunn (dette panelet)"
+msgstr "🌙 Tamsus fonas (šis skydelis)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "🏁 Milestones"
-msgstr "🏁 Milepæler"
+msgstr "🏁 Gairės"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "🏷 Group by"
-msgstr "🏷 Gruppér"
+msgstr "🏷 Grupuoti"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "👋 — Control room · Manager"
-msgstr "👋 — Kontrollrom · Leder"
+msgstr "👋 — Valdymo centras · Vadovas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "👥 Participants"
-msgstr "👥 Deltagere"
+msgstr "👥 Dalyviai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "👥 Present now"
-msgstr "👥 Til stede nå"
+msgstr "👥 Šiuo metu darbe"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "💬 Reply"
-msgstr "💬 Svar"
+msgstr "💬 Atsakyti"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "📅 Meetings and activities ("
-msgstr "📅 Møter og aktiviteter ("
+msgstr "📅 Susitikimai ir veiklos ("
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "📊 My dashboard"
-msgstr "📊 Mitt dashbord"
+msgstr "📊 Mano skydelis"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "📌 Order in the Governance menu"
-msgstr "📌 Rekkefølge i Styring-menyen"
+msgstr "📌 Tvarka Valdysenos meniu"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "📌 Order on the board"
-msgstr "📌 Rekkefølge på flaten"
+msgstr "📌 Tvarka lentoje"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "🔁 Reload the GUI (fetch new version)"
-msgstr "🔁 Last GUI-et på nytt (hent ny versjon)"
+msgstr "🔁 Perkrauti GUI (įkelti naują versiją)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "🖥 AI SESSIONS — status and directives"
-msgstr "🖥 AI ØKTER — status og direktiver"
+msgstr "🖥 AI SESIJOS — būsena ir nurodymai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "🗎 Document"
-msgstr "🗎 Dokument"
+msgstr "🗎 Dokumentas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "🗎 Weekly report"
-msgstr "🗎 Ukesrapport"
+msgstr "🗎 Savaitės ataskaita"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "🗓 Calendar"
-msgstr "🗓 Kalender"
+msgstr "🗓 Kalendorius"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "🗓 Planning"
-msgstr "🗓 Planlegging"
+msgstr "🗓 Planavimas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "🟢🟠🔴 Approval queue — decisions from AI in one place, with standing-rule answers"
-msgstr "🟢🟠🔴 Godkjenningskø — beslutninger fra AI samlet ett sted, med stående-regel-svar"
+msgstr "🟢🟠🔴 Tvirtinimo eilė — AI sprendimai vienoje vietoje, su nuolatinių taisyklių atsakymais"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "🟣 AI Control room"
-msgstr "🟣 AI Kontrollrom"
+msgstr "🟣 AI valdymo centras"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "🟣 Open the cockpit — progress hub ↗"
-msgstr "🟣 Åpne cockpiten — fremdrifts-hub ↗"
+msgstr "🟣 Atverti cockpit — pažangos centrą ↗"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "🧰 My workday"
-msgstr "🧰 Arbeidsdagen"
+msgstr "🧰 Mano darbo diena"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid " % completed"
-msgstr " % fullført"
+msgstr " % užbaigta"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid " h"
-msgstr " t"
+msgstr " val."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid " in Odoo"
-msgstr " i Odoo"
+msgstr " Odoo sistemoje"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid " in SharePoint"
-msgstr " i SharePoint"
+msgstr " SharePoint sistemoje"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid " min)"
-msgstr ". minutt)"
+msgstr " min.)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid " min. Click to turn off."
-msgstr ". minutt. Klikk for å skru av."
+msgstr " min. Spustelėkite, kad išjungtumėte."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid " — click to show alerts/meetings/activities for "
-msgstr " — klikk for å vise <navn> sine varsler/møter/aktiviteter"
+msgstr " — spustelėkite, kad matytumėte įspėjimus/susitikimus/veiklas: "
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid " → Upgrade"
-msgstr " → Oppgrader"
+msgstr " → Naujovinti"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "AI platform projects"
-msgstr "AI-plattformprosjekter"
+msgstr "AI platformos projektai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "AI stage · "
-msgstr "AI-stadium · "
+msgstr "AI etapas · "
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Also show subtasks"
-msgstr "Vis også deloppgaver"
+msgstr "Rodyti ir antrines užduotis"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Answer in max 5 words: is the AI connection OK?"
-msgstr "Svar med maks 5 ord: er AI-koblingen OK?"
+msgstr "Atsakykite daugiausiai 5 žodžiais: ar AI ryšys veikia?"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Auto-refresh ON — fetches live data every "
-msgstr "Auto-oppdatering PÅ — henter live data hvert "
+msgstr "Automatinis atnaujinimas ĮJUNGTAS — tiesioginiai duomenys įkeliami kas "
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Chat with "
-msgstr "Chat med "
+msgstr "Pokalbis su "
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Completed"
-msgstr "Fullført"
+msgstr "Užbaigta"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Day"
-msgstr "Dag"
+msgstr "Diena"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Description"
-msgstr "Beskrivelse"
+msgstr "Aprašymas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Documents"
-msgstr "Dokumenter"
+msgstr "Dokumentai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Hide subprojects"
-msgstr "Skjul underprosjekter"
+msgstr "Slėpti antrinius projektus"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Hide ▾"
-msgstr "Skjul ▾"
+msgstr "Slėpti ▾"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Hours"
-msgstr "Timer"
+msgstr "Valandos"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Log"
-msgstr "Logg"
+msgstr "Žurnalas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Mark as done"
-msgstr "Merk som utført"
+msgstr "Žymėti kaip atliktą"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Meetings this day — click to show"
-msgstr "Møter denne dagen — klikk for å vise"
+msgstr "Šios dienos susitikimai — spustelėkite, kad matytumėte"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Month"
-msgstr "Måned"
+msgstr "Mėnuo"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "No active projects yet."
-msgstr "Ingen aktive prosjekter ennå."
+msgstr "Aktyvių projektų kol kas nėra."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "No projects match the search."
-msgstr "Ingen prosjekter matcher søket."
+msgstr "Paieškos neatitinka nė vienas projektas."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "No projects."
-msgstr "Ingen prosjekter."
+msgstr "Projektų nėra."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "No tasks in the project."
-msgstr "Ingen oppgaver i prosjektet."
+msgstr "Projekte užduočių nėra."
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Open "
-msgstr "Åpne "
+msgstr "Atverti "
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Open SP area "
-msgstr "Åpne SP-området "
+msgstr "Atverti SP sritį "
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Open the cockpit (progress hub)"
-msgstr "Åpne cockpiten (fremdrifts-hub)"
+msgstr "Atverti cockpit (pažangos centrą)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Preview "
-msgstr "Forhåndsvis "
+msgstr "Peržiūrėti "
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Project progress"
-msgstr "Prosjektfremdrift"
+msgstr "Projekto pažanga"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Received"
-msgstr "Mottatt"
+msgstr "Gauta"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Refreshing …"
-msgstr "Oppdaterer …"
+msgstr "Atnaujinama …"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Related to: "
-msgstr "Tilhørighet: "
+msgstr "Susieta su: "
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Reopen the task"
-msgstr "Gjenåpne oppgaven"
+msgstr "Vėl atverti užduotį"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Responsible: "
-msgstr "Ansvarlig: "
+msgstr "Atsakingas: "
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Sent"
-msgstr "Sendt"
+msgstr "Išsiųsta"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Sent from us"
-msgstr "Sendt fra oss"
+msgstr "Išsiųsta iš mūsų"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Show subprojects"
-msgstr "Vis underprosjekter"
+msgstr "Rodyti antrinius projektus"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Show the tasks in "
-msgstr "Vis oppgavene i "
+msgstr "Rodyti užduotis: "
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Show ▸"
-msgstr "Vis ▸"
+msgstr "Rodyti ▸"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Subtasks shown — click for main tasks only"
-msgstr "Deloppgaver vises — klikk for kun hovedoppgaver"
+msgstr "Rodomos antrinės užduotys — spustelėkite, kad matytumėte tik pagrindines"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Switch to dark background (this panel)"
-msgstr "Bytt til mørk bakgrunn (dette panelet)"
+msgstr "Perjungti į tamsų foną (šis skydelis)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Switch to light background (this panel)"
-msgstr "Bytt til lys bakgrunn (dette panelet)"
+msgstr "Perjungti į šviesų foną (šis skydelis)"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Task progress"
-msgstr "Oppgavefremdrift"
+msgstr "Užduočių pažanga"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Turn on auto-refresh (every "
-msgstr "Skru på auto-oppdatering (hvert "
+msgstr "Įjungti automatinį atnaujinimą (kas "
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Upgrading …"
-msgstr "Oppgraderer …"
+msgstr "Naujovinama …"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "at risk"
-msgstr "i fare"
+msgstr "rizikoje"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "done"
-msgstr "utført"
+msgstr "atlikta"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "hidden"
-msgstr "skjult"
+msgstr "paslėpta"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "internal projects"
-msgstr "interne prosjekter"
+msgstr "vidiniai projektai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "on track"
-msgstr "i rute"
+msgstr "pagal planą"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "past deadline"
-msgstr "over frist"
+msgstr "praleistas terminas"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "shown"
-msgstr "vises"
+msgstr "rodoma"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "↑ Sent"
-msgstr "↑ Sendt"
+msgstr "↑ Išsiųsta"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "↓ Received"
-msgstr "↓ Mottatt"
+msgstr "↓ Gauta"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "⚙ Settings"
-msgstr "⚙ Innstillinger"
+msgstr "⚙ Nustatymai"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "✔ Save and close"
-msgstr "✔ Lagre og lukk"
+msgstr "✔ Išsaugoti ir uždaryti"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "⬆ Upgrade the module now"
-msgstr "⬆ Oppgrader modulen nå"
+msgstr "⬆ Naujovinti modulį dabar"
 
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "👤 You"
-msgstr "👤 Du"
+msgstr "👤 Jūs"
 
 #. module: fiq_gui_control
 #. odoo-javascript
