@@ -35,7 +35,7 @@ const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj
     "taskNoQuery", "taskTextQuery", "taskStage", "taskMile", "dagVis", "aktFilter", "aktGruppe", "selectedKpi",
     "progLevel", "progProjId", "progProjName", "progSubs", "progGroup", "kalMnd", "stageHidden", "dashSel"];
 // 🚨 Utdatert-GUI-vakt: bumpes ved HVER versjon — sammenlignes med installert modulversjon
-const GUI_BUILD = "19.0.6.69.0";
+const GUI_BUILD = "19.0.6.70.0";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -170,6 +170,7 @@ export class FiqControlRoom extends Component {
             progMiles: [],        // prosjektets milepæler (navn + frist) → ◆ i Gantt
             selDelt: null,        // Detaljer: deltagerliste (null = skjult)
             progProjName: "",
+            puls: { idag: [], uke: [] },  // ⚡ AI KTRL-puls: dine frister i dag/denne uken
             staleGui: false,      // 🚨 lastet GUI-kode er ELDRE enn installert versjon → banner
             staleGui: false,      // 🚨 lastet GUI-kode er ELDRE enn installert versjon → banner
             recent: [],           // 📌 siste N prosjekter med aktivitet (hurtigknapper)
@@ -188,7 +189,7 @@ export class FiqControlRoom extends Component {
             await this.loadData();
             await this._loadRecent();
             // 🧊 gjenopprett visnings-avhengig data etter frys
-            if (this.state.view === "airmm" && !this.state.cp) { await this.loadCockpit(); }
+            if ((this.state.view === "airmm" || this.state.view === "prosjektkr") && !this.state.cp) { await this.loadCockpit(); }
             if (this.state.progLevel === "oppgave" && this.state.progProjId) {
                 await this._loadProgTasks(this.state.progProjId);
             }
@@ -1223,6 +1224,35 @@ export class FiqControlRoom extends Component {
         window.location.href = url.toString();
     }
 
+    // 🏢 Konsern-boksen: aktiver ALLE brukerens firmaer (konsern-total på tvers)
+    setCompanyAll() {
+        const ids = (this.state.companies || []).map((c) => c.id);
+        if (!ids.length) { return; }
+        const url = new URL(window.location.href);
+        url.searchParams.set("cids", ids.join(","));
+        window.location.href = url.toString();
+    }
+
+    get isAllCompanies() {
+        try {
+            const cids = new URL(window.location.href).searchParams.get("cids") || "";
+            return cids.includes(",") && cids.split(",").length >= (this.state.companies || []).length;
+        } catch (e) { return false; }
+    }
+
+    // 📝 Fritekst-notat (vbox + Detaljer) → chatter som internt notat
+    async postNote(model, id, text, clearRef) {
+        const tx = (text || "").trim();
+        if (!tx) { return; }
+        try {
+            await this.orm.call("fiq.gui.control.config", "post_note", [model, id, tx]);
+            if (clearRef) { clearRef.value = ""; }
+            this.notification.add(_t("Note saved to the log."), { type: "success" });
+        } catch (e) {
+            this.notification.add(_t("Could not save — ") + this._errMsg(e), { type: "danger" });
+        }
+    }
+
     // Enkel/Total: Enkel = arbeider-flaten (store knapper) — hopper alltid til oversikten
     // slik at byttet er synlig uansett hvilken flate man står i
     setMode(m) {
@@ -1367,7 +1397,7 @@ export class FiqControlRoom extends Component {
             { key: "kommunikasjon", label: _t("Communication"), view: "kommunikasjon", icon: "/fiq_gui_control/static/img/epost.png" },
             { key: "hmsks", label: _t("HSE/QA"), view: "hmsks" },
             { key: "airmm", label: _t("AI Control room"), view: "airmm" },
-            { key: "gui_prj", label: _t("Projects"), title: _t("Open the Project control room") },
+            { key: "gui_prj", label: _t("Projects"), view: "prosjektkr", title: _t("Open the Project control room") },
             { key: "gui_crm", label: _t("CRM") },
             { key: "gui_leads", label: _t("Leads") },
             { key: "gui_so", label: _t("Sales orders") },
@@ -1680,13 +1710,13 @@ export class FiqControlRoom extends Component {
     }
 
     // Real click-through: open a record in Odoo
-    openRecord(model, id) {
+    openRecord(model, id, dialog) {
         this.action.doAction({
             type: "ir.actions.act_window",
             res_model: model,
             res_id: id,
             views: [[false, "form"]],
-            target: "current",
+            target: dialog ? "new" : "current",
         });
     }
 
@@ -1791,11 +1821,14 @@ export class FiqControlRoom extends Component {
 
     setView(v) {
         this.state.view = v;
-        if (v === "airmm" && !this.state.cp) { this.loadCockpit(); }
+        if ((v === "airmm" || v === "prosjektkr") && !this.state.cp) { this.loadCockpit(); }
     }
 
     // ---- AI-cockpit (fremdrifts-hub): ekte project.task-data, Artifact-malen ----
     async loadCockpit() {
+        try {
+            this.state.puls = await this.orm.call("fiq.gui.control.config", "get_puls", []);
+        } catch (e) { /* puls er valgfri pynt */ }
         try {
             this.state.cp = await this.orm.call(
                 "fiq.gui.control.config", "get_cockpit", [this.state.cpProj || false]);

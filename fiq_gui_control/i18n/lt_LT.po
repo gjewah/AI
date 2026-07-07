@@ -2827,3 +2827,63 @@ msgstr "Įdiegta nauja versija"
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid " — you are viewing an older one. Click here to reload."
 msgstr " — rodoma senesnė. Spustelėkite čia, kad įkeltumėte iš naujo."
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "This week"
+msgstr "Šią savaitę"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "No tasks due today."
+msgstr "Šiandien terminų nėra."
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "No deadlines this week."
+msgstr "Šią savaitę terminų nėra."
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Project control room"
+msgstr "Projektų valdymo centras"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Group"
+msgstr "Grupė"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Group total — all companies"
+msgstr "Grupės suma — visos įmonės"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Save note"
+msgstr "Įrašyti pastabą"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Write a note — saved to the log …"
+msgstr "Rašykite pastabą — įrašoma į žurnalą …"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Note saved to the log."
+msgstr "Pastaba įrašyta į žurnalą."
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Show documents (with preview)"
+msgstr "Rodyti dokumentus (su peržiūra)"

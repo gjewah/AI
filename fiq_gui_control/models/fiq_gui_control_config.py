@@ -106,6 +106,44 @@ class FiqControlRoomConfig(models.Model):
         return True
 
     @api.model
+    def post_note(self, model, res_id, text):
+        """📝 Fritekst-notat fra Kontrollrommet (PC + mobil): logges i chatter som internt notat."""
+        text = (text or "").strip()
+        if not text or model not in ("project.task", "project.project"):
+            return False
+        rec = self.env[model].browse(int(res_id)).exists()
+        if not rec:
+            return False
+        rec.message_post(body=text, subtype_xmlid="mail.mt_note")
+        return True
+
+    @api.model
+    def get_puls(self):
+        """⚡ Puls (AI KTRL): dine åpne oppgaver med frist i dag / denne uken — ALLE prosjekter."""
+        out = {"idag": [], "uke": []}
+        try:
+            T = self.env["project.task"]
+            f = T._fields
+            today = fields.Date.context_today(self)
+            week_end = today + timedelta(days=6 - today.weekday())
+            for t in T.search([("user_ids", "in", [self.env.uid]),
+                               ("date_deadline", "!=", False)],
+                              order="date_deadline", limit=120):
+                if self._stage_is_done(t.stage_id if "stage_id" in f else False):
+                    continue
+                d = fields.Date.to_date(str(t.date_deadline)[:10])
+                if d > week_end:
+                    break
+                row = {"id": t.id, "no": (t.code if "code" in f else "") or "",
+                       "name": t.name or "", "frist": str(d),
+                       "prosjekt": t.project_id.name or "", "over": d < today}
+                (out["idag"] if d <= today else out["uke"]).append(row)
+            out["idag"], out["uke"] = out["idag"][:15], out["uke"][:15]
+        except Exception:
+            pass
+        return out
+
+    @api.model
     def get_recent_projects(self, n=5, root_id=False):
         """📌 De N siste prosjektene med AKTIVITET (oppgave-endringer), evt. innenfor låst gruppering."""
         n = max(1, min(int(n or 5), 12))

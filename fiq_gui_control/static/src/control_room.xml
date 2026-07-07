@@ -88,7 +88,13 @@
                             </div>
                         </div>
                     </t>
+                    <div class="l fiq_hm_vbox_note">
+                        <span class="k">📝 Note</span>
+                        <textarea class="fiq_hm_notefld" rows="2" placeholder="Write a note — saved to the log …" t-ref="vboxnote"/>
+                    </div>
                     <div class="fiq_hm_vbox_f">
+                        <button class="fiq_hm_ext" t-on-click="(ev) =&gt; this.postNote(state.vbox.model, state.vbox.id, ev.target.closest('.fiq_hm_vbox_b').querySelector('.fiq_hm_notefld').value, ev.target.closest('.fiq_hm_vbox_b').querySelector('.fiq_hm_notefld'))">📝 <t t-esc="tr('Save note')"/></button>
+                        <button class="fiq_hm_ext" t-on-click="() =&gt; { this.selectEl(state.vbox.model, state.vbox.id, state.vbox.name); state.inspTab = 'dok'; }" t-att-title="tr('Show documents (with preview)')">📎</button>
                         <button class="fiq_hm_vbox_save" t-att-disabled="state.vbox.saving" t-on-click="() =&gt; this.saveVarBox()" t-esc="state.vbox.saving ? tr('Saving …') : tr('Save')"/>
                         <button class="fiq_hm_ext" t-on-click="() =&gt; { state.vbox = null; }">Cancel</button>
                     </div>
@@ -132,6 +138,15 @@
                 </aside>
 
                 <section class="fiq_hm_main">
+                    <!-- 🏢 Firma-velger: SMÅ BOKSER over fanene — konsern-total først, så hvert firma
+                         (generisk/multi-company: viser brukerens firmaer; på SDV-basen = 049→054) -->
+                    <div t-if="state.companies.length &gt; 1" class="fiq_hm_cobox_row">
+                        <button t-att-class="isAllCompanies ? 'fiq_hm_cobox on' : 'fiq_hm_cobox'" t-on-click="() =&gt; this.setCompanyAll()" t-att-title="tr('Group total — all companies')">Σ <t t-esc="tr('Group')"/></button>
+                        <t t-foreach="state.companies" t-as="cb" t-key="cb.id">
+                            <button t-att-class="(!isAllCompanies and cb.id === state.companyId) ? 'fiq_hm_cobox on' : 'fiq_hm_cobox'"
+                                    t-on-click="() =&gt; this.setCompany(cb.id)" t-att-title="cb.name" t-esc="cb.name"/>
+                        </t>
+                    </div>
                     <!-- Filter-stripe: Dag/Uke/Måned/Alle + søk (nå i innholdskolonnen) -->
                     <div class="fiq_hm_filter">
                         <div class="fiq_hm_pseg">
@@ -244,7 +259,7 @@
                                 <span class="fiq_cp_krev_p" t-esc="k.prosjekt"/>
                                 <span class="fiq_cp_ktx" t-esc="k.name"/>
                                 <span t-if="k.over" class="fiq_hm_warn">⚠ overdue</span>
-                                <span class="fiq_hm_openbtn" t-on-click.stop="() =&gt; this.openRecord('project.task', k.id)" title="Open in Odoo">⤢</span>
+                                <span class="fiq_hm_openbtn" t-on-click.stop="() =&gt; this.openRecord('project.task', k.id, true)" title="Open in Odoo">⤢</span>
                             </div>
                         </div>
                         <!-- 🖥 AI ØKTER: øktene rapporterer hit; svar går i øktens chatter (4.03) -->
@@ -256,7 +271,7 @@
                                     <span class="fiq_cp_okt_n" t-esc="ok.name"/>
                                     <span class="fiq_cp_okt_tid mono" t-esc="ok.sist"/>
                                     <button class="fiq_hm_ext" t-on-click="() =&gt; { state.oktSel = state.oktSel === ok.id ? 0 : ok.id; }">💬 Reply</button>
-                                    <button class="fiq_hm_ext" t-on-click="() =&gt; this.openRecord('project.task', ok.id)" title="Full log in Odoo">⤢</button>
+                                    <button class="fiq_hm_ext" t-on-click="() =&gt; this.openRecord('project.task', ok.id, true)" title="Full log in Odoo">⤢</button>
                                 </div>
                                 <div t-if="ok.melding" class="fiq_cp_okt_m" t-esc="ok.melding"/>
                                 <div t-if="state.oktSel === ok.id" class="fiq_cp_okt_svar">
@@ -265,6 +280,44 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- 🗂 Prosjektarbeid bor i Prosjekt-kontrollrommet (refokusering 2026-07-04) -->
+                        <button class="fiq_hm_cockbtn fiq_hm_prjlink" t-on-click="() =&gt; this.setView('prosjektkr')">🗂 <t t-esc="tr('Open the Project control room')"/> ▸</button>
+                        <!-- ⚡ PULS: dine naermeste gjoeremaal -->
+                        <div class="fiq_cp_okter_h">⚡ Today</div>
+                        <t t-if="state.puls.idag.length">
+                            <div t-foreach="state.puls.idag" t-as="pt" t-key="pt.id" class="fiq_cp_krow" t-on-click="() =&gt; this.openRecord('project.task', pt.id, true)">
+                                <span class="fiq_hm_no" t-esc="pt.no"/>
+                                <span class="fiq_cp_krev_p" t-esc="pt.prosjekt"/>
+                                <span class="fiq_cp_ktx" t-esc="pt.name"/>
+                                <span t-if="pt.over" class="fiq_hm_warn">⚠ <t t-esc="tr('overdue')"/></span>
+                                <span class="fiq_cp_frist" t-esc="pt.frist"/>
+                            </div>
+                        </t>
+                        <t t-else=""><div class="fiq_hm_empty">No tasks due today.</div></t>
+                        <div class="fiq_cp_okter_h">📅 This week</div>
+                        <t t-if="state.puls.uke.length">
+                            <div t-foreach="state.puls.uke" t-as="pu" t-key="pu.id" class="fiq_cp_krow" t-on-click="() =&gt; this.openRecord('project.task', pu.id, true)">
+                                <span class="fiq_hm_no" t-esc="pu.no"/>
+                                <span class="fiq_cp_krev_p" t-esc="pu.prosjekt"/>
+                                <span class="fiq_cp_ktx" t-esc="pu.name"/>
+                                <span class="fiq_cp_frist" t-esc="pu.frist"/>
+                            </div>
+                        </t>
+                        <t t-else=""><div class="fiq_hm_empty">No deadlines this week.</div></t>
+                        <div class="fiq_hm_aikr_kommer">
+                            <strong>Coming to this board (designed, built step by step):</strong>
+                            <ul>
+                                <li>🟢🟠🔴 Approval queue — decisions from AI in one place, with standing-rule answers</li>
+                                <li>AI tasks «on the fly» — ask AI to execute, follow status here</li>
+                                <li>ROI tracking — time saved (AI vs. human) per task</li>
+                                <li>AI usage and costs per period</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- =================== 🗂 PROSJEKT-KONTROLLROM (flyttet ut av AI KTRL, refokusering) =================== -->
+                    <div t-if="!state.loading and state.view === 'prosjektkr'" class="fiq_hm_card fiq_hm_aikr">
+                        <div class="fiq_hm_ch"><h4>🗂 Project control room</h4><span class="fiq_hm_chbtns"><button class="fiq_hm_ext" t-on-click="() =&gt; this.setView('airmm')">◂ AI Control room</button></span></div>
                         <!-- 🧭 Cockpit-toppmeny: Kunde · Prosjekt/Prosess · Fremdrift/Forbruk -->
                         <div class="fiq_cp_menu">
                             <span class="fiq_cp_mlbl">Customer</span>
@@ -359,21 +412,12 @@
                                     <span t-att-class="'fiq_cp_st ' + ct.st" t-esc="ct.stage"/>
                                     <span t-if="ct.frist" t-att-class="ct.over ? 'fiq_cp_frist rod' : 'fiq_cp_frist'" t-esc="ct.frist"/>
                                     <span class="fiq_hm_openbtn" t-on-click.stop="() =&gt; this.openVarBox({ id: ct.id, name: ct.name, no: ct.no }, true)" t-att-title="tr('Open the details box (dates, hours, progress)')">⚙</span>
-                                    <span class="fiq_hm_openbtn" t-on-click.stop="() =&gt; this.openRecord('project.task', ct.id)" title="Open in Odoo">⤢</span>
+                                    <span class="fiq_hm_openbtn" t-on-click.stop="() =&gt; this.openRecord('project.task', ct.id, true)" title="Open in Odoo">⤢</span>
                                 </div>
                                 </t>
                             </div>
                         </t>
                         <div t-if="state.cpProj and state.cp and !state.cp.tot.tot" class="fiq_hm_empty">No tasks in the selected project yet.</div>
-                        <div class="fiq_hm_aikr_kommer">
-                            <strong>Coming to this board (designed, built step by step):</strong>
-                            <ul>
-                                <li>🟢🟠🔴 Approval queue — decisions from AI in one place, with standing-rule answers</li>
-                                <li>AI tasks «on the fly» — ask AI to execute, follow status here</li>
-                                <li>ROI tracking — time saved (AI vs. human) per task</li>
-                                <li>AI usage and costs per period</li>
-                            </ul>
-                        </div>
                     </div>
 
                     <!-- Fagflate-visning (Prosjekt/CRM/… + SP-områder) som integrert placeholder i skallet -->
@@ -908,6 +952,10 @@
                                                 </div>
                                             </t>
                                             <t t-else=""><span class="fiq_hm_insp_mut">No participants found yet.</span></t>
+                                        </div>
+                                        <div class="fiq_hm_insp_note">
+                                            <textarea class="fiq_hm_notefld" rows="2" placeholder="Write a note — saved to the log …" t-ref="inspnote"/>
+                                            <button class="fiq_hm_ext" t-on-click="(ev) =&gt; this.postNote(state.selected.model, state.selected.id, ev.target.previousElementSibling.value, ev.target.previousElementSibling)">📝 <t t-esc="tr('Save note')"/></button>
                                         </div>
                                         <div class="fiq_hm_insp_tabs">
                                             <button t-foreach="[['beskrivelse','Description'],['logg','Log'],['chat','Chat'],['epost','Email'],['dok','Documents']]" t-as="tb" t-key="tb[0]" t-att-class="state.inspTab === tb[0] ? 'on' : ''" t-on-click="() =&gt; this.setInspTab(tb[0])" t-esc="tb[1]"/>

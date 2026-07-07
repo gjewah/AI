@@ -2827,3 +2827,63 @@ msgstr "Ny versjon er installert"
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid " — you are viewing an older one. Click here to reload."
 msgstr " — du ser en eldre. Klikk her for å laste på nytt."
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "This week"
+msgstr "Denne uken"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "No tasks due today."
+msgstr "Ingen oppgaver med frist i dag."
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "No deadlines this week."
+msgstr "Ingen frister denne uken."
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Project control room"
+msgstr "Prosjekt-kontrollrom"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Group"
+msgstr "Konsern"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Group total — all companies"
+msgstr "Konsern-total — alle firmaer"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Save note"
+msgstr "Lagre notat"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Write a note — saved to the log …"
+msgstr "Skriv et notat — lagres i loggen …"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Note saved to the log."
+msgstr "Notatet er lagret i loggen."
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Show documents (with preview)"
+msgstr "Vis dokumenter (med forhåndsvisning)"

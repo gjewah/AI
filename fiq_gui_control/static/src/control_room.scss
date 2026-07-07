@@ -977,3 +977,20 @@
 .fiq_hm.fiq_hm_dark .fiq_hm_akt_det_h, .fiq_hm.fiq_hm_dark .fiq_cp_okter_h,
 .fiq_hm.fiq_hm_dark .fiq_hm_ghead, .fiq_hm.fiq_hm_dark thead th,
 .fiq_hm.fiq_hm_dark .fiq_hm_stagesel_l { color: #ffffff; }
+
+/* ============ v6.70: 🗂 Prosjekt-KR-lenke i pulsen ============ */
+.fiq_hm .fiq_hm_prjlink { display: block; width: 100%; margin: 10px 0; padding: 12px; font-size: 15px; }
+
+/* ============ v6.70 del 2: 🏢 firma-bokser + 📝 notatfelt ============ */
+.fiq_hm .fiq_hm_cobox_row { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 8px; }
+.fiq_hm .fiq_hm_cobox { border: 2px solid var(--fiq-accent, #38B44A); border-radius: 10px; background: #fff;
+  color: #22303c; font-weight: 800; font-size: 12.5px; padding: 6px 12px; cursor: pointer; max-width: 180px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fiq_hm .fiq_hm_cobox.on { background: var(--fiq-accent, #38B44A); color: #fff; }
+.fiq_hm.fiq_hm_dark .fiq_hm_cobox { background: #1e222c; color: #ffffff; }
+.fiq_hm.fiq_hm_dark .fiq_hm_cobox.on { background: var(--fiq-accent); color: #fff; }
+.fiq_hm .fiq_hm_notefld { flex: 1; border: 1px solid #c7ced8; border-radius: 8px; padding: 6px 8px;
+  font: inherit; font-size: 12.5px; resize: vertical; min-height: 40px; }
+.fiq_hm.fiq_hm_dark .fiq_hm_notefld { background: #262b37; color: #fff; border-color: #3a4150; }
+.fiq_hm .fiq_hm_insp_note { display: flex; gap: 6px; align-items: flex-end; margin: 6px 0; }
+.fiq_hm .fiq_hm_vbox_note { align-items: flex-start; }
