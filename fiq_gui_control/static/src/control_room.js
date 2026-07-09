@@ -35,7 +35,7 @@ const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj
     "taskNoQuery", "taskTextQuery", "taskStage", "taskMile", "dagVis", "aktFilter", "aktGruppe", "selectedKpi",
     "progLevel", "progProjId", "progProjName", "progSubs", "progGroup", "kalMnd", "stageHidden", "dashSel"];
 // 🚨 Utdatert-GUI-vakt: bumpes ved HVER versjon — sammenlignes med installert modulversjon
-const GUI_BUILD = "19.0.6.70.0";
+const GUI_BUILD = "19.0.6.71.0";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -462,7 +462,7 @@ export class FiqControlRoom extends Component {
         else if (area) { domain.push(["name", "=ilike", area + "%"]); }
         // Periode-filter: planlagt periode overlapper vinduet; prosjekter UTEN datoer vises alltid
         const win = this._periodWindow();
-        if (win) {
+        if (win && !isNaN(win.s.getTime()) && !isNaN(win.e.getTime())) {
             const iso = (d) => d.toISOString().slice(0, 10);
             domain.push("|", "|", ["date_start", "=", false], ["date", "=", false],
                 "&", ["date_start", "<", iso(win.e)], ["date", ">=", iso(win.s)]);
@@ -1302,7 +1302,7 @@ export class FiqControlRoom extends Component {
     }
 
     async _loadKalender() {
-        const a = this.state.anchorDate ? new Date(this.state.anchorDate + "T12:00:00") : new Date();
+        const a = this._anchorDate();
         let w = this._periodWindow();
         if (!w) { // «Alle» = hele året rundt referansedatoen
             w = { s: new Date(a.getFullYear(), 0, 1), e: new Date(a.getFullYear() + 1, 0, 1) };
@@ -1353,7 +1353,7 @@ export class FiqControlRoom extends Component {
         this.state.kalMnd = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
         // Kalender-navigasjon flytter også PERIODEN (Gjermund 2026-07-04): møte-/aktivitets-
         // listene følger vist måned — behold dag-i-måned der det går
-        const cur = this.state.anchorDate ? new Date(this.state.anchorDate + "T12:00:00") : new Date();
+        const cur = this._anchorDate();
         const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
         const day = Math.min(cur.getDate(), last);
         this.state.anchorDate = this._iso(new Date(d.getFullYear(), d.getMonth(), day));
@@ -1604,7 +1604,7 @@ export class FiqControlRoom extends Component {
     // ◂ ▸: hopp forrige/neste periode (dag/uke/måned/år etter valgt toggle)
     stepAnchor(dir) {
         const p = this.state.kommPeriod;
-        const a = this.state.anchorDate ? new Date(this.state.anchorDate + "T12:00:00") : new Date();
+        const a = this._anchorDate();
         if (p === "dag") { a.setDate(a.getDate() + dir); }
         else if (p === "maaned") { a.setMonth(a.getMonth() + dir); }
         else if (p === "alle") { a.setFullYear(a.getFullYear() + dir); }
@@ -1613,10 +1613,18 @@ export class FiqControlRoom extends Component {
     }
 
     // Perioden som konkret tidsvindu (null = «Alle» → ingen datofilter)
+    // Robust referansedato: ugyldig/korrupt state.anchorDate (f.eks. skjev frys-gjenoppretting)
+    // faller tilbake til i dag OG normaliseres, så Date-matematikk aldri gir «Invalid time value».
+    _anchorDate() {
+        let a = this.state.anchorDate ? new Date(this.state.anchorDate + "T12:00:00") : new Date();
+        if (isNaN(a.getTime())) { a = new Date(); this.state.anchorDate = this._iso(a); }
+        return a;
+    }
+
     _periodWindow() {
         const p = this.state.kommPeriod;
         if (p === "alle") { return null; }
-        const a = this.state.anchorDate ? new Date(this.state.anchorDate + "T12:00:00") : new Date();
+        const a = this._anchorDate();
         const d0 = new Date(a.getFullYear(), a.getMonth(), a.getDate());
         if (p === "dag") { const e = new Date(d0); e.setDate(d0.getDate() + 1); return { s: d0, e }; }
         if (p === "maaned") { return { s: new Date(a.getFullYear(), a.getMonth(), 1), e: new Date(a.getFullYear(), a.getMonth() + 1, 1) }; }
@@ -2115,7 +2123,7 @@ export class FiqControlRoom extends Component {
     // ---- Egen kompakt Gantt (høyre panel). Vindu styres av periode-toggle (kommPeriod). ----
     get ganttWindow() {
         const p = this.state.kommPeriod;
-        const now = this.state.anchorDate ? new Date(this.state.anchorDate + "T12:00:00") : new Date();
+        const now = this._anchorDate();
         let start, end;
         if (p === "alle") {
             start = new Date(now.getFullYear(), 0, 1);
