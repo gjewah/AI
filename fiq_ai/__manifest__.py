@@ -14,12 +14,15 @@ Nøkkel/base-URL settes som systemparametere (Gjermund): ``ai.anthropic_key`` /
 ``ai.anthropic_base_url``. Uten nøkkel kaster native-tjenesten UserError, som
 «Spør AI» viser i klartekst.
 """,
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.1.0",
     "category": "Productivity/AI",
     "author": "FIQ AS",
     "license": "OPL-1",
     "depends": ["fiq_ai_claude"],
-    "data": [],
+    "data": [
+        "security/ir.model.access.csv",
+        "wizards/fiq_ai_setup_views.xml",
+    ],
     "installable": True,
     "application": False,
 }
