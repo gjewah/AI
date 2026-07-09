@@ -58,6 +58,7 @@
                 <span t-elif="verVis" t-att-class="verVis.avvik ? 'fiq_hm_ver avvik' : 'fiq_hm_ver'" t-att-title="verVis.title">
                     <t t-esc="verVis.text"/><t t-if="verVis.avvik"> ⚠</t>
                 </span>
+                <button class="fiq_hm_postbox" t-on-click="() =&gt; this.toggleSuggest()" t-att-title="tr('Suggestion box — wishes and improvements')" aria-label="Forslagskasse"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><path d="M8 13a8 8 0 0 1 16 0v1H8z" fill="#c62828"/><rect x="8" y="13" width="16" height="15" rx="1" fill="#d92f2b"/><rect x="12" y="16" width="8" height="2" rx="1" fill="#4a0f0f"/><rect x="8" y="22" width="16" height="2.6" fill="#b71c1c"/><rect x="9.5" y="28" width="13" height="2" rx="1" fill="#7b1e14"/></svg></button>
                 <button class="btn fiq_hm_gear" t-on-click="() => this.toggleDark()" t-att-title="isDark ? tr('Switch to light background (this panel)') : tr('Switch to dark background (this panel)')" t-esc="isDark ? '☀' : '🌙'"/>
                 <button t-att-class="state.customize ? 'btn fiq_hm_gear fiq_hm_gear_on' : 'btn fiq_hm_gear'" t-on-click="() => this.toggleCustomize()" t-esc="state.customize ? tr('✔ Save and close') : tr('⚙ Settings')"/>
             </div>
@@ -65,6 +66,40 @@
             <!-- 🚨 Utdatert GUI: fanen kjører eldre kode enn installert versjon -->
             <div t-if="state.staleGui" class="fiq_hm_stale" t-on-click="() =&gt; this.reloadGui()">
                 ⚠ <b>A new version is installed</b> — you are viewing an older one. Click here to reload.
+            </div>
+            <!-- 📮 FORSLAGSKASSE (rød postkasse): ønsker/forbedringer til løsningen -->
+            <div t-if="state.suggest.open" class="fiq_hm_sugg_wrap" t-on-click="() =&gt; this.toggleSuggest()">
+                <div class="fiq_hm_sugg" t-on-click.stop="() =&gt; {}">
+                    <div class="fiq_hm_sugg_h">
+                        <span class="fiq_hm_sugg_ico">📮</span>
+                        <b t-esc="tr('Suggestion box')"/>
+                        <span class="fiq_hm_sugg_sub" t-esc="tr('wishes and improvements in the solution')"/>
+                        <button class="fiq_hm_vbox_x" t-on-click="() =&gt; this.toggleSuggest()" title="Lukk">✕</button>
+                    </div>
+                    <t t-if="!state.suggest.sent">
+                        <div class="fiq_hm_sugg_b">
+                            <div class="fiq_hm_pseg">
+                                <button t-att-class="state.suggest.category === 'onske' ? 'on' : ''" t-on-click="() =&gt; { state.suggest.category = 'onske'; }" t-esc="tr('Wish')"/>
+                                <button t-att-class="state.suggest.category === 'forbedring' ? 'on' : ''" t-on-click="() =&gt; { state.suggest.category = 'forbedring'; }" t-esc="tr('Improvement')"/>
+                                <button t-att-class="state.suggest.category === 'feil' ? 'on' : ''" t-on-click="() =&gt; { state.suggest.category = 'feil'; }" t-esc="tr('Bug/gap')"/>
+                            </div>
+                            <input class="fiq_hm_filtersok fiq_hm_sugg_t" t-att-placeholder="tr('Short title …')" t-att-value="state.suggest.name" t-on-input="(ev) =&gt; { state.suggest.name = ev.target.value; }"/>
+                            <textarea class="fiq_hm_notefld" rows="4" t-att-placeholder="tr('Describe the wish/improvement (optional) …')" t-on-input="(ev) =&gt; { state.suggest.description = ev.target.value; }" t-esc="state.suggest.description"/>
+                        </div>
+                        <div class="fiq_hm_sugg_f">
+                            <button class="fiq_hm_vbox_save" t-att-disabled="!state.suggest.name.trim() or state.suggest.saving" t-on-click="() =&gt; this.submitSuggestion()" t-esc="state.suggest.saving ? tr('Sending …') : tr('Drop in the box')"/>
+                            <button class="fiq_hm_ext" t-on-click="() =&gt; this.toggleSuggest()" t-esc="tr('Cancel')"/>
+                        </div>
+                    </t>
+                    <t t-else="">
+                        <div class="fiq_hm_sugg_takk">
+                            <div class="fiq_hm_sugg_takk_ico">📬</div>
+                            <b t-esc="tr('Thanks for the suggestion!')"/>
+                            <span t-esc="tr('It has been dropped in the box and will be reviewed.')"/>
+                            <button class="fiq_hm_ext" t-on-click="() =&gt; { state.suggest.sent = false; }" t-esc="tr('New suggestion')"/>
+                        </div>
+                    </t>
+                </div>
             </div>
             <!-- 🪟 Flyttbar detaljboks (klikk på Gantt-/listelinje): datoer · timer · % fremdrift -->
             <div t-if="state.vbox" class="fiq_hm_vbox" t-att-style="'left:' + state.vbox.x + 'px; top:' + state.vbox.y + 'px'">

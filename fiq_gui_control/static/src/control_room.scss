@@ -994,3 +994,23 @@
 .fiq_hm.fiq_hm_dark .fiq_hm_notefld { background: #262b37; color: #fff; border-color: #3a4150; }
 .fiq_hm .fiq_hm_insp_note { display: flex; gap: 6px; align-items: flex-end; margin: 6px 0; }
 .fiq_hm .fiq_hm_vbox_note { align-items: flex-start; }
+
+/* ============ v6.72: 📮 forslagskasse (rød postkasse) ============ */
+.fiq_hm .fiq_hm_postbox { background: transparent; border: 0; cursor: pointer; padding: 2px 4px; line-height: 0;
+  border-radius: 8px; transition: transform .1s; }
+.fiq_hm .fiq_hm_postbox:hover { transform: scale(1.12); background: rgba(217, 47, 43, .12); }
+.fiq_hm_sugg_wrap { position: fixed; inset: 0; z-index: 1100; background: rgba(10, 20, 40, .35);
+  display: flex; align-items: center; justify-content: center; }
+.fiq_hm_sugg { width: min(460px, calc(100vw - 32px)); background: #fff; color: #22303c; border-radius: 14px;
+  box-shadow: 0 20px 60px -16px rgba(0, 0, 0, .5); overflow: hidden; }
+.fiq_hm_sugg_h { display: flex; align-items: center; gap: 9px; padding: 13px 15px; font-size: 15px;
+  background: linear-gradient(#d92f2b, #b71c1c); color: #fff; }
+.fiq_hm_sugg_ico { font-size: 20px; }
+.fiq_hm_sugg_sub { flex: 1; font-size: 12px; opacity: .9; font-weight: 400; }
+.fiq_hm_sugg_h .fiq_hm_vbox_x { color: #fff; }
+.fiq_hm_sugg_b { padding: 14px 15px; display: flex; flex-direction: column; gap: 10px; }
+.fiq_hm_sugg_t { width: 100%; }
+.fiq_hm_sugg_f { display: flex; gap: 8px; justify-content: flex-end; padding: 0 15px 15px; }
+.fiq_hm_sugg_takk { padding: 26px 20px; text-align: center; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.fiq_hm_sugg_takk_ico { font-size: 40px; }
+.fiq_hm.fiq_hm_dark .fiq_hm_sugg { background: #171b24; color: #fff; }

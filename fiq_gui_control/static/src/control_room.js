@@ -35,7 +35,7 @@ const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj
     "taskNoQuery", "taskTextQuery", "taskStage", "taskMile", "dagVis", "aktFilter", "aktGruppe", "selectedKpi",
     "progLevel", "progProjId", "progProjName", "progSubs", "progGroup", "kalMnd", "stageHidden", "dashSel"];
 // 🚨 Utdatert-GUI-vakt: bumpes ved HVER versjon — sammenlignes med installert modulversjon
-const GUI_BUILD = "19.0.6.71.0";
+const GUI_BUILD = "19.0.6.72.0";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -177,6 +177,7 @@ export class FiqControlRoom extends Component {
             recentN: 5,           // 📌 antall (huskes per bruker, server-lagret)
             projLock: null,       // 🔒 låst gruppering {nr, id} — grunnfilter for Prosjektoversikt (server-lagret)
             vbox: null,           // 🪟 flyttbar detaljboks (Gantt-/listelinje): datoer/timer/%-fremdrift
+            suggest: { open: false, name: "", description: "", category: "onske", sent: false, saving: false },  // 📮 forslagskasse
             aiStageNames: [],     // navn på AI-merkede stadier (fiq_ai_stage) – for velgeren
             stageHidden: {},      // {stadienavn: true} = skjult i oppgave-drillen
         });
@@ -286,6 +287,27 @@ export class FiqControlRoom extends Component {
         this.state.progProjName = r.name || "";
         await this._loadProgTasks(r.id);
         this.state.progLevel = "oppgave";
+    }
+
+    // 📮 Forslagskasse (rød postkasse): ønsker/forbedringer til løsningen
+    toggleSuggest() {
+        this.state.suggest.open = !this.state.suggest.open;
+        if (this.state.suggest.open) { this.state.suggest.sent = false; }
+    }
+
+    async submitSuggestion() {
+        const sg = this.state.suggest;
+        const name = (sg.name || "").trim();
+        if (!name || sg.saving) { return; }
+        sg.saving = true;
+        try {
+            await this.orm.call("fiq.gui.suggestion", "submit", [name, sg.description, sg.category]);
+            sg.sent = true;
+            sg.name = ""; sg.description = ""; sg.category = "onske";
+        } catch (e) {
+            this.notification.add(_t("Kunne ikke sende forslaget — ") + this._errMsg(e), { type: "danger" });
+        }
+        sg.saving = false;
     }
 
     // 🪟 Flyttbar detaljboks: klikk på Gantt-/listelinje → sett variabler

@@ -2887,3 +2887,81 @@ msgstr "Notatet er lagret i loggen."
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Show documents (with preview)"
 msgstr "Vis dokumenter (med forhåndsvisning)"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Suggestion box"
+msgstr "Forslagskasse"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Suggestion box — wishes and improvements"
+msgstr "Forslagskasse — ønsker og forbedringer"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "wishes and improvements in the solution"
+msgstr "ønsker og forbedringer i løsningen"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Wish"
+msgstr "Ønske"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Improvement"
+msgstr "Forbedring"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Bug/gap"
+msgstr "Feil/mangel"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Short title …"
+msgstr "Kort tittel …"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Describe the wish/improvement (optional) …"
+msgstr "Beskriv ønsket/forbedringen (valgfritt) …"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Drop in the box"
+msgstr "Legg i postkassen"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Sending …"
+msgstr "Sender …"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Thanks for the suggestion!"
+msgstr "Takk for forslaget!"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "It has been dropped in the box and will be reviewed."
+msgstr "Det er lagt i postkassen og blir gjennomgått."
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "New suggestion"
+msgstr "Nytt forslag"

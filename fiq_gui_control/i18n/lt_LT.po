@@ -2887,3 +2887,81 @@ msgstr "Pastaba įrašyta į žurnalą."
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Show documents (with preview)"
 msgstr "Rodyti dokumentus (su peržiūra)"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Suggestion box"
+msgstr "Pasiūlymų dėžutė"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Suggestion box — wishes and improvements"
+msgstr "Pasiūlymų dėžutė — pageidavimai ir patobulinimai"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "wishes and improvements in the solution"
+msgstr "pageidavimai ir patobulinimai sprendime"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Wish"
+msgstr "Pageidavimas"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Improvement"
+msgstr "Patobulinimas"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Bug/gap"
+msgstr "Klaida/trūkumas"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Short title …"
+msgstr "Trumpas pavadinimas …"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Describe the wish/improvement (optional) …"
+msgstr "Aprašykite pageidavimą/patobulinimą (nebūtina) …"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Drop in the box"
+msgstr "Įmesti į dėžutę"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Sending …"
+msgstr "Siunčiama …"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Thanks for the suggestion!"
+msgstr "Ačiū už pasiūlymą!"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "It has been dropped in the box and will be reviewed."
+msgstr "Jis įmestas į dėžutę ir bus peržiūrėtas."
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "New suggestion"
+msgstr "Naujas pasiūlymas"
