@@ -1001,7 +1001,7 @@
 .fiq_hm .fiq_hm_postbox:hover { transform: scale(1.12); background: rgba(217, 47, 43, .12); }
 .fiq_hm_sugg_wrap { position: fixed; inset: 0; z-index: 1100; background: rgba(10, 20, 40, .35);
   display: flex; align-items: center; justify-content: center; }
-.fiq_hm_sugg { width: min(460px, calc(100vw - 32px)); background: #fff; color: #22303c; border-radius: 14px;
+.fiq_hm_sugg { width: 460px; max-width: calc(100vw - 32px); background: #fff; color: #22303c; border-radius: 14px;
   box-shadow: 0 20px 60px -16px rgba(0, 0, 0, .5); overflow: hidden; }
 .fiq_hm_sugg_h { display: flex; align-items: center; gap: 9px; padding: 13px 15px; font-size: 15px;
   background: linear-gradient(#d92f2b, #b71c1c); color: #fff; }
