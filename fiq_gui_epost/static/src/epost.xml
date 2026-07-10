@@ -1,16 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-    <t t-name="fiq_gui_epost.Dashboard">
-        <div class="fiq_gui_epost">
-            <div class="fiq_gui_epost_top">
-                <span class="fiq_gui_epost_mark">F</span>
-                <span class="fiq_gui_epost_name" t-esc="flate"/>
-            </div>
-            <div class="fiq_gui_epost_card">
-                <h3 t-esc="flate"/>
-                <p class="fiq_gui_epost_soon">Kommer</p>
-            </div>
-            <div class="fiq_gui_epost_foot">Drevet av <strong>FIQ</strong> · <t t-esc="flate"/></div>
+    <t t-name="fiq_gui_epost.MsgSenter">
+        <div class="fms_ref">
+            <iframe class="fms_ref_frame"
+                    t-att-src="src"
+                    title="Meldingssenter"
+                    loading="eager"/>
         </div>
     </t>
 </templates>
