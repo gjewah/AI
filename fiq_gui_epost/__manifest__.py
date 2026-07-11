@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Meldingssenter",
-    "version": "19.0.2.0.0",
+    "version": "19.0.1.3.0",
     "summary": "FIQ Meldingssenter – kommunikasjonsflaten i Kontrollrommet. "
                "V00.04-designet (godkjent) som levende flate: tilstede-topplinje, firmavelger "
                "m/ logo, taksonomi 0–8, kompakte meldingsrader, lesepanel, paring/tildeling og AI-flate.",
@@ -22,7 +22,7 @@ V00.04 bygges først som levende referanse; native OWL-port mot ekte Odoo-data
     "author": "FIQ AS",
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
-    "license": "LGPL-3",
+    "license": "OPL-1",
     "depends": ["fiq_gui_control", "web", "mail"],
     "data": [
         "security/fiq_gui_epost_groups.xml",
