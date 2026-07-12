@@ -29,6 +29,19 @@ class FiqGuiAiKrData(models.AbstractModel):
             return True
         return False
 
+    def _delt_med(self, record):
+        """Hvem posten er delt med = følgere som IKKE er vanlige interne brukere
+        (ekstern kontakt eller portal/share-bruker). Speiler project_shared-logikken
+        (Loym) for «shared», men gir NAVNENE i tillegg til ja/nei. Defensivt."""
+        out = []
+        partners = getattr(record, "message_partner_ids", False)
+        if not partners:
+            return out
+        for p in partners:
+            if not p.user_ids or p.user_ids.filtered(lambda u: u.share):
+                out.append(p.display_name or p.name or "—")
+        return out
+
     @api.model
     def get_ai_oppgaver(self, company_id=False):
         """Oversikt over alle AI-økter/oppgaver (Claude Code + Cowork) logget i Odoo.
@@ -87,6 +100,7 @@ class FiqGuiAiKrData(models.AbstractModel):
                                 and fields.Date.to_date(str(t.date_deadline)[:10]) < today)
                 except Exception:
                     over = False
+                delt_med = self._delt_med(t)
                 rows.append({
                     "id": t.id,
                     "no": (t.code if "code" in f else "") or "",
@@ -96,6 +110,11 @@ class FiqGuiAiKrData(models.AbstractModel):
                     "stage": stage.name if stage else "",
                     "over": over,
                     "frist": str(t.date_deadline)[:10] if t.date_deadline else "",
+                    # Åpne tilhørende element (alltid tilgjengelig fra oversikten)
+                    "aapne": {"model": "project.task", "id": t.id},
+                    # Delt-visning (project_shared/Loym): flagg + HVEM den er delt med
+                    "delt": bool(t.shared) if "shared" in f else bool(delt_med),
+                    "delt_med": delt_med,
                 })
                 out["tot"]["tot"] += 1
                 out["tot"][stmap[st]] += 1
