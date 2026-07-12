@@ -41,18 +41,23 @@ class FiqMeldingssenterData(models.AbstractModel):
         return []
 
     @api.model
-    def get_meldingssenter_data(self, period="alle"):
+    def get_meldingssenter_data(self, firm=False, period="alle"):
         """Ekte basis-tall til Meldingssenter-flaten.
 
         Kjøres som brukeren → hver bruker teller kun det de har tilgang til.
+        firm = firma-id (valgfri) → firma-scoping når firma-velgeren byttes i topplinja.
+               Filter = mail.message.record_company_id (lagret felt = firmaet til elementet
+               meldingen henger på) → bytt firma, tallene reberegnes umiddelbart.
         period = dag | uke | maaned | alle.
-        Returns: {"innboks": int, "uleste": int, "sendt": int, "period": str}
+        Returns: {"innboks", "uleste", "sendt", "firm", "period"}
         """
         Msg = self.env["mail.message"]
-        period_dom = self._period_domain(period)
+        dom = self._period_domain(period)
+        if firm:
+            dom = dom + [("record_company_id", "=", int(firm))]
 
         # Alle ekte e-poster på et element (mottatt + sendt).
-        epost_dom = _ON_RECORD + [("message_type", "=", "email")] + period_dom
+        epost_dom = _ON_RECORD + [("message_type", "=", "email")] + dom
         epost_totalt = Msg.search_count(epost_dom)
 
         # Sendt = e-poster forfattet av en intern ansatt (ikke share/portal-bruker).
@@ -62,11 +67,12 @@ class FiqMeldingssenterData(models.AbstractModel):
         innboks = max(epost_totalt - sendt, 0)
 
         # Uleste = Odoos standard varsel-status for den innloggede brukeren.
-        uleste = Msg.search_count([("needaction", "=", True)] + period_dom)
+        uleste = Msg.search_count([("needaction", "=", True)] + dom)
 
         return {
             "innboks": innboks,
             "uleste": uleste,
             "sendt": sendt,
+            "firm": firm,
             "period": period,
         }
