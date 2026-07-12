@@ -159,6 +159,30 @@ class FiqGuiAiKrData(models.AbstractModel):
         return out
 
     @api.model
+    def get_org(self, company_id=False):
+        """Org-kart-data (AI KR D6): AI-rollene (Leder/Rådgiver) gruppert per firma,
+        med Rådgiver-koblinger — grunnlag for org-kart-visningen. Feature-detektert på
+        fiq.ai.rolle (degraderer pent om Rolle-modulen ikke er installert)."""
+        if "fiq.ai.rolle" not in self.env:
+            return {"roller": [], "installert": False}
+        dom = [("aktiv", "=", True)]
+        if company_id:
+            dom.append(("company_id", "in", [int(company_id), False]))
+        roller = []
+        for r in self.env["fiq.ai.rolle"].search(dom, order="omraade_kode, name"):
+            roller.append({
+                "id": r.id,
+                "navn": r.name or "",
+                "type": r.rolletype or "",
+                "omraade": r.omraade_kode or "",
+                "firma": r.company_id.display_name if r.company_id else "(generisk)",
+                "skill": r.skill_ref or "",
+                "radgivere": r.radgivere_ids.mapped("name"),
+                "ansvarlig": r.ansvarlig_id.display_name if r.ansvarlig_id else "",
+            })
+        return {"roller": roller, "installert": True}
+
+    @api.model
     def get_oppgave_detalj(self, task_id):
         """Detalj for én oppgave (AI KR D3): beskrivelse · konsekvenser · ansvarlig ·
         sjekkliste · kommunikasjonshistorikk · svar-kobling. Gjenbruker mønsteret fra
