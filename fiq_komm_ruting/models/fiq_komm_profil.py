@@ -28,6 +28,14 @@ class FiqKommProfil(models.Model):
         string="Felles postkasse", default=False,
         help="Delt funksjonell postkasse (post@/faktura@) som firmaet eier — "
              "trygt å lese sentralt. Motsatt av personlig per-bruker-postkasse.")
+    backend = fields.Selection([
+        ("proisp_imap", "PRO ISP web-mail (POP3/IMAP)"),
+        ("proisp_mapi", "PRO ISP Hosted Exchange (MAPI)"),
+        ("m365", "Microsoft 365 / Exchange Online"),
+        ("annet", "Annet"),
+    ], string="Postkasse-backend", default="proisp_imap",
+        help="HOVEDSAK = PRO ISP web-mail (ikke M365) for eksterne/system/rolle-kontoer; "
+             "hoveddomene forblir på Office. Jf. epost_navnepolicy_UTKAST_01.")
     fetchmail_ref = fields.Char(
         string="Innhentingsprofil (ref)",
         help="Valgfri fritekst-referanse til Odoos innhentingsserver (unngår hard "
@@ -54,4 +62,5 @@ class FiqKommProfil(models.Model):
             "company": p.company_id.display_name,
             "owner_user_id": p.owner_user_id.id or False,
             "er_felles": p.er_felles,
+            "backend": p.backend,
         }
