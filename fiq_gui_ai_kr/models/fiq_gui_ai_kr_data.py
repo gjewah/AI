@@ -134,6 +134,31 @@ class FiqGuiAiKrData(models.AbstractModel):
         return out
 
     @api.model
+    def get_okter(self, company_id=False, status=False):
+        """Øktregisteret (D5) til AI KR-oversikten: alle Claude Code + Cowork-økter
+        Claude har ført. Kjøres som brukeren. Firma-scoping for firma-snippet."""
+        dom = []
+        if company_id:
+            dom.append(("company_id", "=", int(company_id)))
+        if status:
+            dom.append(("status", "=", status))
+        Okt = self.env["fiq.ai.okt"]
+        out = []
+        for o in Okt.search(dom, order="sist_aktiv desc", limit=200):
+            out.append({
+                "id": o.id,
+                "navn": o.name or "",
+                "ref": o.okt_ref or "",
+                "kilde": o.kilde or "",
+                "firma": o.company_id.display_name if o.company_id else "",
+                "status": o.status or "",
+                "oppgave": o.task_id.display_name if o.task_id else "",
+                "sammendrag": o.sammendrag or "",
+                "sist_aktiv": o.sist_aktiv.strftime("%d.%m %H:%M") if o.sist_aktiv else "",
+            })
+        return out
+
+    @api.model
     def get_oppgave_detalj(self, task_id):
         """Detalj for én oppgave (AI KR D3): beskrivelse · konsekvenser · ansvarlig ·
         sjekkliste · kommunikasjonshistorikk · svar-kobling. Gjenbruker mønsteret fra

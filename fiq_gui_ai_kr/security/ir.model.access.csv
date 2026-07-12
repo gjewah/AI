@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_fiq_ai_okt_user,fiq.ai.okt bruker,model_fiq_ai_okt,base.group_user,1,0,0,0
+access_fiq_ai_okt_system,fiq.ai.okt system,model_fiq_ai_okt,base.group_system,1,1,1,1
