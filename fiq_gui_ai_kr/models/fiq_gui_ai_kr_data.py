@@ -132,3 +132,74 @@ class FiqGuiAiKrData(models.AbstractModel):
         tot = out["tot"]
         tot["pct"] = int(round(tot["done"] * 100.0 / tot["tot"])) if tot["tot"] else 0
         return out
+
+    @api.model
+    def get_oppgave_detalj(self, task_id):
+        """Detalj for én oppgave (AI KR D3): beskrivelse · konsekvenser · ansvarlig ·
+        sjekkliste · kommunikasjonshistorikk · svar-kobling. Gjenbruker mønsteret fra
+        Prosjekt KR (get_detaljer) + Meldingssenter (get_kommunikasjon) — AI KR = kombinasjon
+        av de to. Kjøres som brukeren. 🛑 KUN-LESENDE på oppgavenavn/-nummer (D4: aldri døpe om)."""
+        Task = self.env["project.task"]
+        t = Task.browse(int(task_id)).exists()
+        if not t:
+            return {}
+        f = Task._fields
+
+        ansvarlig = ", ".join(t.user_ids.mapped("name")) if t.user_ids else ""
+
+        # Konsekvenser — feature-detektert felt (varierer per kunde-modul).
+        konsekvens = ""
+        for cand in ("konsekvens", "konsekvenser", "x_konsekvens", "consequence"):
+            if cand in f and t[cand]:
+                konsekvens = t[cand]
+                break
+
+        # Sjekkliste — feature-detektert one2many m/ 'checklist' i feltnavnet
+        # (fiq_project_checklist); degraderer pent om modulen ikke er der.
+        sjekkliste = []
+        for fname, fld in f.items():
+            if "checklist" in fname and getattr(fld, "type", "") == "one2many":
+                for line in t[fname]:
+                    lf = line._fields
+                    navn = (line.name if "name" in lf else False) or line.display_name or ""
+                    utfort = False
+                    for dcand in ("done", "is_done", "checked"):
+                        if dcand in lf:
+                            utfort = bool(line[dcand])
+                            break
+                    sjekkliste.append({"navn": navn, "utfort": utfort})
+                break
+
+        # Kommunikasjonshistorikk på oppgaven (mail.message) — Meldingssenter-mønster.
+        Msg = self.env["mail.message"]
+        msgs = Msg.search([
+            ("model", "=", "project.task"), ("res_id", "=", t.id),
+            ("message_type", "in", ["email", "comment"]),
+        ], order="date desc", limit=50)
+        komm = []
+        for m in msgs:
+            internal = bool(
+                m.author_id and m.author_id.user_ids
+                and any(not u.share for u in m.author_id.user_ids)
+            )
+            komm.append({
+                "id": m.id,
+                "fra": m.author_id.display_name if m.author_id else (m.email_from or "—"),
+                "retning": "sendt" if internal else "mottatt",
+                "emne": (m.subject or m.preview or "").strip()[:120],
+                "dato": m.date.strftime("%d.%m %H:%M") if m.date else "",
+                "er_epost": m.message_type == "email",
+            })
+
+        return {
+            "id": t.id,
+            "navn": t.name or "",          # KUN lesing — aldri endret (D4)
+            "no": (t.code if "code" in f else "") or "",
+            "beskrivelse": t.description or "",
+            "ansvarlig": ansvarlig,
+            "konsekvenser": konsekvens,
+            "sjekkliste": sjekkliste,
+            "kommunikasjon": komm,
+            "kan_svare": True,            # front-end åpner komposer på message_id (svar/svar alle)
+            "aapne": {"model": "project.task", "id": t.id},
+        }
