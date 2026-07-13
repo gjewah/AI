@@ -64,6 +64,22 @@ class FiqMeldingssenterData(models.AbstractModel):
         return []
 
     @api.model
+    def get_my_config(self):
+        """Oppstarts-config til den native flaten: firmaer brukeren kan velge,
+        gjeldende firma, presence-liste og tema. Kjøres ved onWillStart."""
+        Comp = self.env["res.company"]
+        firms = [{"id": c.id, "navn": c.name,
+                  "kode": c.code if "code" in c._fields else ""}
+                 for c in self.env.user.company_ids]
+        return {
+            "firms": firms,
+            "current_firm": self.env.company.id,
+            "presence": self.get_presence(),
+            "user": self.env.user.name,
+            "theme": "system",
+        }
+
+    @api.model
     def get_meldingssenter_data(self, firm=False, period="alle"):
         """Ekte basis-tall til Meldingssenter-flaten.
 
