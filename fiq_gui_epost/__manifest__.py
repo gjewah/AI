@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Meldingssenter",
-    "version": "19.0.3.1.0",
+    "version": "19.0.3.2.0",
     "summary": "FIQ Meldingssenter – kommunikasjonsflaten i Kontrollrommet. "
                "V00.04-designet (godkjent) som levende flate: tilstede-topplinje, firmavelger "
                "m/ logo, taksonomi 0–8, kompakte meldingsrader, lesepanel, paring/tildeling og AI-flate.",

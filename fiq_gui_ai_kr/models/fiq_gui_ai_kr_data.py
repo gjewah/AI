@@ -42,14 +42,28 @@ class FiqGuiAiKrData(models.AbstractModel):
                 out.append(p.display_name or p.name or "—")
         return out
 
+    def _prosjekt_ferdig(self, p):
+        """Prosjekt regnes som fullført/kansellert hvis stadiet er lukket/foldet eller
+        stadienavnet tyder på det. Defensivt (project.project.stage varierer)."""
+        stage = getattr(p, "stage_id", False)
+        if not stage:
+            return (False, False)
+        nm = (stage.name or "").lower()
+        sf = stage._fields
+        lukket = ("is_closed" in sf and stage.is_closed) or ("fold" in sf and stage.fold)
+        ferdig = lukket or "ferdig" in nm or "fullf" in nm or "done" in nm or "closed" in nm
+        kansellert = "kansel" in nm or "avlyst" in nm or "cancel" in nm
+        return (bool(ferdig), bool(kansellert))
+
     @api.model
-    def get_ai_oppgaver(self, company_id=False):
+    def get_ai_oppgaver(self, company_id=False, skjul_ferdig=False,
+                        skjul_kansellert=False, kun_kunde=False):
         """Oversikt over alle AI-økter/oppgaver (Claude Code + Cowork) logget i Odoo.
 
         Kjøres som brukeren → tilgangsregler styrer synlighet.
-        company_id (valgfri) → firma-scoping for firma-snippet.
-        Returns: {root, groups[{id,no,name,done,total,tasks[...]}],
-                  tot{done,pag,vent,tot,pct}, krever[...]}.
+        company_id → firma-scoping. skjul_ferdig/skjul_kansellert → fjern fullførte/
+        kansellerte prosjekter. kun_kunde → bare prosjekter med kunde (partner_id).
+        Returns: {root, groups[...], tot{...}, krever[...]}.
         """
         ICP = self.env["ir.config_parameter"].sudo()
         out = {"root": "", "groups": [],
@@ -79,6 +93,15 @@ class FiqGuiAiKrData(models.AbstractModel):
         stmap = {"ferdig": "done", "pagar": "pag", "venter": "vent"}
 
         for p in projects:
+            # Prosjekt-filtre (Gjermund): skjul fullførte/kansellerte + kun kunde.
+            if kun_kunde and "partner_id" in P._fields and not p.partner_id:
+                continue
+            if skjul_ferdig or skjul_kansellert:
+                ferdig, kansellert = self._prosjekt_ferdig(p)
+                if skjul_ferdig and ferdig:
+                    continue
+                if skjul_kansellert and kansellert:
+                    continue
             dom = [("project_id", "=", p.id)]
             if company_id and "company_id" in f:
                 dom.append(("company_id", "=", int(company_id)))

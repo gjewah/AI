@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="fiq_gui_ai_kr.AiKr">
+        <div class="aikr">
+            <div t-if="state.loading" class="loading">Laster AI Kontrollrom…</div>
+            <t t-else="">
+                <!-- Topplinje -->
+                <div class="top">
+                    <div class="logo">AI</div>
+                    <div class="brand">
+                        <div class="eb">FIQ Kontrollrom · 8.50 AI</div>
+                        <div class="ti">AI Kontrollrom</div>
+                    </div>
+                    <div class="sp"/>
+                    <div class="tabs">
+                        <button t-att-class="state.view==='oppgaver'?'on':''" t-on-click="() => this.settFane('oppgaver')">Oppgaver</button>
+                        <button t-att-class="state.view==='okter'?'on':''" t-on-click="() => this.settFane('okter')">Øktregister</button>
+                        <button t-att-class="state.view==='org'?'on':''" t-on-click="() => this.settFane('org')">Org-kart</button>
+                    </div>
+                    <button class="ubtn kr" t-on-click="tilbakeKR">‹ Kontrollrom</button>
+                </div>
+
+                <!-- OPPGAVER -->
+                <div t-if="state.view==='oppgaver'">
+                    <div class="filters">
+                        <label><input type="checkbox" t-att-checked="state.skjul_ferdig" t-on-change="() => this.veksle('skjul_ferdig')"/> Skjul fullførte</label>
+                        <label><input type="checkbox" t-att-checked="state.skjul_kansellert" t-on-change="() => this.veksle('skjul_kansellert')"/> Skjul kansellerte</label>
+                        <label><input type="checkbox" t-att-checked="state.kun_kunde" t-on-change="() => this.veksle('kun_kunde')"/> Kun kundeprosjekter</label>
+                        <span class="sp"/>
+                        <span class="tot">Ferdig <b t-esc="state.oppg.tot.pct || 0"/>% · <t t-esc="state.oppg.tot.tot || 0"/> oppgaver</span>
+                    </div>
+
+                    <div t-if="state.oppg.krever.length" class="krever">
+                        <h4>Krever handling</h4>
+                        <button t-foreach="state.oppg.krever" t-as="k" t-key="k.id" class="kchip" t-on-click="() => this.aapne(k)">
+                            <span t-att-class="k.over?'over':''" t-esc="k.name"/>
+                            <span class="frist" t-if="k.frist" t-esc="k.frist"/>
+                        </button>
+                    </div>
+
+                    <div t-if="!state.oppg.groups.length" class="empty">Ingen prosjekter matcher filtrene.</div>
+                    <div t-foreach="state.oppg.groups" t-as="g" t-key="g.id" class="grp">
+                        <div class="ghead">
+                            <span class="gno" t-esc="g.no"/><span class="gnm" t-esc="g.name"/>
+                            <span class="gp"><t t-esc="g.done"/>/<t t-esc="g.total"/></span>
+                        </div>
+                        <button t-foreach="g.tasks" t-as="t" t-key="t.id" class="task" t-on-click="() => this.aapne(t)">
+                            <span class="who" t-esc="t.who==='du' ? '👤' : '🤖'"/>
+                            <span class="tno" t-esc="t.no"/>
+                            <span class="tnm" t-esc="t.name"/>
+                            <span t-if="t.delt" class="delt" t-att-title="t.delt_med.join(', ')">delt</span>
+                            <span t-att-class="'st st_' + t.st + (t.over?' over':'')" t-esc="t.st"/>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ØKTREGISTER -->
+                <div t-if="state.view==='okter'">
+                    <div t-if="!state.okter.length" class="empty">Ingen økter registrert ennå (Claude fører dem automatisk).</div>
+                    <div t-foreach="state.okter" t-as="o" t-key="o.id" class="okt">
+                        <div class="or1"><span class="onm" t-esc="o.navn"/><span t-att-class="'ost ost_' + o.status" t-esc="o.status"/></div>
+                        <div class="or2"><span class="okilde" t-esc="o.kilde"/> · <t t-esc="o.firma"/> · <t t-esc="o.sist_aktiv"/></div>
+                        <div class="osum" t-esc="o.sammendrag"/>
+                    </div>
+                </div>
+
+                <!-- ORG-KART -->
+                <div t-if="state.view==='org'">
+                    <div t-if="!state.org.installert" class="empty">AI-organisasjonen (Rolle-modulen) er ikke installert ennå.</div>
+                    <div t-else="" class="orgwrap">
+                        <div t-foreach="state.org.roller" t-as="r" t-key="r.id" t-att-class="'rolle ' + (r.type==='leder'?'leder':'radgiver')">
+                            <div class="ro1"><span class="romr" t-esc="r.omraade"/><span class="rnm" t-esc="r.navn"/></div>
+                            <div class="rt" t-esc="r.type==='leder' ? 'Leder' : 'Rådgiver'"/>
+                            <div class="rfirma" t-esc="r.firma"/>
+                            <div class="rskill" t-if="r.skill" t-esc="r.skill"/>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

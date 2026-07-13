@@ -67,10 +67,11 @@ class FiqMeldingssenterData(models.AbstractModel):
     def get_my_config(self):
         """Oppstarts-config til den native flaten: firmaer brukeren kan velge,
         gjeldende firma, presence-liste og tema. Kjøres ved onWillStart."""
-        Comp = self.env["res.company"]
         firms = [{"id": c.id, "navn": c.name,
                   "kode": c.code if "code" in c._fields else ""}
                  for c in self.env.user.company_ids]
+        # «Alle» øverst (Gjermund: e-post i alle firmaer → velg alle eller spesifikk).
+        firms = [{"id": False, "navn": "Alle", "kode": "∗"}] + firms
         return {
             "firms": firms,
             "current_firm": self.env.company.id,

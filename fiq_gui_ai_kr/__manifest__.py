@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ AI KR – AI Kontrollrom",
-    "version": "19.0.1.4.0",
+    "version": "19.0.2.0.0",
     "summary": "FIQ AI Kontrollrom (AI KR) – operatør-cockpit: oversikt over alle AI-økter "
                "(Claude Code + Cowork), AI-organisasjonskart, redigerbare roller/skills, "
                "ressursbruk og ROI. Snippet-basert (firma → rolle → person).",
@@ -32,7 +32,13 @@ som flate i det delte skallet (Vei C).
     "depends": ["fiq_gui_control", "web", "project"],
     "data": [
         "security/ir.model.access.csv",
+        "views/ai_kr_action.xml",
     ],
+    "assets": {
+        "web.assets_backend": [
+            "fiq_gui_ai_kr/static/src/**/*",
+        ],
+    },
     "application": False,
     "installable": True,
 }
