@@ -162,3 +162,87 @@ class FiqMeldingssenterData(models.AbstractModel):
                 for k, n, f in _TAKSONOMI]
         return {"basis": basis, "tverrgaende": tverr, "taksonomi": taks,
                 "firm": firm, "period": period}
+
+    # ---- Skriv-API: handle på en melding (tildel · arkivér · svar · presence) ----
+
+    @api.model
+    def tildel(self, message_id, user_id, deadline=False, note=False):
+        """Tildel en melding til en ansvarlig med frist (leder-dirigering §C.1).
+        Lager en Odoo-aktivitet (to-do) på elementet meldingen henger på → vises i
+        den ansvarliges aktiviteter. Ren arbeidsdelegering, ikke innsyn i øvrig post."""
+        m = self.env["mail.message"].browse(int(message_id)).exists()
+        if not m or not m.model or not m.res_id:
+            return False
+        todo = self.env.ref("mail.mail_activity_data_todo", raise_if_not_found=False)
+        vals = {
+            "res_model_id": self.env["ir.model"]._get_id(m.model),
+            "res_id": m.res_id,
+            "user_id": int(user_id),
+            "summary": (m.subject or "Oppfølging fra Meldingssenter")[:120],
+            "note": note or (m.preview or ""),
+        }
+        if todo:
+            vals["activity_type_id"] = todo.id
+        if deadline:
+            vals["date_deadline"] = deadline
+        return self.env["mail.activity"].create(vals).id
+
+    @api.model
+    def arkiver(self, message_id, model, res_id):
+        """Arkivér en melding på et element (prosjekt/oppgave): fest innhold + vedlegg
+        der den hører hjemme, sporbart. (Full PDF-render av selve e-posten kommer i v2 —
+        her kopieres innhold + vedlegg til mål-elementet via message_post.)"""
+        m = self.env["mail.message"].browse(int(message_id)).exists()
+        if not m:
+            return False
+        target = self.env[model].browse(int(res_id)).exists()
+        if not target or not hasattr(target, "message_post"):
+            return False
+        target.message_post(
+            body=m.body or (m.preview or ""),
+            subject="[Arkivert] %s" % (m.subject or ""),
+            attachment_ids=m.attachment_ids.ids,
+            message_type="comment",
+        )
+        return True
+
+    @api.model
+    def svar(self, message_id, reply_all=False):
+        """Svar / Svar alle → åpner e-post-komposeren forhåndsutfylt.
+        🛑 SENDER IKKE — brukeren godkjenner og sender selv (e-post ut = menneske-gate §A.7)."""
+        m = self.env["mail.message"].browse(int(message_id)).exists()
+        if not m:
+            return False
+        partners = m.author_id
+        if reply_all:
+            partners |= m.partner_ids
+        ctx = {
+            "default_model": m.model,
+            "default_res_ids": [m.res_id],
+            "default_parent_id": m.id,
+            "default_subject": "Re: %s" % (m.subject or ""),
+            "default_composition_mode": "comment",
+            "default_partner_ids": [(6, 0, partners.ids)],
+        }
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Svar alle" if reply_all else "Svar",
+            "res_model": "mail.compose.message",
+            "view_mode": "form",
+            "views": [[False, "form"]],
+            "target": "new",
+            "context": ctx,
+        }
+
+    @api.model
+    def get_presence(self):
+        """TIL STEDE NÅ: interne brukere med online-status (im_status). Grovkornet
+        (online/away/offline); samtykke/opt-in styres i innstillinger (§12)."""
+        out = []
+        for u in self.env["res.users"].search([("share", "=", False), ("active", "=", True)]):
+            out.append({
+                "id": u.id,
+                "navn": u.name,
+                "status": u.im_status if "im_status" in u._fields else "offline",
+            })
+        return out
