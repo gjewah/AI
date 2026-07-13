@@ -50,9 +50,9 @@
                         </div>
                         <div class="sh" style="margin-top:12px">Mer</div>
                         <div class="nav">
-                            <button class="c_blaa"><span class="dot"/>Møter &amp; Kalender</button>
-                            <button class="c_tealx"><span class="dot"/>Møtereferater</button>
-                            <button class="c_slate"><span class="dot"/>Innstillinger</button>
+                            <button class="c_blaa" t-on-click="aapneKalender"><span class="dot"/>Møter &amp; Kalender</button>
+                            <button class="c_tealx" t-on-click="() => this.aapneBoks('motereferater','Møtereferater')"><span class="dot"/>Møtereferater</button>
+                            <button class="c_slate" t-on-click="aapneInnstillinger"><span class="dot"/>Innstillinger</button>
                         </div>
                     </div>
 

@@ -376,13 +376,21 @@ class FiqMeldingssenterData(models.AbstractModel):
 
     @api.model
     def get_presence(self):
-        """TIL STEDE NÅ: interne brukere med online-status (im_status). Grovkornet
-        (online/away/offline); samtykke/opt-in styres i innstillinger (§12)."""
-        out = []
-        for u in self.env["res.users"].search([("share", "=", False), ("active", "=", True)]):
-            out.append({
-                "id": u.id,
-                "navn": u.name,
-                "status": u.im_status if "im_status" in u._fields else "offline",
-            })
-        return out
+        """TIL STEDE NÅ — samme robuste regnestykke som Kontrollrommet: innstempling
+        (møtt på jobb) + pågående møte + online-status, ikke bare rå online-status.
+        Delegerer til fiq_gui_control så «til stede» betyr det samme begge steder.
+        Faller tilbake til enkel online-status hvis Kontrollrom-flaten mangler."""
+        farge2status = {"green": "online", "orange": "away", "red": "offline"}
+        try:
+            kr = self.env["fiq.gui.control.config"].get_presence()
+            return [{"id": p.get("id"), "navn": p.get("navn") or "",
+                     "status": farge2status.get(p.get("farge"), "offline")}
+                    for p in kr]
+        except Exception:
+            out = []
+            for u in self.env["res.users"].search([("share", "=", False), ("active", "=", True)]):
+                out.append({
+                    "id": u.id, "navn": u.name,
+                    "status": u.im_status if "im_status" in u._fields else "offline",
+                })
+            return out

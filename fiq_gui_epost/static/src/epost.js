@@ -70,6 +70,8 @@ export class FiqMeldingssenter extends Component {
     }
 
     tilbakeKR() { this.action.doAction("fiq_gui_control.action_fiq_gui_control"); }
+    aapneKalender() { this.action.doAction("calendar.action_calendar_event"); }
+    aapneInnstillinger() { this.action.doAction("base_setup.action_general_configuration"); }
 
     // Hjelpere
     initialer(navn) {
