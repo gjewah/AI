@@ -34,6 +34,7 @@
   // Topplinje
   .top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;padding:10px 15px;border-radius:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
   .logo{width:60px;height:60px;border-radius:13px;background:var(--accent);display:grid;place-items:center;color:var(--accent-ink);font-weight:800;font-size:22px;box-shadow:var(--shadow);flex:none}
+  .logo.logoimg{background:#fff;object-fit:contain;padding:6px}
   .brand .eb{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
   .brand .ti{font-size:19px;font-weight:800;letter-spacing:-.02em}
   .top .sp{flex:1}
@@ -84,7 +85,8 @@
   .drill{margin-top:13px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);box-shadow:var(--shadow);overflow:hidden}
   .dhead{display:flex;align-items:center;gap:10px;padding:11px 15px;border-bottom:1px solid var(--line-soft);background:color-mix(in srgb,var(--accent) 8%,var(--surface));flex-wrap:wrap}
   .crumb{display:flex;align-items:center;gap:6px;font-size:13px}.crumb .cur{font-weight:730;color:var(--ink)}
-  .dhead .x{margin-left:auto;border:1px solid var(--line);background:var(--surface);border-radius:8px;width:30px;height:30px;font-size:15px}
+  .dsok{margin-left:auto;flex:0 1 300px;min-width:160px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:0 11px;height:30px;font-size:12.5px;color:var(--ink)}
+  .dhead .x{margin-left:8px;border:1px solid var(--line);background:var(--surface);border-radius:8px;width:30px;height:30px;font-size:15px}
   .dgrid{display:grid;grid-template-columns:340px 1fr;border-top:1px solid var(--line-soft)}
   @media (max-width:820px){.dgrid{grid-template-columns:1fr}}
   .dlist{border-right:1px solid var(--line-soft);max-height:72vh;overflow:auto}

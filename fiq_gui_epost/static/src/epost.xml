@@ -18,7 +18,8 @@
 
                 <!-- Topplinje -->
                 <div class="top">
-                    <div class="logo" t-esc="'FIQ'"/>
+                    <img t-if="state.logo" class="logo logoimg" t-att-src="state.logo" alt="Firmalogo"/>
+                    <div t-else="" class="logo" t-esc="'FIQ'"/>
                     <div class="brand">
                         <div class="eb">FIQ Kontrollrom · 8.50 GUI · V00.04</div>
                         <div class="ti">Meldingssenter</div>
@@ -92,6 +93,8 @@
                         <div class="drill" t-if="state.aktivBoks">
                             <div class="dhead">
                                 <div class="crumb"><span class="cur" t-esc="state.aktivNavn"/></div>
+                                <input class="dsok" type="search" placeholder="Søk i denne boksen…"
+                                       t-att-value="state.q" t-on-change="sok"/>
                                 <button class="x" t-on-click="lukkDrill">×</button>
                             </div>
                             <div class="dgrid">

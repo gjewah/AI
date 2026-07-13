@@ -15,7 +15,7 @@ export class FiqMeldingssenter extends Component {
         this.orm = useService("orm");
         this.action = useService("action");
         this.state = useState({
-            loading: true, firms: [], current_firm: false, presence: [], user: "",
+            loading: true, firms: [], current_firm: false, presence: [], user: "", logo: "", q: "",
             basis: [], tverr: [], taks: [],
             aktivBoks: false, aktivNavn: "", meldinger: [], valgt: false, period: "alle",
         });
@@ -36,14 +36,28 @@ export class FiqMeldingssenter extends Component {
 
     async byttFirma(id) {
         this.state.current_firm = id;
+        const f = this.state.firms.find(x => x.id === id);
+        if (f && f.logo) this.state.logo = f.logo;   // bytt logo når du bytter firma
         this.state.aktivBoks = false; this.state.meldinger = []; this.state.valgt = false;
         await this.lastBokser();
     }
 
     async aapneBoks(kode, navn) {
-        this.state.aktivBoks = kode; this.state.aktivNavn = navn; this.state.valgt = false;
+        this.state.aktivBoks = kode; this.state.aktivNavn = navn;
+        this.state.valgt = false; this.state.q = "";
+        await this.lastMeldinger();
+    }
+
+    async lastMeldinger() {
+        if (!this.state.aktivBoks) return;
         this.state.meldinger = await this.orm.call(DATA, "get_messages", [], {
-            boks: kode, firm: this.state.current_firm, period: this.state.period });
+            boks: this.state.aktivBoks, firm: this.state.current_firm,
+            period: this.state.period, q: this.state.q || false });
+    }
+
+    sok(ev) {
+        this.state.q = (ev.target.value || "").trim();
+        this.lastMeldinger();
     }
 
     lukkDrill() { this.state.aktivBoks = false; this.state.valgt = false; }

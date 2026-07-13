@@ -14,6 +14,8 @@
 #
 # Taksonomi-splitt (0–8) og paring kommer i senere steg (fiq_komm_match).
 
+import json
+import re
 from datetime import timedelta
 
 from odoo import api, fields, models
@@ -51,6 +53,22 @@ _TVERRGAENDE = [
     ("reklame", "Reklame", "slate"),
 ]
 
+# Standard nøkkelord per tverrgående boks (config-overstyrbart: systemparameter
+# fiq_gui_epost.tverr_keywords = JSON {kode: [ord, ...]}). Treff i emne + preview.
+_TVERR_KW_DEFAULT = {
+    "haster": ["haster", "urgent", "asap", "snarest", "umiddelbart"],
+    "viktig": ["viktig", "important", "prioritet", "high priority"],
+    "motereferater": ["referat", "møtereferat", "moetereferat", "minutes of meeting", "referat fra"],
+    "reklame": ["nyhetsbrev", "newsletter", "avmeld", "meld deg av", "unsubscribe",
+                "kampanje", "black friday", "rabattkode"],
+}
+# Avsender-mønstre (email_from) som markerer reklame/automatisk post.
+_REKLAME_FROM = ["noreply", "no-reply", "no_reply", "newsletter", "nyhetsbrev",
+                 "marketing", "mailchimp", "sendgrid"]
+
+_TVERR_CODES = {k for k, _, _ in _TVERRGAENDE}
+_AREA_CODES = {k for k, _, _ in _TAKSONOMI}
+
 
 class FiqMeldingssenterData(models.AbstractModel):
     _name = "fiq.meldingssenter.data"
@@ -68,17 +86,31 @@ class FiqMeldingssenterData(models.AbstractModel):
         """Oppstarts-config til den native flaten: firmaer brukeren kan velge,
         gjeldende firma, presence-liste og tema. Kjøres ved onWillStart."""
         firms = [{"id": c.id, "navn": c.name,
-                  "kode": c.code if "code" in c._fields else ""}
+                  "kode": c.code if "code" in c._fields else "",
+                  "logo": self._logo_data(c)}
                  for c in self.env.user.company_ids]
         # «Alle» øverst (Gjermund: e-post i alle firmaer → velg alle eller spesifikk).
-        firms = [{"id": False, "navn": "Alle", "kode": "∗"}] + firms
+        firms = [{"id": False, "navn": "Alle", "kode": "∗", "logo": ""}] + firms
         return {
             "firms": firms,
             "current_firm": self.env.company.id,
+            "logo": self._logo_data(self.env.company),
             "presence": self.get_presence(),
             "user": self.env.user.name,
             "theme": "system",
         }
+
+    @staticmethod
+    def _logo_data(company):
+        """Firmalogo som data-URL. Bruker firmaets egen logo (res.company.logo);
+        faller tilbake til Kontrollrom-logoen (fiq_control_logo) hvis satt. Tom
+        streng = ingen logo → flaten viser «FIQ»-reserven."""
+        logo = company.logo or (
+            company.fiq_control_logo if "fiq_control_logo" in company._fields else False)
+        if not logo:
+            return ""
+        logo = logo.decode() if isinstance(logo, bytes) else logo
+        return "data:image/png;base64,%s" % logo
 
     @api.model
     def get_meldingssenter_data(self, firm=False, period="alle"):
@@ -132,6 +164,11 @@ class FiqMeldingssenterData(models.AbstractModel):
             dom += [("message_type", "=", "email"), ("author_id.user_ids.share", "=", False)]
         elif boks == "innboks":
             dom.append(("message_type", "=", "email"))
+        elif boks in _TVERR_CODES or boks in _AREA_CODES:
+            # Kategori-boks (crawl): begrens til de e-postene sorteringen la her.
+            tverr_ids, omr_ids = self._classify_all(firm, period)
+            src = tverr_ids if boks in _TVERR_CODES else omr_ids
+            dom.append(("id", "in", list(src.get(boks, ()))))
         if q:
             dom = ["|", "|", ("subject", "ilike", q), ("email_from", "ilike", q),
                    ("record_name", "ilike", q)] + dom
@@ -162,20 +199,106 @@ class FiqMeldingssenterData(models.AbstractModel):
             })
         return out
 
+    # ---- Crawl / sortering: legg hver e-post i riktige bokser ------------------------
+    # «Crawle gjennom mailen for å vise riktig» (Gjermund): les emne + preview + avsender
+    # og sorter. Tverrgående = nøkkelord/avsender (config-drevet). Områder 0–8 = via
+    # elementet e-posten henger på (prosjekt/oppgave → område-kode i prosjekt-treet).
+
+    def _tverr_keywords(self):
+        raw = self.env["ir.config_parameter"].sudo().get_param("fiq_gui_epost.tverr_keywords")
+        if raw:
+            try:
+                data = json.loads(raw)
+                if isinstance(data, dict):
+                    return data
+            except Exception:
+                pass
+        return _TVERR_KW_DEFAULT
+
+    def _classify_tverr(self, subject, preview, email_from):
+        """Hvilke tverrgående bokser matcher e-posten (multi-label)."""
+        text = ("%s %s" % (subject or "", preview or "")).lower()
+        frm = (email_from or "").lower()
+        hits = set()
+        for code, words in self._tverr_keywords().items():
+            if any(w and w.lower() in text for w in words):
+                hits.add(code)
+        if any(p in frm for p in _REKLAME_FROM):
+            hits.add("reklame")
+        return hits
+
+    def _area_index(self):
+        """{prosjekt-id: område-kode} for aktive prosjekter (opp til område-nivå =
+        barn av firma-rot; f.eks. «7 Prosjekter» → «7»). Defensivt."""
+        P = self.env["project.project"]
+        if "parent_id" not in P._fields:
+            return {}
+        projs = P.search([("active", "=", True)])
+        parent = {p.id: (p.parent_id.id if p.parent_id else False) for p in projs}
+        name = {p.id: (p.name or "") for p in projs}
+        roots = set(pid for pid, par in parent.items() if not par)
+
+        def code(pid):
+            cur, hop = pid, 0
+            while parent.get(cur) and parent[cur] not in roots and hop < 20:
+                cur = parent[cur]
+                hop += 1
+            m = re.match(r"^\s*(\d+(?:\.\d+)*)\s+", name.get(cur, ""))
+            return m.group(1) if m else None
+
+        return {pid: code(pid) for pid in parent}
+
+    def _classify_all(self, firm, period, limit=3000):
+        """{boks-kode: sett av message-id} for tverrgående + område + uavklart.
+        Én lettvekts-crawl over e-postene i scope."""
+        Msg = self.env["mail.message"]
+        dom = _ON_RECORD + [("message_type", "=", "email")] + self._period_domain(period)
+        if firm:
+            dom.append(("record_company_id", "=", int(firm)))
+        rows = Msg.search_read(
+            dom, ["id", "subject", "email_from", "model", "res_id"],
+            limit=limit, order="date desc")
+        area_idx = self._area_index()
+        # Oppgave→prosjekt for e-post som henger på oppgaver (ett batch-søk)
+        task_ids = list({r["res_id"] for r in rows
+                         if r.get("model") == "project.task" and r.get("res_id")})
+        task_proj = {}
+        if task_ids:
+            for t in self.env["project.task"].browse(task_ids).exists():
+                task_proj[t.id] = t.project_id.id if t.project_id else False
+        tverr = {k: set() for k, _, _ in _TVERRGAENDE}
+        omr = {k: set() for k, _, _ in _TAKSONOMI}
+        for r in rows:
+            hits = self._classify_tverr(r.get("subject"), "", r.get("email_from"))
+            area = None
+            if r.get("model") == "project.project":
+                area = area_idx.get(r.get("res_id"))
+            elif r.get("model") == "project.task":
+                area = area_idx.get(task_proj.get(r.get("res_id")))
+            if area and area in omr:
+                omr[area].add(r["id"])
+            for h in hits:
+                if h in tverr:
+                    tverr[h].add(r["id"])
+            if not hits and not area:
+                tverr["uavklart"].add(r["id"])
+        return tverr, omr
+
     @api.model
     def get_boxes(self, firm=False, period="alle"):
-        """Bokser til Meldingssenter-flaten: basis (ekte tall NÅ) + tverrgående + 0–8-taksonomi
-        (stillas — count 0 til fiq_komm_match-paring finnes). Dynamisk: front-end skjuler count=0
-        der det gir mening. Farger følger fargekart. Config-drevet mål: fiq.msg.box (senere)."""
+        """Bokser med EKTE tall: basis + tverrgående (crawl) + områder 0–8 (via paring).
+        Farger følger fargekart. Config-drevet nøkkelord: systemparameter
+        fiq_gui_epost.tverr_keywords (JSON)."""
         d = self.get_meldingssenter_data(firm=firm, period=period)
         basis = [
             {"kode": "innboks", "navn": "Innboks", "count": d["innboks"], "farge": "graa"},
             {"kode": "uleste", "navn": "Uleste", "count": d["uleste"], "farge": "amber"},
             {"kode": "sendt", "navn": "Sendt", "count": d["sendt"], "farge": "gronn"},
         ]
-        tverr = [{"kode": k, "navn": n, "count": 0, "farge": f, "trenger_paring": True}
+        tverr_ids, omr_ids = self._classify_all(firm, period)
+        tverr = [{"kode": k, "navn": n, "count": len(tverr_ids.get(k, ())), "farge": f}
                  for k, n, f in _TVERRGAENDE]
-        taks = [{"kode": k, "navn": n, "count": 0, "farge": f, "trenger_paring": True}
+        taks = [{"kode": k, "navn": n, "count": len(omr_ids.get(k, ())), "farge": f}
                 for k, n, f in _TAKSONOMI]
         return {"basis": basis, "tverrgaende": tverr, "taksonomi": taks,
                 "firm": firm, "period": period}
