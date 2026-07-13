@@ -5,24 +5,21 @@
             <div t-if="state.loading" class="loading">Laster Meldingssenter…</div>
             <t t-else="">
 
-                <!-- TIL STEDE NÅ -->
-                <div class="presence">
-                    <span class="pl">Til stede nå</span>
-                    <t t-foreach="state.presence.slice(0,8)" t-as="p" t-key="p.id">
-                        <span t-att-class="'pc ' + pcls(p.status)">
-                            <span class="pa" t-esc="initialer(p.navn)"/>
-                            <t t-esc="p.navn"/>
-                        </span>
-                    </t>
-                </div>
-
-                <!-- Topplinje -->
+                <!-- ===== Topplinje (alltid) med kompakt «Til stede» ===== -->
                 <div class="top">
                     <img t-if="state.logo" class="logo logoimg" t-att-src="state.logo" alt="Firmalogo"/>
                     <div t-else="" class="logo" t-esc="'FIQ'"/>
                     <div class="brand">
                         <div class="eb">FIQ Kontrollrom · 8.50 GUI · V00.04</div>
                         <div class="ti">Meldingssenter</div>
+                    </div>
+                    <div class="hpres">
+                        <span class="hpl">Til stede</span>
+                        <t t-foreach="state.presence.slice(0,7)" t-as="p" t-key="p.id">
+                            <button t-att-class="'hav ' + (p.gronn ? 'til' : 'fra')"
+                                    t-att-title="p.navn" t-on-click="() => this.aapneAnsatt(p.id)"
+                                    t-esc="p.initialer"/>
+                        </t>
                     </div>
                     <div class="sp"/>
                     <div class="switch">
@@ -36,115 +33,147 @@
                     <button class="ubtn kr" t-on-click="tilbakeKR">‹ Kontrollrom</button>
                 </div>
 
-                <div class="wrap">
-                    <!-- Venstre sidemeny -->
-                    <div class="side">
-                        <div class="sh">Postkasse</div>
-                        <div class="nav">
-                            <button t-foreach="state.basis" t-as="b" t-key="b.kode"
-                                    t-att-class="(state.aktivBoks===b.kode?'on':'') + ' c_' + b.farge"
-                                    t-on-click="() => this.aapneBoks(b.kode, b.navn)">
-                                <span class="dot"/><t t-esc="b.navn"/>
-                                <span class="c" t-esc="b.count"/>
-                            </button>
+                <!-- ===== SIDE 1: OVERSIKT (tre hjul) ===== -->
+                <t t-if="state.view === 'oversikt'">
+                    <div class="wheels">
+                        <div class="wunit">
+                            <div class="donut" t-att-style="hjul(basisWheel())">
+                                <div class="hole"><div><span class="dnum tnum" t-esc="total(basisWheel())"/><br/><span class="dlbl">Firma</span></div></div>
+                            </div>
+                            <div class="legend">
+                                <button class="leg" t-foreach="state.basis" t-as="b" t-key="b.kode"
+                                        t-attf-style="--c:{{fargeHex(b.farge)}}"
+                                        t-on-click="() => this.aapneMail(b.kode, b.navn)">
+                                    <i></i><span class="lnm" t-esc="b.navn"/><span class="lc tnum" t-esc="b.count"/>
+                                </button>
+                            </div>
                         </div>
-                        <div class="sh" style="margin-top:12px">Mer</div>
-                        <div class="nav">
-                            <button class="c_blaa" t-on-click="aapneKalender"><span class="dot"/>Møter &amp; Kalender</button>
-                            <button class="c_tealx" t-on-click="() => this.aapneBoks('motereferater','Møtereferater')"><span class="dot"/>Møtereferater</button>
-                            <button class="c_slate" t-on-click="aapneInnstillinger"><span class="dot"/>Innstillinger</button>
+                        <div class="wunit">
+                            <div class="donut" t-att-style="hjul(state.tverr)">
+                                <div class="hole"><div><span class="dnum tnum" t-esc="total(state.tverr)"/><br/><span class="dlbl">Tverrgående</span></div></div>
+                            </div>
+                            <div class="legend">
+                                <div t-if="!ikkeTom(state.tverr).length" class="legtom">Ingen ennå</div>
+                                <button class="leg" t-foreach="ikkeTom(state.tverr)" t-as="b" t-key="b.kode"
+                                        t-attf-style="--c:{{fargeHex(b.farge)}}"
+                                        t-on-click="() => this.aapneMail(b.kode, b.navn)">
+                                    <i></i><span class="lnm" t-esc="b.navn"/><span class="lc tnum" t-esc="b.count"/>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="wunit">
+                            <div class="donut" t-att-style="hjul(state.taks)">
+                                <div class="hole"><div><span class="dnum tnum" t-esc="total(state.taks)"/><br/><span class="dlbl">Områder</span></div></div>
+                            </div>
+                            <div class="legend">
+                                <div t-if="!ikkeTom(state.taks).length" class="legtom">Ingen ennå</div>
+                                <button class="leg" t-foreach="ikkeTom(state.taks)" t-as="b" t-key="b.kode"
+                                        t-attf-style="--c:{{fargeHex(b.farge)}}"
+                                        t-on-click="() => this.aapneMail(b.kode, b.navn)">
+                                    <i></i><span class="code" t-esc="b.kode"/><span class="lnm" t-esc="b.navn"/><span class="lc tnum" t-esc="b.count"/>
+                                </button>
+                            </div>
                         </div>
                     </div>
+                    <div class="mer">
+                        <button class="merb" t-on-click="aapneKalender"><span class="dot c_blaa"/>Møter &amp; Kalender</button>
+                        <button class="merb" t-on-click="() => this.aapneMail('motereferater','Møtereferater')"><span class="dot c_tealx"/>Møtereferater</button>
+                        <button class="merb" t-on-click="aapneInnstillinger"><span class="dot c_slate"/>Innstillinger</button>
+                    </div>
+                </t>
 
-                    <!-- Hovedområde -->
-                    <div class="main">
-                        <div class="strip">
-                            <div class="sx"><span class="l">Firma</span>
-                                <span class="v" t-esc="(state.firms.find(f => f.id===state.current_firm) || {}).navn || ''"/></div>
-                            <div class="sx"><span class="l">Innboks</span>
-                                <span class="v tnum" t-esc="(state.basis[0] || {}).count || 0"/></div>
-                            <div class="sx warn"><span class="l">Uleste</span>
-                                <span class="v tnum" t-esc="(state.basis[1] || {}).count || 0"/></div>
+                <!-- ===== SIDE 2: MAIL ===== -->
+                <t t-if="state.view === 'mail'">
+                    <button class="tilbake" t-on-click="tilOversikt">‹ Tilbake til oversikt</button>
+                    <div class="drill">
+                        <div class="dhead">
+                            <div class="crumb"><span class="cur" t-esc="state.aktivNavn"/></div>
+                            <input class="dsok" type="search" placeholder="Søk i denne boksen…"
+                                   t-att-value="state.q" t-on-change="sok"/>
                         </div>
-
-                        <!-- Tverrgående -->
-                        <div class="sub-lbl">Tverrgående</div>
-                        <div class="boxes">
-                            <button t-foreach="state.tverr" t-as="b" t-key="b.kode"
-                                    t-att-class="'box c_' + b.farge + (state.aktivBoks===b.kode?' on':'')"
-                                    t-on-click="() => this.aapneBoks(b.kode, b.navn)">
-                                <div class="bl"><span class="nm" t-esc="b.navn"/></div>
-                                <div class="n tnum" t-esc="b.count"/>
-                            </button>
-                        </div>
-
-                        <!-- Områder 0–8 -->
-                        <div class="sub-lbl">Områder</div>
-                        <div class="boxes">
-                            <button t-foreach="state.taks" t-as="b" t-key="b.kode"
-                                    t-att-class="'box c_' + b.farge + (state.aktivBoks===b.kode?' on':'')"
-                                    t-on-click="() => this.aapneBoks(b.kode, b.navn)">
-                                <div class="bl"><span class="code" t-esc="b.kode"/><span class="nm" t-esc="b.navn"/></div>
-                                <div class="n tnum" t-esc="b.count"/>
-                            </button>
-                        </div>
-
-                        <!-- Drill: liste + lesepanel -->
-                        <div class="drill" t-if="state.aktivBoks">
-                            <div class="dhead">
-                                <div class="crumb"><span class="cur" t-esc="state.aktivNavn"/></div>
-                                <input class="dsok" type="search" placeholder="Søk i denne boksen…"
-                                       t-att-value="state.q" t-on-change="sok"/>
-                                <button class="x" t-on-click="lukkDrill">×</button>
+                        <div class="dgrid">
+                            <div class="dlist">
+                                <div t-if="!state.meldinger.length" class="empty">Ingen meldinger i denne boksen.</div>
+                                <button t-foreach="state.meldinger" t-as="m" t-key="m.id"
+                                        t-att-class="'mi' + (state.valgt.id===m.id?' on':'') + (m.ulest?' un':'')"
+                                        t-on-click="() => this.velgMelding(m)">
+                                    <div class="r1"><span class="fr" t-esc="m.fra"/><span class="tm" t-esc="m.dato"/></div>
+                                    <div class="su" t-esc="m.emne"/>
+                                    <div class="pv" t-esc="m.preview"/>
+                                </button>
                             </div>
-                            <div class="dgrid">
-                                <div class="dlist">
-                                    <div t-if="!state.meldinger.length" class="empty">Ingen meldinger i denne boksen.</div>
-                                    <button t-foreach="state.meldinger" t-as="m" t-key="m.id"
-                                            t-att-class="'mi' + (state.valgt?.id===m.id?' on':'') + (m.ulest?' un':'')"
-                                            t-on-click="() => this.velgMelding(m)">
-                                        <div class="r1"><span class="fr" t-esc="m.fra"/><span class="tm" t-esc="m.dato"/></div>
-                                        <div class="su" t-esc="m.emne"/>
-                                        <div class="pv" t-esc="m.preview"/>
-                                    </button>
+                            <div class="read" t-if="state.valgt">
+                                <div class="rtool">
+                                    <button class="tbtn" t-on-click="() => this.svar(false)">Svar</button>
+                                    <button class="tbtn" t-on-click="() => this.svar(true)">Svar alle</button>
+                                    <button class="tbtn">Videresend</button>
+                                    <button class="tbtn">Arkivér</button>
+                                    <button class="tbtn">Tildel ansvarlig</button>
+                                    <button class="tbtn ai">✦ AI</button>
                                 </div>
-                                <div class="read" t-if="state.valgt">
-                                    <div class="rtool">
-                                        <button class="tbtn" t-on-click="() => this.svar(false)">Svar</button>
-                                        <button class="tbtn" t-on-click="() => this.svar(true)">Svar alle</button>
-                                        <button class="tbtn">Videresend</button>
-                                        <button class="tbtn">Arkivér</button>
-                                        <button class="tbtn">Tildel ansvarlig</button>
-                                        <button class="tbtn ai">✦ AI</button>
-                                    </div>
-                                    <div class="rhead">
-                                        <h3 class="rsub" t-esc="state.valgt.emne"/>
-                                        <div class="rmeta">
-                                            <span class="ra" t-esc="initialer(state.valgt.fra)"/>
-                                            <div>
-                                                <div class="who" t-esc="state.valgt.fra"/>
-                                                <div class="addr" t-esc="state.valgt.adresse"/>
-                                            </div>
-                                            <div class="rt">
-                                                <div t-esc="state.valgt.dato"/>
-                                                <div t-if="state.valgt.til.length">Til: <t t-esc="state.valgt.til.join(', ')"/></div>
-                                            </div>
+                                <div class="rhead">
+                                    <h3 class="rsub" t-esc="state.valgt.emne"/>
+                                    <div class="rmeta">
+                                        <span class="ra" t-esc="initialer(state.valgt.fra)"/>
+                                        <div>
+                                            <div class="who" t-esc="state.valgt.fra"/>
+                                            <div class="addr" t-esc="state.valgt.adresse"/>
+                                        </div>
+                                        <div class="rt">
+                                            <div t-esc="state.valgt.dato"/>
+                                            <div t-if="state.valgt.til.length">Til: <t t-esc="state.valgt.til.join(', ')"/></div>
                                         </div>
                                     </div>
-                                    <div class="rbody" t-esc="state.valgt.preview"/>
-                                    <div class="paring">
-                                        <h4>Paring / tildeling</h4>
-                                        <div class="prow"><label>Prosjekt</label><input placeholder="Prosjektnr eller navn"/></div>
-                                        <div class="prow"><label>Oppgave</label><input placeholder="Oppgavenr eller navn"/></div>
-                                        <div class="prow"><label>Ansvarlig</label><input placeholder="Velg ansvarlig"/></div>
-                                        <div class="prow"><label>Frist</label><input placeholder="dd.mm.åååå"/></div>
-                                    </div>
                                 </div>
-                                <div class="read readempty" t-else="">Velg en melding for å lese den.</div>
+                                <div class="rbody" t-esc="state.valgt.preview"/>
+                                <div class="paring">
+                                    <h4>Paring / tildeling</h4>
+                                    <div class="prow"><label>Prosjekt</label><input placeholder="Prosjektnr eller navn"/></div>
+                                    <div class="prow"><label>Oppgave</label><input placeholder="Oppgavenr eller navn"/></div>
+                                    <div class="prow"><label>Ansvarlig</label><input placeholder="Velg ansvarlig"/></div>
+                                    <div class="prow"><label>Frist</label><input type="date"/></div>
+                                </div>
+                            </div>
+                            <div class="read readempty" t-else="">Velg en melding for å lese den.</div>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- ===== SIDE 3: ANSATT ===== -->
+                <t t-if="state.view === 'ansatt'">
+                    <button class="tilbake" t-on-click="tilOversikt">‹ Tilbake til oversikt</button>
+                    <div class="ansatt">
+                        <div class="ahead">
+                            <img t-if="state.ansatt.foto" class="afoto" t-att-src="state.ansatt.foto" alt="Bilde av ansatt"/>
+                            <div t-else="" class="afoto ini" t-esc="state.ansatt.initialer"/>
+                            <div class="ainfo">
+                                <div class="an" t-esc="state.ansatt.navn"/>
+                                <div t-att-class="'ast ' + (state.ansatt.gronn ? 'gronn' : 'rod')">
+                                    <span class="adot"/>
+                                    <t t-esc="state.ansatt.gronn ? 'Til stede' : 'Ikke til stede'"/>
+                                    <t t-if="state.ansatt.innstemplet"> · innstemplet <t t-esc="state.ansatt.innstemplet"/></t>
+                                    <t t-if="state.ansatt.arbeidstid"> · normal dag <t t-esc="state.ansatt.arbeidstid"/></t>
+                                </div>
+                            </div>
+                            <div class="aacts">
+                                <button class="tbtn">Koble oppgave</button>
+                                <button class="tbtn" t-on-click="aapneKalender">Inviter møte</button>
+                                <button class="tbtn">Chat</button>
+                            </div>
+                        </div>
+                        <div class="agjore">
+                            <h4>Gjøremål</h4>
+                            <div t-if="!state.ansatt.gjoremal.length" class="empty">Ingen åpne gjøremål.</div>
+                            <div t-foreach="state.ansatt.gjoremal" t-as="g" t-key="g.id" class="grow2">
+                                <span class="gno tnum" t-esc="g.no"/>
+                                <span class="gnavn" t-esc="g.navn"/>
+                                <span class="gpro" t-esc="g.prosjekt"/>
+                                <span t-att-class="'gfrist' + (g.over?' over':'')" t-esc="g.frist"/>
                             </div>
                         </div>
                     </div>
-                </div>
+                </t>
+
             </t>
         </div>
     </t>

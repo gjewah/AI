@@ -376,21 +376,94 @@ class FiqMeldingssenterData(models.AbstractModel):
 
     @api.model
     def get_presence(self):
-        """TIL STEDE NÅ — samme robuste regnestykke som Kontrollrommet: innstempling
-        (møtt på jobb) + pågående møte + online-status, ikke bare rå online-status.
-        Delegerer til fiq_gui_control så «til stede» betyr det samme begge steder.
-        Faller tilbake til enkel online-status hvis Kontrollrom-flaten mangler."""
-        farge2status = {"green": "online", "orange": "away", "red": "offline"}
+        """TIL STEDE NÅ — grønn (til stede) / rød (ikke). Samme robuste regnestykke som
+        Kontrollrommet (innstempling + møte + online). Returnerer initialer + bilde-flagg
+        til avatarene. Faller tilbake til online-status hvis Kontrollrom-flaten mangler."""
         try:
             kr = self.env["fiq.gui.control.config"].get_presence()
             return [{"id": p.get("id"), "navn": p.get("navn") or "",
-                     "status": farge2status.get(p.get("farge"), "offline")}
+                     "initialer": p.get("initialer") or "",
+                     "gronn": p.get("farge") in ("green", "orange"),
+                     "has_photo": bool(p.get("has_photo"))}
                     for p in kr]
         except Exception:
             out = []
             for u in self.env["res.users"].search([("share", "=", False), ("active", "=", True)]):
-                out.append({
-                    "id": u.id, "navn": u.name,
-                    "status": u.im_status if "im_status" in u._fields else "offline",
-                })
+                st = u.im_status if "im_status" in u._fields else "offline"
+                out.append({"id": u.id, "navn": u.name or "",
+                            "initialer": self._initialer(u.name),
+                            "gronn": str(st).startswith("online"), "has_photo": False})
             return out
+
+    @staticmethod
+    def _initialer(navn):
+        parts = [p for p in (navn or "").replace("-", " ").split(" ") if p]
+        if len(parts) >= 2:
+            return (parts[0][:1] + parts[-1][:1]).upper()
+        return parts[0][:2].upper() if parts else "?"
+
+    @api.model
+    def get_ansatt(self, user_id):
+        """Ansatt-siden: bilde fra ansattkortet, til stede (grønn/rød), innstempling,
+        normal arbeidstid, og åpne gjøremål. Alt defensivt/felt-guardet, kjørt som
+        brukeren (les sudo kun for bilde/oppmøte = delt tilstede-info)."""
+        u = self.env["res.users"].sudo().browse(int(user_id)).exists()
+        if not u:
+            return {}
+        gronn = False
+        try:
+            for p in self.env["fiq.gui.control.config"].get_presence():
+                if p.get("id") == u.id:
+                    gronn = p.get("farge") in ("green", "orange")
+                    break
+        except Exception:
+            pass
+        foto, innstemplet, arbeidstid = "", "", ""
+        try:
+            emp = self.env["hr.employee"].sudo().search([("user_id", "=", u.id)], limit=1)
+            if emp:
+                img = emp.image_256 or emp.image_512 or emp.image_128
+                if img:
+                    img = img.decode() if isinstance(img, bytes) else img
+                    foto = "data:image/png;base64,%s" % img
+                att = self.env["hr.attendance"].sudo().search(
+                    [("employee_id", "=", emp.id), ("check_out", "=", False)], limit=1)
+                if att and att.check_in:
+                    innstemplet = fields.Datetime.context_timestamp(att, att.check_in).strftime("%H:%M")
+                cal = emp.resource_calendar_id if "resource_calendar_id" in emp._fields else False
+                h = getattr(cal, "hours_per_day", 0) if cal else 0
+                if h:
+                    arbeidstid = ("%g" % h).replace(".", ",") + "t"
+        except Exception:
+            pass
+
+        def is_done(stage):
+            if not stage:
+                return False
+            if "fold" in stage._fields and stage.fold:
+                return True
+            return bool("is_closed" in stage._fields and getattr(stage, "is_closed", False))
+
+        gjoremal = []
+        try:
+            today = fields.Date.context_today(self)
+            T = self.env["project.task"]
+            f = T._fields
+            for t in T.search([("user_ids", "in", [u.id])], order="date_deadline", limit=12):
+                if is_done(t.stage_id if "stage_id" in f else False):
+                    continue
+                d = str(t.date_deadline)[:10] if t.date_deadline else ""
+                gjoremal.append({
+                    "id": t.id, "no": (t.code if "code" in f else "") or "",
+                    "navn": t.name or "", "prosjekt": t.project_id.name or "",
+                    "frist": d,
+                    "over": bool(d and fields.Date.to_date(d) < today),
+                })
+        except Exception:
+            pass
+
+        return {
+            "id": u.id, "navn": u.name or "", "initialer": self._initialer(u.name),
+            "gronn": gronn, "foto": foto, "innstemplet": innstemplet,
+            "arbeidstid": arbeidstid, "gjoremal": gjoremal,
+        }
