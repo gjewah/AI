@@ -126,4 +126,22 @@
   .c_lilla{--c:var(--lilla);--nc:var(--lilla)}.c_gronn{--c:var(--gronn);--nc:var(--gronn)}.c_oransje{--c:var(--oransje);--nc:var(--oransje)}
   .c_rod{--c:var(--rod);--nc:var(--rod)}.c_crit{--c:var(--crit);--nc:var(--crit)}.c_amber{--c:var(--amber);--nc:var(--amber)}
   .c_slate{--c:var(--slate);--nc:var(--slate)}.c_tealx{--c:var(--tealx);--nc:var(--tealx)}
+
+  // ---- Egen mail-side: tilbake + grupper + kobling ----
+  .tilbakeb{border:1px solid var(--line);background:var(--surface);color:var(--accent);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;flex:none}
+  .tilbakeb:hover{border-color:var(--accent)}
+  .dhead .gl{font-size:11px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}
+  .dhead .dg{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:6px 9px;font-size:12px}
+  .grp{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line-soft);background:var(--surface-2);padding:7px 14px;font-size:12px;font-weight:700;color:var(--ink-soft)}
+  .grp .ch{font-size:10px;color:var(--muted);width:12px}
+  .grp .gc{margin-left:auto;font-family:var(--mono);color:var(--muted);font-weight:800}
+  .kobling{background:color-mix(in srgb,#7030A0 6%,var(--surface));border:1px solid color-mix(in srgb,#7030A0 22%,var(--line));border-radius:10px;padding:10px 12px;margin-bottom:11px}
+  .kobling .kh{font-size:11px;font-weight:700;color:var(--ink-soft);margin-bottom:7px}
+  .kobling .ktom{font-size:11.5px;color:var(--muted)}
+  .kand{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 10px;margin-bottom:5px;font-size:12.5px;color:var(--ink)}
+  .kand:hover{border-color:#7030A0}
+  .kand .kt{font-family:var(--mono);font-size:9.5px;font-weight:800;color:#fff;border-radius:5px;padding:2px 7px;flex:none;text-transform:uppercase}
+  .kand .kt_p{background:var(--gronn)}
+  .kand .kt_o{background:var(--blaa)}
+  .kand .kn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }

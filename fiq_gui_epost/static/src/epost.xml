@@ -67,6 +67,7 @@
                                 <span class="v tnum" t-esc="(state.basis[1] || {}).count || 0"/></div>
                         </div>
 
+                        <t t-if="!state.aktivBoks">
                         <!-- Tverrgående -->
                         <div class="sub-lbl">Tverrgående</div>
                         <div class="boxes">
@@ -88,25 +89,42 @@
                                 <div class="n tnum" t-esc="b.count"/>
                             </button>
                         </div>
+                        </t>
 
-                        <!-- Drill: liste + lesepanel -->
+                        <!-- Drill: liste + lesepanel (egen side når en boks er åpen) -->
                         <div class="drill" t-if="state.aktivBoks">
                             <div class="dhead">
+                                <button class="tilbakeb" t-on-click="lukkDrill">‹ Tilbake</button>
                                 <div class="crumb"><span class="cur" t-esc="state.aktivNavn"/></div>
-                                <input class="dsok" type="search" placeholder="Søk i denne boksen…"
+                                <input class="dsok" type="search" placeholder="Søk avsender, emne, prosjektnr…"
                                        t-att-value="state.q" t-on-change="sok"/>
-                                <button class="x" t-on-click="lukkDrill">×</button>
+                                <span class="gl">Grupper:</span>
+                                <select class="dg" t-on-change="setGroup">
+                                    <option value="avsender">Avsender</option>
+                                    <option value="prosjekt">Prosjekt</option>
+                                    <option value="dato">Dato</option>
+                                    <option value="type">Type</option>
+                                </select>
                             </div>
                             <div class="dgrid">
                                 <div class="dlist">
                                     <div t-if="!state.meldinger.length" class="empty">Ingen meldinger i denne boksen.</div>
-                                    <button t-foreach="state.meldinger" t-as="m" t-key="m.id"
-                                            t-att-class="'mi' + (state.valgt?.id===m.id?' on':'') + (m.ulest?' un':'')"
-                                            t-on-click="() => this.velgMelding(m)">
-                                        <div class="r1"><span class="fr" t-esc="m.fra"/><span class="tm" t-esc="m.dato"/></div>
-                                        <div class="su" t-esc="m.emne"/>
-                                        <div class="pv" t-esc="m.preview"/>
-                                    </button>
+                                    <t t-foreach="grupper()" t-as="g" t-key="g.key">
+                                        <button class="grp" t-on-click="() => this.toggleGroup(g.key)">
+                                            <span class="ch" t-esc="state.kollaps[g.key] ? '▸' : '▾'"/>
+                                            <span class="gk" t-esc="g.key"/>
+                                            <span class="gc tnum" t-esc="g.n"/>
+                                        </button>
+                                        <t t-if="!state.kollaps[g.key]">
+                                            <button t-foreach="g.items" t-as="m" t-key="m.id"
+                                                    t-att-class="'mi' + (state.valgt?.id===m.id?' on':'') + (m.ulest?' un':'')"
+                                                    t-on-click="() => this.velgMelding(m)">
+                                                <div class="r1"><span class="fr" t-esc="m.fra"/><span class="tm" t-esc="m.dato"/></div>
+                                                <div class="su" t-esc="m.emne"/>
+                                                <div class="pv" t-esc="m.preview"/>
+                                            </button>
+                                        </t>
+                                    </t>
                                 </div>
                                 <div class="read" t-if="state.valgt">
                                     <div class="rtool">
@@ -134,6 +152,16 @@
                                     <div class="rbody" t-esc="state.valgt.preview"/>
                                     <div class="paring">
                                         <h4>Paring / tildeling</h4>
+                                        <div class="kobling">
+                                            <div class="kh">🤖 Hører sannsynligvis til (nyeste øverst)</div>
+                                            <div t-if="!harKobling()" class="ktom">Fant ingen kobling for denne avsenderen ennå.</div>
+                                            <button class="kand" t-foreach="state.kandidater.prosjekt" t-as="k" t-key="'p'+k.id">
+                                                <span class="kt kt_p">Prosjekt</span><span class="kn" t-esc="(k.no ? k.no + ' ' : '') + k.navn"/>
+                                            </button>
+                                            <button class="kand" t-foreach="state.kandidater.oppgave" t-as="k" t-key="'o'+k.id">
+                                                <span class="kt kt_o">Oppgave</span><span class="kn" t-esc="(k.no ? k.no + ' ' : '') + k.navn"/>
+                                            </button>
+                                        </div>
                                         <div class="prow"><label>Prosjekt</label><input placeholder="Prosjektnr eller navn"/></div>
                                         <div class="prow"><label>Oppgave</label><input placeholder="Oppgavenr eller navn"/></div>
                                         <div class="prow"><label>Ansvarlig</label><input placeholder="Velg ansvarlig"/></div>

@@ -375,6 +375,44 @@ class FiqMeldingssenterData(models.AbstractModel):
         }
 
     @api.model
+    def get_kandidater(self, message_id):
+        """Koblingen (§C.3): for en e-post — finn prosjektene/oppgavene AVSENDEREN
+        henger sammen med (poster der samme avsender har kommunisert før), NYESTE
+        øverst. «Tok opp prosjektene mailen var del av.» Defensivt, som brukeren."""
+        m = self.env["mail.message"].browse(int(message_id)).exists()
+        if not m:
+            return {"prosjekt": [], "oppgave": []}
+        if m.author_id:
+            base = [("author_id", "=", m.author_id.id)]
+        elif m.email_from:
+            base = [("email_from", "=ilike", m.email_from)]
+        else:
+            return {"prosjekt": [], "oppgave": []}
+        Msg = self.env["mail.message"]
+        pros, opp, seen_p, seen_o = [], [], set(), set()
+        for mm in Msg.search(base + [("model", "in", ["project.project", "project.task"]),
+                                     ("res_id", "!=", False)], order="date desc", limit=200):
+            try:
+                rec = self.env[mm.model].browse(mm.res_id).exists()
+            except Exception:
+                rec = False
+            if not rec:
+                continue
+            f = rec._fields
+            if mm.model == "project.project" and rec.id not in seen_p:
+                seen_p.add(rec.id)
+                pros.append({"id": rec.id, "navn": rec.name or "",
+                             "no": (rec.sequence_code if "sequence_code" in f else "") or ""})
+            elif mm.model == "project.task" and rec.id not in seen_o:
+                seen_o.add(rec.id)
+                opp.append({"id": rec.id, "navn": rec.name or "",
+                            "no": (rec.code if "code" in f else "") or "",
+                            "prosjekt": rec.project_id.name or ""})
+            if len(pros) >= 5 and len(opp) >= 5:
+                break
+        return {"prosjekt": pros[:5], "oppgave": opp[:5]}
+
+    @api.model
     def get_presence(self):
         """TIL STEDE NÅ — samme robuste regnestykke som Kontrollrommet: innstempling
         (møtt på jobb) + pågående møte + online-status, ikke bare rå online-status.

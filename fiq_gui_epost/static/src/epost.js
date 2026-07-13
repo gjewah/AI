@@ -18,6 +18,7 @@ export class FiqMeldingssenter extends Component {
             loading: true, firms: [], current_firm: false, presence: [], user: "", logo: "", q: "",
             basis: [], tverr: [], taks: [],
             aktivBoks: false, aktivNavn: "", meldinger: [], valgt: false, period: "alle",
+            group: "avsender", kollaps: {}, kandidater: { prosjekt: [], oppgave: [] },
         });
         onWillStart(async () => {
             const cfg = await this.orm.call(DATA, "get_my_config", []);
@@ -61,7 +62,36 @@ export class FiqMeldingssenter extends Component {
     }
 
     lukkDrill() { this.state.aktivBoks = false; this.state.valgt = false; }
-    velgMelding(m) { this.state.valgt = m; }
+
+    async velgMelding(m) {
+        this.state.valgt = m;
+        this.state.kandidater = { prosjekt: [], oppgave: [] };
+        this.state.kandidater = await this.orm.call(DATA, "get_kandidater", [m.id]);
+    }
+
+    // Grupper etter (sortering): avsender · prosjekt/element · dato · type
+    setGroup(ev) { this.state.group = ev.target.value; this.state.kollaps = {}; }
+    toggleGroup(k) { this.state.kollaps[k] = !this.state.kollaps[k]; }
+    grupper() {
+        const fnMap = {
+            avsender: m => m.fra || "—",
+            prosjekt: m => m.element || "(uten element)",
+            dato: m => (m.dato || "—").slice(0, 5),
+            type: m => (m.retning === "sendt" ? "Sendt" : "Mottatt"),
+        };
+        const fn = fnMap[this.state.group] || fnMap.avsender;
+        const grp = {}, order = [];
+        for (const m of this.state.meldinger) {
+            const k = fn(m);
+            if (!grp[k]) { grp[k] = []; order.push(k); }
+            grp[k].push(m);
+        }
+        return order.map(k => ({ key: k, items: grp[k], n: grp[k].length }));
+    }
+    harKobling() {
+        const k = this.state.kandidater || {};
+        return (k.prosjekt || []).length + (k.oppgave || []).length > 0;
+    }
 
     async svar(replyAll) {
         if (!this.state.valgt) return;
