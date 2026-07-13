@@ -1,6 +1,6 @@
 {
     "name": "Enterprise Bundle Engine",
-    "version": "19.0.2.0",
+    "version": "19.0.2.1",
     "author": "Vidir",
     "license": "LGPL-3",
     "depends": ["sale", "stock", "mrp", "uom", "website"],
