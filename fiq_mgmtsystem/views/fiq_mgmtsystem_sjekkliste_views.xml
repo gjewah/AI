@@ -70,10 +70,10 @@
                 <separator/>
                 <filter name="f_mal" string="Maler" domain="[('er_mal','=',True)]"/>
                 <filter name="f_instans" string="Instanser" domain="[('er_mal','=',False)]"/>
-                <group expand="0" string="Grupper">
+                <separator/>
                     <filter name="g_krav" string="Krav" context="{'group_by':'krav_id'}"/>
                     <filter name="g_firma" string="Firma" context="{'group_by':'company_id'}"/>
-                </group>
+                
             </search>
         </field>
     </record>

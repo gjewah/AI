@@ -76,11 +76,11 @@
                 <separator/>
                 <filter name="f_aktiv_status" string="Aktiv status" domain="[('status','=','aktiv')]"/>
                 <filter name="f_planlagt" string="Planlagt" domain="[('status','=','planlagt')]"/>
-                <group expand="0" string="Grupper">
+                <separator/>
                     <filter name="g_frekvens" string="Frekvens" context="{'group_by':'frekvens'}"/>
                     <filter name="g_ansvarlig" string="Ansvarlig" context="{'group_by':'ansvarlig_id'}"/>
                     <filter name="g_firma" string="Firma" context="{'group_by':'company_id'}"/>
-                </group>
+                
             </search>
         </field>
     </record>

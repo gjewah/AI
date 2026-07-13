@@ -149,12 +149,12 @@
                 <filter name="pagaar" string="Pågår" domain="[('state', '=', 'pagaar')]"/>
                 <filter name="fullfort" string="Fullført" domain="[('state', '=', 'fullfort')]"/>
                 <filter name="overfort" string="Overført" domain="[('state', '=', 'overfort')]"/>
-                <group expand="0" string="Grupper etter">
+                <separator/>
                     <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
                     <filter name="group_partner" string="Kunde" context="{'group_by': 'partner_id'}"/>
                     <filter name="group_utfort" string="Befarer" context="{'group_by': 'utfort_av_id'}"/>
                     <filter name="group_dato" string="Befaringsdato" context="{'group_by': 'dato'}"/>
-                </group>
+                
             </search>
         </field>
     </record>
@@ -238,12 +238,12 @@
                 <filter name="apen" string="Åpne" domain="[('status', '=', 'apen')]"/>
                 <filter name="avvik" string="Avvik" domain="[('type', '=', 'avvik')]"/>
                 <filter name="hoy" string="Høy alvorlighet" domain="[('alvorlighet', '=', 'hoy')]"/>
-                <group expand="0" string="Grupper etter">
+                <separator/>
                     <filter name="group_befaring" string="Befaring" context="{'group_by': 'befaring_id'}"/>
                     <filter name="group_type" string="Type" context="{'group_by': 'type'}"/>
                     <filter name="group_status" string="Status" context="{'group_by': 'status'}"/>
                     <filter name="group_alvor" string="Alvorlighet" context="{'group_by': 'alvorlighet'}"/>
-                </group>
+                
             </search>
         </field>
     </record>

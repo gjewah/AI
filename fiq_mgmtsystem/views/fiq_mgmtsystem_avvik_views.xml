@@ -76,12 +76,12 @@
                 <filter name="f_kritisk" string="Kritiske" domain="[('alvorlighet','=','kritisk')]"/>
                 <separator/>
                 <filter name="aktiv" string="Aktive" domain="[('aktiv','=',True)]"/>
-                <group expand="0" string="Grupper">
+                <separator/>
                     <filter name="g_status" string="Status" context="{'group_by':'status'}"/>
                     <filter name="g_alvorlighet" string="Alvorlighet" context="{'group_by':'alvorlighet'}"/>
                     <filter name="g_ansvarlig" string="Ansvarlig" context="{'group_by':'ansvarlig_id'}"/>
                     <filter name="g_firma" string="Firma" context="{'group_by':'company_id'}"/>
-                </group>
+                
             </search>
         </field>
     </record>

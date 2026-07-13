@@ -87,10 +87,10 @@
                 <filter name="f_iso9001" string="ISO 9001" domain="[('standard','=','iso9001')]"/>
                 <filter name="f_iso14001" string="ISO 14001" domain="[('standard','=','iso14001')]"/>
                 <filter name="f_iso27001" string="ISO 27001" domain="[('standard','=','iso27001')]"/>
-                <group expand="0" string="Grupper">
+                <separator/>
                     <filter name="g_standard" string="Standard" context="{'group_by':'standard'}"/>
                     <filter name="g_firma" string="Firma" context="{'group_by':'company_id'}"/>
-                </group>
+                
             </search>
         </field>
     </record>

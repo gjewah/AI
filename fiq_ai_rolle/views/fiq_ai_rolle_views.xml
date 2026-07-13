@@ -75,11 +75,10 @@
                 <filter name="aktiv" string="Aktive" domain="[('aktiv','=',True)]"/>
                 <filter name="ledere" string="Ledere" domain="[('rolletype','=','leder')]"/>
                 <filter name="radgivere" string="Rådgivere" domain="[('rolletype','=','radgiver')]"/>
-                <group expand="0" string="Grupper">
-                    <filter name="g_firma" string="Firma" context="{'group_by':'company_id'}"/>
-                    <filter name="g_type" string="Rolletype" context="{'group_by':'rolletype'}"/>
-                    <filter name="g_omrade" string="Område" context="{'group_by':'omraade_kode'}"/>
-                </group>
+                <separator/>
+                <filter name="g_firma" string="Firma" context="{'group_by':'company_id'}"/>
+                <filter name="g_type" string="Rolletype" context="{'group_by':'rolletype'}"/>
+                <filter name="g_omrade" string="Område" context="{'group_by':'omraade_kode'}"/>
             </search>
         </field>
     </record>
