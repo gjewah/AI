@@ -1,80 +1,146 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="fiq_gui_epost.MsgSenter">
-        <div class="fms">
-            <div t-if="state.loading" class="fms_loading">Laster Meldingssenter…</div>
-
+        <div class="msapp">
+            <div t-if="state.loading" class="loading">Laster Meldingssenter…</div>
             <t t-else="">
+
+                <!-- TIL STEDE NÅ -->
+                <div class="presence">
+                    <span class="pl">Til stede nå</span>
+                    <t t-foreach="state.presence.slice(0,8)" t-as="p" t-key="p.id">
+                        <span t-att-class="'pc ' + pcls(p.status)">
+                            <span class="pa" t-esc="initialer(p.navn)"/>
+                            <t t-esc="p.navn"/>
+                        </span>
+                    </t>
+                </div>
+
                 <!-- Topplinje -->
-                <div class="fms_top">
-                    <button class="fms_kr" t-on-click="tilbakeKR">‹ Kontrollrom</button>
-                    <span class="fms_title">Meldingssenter</span>
-                    <select class="fms_firm" t-on-change="byttFirma">
-                        <option t-foreach="state.firms" t-as="f" t-key="f.id"
-                                t-att-value="f.id" t-att-selected="f.id === state.current_firm">
-                            <t t-esc="f.kode ? (f.kode + ' ' + f.navn) : f.navn"/>
-                        </option>
-                    </select>
-                    <span class="fms_spacer"/>
-                    <span class="fms_presence" t-att-title="'Til stede nå'">
-                        <span t-foreach="state.presence.slice(0,8)" t-as="p" t-key="p.id"
-                              t-att-class="'fms_dot fms_' + p.status" t-att-title="p.navn"/>
-                    </span>
-                    <span class="fms_user" t-esc="state.user"/>
+                <div class="top">
+                    <div class="logo" t-esc="'FIQ'"/>
+                    <div class="brand">
+                        <div class="eb">FIQ Kontrollrom · 8.50 GUI · V00.04</div>
+                        <div class="ti">Meldingssenter</div>
+                    </div>
+                    <div class="sp"/>
+                    <div class="switch">
+                        <button t-foreach="state.firms" t-as="f" t-key="f.id"
+                                t-att-class="'swb' + (f.id===state.current_firm?' on':'')"
+                                t-on-click="() => this.byttFirma(f.id)">
+                            <b t-esc="f.kode || ''"/><span t-esc="f.navn"/>
+                        </button>
+                    </div>
+                    <button class="ubtn ai">✦ AI</button>
+                    <button class="ubtn kr" t-on-click="tilbakeKR">‹ Kontrollrom</button>
                 </div>
 
-                <!-- Bokser -->
-                <div class="fms_boxes">
-                    <button t-foreach="state.basis" t-as="b" t-key="b.kode"
-                            t-att-class="'fms_box fms_c_' + b.farge + (state.aktivBoks===b.kode?' on':'')"
-                            t-on-click="() => this.aapneBoks(b.kode)">
-                        <span class="fms_bn" t-esc="b.navn"/>
-                        <span class="fms_bc" t-esc="b.count"/>
-                    </button>
-                </div>
-                <div class="fms_cross">
-                    <button t-foreach="state.tverr" t-as="b" t-key="b.kode"
-                            t-att-class="'fms_chip fms_c_' + b.farge"
-                            t-on-click="() => this.aapneBoks(b.kode)">
-                        <t t-esc="b.navn"/> <span class="fms_bc" t-esc="b.count"/>
-                    </button>
-                </div>
-                <div class="fms_taks">
-                    <button t-foreach="state.taks" t-as="b" t-key="b.kode"
-                            t-att-class="'fms_tbox fms_c_' + b.farge"
-                            t-on-click="() => this.aapneBoks(b.kode)">
-                        <span class="fms_bn" t-esc="b.navn"/>
-                        <span class="fms_bc" t-esc="b.count"/>
-                    </button>
-                </div>
+                <div class="wrap">
+                    <!-- Venstre sidemeny -->
+                    <div class="side">
+                        <div class="sh">Postkasse</div>
+                        <div class="nav">
+                            <button t-foreach="state.basis" t-as="b" t-key="b.kode"
+                                    t-att-class="(state.aktivBoks===b.kode?'on':'') + ' c_' + b.farge"
+                                    t-on-click="() => this.aapneBoks(b.kode, b.navn)">
+                                <span class="dot"/><t t-esc="b.navn"/>
+                                <span class="c" t-esc="b.count"/>
+                            </button>
+                        </div>
+                        <div class="sh" style="margin-top:12px">Mer</div>
+                        <div class="nav">
+                            <button class="c_blaa"><span class="dot"/>Møter &amp; Kalender</button>
+                            <button class="c_tealx"><span class="dot"/>Møtereferater</button>
+                            <button class="c_slate"><span class="dot"/>Innstillinger</button>
+                        </div>
+                    </div>
 
-                <!-- Liste + lesepanel -->
-                <div class="fms_main" t-if="state.aktivBoks">
-                    <div class="fms_list">
-                        <div t-if="!state.meldinger.length" class="fms_empty">Ingen meldinger i denne boksen.</div>
-                        <div t-foreach="state.meldinger" t-as="m" t-key="m.id"
-                             t-att-class="'fms_row' + (state.valgt?.id===m.id?' sel':'') + (m.ulest?' ulest':'')"
-                             t-on-click="() => this.velgMelding(m)">
-                            <div class="fms_r1"><span class="fms_from" t-esc="m.fra"/><span class="fms_date" t-esc="m.dato"/></div>
-                            <div class="fms_subj" t-esc="m.emne"/>
-                            <div class="fms_prev" t-esc="m.preview"/>
+                    <!-- Hovedområde -->
+                    <div class="main">
+                        <div class="strip">
+                            <div class="sx"><span class="l">Firma</span>
+                                <span class="v" t-esc="(state.firms.find(f => f.id===state.current_firm) || {}).navn || ''"/></div>
+                            <div class="sx"><span class="l">Innboks</span>
+                                <span class="v tnum" t-esc="(state.basis[0] || {}).count || 0"/></div>
+                            <div class="sx warn"><span class="l">Uleste</span>
+                                <span class="v tnum" t-esc="(state.basis[1] || {}).count || 0"/></div>
+                        </div>
+
+                        <!-- Tverrgående -->
+                        <div class="sub-lbl">Tverrgående</div>
+                        <div class="boxes">
+                            <button t-foreach="state.tverr" t-as="b" t-key="b.kode"
+                                    t-att-class="'box c_' + b.farge + (state.aktivBoks===b.kode?' on':'')"
+                                    t-on-click="() => this.aapneBoks(b.kode, b.navn)">
+                                <div class="bl"><span class="nm" t-esc="b.navn"/></div>
+                                <div class="n tnum" t-esc="b.count"/>
+                            </button>
+                        </div>
+
+                        <!-- Områder 0–8 -->
+                        <div class="sub-lbl">Områder</div>
+                        <div class="boxes">
+                            <button t-foreach="state.taks" t-as="b" t-key="b.kode"
+                                    t-att-class="'box c_' + b.farge + (state.aktivBoks===b.kode?' on':'')"
+                                    t-on-click="() => this.aapneBoks(b.kode, b.navn)">
+                                <div class="bl"><span class="code" t-esc="b.kode"/><span class="nm" t-esc="b.navn"/></div>
+                                <div class="n tnum" t-esc="b.count"/>
+                            </button>
+                        </div>
+
+                        <!-- Drill: liste + lesepanel -->
+                        <div class="drill" t-if="state.aktivBoks">
+                            <div class="dhead">
+                                <div class="crumb"><span class="cur" t-esc="state.aktivNavn"/></div>
+                                <button class="x" t-on-click="lukkDrill">×</button>
+                            </div>
+                            <div class="dgrid">
+                                <div class="dlist">
+                                    <div t-if="!state.meldinger.length" class="empty">Ingen meldinger i denne boksen.</div>
+                                    <button t-foreach="state.meldinger" t-as="m" t-key="m.id"
+                                            t-att-class="'mi' + (state.valgt?.id===m.id?' on':'') + (m.ulest?' un':'')"
+                                            t-on-click="() => this.velgMelding(m)">
+                                        <div class="r1"><span class="fr" t-esc="m.fra"/><span class="tm" t-esc="m.dato"/></div>
+                                        <div class="su" t-esc="m.emne"/>
+                                        <div class="pv" t-esc="m.preview"/>
+                                    </button>
+                                </div>
+                                <div class="read" t-if="state.valgt">
+                                    <div class="rtool">
+                                        <button class="tbtn" t-on-click="() => this.svar(false)">Svar</button>
+                                        <button class="tbtn" t-on-click="() => this.svar(true)">Svar alle</button>
+                                        <button class="tbtn">Videresend</button>
+                                        <button class="tbtn">Arkivér</button>
+                                        <button class="tbtn">Tildel ansvarlig</button>
+                                        <button class="tbtn ai">✦ AI</button>
+                                    </div>
+                                    <div class="rhead">
+                                        <h3 class="rsub" t-esc="state.valgt.emne"/>
+                                        <div class="rmeta">
+                                            <span class="ra" t-esc="initialer(state.valgt.fra)"/>
+                                            <div>
+                                                <div class="who" t-esc="state.valgt.fra"/>
+                                                <div class="addr" t-esc="state.valgt.adresse"/>
+                                            </div>
+                                            <div class="rt">
+                                                <div t-esc="state.valgt.dato"/>
+                                                <div t-if="state.valgt.til.length">Til: <t t-esc="state.valgt.til.join(', ')"/></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="rbody" t-esc="state.valgt.preview"/>
+                                    <div class="paring">
+                                        <h4>Paring / tildeling</h4>
+                                        <div class="prow"><label>Prosjekt</label><input placeholder="Prosjektnr eller navn"/></div>
+                                        <div class="prow"><label>Oppgave</label><input placeholder="Oppgavenr eller navn"/></div>
+                                        <div class="prow"><label>Ansvarlig</label><input placeholder="Velg ansvarlig"/></div>
+                                        <div class="prow"><label>Frist</label><input placeholder="dd.mm.åååå"/></div>
+                                    </div>
+                                </div>
+                                <div class="read readempty" t-else="">Velg en melding for å lese den.</div>
+                            </div>
                         </div>
                     </div>
-                    <div class="fms_read" t-if="state.valgt">
-                        <div class="fms_toolbar">
-                            <button t-on-click="() => this.svar(false)">Svar</button>
-                            <button t-on-click="() => this.svar(true)">Svar alle</button>
-                        </div>
-                        <h3 t-esc="state.valgt.emne"/>
-                        <div class="fms_meta">
-                            <div><b>Fra:</b> <t t-esc="state.valgt.fra"/> <span class="fms_addr" t-esc="state.valgt.adresse"/></div>
-                            <div><b>Dato:</b> <t t-esc="state.valgt.dato"/></div>
-                            <div t-if="state.valgt.til.length"><b>Til:</b> <t t-esc="state.valgt.til.join(', ')"/></div>
-                            <div t-else="" class="fms_muted">Til: (ikke fanget)</div>
-                        </div>
-                        <div class="fms_body" t-esc="state.valgt.preview"/>
-                    </div>
-                    <div class="fms_read fms_readempty" t-else="">Velg en melding for å lese den.</div>
                 </div>
             </t>
         </div>
