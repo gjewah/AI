@@ -10,7 +10,7 @@
   --graa:#7A8593;--blaa:#0070C0;--blaam:#4472C4;--lilla:#7030A0;--gronn:#70AD47;--oransje:#ED7D31;
   --rod:#CC0000;--amber:#B4791A;--slate:#64748b;--tealx:#0D9488;
   font-family:var(--body);color:var(--ink);background:var(--ground);line-height:1.45;
-  -webkit-font-smoothing:antialiased;padding:clamp(12px,2vw,22px);min-height:100%;box-sizing:border-box;
+  -webkit-font-smoothing:antialiased;padding:clamp(12px,2vw,22px);min-height:100%;height:100%;overflow-y:auto;box-sizing:border-box;
 
   @media (prefers-color-scheme:dark){
     --ground:#0D1218;--surface:#151C24;--surface-2:#1A222B;--ink:#EAEFF5;--ink-soft:#B4BFCC;--muted:#8592A0;
@@ -132,6 +132,8 @@
   .tilbakeb:hover{border-color:var(--accent)}
   .dhead .gl{font-size:11px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}
   .dhead .dg{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:6px 9px;font-size:12px}
+  .dhead .gbtn{border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);border-radius:8px;padding:6px 11px;font-size:12px;font-weight:700;flex:none}
+  .dhead .gbtn:hover{border-color:var(--accent);color:var(--ink)}
   .grp{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line-soft);background:var(--surface-2);padding:7px 14px;font-size:12px;font-weight:700;color:var(--ink-soft)}
   .grp .ch{font-size:10px;color:var(--muted);width:12px}
   .grp .gc{margin-left:auto;font-family:var(--mono);color:var(--muted);font-weight:800}

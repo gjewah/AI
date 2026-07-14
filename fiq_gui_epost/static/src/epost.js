@@ -72,6 +72,18 @@ export class FiqMeldingssenter extends Component {
     // Grupper etter (sortering): avsender · prosjekt/element · dato · type
     setGroup(ev) { this.state.group = ev.target.value; this.state.kollaps = {}; }
     toggleGroup(k) { this.state.kollaps[k] = !this.state.kollaps[k]; }
+    // Kollaps alle / Utvid alle — én knapp som veksler (matcher V00.04-mockupen)
+    toggleAlle() {
+        const keys = this.grupper().map(g => g.key);
+        const anyOpen = keys.some(k => !this.state.kollaps[k]);
+        const s = {};
+        for (const k of keys) s[k] = anyOpen;   // noe åpent → lukk alt; alt lukket → åpne alt
+        this.state.kollaps = s;
+    }
+    kollapsLabel() {
+        const keys = this.grupper().map(g => g.key);
+        return keys.some(k => !this.state.kollaps[k]) ? "Kollaps alle" : "Utvid alle";
+    }
     grupper() {
         const fnMap = {
             avsender: m => m.fra || "—",

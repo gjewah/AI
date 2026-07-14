@@ -105,6 +105,7 @@
                                     <option value="dato">Dato</option>
                                     <option value="type">Type</option>
                                 </select>
+                                <button class="gbtn" t-on-click="toggleAlle" t-esc="kollapsLabel()"/>
                             </div>
                             <div class="dgrid">
                                 <div class="dlist">
