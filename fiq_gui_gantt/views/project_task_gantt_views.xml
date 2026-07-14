@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================= -->
+    <!--  Oppgave-Gantt (native web_gantt + FIQ tids-status-farge)     -->
+    <!-- ============================================================= -->
+    <record id="view_project_task_gantt_fiq" model="ir.ui.view">
+        <field name="name">project.task.gantt.fiq</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <gantt
+                date_start="planned_date_begin"
+                date_stop="date_deadline"
+                default_scale="week"
+                scales="day,week,month,year"
+                default_group_by="project_id"
+                progress="progress"
+                dependency_field="depend_on_ids"
+                dependency_inverted_field="dependent_ids"
+                color="color"
+                decoration-danger="time_status == 'rod'"
+                decoration-warning="time_status == 'oransje'"
+                decoration-success="time_status == 'gronn'">
+                <field name="wbs_number"/>
+                <field name="code"/>
+                <field name="time_status"/>
+                <field name="project_id"/>
+                <field name="company_id"/>
+                <field name="user_ids"/>
+                <field name="progress"/>
+                <field name="milestone_id"/>
+                <templates>
+                    <div t-name="gantt-popover" class="o_fiq_gantt_popover">
+                        <ul class="p-0 m-0" style="list-style:none;">
+                            <li t-if="wbs_number"><strong>Disposisjonsnr:</strong> <t t-esc="wbs_number"/></li>
+                            <li t-if="code"><strong>Task No.:</strong> <t t-esc="code"/></li>
+                            <li t-if="user_ids"><strong>Ansvarlig:</strong> <t t-esc="user_ids"/></li>
+                            <li t-if="progress"><strong>Fremdrift:</strong> <t t-esc="progress"/>%</li>
+                        </ul>
+                    </div>
+                </templates>
+            </gantt>
+        </field>
+    </record>
+
+    <!-- Handling: Oppgave-Gantt -->
+    <record id="action_project_task_gantt_fiq" model="ir.actions.act_window">
+        <field name="name">Oppgave-Gantt</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">gantt,list,form</field>
+        <field name="view_id" ref="view_project_task_gantt_fiq"/>
+        <field name="context">{'fiq_gantt': True}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Ingen planlagte oppgaver ennå</p>
+            <p>Sett <b>Startdato</b> og <b>Frist</b> på oppgaver for å se dem i tidslinjen.</p>
+        </field>
+    </record>
+
+</odoo>
