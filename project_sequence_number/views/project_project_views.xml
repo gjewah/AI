@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Copyright 2023 Moduon Team S.L.
+     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0) -->
+<data>
+    <record id="project_project_view_form" model="ir.ui.view">
+        <field name="name">project.project.view.form.sequence_code</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project" />
+        <field name="arch" type="xml">
+            <h1 position="before">
+                <div class="d-flex h3">
+                    <field name="sequence_code" decoration-bf="1" readonly="1" />
+                </div>
+            </h1>
+        </field>
+    </record>
+    <record id="project_project_view_tree" model="ir.ui.view">
+        <field name="name">project.project.view.tree.sequence_code</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="before">
+                <field name="company_code" optional="hide" />
+                <field name="sequence_code" readonly="1" optional="hide" />
+            </xpath>
+        </field>
+    </record>
+    <record id="project_project_view_kanban" model="ir.ui.view">
+        <field name="name">project.project.view.kanban.sequence_code</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project_kanban" />
+        <field name="arch" type="xml">
+            <xpath expr="//main[hasclass('o_project_kanban_main')]" position="before">
+                <div class="d-flex flex-column">
+                    <div class="d-flex mb-0 h3">
+                        <field name="sequence_code" string="Product No." decoration-bf="1" readonly="1"/>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+    <record id="project_project_view_search" model="ir.ui.view">
+        <field name="name">project.project.view.search.inherit</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project_project_filter" />
+        <field name="arch" type="xml">
+            <field name="name" position="attributes">
+                <attribute
+                    name="filter_domain"
+                >['|', '|', ('name', 'ilike', self), ('company_code', 'ilike', self), ('sequence_code', 'ilike', self)]</attribute>
+            </field>
+        </field>
+    </record>
+</data>

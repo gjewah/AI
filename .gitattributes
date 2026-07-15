@@ -1,2 +1,13 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Loym-moduler kopiert byte-identisk (ALDRI-ROR sekvens) - ingen linjeskift-konvertering
+base_display_name/** -text
+base_mixin_expression_value/** -text
+base_mixin_sequence_number/** -text
+base_model_code/** -text
+crm_sequence_number/** -text
+partner_sequence_number/** -text
+product_sequence_number/** -text
+project_internal_external/** -text
+project_sequence_number/** -text
