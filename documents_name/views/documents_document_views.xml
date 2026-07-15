@@ -1,0 +1,47 @@
+<odoo>
+    <record id="documents_document_view_list" model="ir.ui.view">
+        <field name="name">documents.document.view.list.inherit</field>
+        <field name="model">documents.document</field>
+        <field name="inherit_id" ref="documents.documents_view_list"/>
+        <field name="arch" type="xml">
+            <data>
+                <field name="name" position="attributes">
+                    <attribute name="column_invisible">1</attribute>
+                </field>
+                <field name="name" position="after">
+                    <field name="name_translate" string="Name"/>
+                </field>
+            </data>
+        </field>
+    </record>
+    <record id="documents_document_view_kanban" model="ir.ui.view">
+        <field name="name">documents.document.view.kanban.inherit</field>
+        <field name="model">documents.document</field>
+        <field name="inherit_id" ref="documents.document_view_kanban"/>
+        <field name="arch" type="xml">
+            <data>
+                <xpath expr="//templates/t/div/div[2]/div[1]/field[@name='name']" position="replace">
+                    <field name="name_translate" class="text-truncate me-1" required="True" string="Document"/>
+                </xpath>
+                <xpath expr="//templates/t/div/div[2]/div[2]/div[1]/div[1]/field[@name='name']" position="replace">
+                    <field name="name_translate" class="text-truncate" required="True" string="Document"/>
+                </xpath>
+            </data>
+        </field>
+    </record>
+    <record id="documents_document_view_form" model="ir.ui.view">
+        <field name="name">documents.document.view.form.inherit</field>
+        <field name="model">documents.document</field>
+        <field name="inherit_id" ref="documents_form.document_view_form"/>
+        <field name="arch" type="xml">
+            <data>
+                <field name="name" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </field>
+                <field name="name" position="after">
+                    <field name="name_translate" class="oe_inline" placeholder="Document Name" required="True"/>
+                </field>
+            </data>
+        </field>
+    </record>
+</odoo>

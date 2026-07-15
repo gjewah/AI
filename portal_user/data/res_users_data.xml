@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="res_users_dummy_salesperson" model="res.users">
+            <field name="name">Salesperson Placeholder</field>
+            <field name="login">salesperson_placeholder</field>
+            <field name="active">True</field>
+            <field name="share">True</field>
+            <field name="group_ids" eval="[(4, ref('base.group_portal'))]"/>
+            <field name="autopost_bills">ask</field>
+        </record>
+        <record id="res_users_dummy_contact" model="res.users">
+            <field name="name">Contact Placeholder</field>
+            <field name="login">contact_placeholder</field>
+            <field name="active">True</field>
+            <field name="share">True</field>
+            <field name="group_ids" eval="[(4, ref('base.group_portal'))]"/>
+            <field name="autopost_bills">ask</field>
+        </record>
+    </data>
+</odoo>

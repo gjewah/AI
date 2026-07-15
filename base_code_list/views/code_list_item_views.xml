@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="code_list_item_view_list" model="ir.ui.view">
+        <field name="name">code.list.item.view.list</field>
+        <field name="model">code.list.item</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="list_id" column_invisible="context.get('hide_list_id')" />
+                <field name="code" optional="hide" readonly="compute_item_codes"/>
+                <field name="name" />
+                <field name="description" optional="hide" />
+                <field
+                    name="parent_id"
+                    domain="[('list_id', '=', list_id), ('child_list_id', '=', False)]"
+                    optional="hide"
+                />
+                <field
+                    name="child_ids"
+                    optional="hide"
+                    readonly="1"
+                    widget="many2many_tags"
+                />
+                <field
+                    name="child_list_id"
+                    domain="[('id', '!=', list_id), ('id', 'not in', list_parent_ids)]"
+                    optional="hide"
+                    readonly="child_ids"
+                />
+                <button
+                    name="action_open_items_to_reorder"
+                    type="object"
+                    string="Reorder Children"
+                    icon="fa-list"
+                />
+            </list>
+        </field>
+    </record>
+    <record id="code_list_item_view_list_reorder" model="ir.ui.view">
+        <field name="name">code.list.item.view.list.reorder</field>
+        <field name="model">code.list.item</field>
+        <field name="inherit_id" ref="code_list_item_view_list"/>
+        <field name="mode">primary</field>
+        <field name="arch" type="xml">
+            <data>
+                <field name="list_id" position="before">
+                    <field name="sequence" widget="handle"/>
+                </field>
+                <field name="code" position="attributes">
+                    <attribute name="string">Code (Refresh)</attribute>
+                </field>
+            </data>
+        </field>
+    </record>
+    <record id="code_list_item_view_form" model="ir.ui.view">
+        <field name="model">code.list.item</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <widget
+                        name="web_ribbon"
+                        title="Archived"
+                        bg_color="bg-danger"
+                        invisible="active"
+                    />
+                    <group name="main">
+                        <group name="general">
+                            <field name="code" readonly="compute_item_codes"/>
+                            <field name="name" />
+                            <field name="list_id" />
+                            <field name="parent_id" />
+                            <field name="user_tag_ids" widget="many2many_tags"/>
+                            <field name="active" invisible="1" />
+                        </group>
+                        <group name="description">
+                            <field name="description" />
+                        </group>
+                    </group>
+                    <group name="relationships" string="Relationships">
+                        <group name="child_items" colspan="4">
+                            <field name="child_list_id" invisible="child_ids" />
+                            <field
+                                name="child_ids"
+                                context="{'default_list_id': list_id, 'default_parent_id': id, 'list_view_ref': 'base_code_list.code_list_item_view_list_reorder', 'hide_list_id': True}"
+                                invisible="child_list_id"
+                            />
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="code_list_item_view_search" model="ir.ui.view">
+        <field name="model">code.list.item</field>
+        <field name="arch" type="xml">
+            <search>
+                <field
+                    name="name"
+                    string="Name or Code"
+                    filter_domain="['|', ('name', 'ilike', self), ('code', 'ilike', self)]"
+                />
+                <field name="code" />
+                <field name="list_id" />
+                <filter
+                    string="Archived"
+                    name="inactive"
+                    domain="[('active', '=', False)]"
+                />
+                <filter
+                    name="my_tags"
+                    string="My Tags"
+                    domain="[('user_tag_ids', 'in', context.get('user_tag_ids', []))]"
+                />
+                <filter string="List" name="list" domain="[]" context="{'group_by': 'list_id'}"/>
+                <searchpanel>
+                    <field name="parent_id" string="Parent Item"/>
+                </searchpanel>
+            </search>
+        </field>
+    </record>
+    <record id="code_list_item_action" model="ir.actions.act_window">
+        <field name="name">Code List Items</field>
+        <field name="res_model">code.list.item</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

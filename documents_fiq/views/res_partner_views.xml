@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="res_partner_view_form" model="ir.ui.view">
+        <field name="name">res.partner.view.form.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="partner_documents_folder.res_partner_view_form" />
+        <field name="arch" type="xml">
+            <data>
+                <group name="document_folders" position="attributes">
+                    <attribute name="invisible">not is_company</attribute>
+                </group>
+            </data>
+        </field>
+    </record>
+</odoo>

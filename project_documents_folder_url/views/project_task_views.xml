@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <record id="project_task_view_form" model="ir.ui.view">
+        <field name="name">project.task.view.form.inherit.documents_folder_url</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2" />
+        <field name="arch" type="xml">
+            <data>
+                <field name="role_ids" position="after">
+                    <!-- <button name="action_goto_documents"
+                            context="{'internal_external': 'internal'}"
+                            type="object"
+                            icon="fa-folder-open"
+                            invisible="not project_id"
+                            title="Internal Docs"
+                    /> -->
+                    <field name="documents_folder_id" widget="documents_folder_many2one" readonly="1"/>
+                    <field name="project_documents_folder_url" invisible="1" />
+                    <label for="action_goto_documents" string="SP DOC folder"/>
+                    <button name="action_goto_documents"
+                            context="{'internal_external': 'external'}"
+                            type="object"
+                            icon="fa-link"
+                            invisible="not project_documents_folder_url"
+                            title="External URL"
+                    />
+                </field>
+            </data>
+        </field>
+    </record>
+</data>

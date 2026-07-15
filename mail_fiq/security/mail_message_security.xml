@@ -1,0 +1,9 @@
+<odoo>
+    <data noupdate="1">
+        <record id="mail_message_security.mail_message_notification_access_rule" model="ir.rule">
+            <field name="domain_force">
+['|', '|', ('author_id.user_ids.id', '=', user.id), ('partner_ids.user_ids.id', '=', user.id), ('recipient_cc_ids.user_ids.id', '=', user.id)]
+            </field>
+        </record>
+    </data>
+</odoo>

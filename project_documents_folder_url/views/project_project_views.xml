@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <record id="project_project_view_form" model="ir.ui.view">
+        <field name="name">project.project.view.form.inherit.documents_folder_url</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project" />
+        <field name="arch" type="xml">
+            <data>
+                <field name="user_id" position="after">
+                    <field name="documents_folder_url" widget="url"/>
+                </field>
+            </data>
+        </field>
+    </record>
+    <record id="project_project_view_list" model="ir.ui.view">
+        <field name="name">project.project.view.list.inherit.documents_folder_url</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project" />
+        <field name="arch" type="xml">
+            <field name="user_id" position="after">
+                <field name="documents_folder_url" widget="url" optional="hide" />
+            </field>
+        </field>
+    </record>
+    <record id="project_project_view_kanban" model="ir.ui.view">
+        <field name="name">project.project.view.kanban.inherit.documents_folder_url</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project_kanban"/>
+        <field name="arch" type="xml">
+            <data>
+                <field name="activity_ids" position="after">
+                    <field name="documents_folder_url" invisible="1"/>
+                    <a t-if="record.documents_folder_url.raw_value" t-att-href="record.documents_folder_url.raw_value">
+                        <i class="fa fa-link" role="img" aria-label="Link"/>
+                    </a>
+                </field>
+            </data>
+        </field>
+    </record>
+</data>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <record id="project_project_view_form" model="ir.ui.view">
+        <field name="name">project.project.view.form.inherit.partner_ids</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project" />
+        <field name="arch" type="xml">
+            <data>
+                <notebook position="inside">
+                    <page name="document_ids" string="Documents">
+                        <field name="document_ids"/>
+                    </page>
+                </notebook>
+            </data>
+        </field>
+    </record>
+</data>

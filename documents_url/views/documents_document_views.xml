@@ -1,0 +1,50 @@
+<odoo>
+    <record id="documents_document_view_list" model="ir.ui.view">
+        <field name="name">documents.document.view.list.inherit</field>
+        <field name="model">documents.document</field>
+        <field name="inherit_id" ref="documents.documents_view_list"/>
+        <field name="arch" type="xml">
+            <data>
+                <field name="url" position="attributes">
+                    <attribute name="widget">url</attribute>
+                </field>
+            </data>
+        </field>
+    </record>
+    <record id="documents_document_view_kanban" model="ir.ui.view">
+        <field name="name">documents.document.view.kanban.inherit</field>
+        <field name="model">documents.document</field>
+        <field name="inherit_id" ref="documents.document_view_kanban"/>
+        <field name="arch" type="xml">
+            <data>
+                <!-- Folder -->
+                <xpath expr="//templates/t/div/div[2]/div[1]/i[@t-else='']" position="before">
+                    <field name="url" invisible="1"/>
+                    <a t-if="record.url.raw_value" t-att-href="record.url.raw_value" target="_blank">
+                        <i class="fa fa-link me-2" role="img" aria-label="Link"/>
+                    </a>
+                </xpath>
+                <!-- File -->
+                <xpath expr="//templates/t/div/div[2]/div[2]/div[1]/a" position="after">
+                    <field name="url" invisible="1"/>
+                    <a t-elif="record.url.raw_value" t-att-href="record.url.raw_value" target="_blank">
+                        <i class="fa fa-link me-2" role="img" aria-label="Link"/>
+                    </a>
+                </xpath>
+            </data>
+        </field>
+    </record>
+    <record id="documents_document_view_form" model="ir.ui.view">
+        <field name="name">documents.document.view.form.inherit</field>
+        <field name="model">documents.document</field>
+        <field name="inherit_id" ref="documents_form.document_view_form"/>
+        <field name="arch" type="xml">
+            <data>
+                <field name="url" position="replace"/>
+                <field name="lock_uid" position="after">
+                    <field name="url"/>
+                </field>
+            </data>
+        </field>
+    </record>
+</odoo>

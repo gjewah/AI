@@ -1,0 +1,11 @@
+<odoo>
+    <record id="project_sequence_number.project_project_action_set_sequence_number" model="ir.actions.server">
+        <field name="code">
+            <![CDATA[
+records = records.sorted(key=lambda r: r.id)
+records.set_sequence_field_and_name()
+records._sync_related_records()
+            ]]>
+        </field>
+    </record>
+</odoo>

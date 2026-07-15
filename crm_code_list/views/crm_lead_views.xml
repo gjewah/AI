@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <record id="crm_lead_view_list_lead" model="ir.ui.view">
+        <field name="name">crm.lead.view.list.inherit.crm_documents_tag</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_leads" />
+        <field name="arch" type="xml">
+            <list position="inside">
+                <field
+                    name="code_list_item_ids"
+                    widget="many2many_tags"
+                    readonly="1"
+                    context="{'include_list_code': True}"
+                    optional="hide"
+                />
+                <field name="codes_number" string="Codes No." readonly="1" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="crm_lead_view_list_opportunity" model="ir.ui.view">
+        <field name="name">crm.lead.view.list.inherit.crm_documents_tag</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_oppor" />
+        <field name="arch" type="xml">
+            <list position="inside">
+                <field
+                    name="code_list_item_ids"
+                    widget="many2many_tags"
+                    readonly="1"
+                    context="{'include_list_code': True}"
+                    optional="hide"
+                />
+                <field name="codes_number" string="Codes No." readonly="1" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="crm_lead_view_form" model="ir.ui.view">
+        <field name="name">crm.lead.view.form.inherit.crm_documents_tag</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form" />
+        <field name="arch" type="xml">
+            <data>
+                <notebook position="inside">
+                    <page string="Codes">
+                        <group>
+                            <field
+                                name="code_list_item_ids"
+                                widget="many2many_tags"
+                                readonly="1"
+                                context="{'include_list_code': True}"
+                            />
+                            <field name="codes_number" string="Codes No." readonly="1"/>
+                        </group>
+                        <field name="code_list_usage_ids" context="{'default_model': 'crm.lead', 'default_res_id': id}">
+                            <list editable="bottom">
+                                <field name="model" column_invisible="1"/>
+                                <field name="res_id" column_invisible="1"/>
+                                <field name="code_list_id"/>
+                                <field name="code_list_item_id" domain="[('list_id', '=', code_list_id)]"/>
+                            </list>
+                        </field>
+                    </page>
+                </notebook>
+            </data>
+        </field>
+    </record>
+
+    <record id="crm_lead_view_search_lead" model="ir.ui.view">
+        <field name="name">crm.lead.search.inherit</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.view_crm_case_leads_filter"/>
+        <field name="arch" type="xml">
+            <search position="inside">
+                <field name="name" string="Name"/>
+                <field name="code_list_item_ids" string="Code List Items"/>
+                <field name="codes_number" string="Codes No."/>
+
+                <!-- <filter string="Code List Item" name="filter_code_list_item" domain="[('code_list_item_ids', '!=', False)]"/> -->
+            </search>
+        </field>
+    </record>
+    <record id="crm_lead_view_search_opportunity" model="ir.ui.view">
+        <field name="name">crm.lead.search.inherit</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.view_crm_case_opportunities_filter"/>
+        <field name="arch" type="xml">
+            <search position="inside">
+                <field name="name" string="Name"/>
+                <field name="code_list_item_ids" string="Code List Items"/>
+                <field name="codes_number" string="Codes No."/>
+
+                <!-- <filter string="Code List Item" name="filter_code_list_item" domain="[('code_list_item_ids', '!=', False)]"/> -->
+            </search>
+        </field>
+    </record>
+</data>

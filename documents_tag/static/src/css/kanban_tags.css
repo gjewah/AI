@@ -1,0 +1,12 @@
+/* FIXME Tags with a long name should be truncated in the kanban view to prevent overflow issues.
+The following CSS ensures that tags are displayed properly
+with ellipsis when they exceed the available width.
+But long tag names are not truncated...*/
+
+.o_kanban_view .o_kanban_record .o_field_widget.o_many2many_tags .o_tag {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block; /* Ensure the element is treated as an inline block */
+    max-width: 100%; /* or any appropriate value */
+}

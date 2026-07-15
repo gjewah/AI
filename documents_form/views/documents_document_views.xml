@@ -1,0 +1,157 @@
+<odoo>
+    <record id="documents_document_view_list" model="ir.ui.view">
+        <field name="name">documents.document.view.list.inherit</field>
+        <field name="model">documents.document</field>
+        <field name="inherit_id" ref="documents.documents_view_list"/>
+        <field name="arch" type="xml">
+            <list position="inside">
+                <button name="action_document_form" type="object" icon="fa-info-circle" title="View Document Form"/>
+                <button
+                    name="open_resource"
+                    type="object"
+                    icon="fa-external-link"
+                    title="View Related Resource"
+                    invisible="not (res_model and res_id)"
+                />
+            </list>
+        </field>
+    </record>
+    <record id="documents_document_view_kanban" model="ir.ui.view">
+        <field name="name">documents.document.view.kanban.inherit</field>
+        <field name="model">documents.document</field>
+        <field name="inherit_id" ref="documents.document_view_kanban"/>
+        <field name="arch" type="xml">
+            <data>
+                <xpath expr="//templates/t/div/div[2]/div[1]/field[@name='is_favorited']" position="after">
+                    <button name="action_document_form" type="object" icon="fa-info-circle" title="View Document Form"/>
+                    <button
+                        name="open_resource"
+                        type="object"
+                        icon="fa-external-link"
+                        title="View Related Resource"
+                        invisible="not (res_model and res_id)"
+                    />
+                </xpath>
+                <field name="activity_ids" position="after">
+                    <button name="action_document_form" type="object" icon="fa-info-circle" title="View Document Form"/>
+                    <button
+                        name="open_resource"
+                        type="object"
+                        icon="fa-external-link"
+                        title="View Related Resource"
+                        invisible="not (res_model and res_id)"
+                    />
+                </field>
+            </data>
+        </field>
+    </record>
+    <!-- ODOO 18 -->
+    <record id="document_view_form" model="ir.ui.view">
+        <field name="name">documents form</field>
+        <field name="model">documents.document</field>
+        <field name="priority" eval="1"/>
+        <field name="arch" type="xml">
+            <form create="false">
+                <header>
+                    <button type="object" name="access_content" string="Access" class="oe_highlight" invisible="not url"/>
+                    <button type="object" name="access_content" string="Download" class="oe_highlight" invisible="type != 'binary'"/>
+                    <button type="object" name="toggle_lock" string="Lock" invisible="lock_uid"/>
+                    <button type="object" name="toggle_lock" string="Unlock" invisible="not lock_uid"/>
+                    <button type="object" name="action_unarchive" string="Restore" invisible="active"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="open_resource" type="object" class="oe_stat_button" icon="fa-external-link" invisible="not res_id or res_model in [False, 'documents.document']">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Related <br/> Record</span>
+                            </div>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Moved to trash" bg_color="text-bg-danger" invisible="active"/>
+                    <field name="thumbnail" nolabel="1" widget="image" class="oe_avatar" options="{&quot;preview_image&quot;:&quot;thumbnail&quot;}" invisible="not thumbnail"/>
+                    <div class="oe_title" aria-label="Name">
+                        <h1>
+                            <field name="name" class="oe_inline" placeholder="Document Name" required="True"/> <i class="fa fa-lock oe_inline" title="Locked" invisible="not lock_uid"/>
+                        </h1>
+                    </div>
+                    <field name="active" invisible="1"/>
+                    <field name="res_id" invisible="1"/>
+                    <field name="res_model" invisible="1"/>
+                    <group>
+                        <group>
+                            <field name="datas" string="File" filename="name" invisible="type in ['url', 'folder']"/>
+                            <field name="url" invisible="type != 'url'"/>
+                            <field name="folder_id" widget="documents_folder_many2one"
+                                domain="[('type', '=', 'folder'), ('shortcut_document_id', '=', False)]"
+                                options="{'no_create_edit': True, 'no_create': True}"/>
+                            <field name="owner_id" widget="many2one_avatar_user"/>
+                            <field name="partner_id" widget="many2one_avatar_user"/>
+                            <field name="tag_ids" widget="many2many_tags"
+                                options="{'color_field': 'color'}"/>
+                        </group>
+                        <group>
+                            <field name="type" readonly="1"/>
+                            <field name="create_date"/>
+                            <field name="create_uid" widget="many2one_avatar_user"/>
+                            <field name="lock_uid" readonly="1" invisible="not lock_uid"/>
+                        </group>
+                    </group>
+                    <group groups="base.group_no_one">
+                        <field name="company_id" groups="base.group_multi_company"/>
+                        <field name="file_size" invisible="type != 'binary'"/>
+                        <field name="mimetype" invisible="type != 'binary'"/>
+                    </group>
+                    <group>
+                        <field name="create_activity_option"/>
+                    </group>
+                    <group string="Activity" name="activity" autofocus="autofocus" invisible="not create_activity_option">
+                        <group>
+                            <field name="create_activity_type_id" options="{'no_create': True, 'no_open': True}" required="create_activity_option"/>
+                            <field name="create_activity_summary" placeholder="e.g. Discuss proposal"/>
+                        </group>
+                        <group>
+                            <label for="create_activity_date_deadline_range"/>
+                            <div class="o_row">
+                                <field name="create_activity_date_deadline_range"/>
+                                <field name="create_activity_date_deadline_range_type"/>
+                            </div>
+                            <field name="create_activity_user_id"/>
+                        </group>
+                        <group>
+                            <field name="create_activity_note" placeholder="Log a note..."/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+                <footer class="justify-content-between">
+                    <div class="btn-group">
+                        <button class="btn btn-primary me-2 rounded w-auto" special="save" data-hotkey="q">Save</button>
+                        <button class="btn btn-secondary rounded w-auto" special="cancel" data-hotkey="x">Discard</button>
+                    </div>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="documents_document_view_form" model="ir.ui.view">
+        <field name="name">documents.document.view.form.inherit</field>
+        <field name="model">documents.document</field>
+        <field name="inherit_id" ref="document_view_form"/>
+        <field name="arch" type="xml">
+            <data>
+                <field name="folder_id" position="attributes">
+                    <attribute name="widget">many2one</attribute>
+                </field>
+                <sheet position="inside">
+                    <notebook>
+                        <page string="Access Rights">
+                            <group>
+                                <field name="access_internal" readonly="1"/>
+                                <field name="access_ids" readonly="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </data>
+        </field>
+    </record>
+</odoo>

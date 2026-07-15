@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="res_partner_view_form" model="ir.ui.view">
+        <field name="name">res.partner.view.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page string="Codes">
+                    <group>
+                        <field
+                            name="code_list_item_ids"
+                            widget="many2many_tags"
+                            readonly="0"
+                            context="{'include_list_code': True}"
+                        />
+                        <field name="codes_number" string="Codes No." readonly="1"/>
+                    </group>
+                    <field name="code_list_usage_ids" context="{'default_model': 'res.partner', 'default_res_id': id}">
+                        <list editable="bottom">
+                            <field name="model" column_invisible="1"/>
+                            <field name="res_id" column_invisible="1"/>
+                            <field name="code_list_id"/>
+                            <field name="code_list_item_id"
+                                domain="[('list_id', '=', code_list_id)]"
+                                context="{
+                                    'search_default_my_tags': 1,
+                                    'user_tag_ids': context.get('user_tag_ids', []),
+                                }"
+                                options="{
+                                    'no_create': True,
+                                    'no_open': False
+                                }"
+                            />
+                            <button name="action_select_item" type="object" icon="fa-list" title="Select Item"/>q
+                        </list>
+                    </field>
+                </page>
+            </notebook>
+        </field>
+    </record>
+    <record id="view_res_partner_search" model="ir.ui.view">
+        <field name="name">res.partner.search</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <search position="inside">
+                <field name="name" string="Name"/>
+                <field name="code_list_item_ids" string="Code List Items"/>
+                <field name="codes_number" string="Codes No."/>
+                <filter string="Code List Item" name="filter_code_list_item" domain="[('code_list_item_ids', '!=', False)]"/>
+            </search>
+        </field>
+    </record>
+    <record id="res_partner_view_list" model="ir.ui.view">
+        <field name="name">res.partner.view.list.inherit.code.list</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_tree"/>
+        <field name="arch" type="xml">
+            <list position="inside">
+                <field
+                    name="code_list_item_ids"
+                    widget="many2many_tags"
+                    readonly="0"
+                    context="{'include_list_code': True}"
+                    optional="hide"
+                />
+                <field name="codes_number" string="Codes No." readonly="1" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="server_action_open_res_partner" model="ir.actions.server">
+        <field name="name">Contacts (Code List)</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="state">code</field>
+        <field name="code">
+action = model.action_open_res_partner_code_list()
+        </field>
+    </record>
+    <menuitem
+        id="menu_res_partner"
+        name="Contacts (Code List)"
+        parent="contacts.menu_contacts"
+        action="server_action_open_res_partner"
+    />
+</odoo>

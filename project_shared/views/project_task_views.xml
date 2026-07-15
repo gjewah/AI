@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <record id="project_task_view_kanban" model="ir.ui.view">
+        <field name="name">project.task.view.kanban.inherit</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_kanban" />
+        <field name="arch" type="xml">
+            <field name="activity_ids" position="after">
+                <button
+                    icon="fa-share-alt"
+                    title="Shared Project/Task"
+                    invisible="not shared_project and not shared"
+                    class="me-2"
+                />
+            </field>
+        </field>
+    </record>
+    <record id="project_task_view_list" model="ir.ui.view">
+        <field name="name">project.task.view.list.inherit</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_tree2" />
+        <field name="arch" type="xml">
+            <data>
+                <field name="name" position="before">
+                    <button
+                        icon="fa-share-alt"
+                        title="Shared Project/Task"
+                        invisible="not shared_project and not shared"
+                    />
+                </field>
+            </data>
+        </field>
+    </record>
+    <record id="project_task_view_form" model="ir.ui.view">
+        <field name="name">project.task.view.form.inherit</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2" />
+        <field name="arch" type="xml">
+            <data>
+                <field name="priority" position="after">
+                    <button
+                        icon="fa-share-alt"
+                        title="Shared Project/Task"
+                        invisible="not shared_project and not shared"
+                        class="me-2"
+                    />
+                </field>
+            </data>
+        </field>
+    </record>
+</data>

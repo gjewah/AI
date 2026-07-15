@@ -1,0 +1,87 @@
+<odoo>
+    <!-- List view of tags with selectable rows -->
+    <record id="view_documents_tag_list_select" model="ir.ui.view">
+        <field name="name">documents.tag.list.selection</field>
+        <field name="model">documents.tag</field>
+        <field name="inherit_id" ref="documents.tag_view_list"/>
+        <field name="mode">primary</field>
+        <field name="arch" type="xml">
+            <data>
+                <list position="inside">
+                    <header>
+                        <button string="Add Selected"
+                                type="object"
+                                name="add_selected_tags"
+                                class="btn-primary"/>
+                    </header>
+                </list>
+            </data>
+        </field>
+    </record>
+    <!-- Regular views -->
+    <record id="documents_tag_view_list" model="ir.ui.view">
+        <field name="name">documents.tag.view.list.inherit</field>
+        <field name="model">documents.tag</field>
+        <field name="inherit_id" ref="documents.tag_view_list"/>
+        <field name="arch" type="xml">
+            <data>
+                <list position="attributes">
+                    <attribute name="default_order">name</attribute>
+                </list>
+            </data>
+        </field>
+    </record>
+    <record id="documents_tag_view_form" model="ir.ui.view">
+        <field name="name">documents.tag.view.form.inherit</field>
+        <field name="model">documents.tag</field>
+        <field name="inherit_id" ref="documents.tag_view_form"/>
+        <field name="arch" type="xml">
+            <data>
+                <group name="tooltip" position="replace">
+                    <group name="tooltip_translate">
+                        <field name="tooltip_translate" string="Tooltip" />
+                    </group>
+                </group>
+                <sheet position="inside">
+                    <group name="group_tag_hierarchy" string="Hierarchy">
+                        <group>
+                            <button
+                                string="Select Parents"
+                                type="object"
+                                name="action_open_tag_selector"
+                                class="btn-secondary"
+                                context="{'field_name': 'parent_ids'}"
+                            />
+                            <field name="parent_ids" />
+                        </group>
+                        <group>
+                            <button
+                                string="Select Children"
+                                type="object"
+                                name="action_open_tag_selector"
+                                class="btn-secondary"
+                                context="{'field_name': 'child_ids',}"
+                            />
+                            <field name="child_ids" />
+                        </group>
+                        <group colspan="2">
+                            <field name="all_child_ids" widget="many2many_tags" />
+                        </group>
+                    </group>
+                </sheet>
+            </data>
+        </field>
+    </record>
+    <record id="documents_tag_view_search" model="ir.ui.view">
+        <field name="name">documents.tag.view.search.inherit</field>
+        <field name="model">documents.tag</field>
+        <field name="inherit_id" ref="documents.tag_view_search"/>
+        <field name="arch" type="xml">
+            <search position="inside">
+                <searchpanel>
+                    <field name="parent_id" view_types="list,kanban,pivot,graph,calendar" hierarchize="1"/>
+                </searchpanel>
+            </search>
+        </field>
+    </record>
+</odoo>

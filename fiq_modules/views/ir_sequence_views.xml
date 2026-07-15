@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <record id="view_sequence_search_fiq" model="ir.ui.view">
+        <field name="model">ir.sequence</field>
+        <field name="inherit_id" ref="base.view_sequence_search" />
+        <field name="arch" type="xml">
+            <search position="inside">
+                <filter
+                    string="FIQ sequences"
+                    name="fiq_sequences"
+                    domain="[('code', 'in', ['crm.lead', 'product.product', 'product.template', 'project.sequence', 'project.task', 'res.partner'])]"
+                />
+            </search>
+        </field>
+    </record>
+</data>

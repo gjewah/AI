@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <record id="project_task_view_list" model="ir.ui.view">
+        <field name="name">project.task.view.list.inherit.project_documents_tag</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_tree2" />
+        <field name="arch" type="xml">
+            <data>
+            <list position="inside">
+                <field
+                    name="code_list_item_ids"
+                    widget="many2many_tags"
+                    readonly="1"
+                    context="{'include_list_code': True}"
+                    optional="hide"
+                />
+            </list>
+            </data>
+        </field>
+    </record>
+    <record id="project_task_view_form" model="ir.ui.view">
+        <field name="name">project.task.view.form.inherit.codes</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2" />
+        <field name="arch" type="xml">
+            <data>
+                <notebook position="inside">
+                    <page string="Codes">
+                        <group>
+                            <field
+                                name="code_list_item_ids"
+                                widget="many2many_tags"
+                                readonly="1"
+                                context="{'include_list_code': True}"
+                            />
+                        </group>
+                        <field name="code_list_usage_ids" context="{'default_model': 'project.task', 'default_res_id': id}">
+                            <list editable="bottom">
+                                <field name="model" column_invisible="1"/>
+                                <field name="res_id" column_invisible="1"/>
+                                <field name="code_list_id"/>
+                                <field name="code_list_item_id" domain="[('list_id', '=', code_list_id)]"/>
+                            </list>
+                        </field>
+                    </page>
+                </notebook>
+            </data>
+        </field>
+    </record>
+</data>
