@@ -31,6 +31,9 @@ def _register_provider():
         ClaudeProvider.EMBEDDING_MODEL,
         dict(ClaudeProvider.EMBEDDING_CONFIG),
         list(ClaudeProvider.LLMS),
+        # Odoo 19 la til feltet 'deprecated_models' (llm_providers.Provider NamedTuple).
+        # Claude har ingen utfasede modeller aa deklarere -> tom liste.
+        list(getattr(ClaudeProvider, "DEPRECATED_MODELS", [])),
     ))
     _logger.info("FIQ AI Claude: registrerte leverandør '%s' med %d modeller",
                  ClaudeProvider.NAME, len(ClaudeProvider.LLMS))
