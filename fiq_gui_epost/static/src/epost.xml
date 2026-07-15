@@ -9,10 +9,10 @@
                 <div class="presence">
                     <span class="pl">Til stede nå</span>
                     <t t-foreach="state.presence.slice(0,8)" t-as="p" t-key="p.id">
-                        <span t-att-class="'pc ' + pcls(p.status)">
+                        <button t-att-class="'pc ' + pcls(p.status)" t-on-click="() => this.openPerson(p.id)" title="Åpne person">
                             <span class="pa" t-esc="initialer(p.navn)"/>
                             <t t-esc="p.navn"/>
-                        </span>
+                        </button>
                     </t>
                 </div>
 
@@ -226,6 +226,56 @@
                         <div class="readempty" t-else="">Velg en melding for å lese den.</div>
                     </div>
 
+                </div>
+
+                <!-- PERSON-MODAL (klikk «Til stede»-navn) -->
+                <div class="pmodal" t-if="state.personOpen">
+                    <div class="pmbg" t-on-click="lukkPerson"/>
+                    <div class="pmcard">
+                        <div class="pmhead">
+                            <span class="pmav" t-esc="initialer(state.person.navn)"/>
+                            <div class="pmwho">
+                                <div class="pmn" t-esc="state.person.navn"/>
+                                <div class="pma" t-esc="state.person.epost || '(ingen e-postadresse)'"/>
+                            </div>
+                            <button class="pmx" t-on-click="lukkPerson">✕</button>
+                        </div>
+                        <div class="pmact">
+                            <button class="tbtn pri" t-on-click="aapneKontakt">✉ E-post / kontakt</button>
+                            <button class="tbtn" t-on-click="personChat">💬 Chat</button>
+                        </div>
+                        <div class="pmtabs">
+                            <button t-att-class="'pmtab' + (state.ctxTab==='rel'?' on':'')" t-on-click="() => this.setCtxTab('rel')">Tilknyttede personer</button>
+                            <button t-att-class="'pmtab' + (state.ctxTab==='hist'?' on':'')" t-on-click="() => this.setCtxTab('hist')">Siste hos oss</button>
+                            <button t-att-class="'pmtab' + (state.ctxTab==='week'?' on':'')" t-on-click="() => this.setCtxTab('week')">Ukesplan</button>
+                        </div>
+                        <div class="pmbody">
+                            <t t-if="state.ctxTab==='rel'">
+                                <div t-if="!state.person.relasjoner.length" class="pmempty">Ingen registrerte relasjoner ennå.</div>
+                                <div class="rel">
+                                    <span class="relc" t-foreach="state.person.relasjoner" t-as="r" t-key="r.id">
+                                        <span class="rk" t-esc="r.type_navn"/><t t-esc="r.navn"/>
+                                    </span>
+                                </div>
+                            </t>
+                            <t t-if="state.ctxTab==='hist'">
+                                <div t-if="!state.person.siste.length" class="pmempty">Ingen nylig aktivitet.</div>
+                                <div class="kv" t-foreach="state.person.siste" t-as="s" t-key="s_index">
+                                    <span t-att-class="'kk ' + s.type" t-esc="s.type"/>
+                                    <span class="kn" t-esc="s.navn"/>
+                                    <span class="kd" t-esc="s.dato"/>
+                                </div>
+                            </t>
+                            <t t-if="state.ctxTab==='week'">
+                                <div t-if="!state.person.ukesplan.length" class="pmempty">Ingenting planlagt denne uka.</div>
+                                <div class="kv" t-foreach="state.person.ukesplan" t-as="u" t-key="u_index">
+                                    <span t-att-class="'kk ' + u.type" t-esc="u.type==='kal' ? 'Møte' : 'Oppg'"/>
+                                    <span class="kn" t-esc="u.navn"/>
+                                    <span class="kd" t-esc="u.dato"/>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
                 </div>
             </t>
         </div>

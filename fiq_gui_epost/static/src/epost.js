@@ -25,6 +25,7 @@ export class FiqMeldingssenter extends Component {
             group: "avsender", kollaps: {}, kandidater: { prosjekt: [], oppgave: [] },
             ctxTab: "rel",                                   // person-kontekst: rel | hist | week
             trad: { status: "", notater: [] }, nyNotat: "",  // arbeidsstatus + interne notater
+            person: false, personOpen: false,                // person-visning (klikk «Til stede»)
         });
         onWillStart(async () => {
             const cfg = await this.orm.call(DATA, "get_my_config", []);
@@ -144,6 +145,23 @@ export class FiqMeldingssenter extends Component {
         return (k.prosjekt || []).length + (k.oppgave || []).length > 0;
     }
     setCtxTab(t) { this.state.ctxTab = t; }
+
+    // Person-visning: klikk et «Til stede»-navn → e-post / chat / ukesplan / tilknyttede
+    async openPerson(userId) {
+        this.state.ctxTab = "rel";
+        const p = await this.orm.call(DATA, "get_person", [], { user_id: userId });
+        if (p && p.id) { this.state.person = p; this.state.personOpen = true; }
+    }
+    lukkPerson() { this.state.personOpen = false; }
+    personChat() { this.action.doAction("mail.action_discuss"); }
+    aapneKontakt() {
+        if (!this.state.person) return;
+        this.action.doAction({
+            type: "ir.actions.act_window", res_model: "res.partner",
+            res_id: this.state.person.id, view_mode: "form",
+            views: [[false, "form"]], target: "current",
+        });
+    }
 
     async svar(replyAll) {
         if (!this.state.valgt) return;

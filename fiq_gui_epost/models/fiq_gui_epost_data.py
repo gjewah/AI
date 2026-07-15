@@ -484,6 +484,78 @@ class FiqMeldingssenterData(models.AbstractModel):
             } for n in notes],
         }
 
+    # ---- V00.05: person-visning (klikk «Til stede» → person) + relasjoner (§C.2) -----
+    @api.model
+    def get_person(self, partner_id=False, user_id=False):
+        """Person-kort: e-post + tilknyttede personer (§C.2) + siste hos oss + ukesplan.
+        Åpnes fra «Til stede»-navnene (user_id) eller en meldings avsender (partner_id)."""
+        partner = False
+        if partner_id:
+            partner = self.env["res.partner"].browse(int(partner_id)).exists()
+        elif user_id:
+            u = self.env["res.users"].browse(int(user_id)).exists()
+            partner = u.partner_id if u else False
+        if not partner:
+            return {}
+        Rel = self.env["fiq.partner.relation"]
+        rtlabels = dict(Rel._fields["relation_type"].selection)
+        rels = []
+        for r in Rel.search(["|", ("partner_id", "=", partner.id),
+                             ("related_partner_id", "=", partner.id)]):
+            other = r.related_partner_id if r.partner_id.id == partner.id else r.partner_id
+            rels.append({"id": other.id, "navn": other.display_name or "",
+                         "type": r.relation_type, "type_navn": rtlabels.get(r.relation_type, "")})
+        return {
+            "id": partner.id,
+            "navn": partner.display_name or "",
+            "epost": partner.email or "",
+            "relasjoner": rels,
+            "siste": self._siste_for_partner(partner),
+            "ukesplan": self._ukesplan_for_partner(partner),
+        }
+
+    def _siste_for_partner(self, partner):
+        """«Siste hos oss»: nyeste salg/oppgaver/helpdesk knyttet til kontakten. Defensivt."""
+        out = []
+        if "crm.lead" in self.env:
+            for l in self.env["crm.lead"].search(
+                    [("partner_id", "=", partner.id)], order="write_date desc", limit=3):
+                out.append({"type": "salg", "navn": l.name or "",
+                            "dato": l.write_date.strftime("%d.%m") if l.write_date else ""})
+        for t in self.env["project.task"].search(
+                [("partner_id", "=", partner.id)], order="write_date desc", limit=3):
+            out.append({"type": "opg", "navn": t.name or "",
+                        "dato": t.write_date.strftime("%d.%m") if t.write_date else ""})
+        if "helpdesk.ticket" in self.env:
+            for h in self.env["helpdesk.ticket"].search(
+                    [("partner_id", "=", partner.id)], order="write_date desc", limit=3):
+                out.append({"type": "hd", "navn": h.name or "",
+                            "dato": h.write_date.strftime("%d.%m") if h.write_date else ""})
+        return out[:6]
+
+    def _ukesplan_for_partner(self, partner):
+        """Ukesplan denne uka: kalender-hendelser kontakten deltar på + oppgavefrister for
+        tilknyttet bruker. (v1 — kan senere delegere til Prosjekt-modulen [[gui-naming]].)"""
+        today = fields.Date.context_today(self)
+        start = today - timedelta(days=today.weekday())          # mandag denne uka
+        end = start + timedelta(days=6)
+        out = []
+        Cal = self.env["calendar.event"]
+        for e in Cal.search([("partner_ids", "in", partner.id),
+                             ("start", ">=", start), ("start", "<=", end)],
+                            order="start", limit=30):
+            out.append({"type": "kal", "navn": e.name or "",
+                        "dato": e.start.strftime("%a %d.%m") if e.start else ""})
+        users = partner.user_ids
+        if users:
+            for t in self.env["project.task"].search(
+                    [("user_ids", "in", users.ids),
+                     ("date_deadline", ">=", start), ("date_deadline", "<=", end)],
+                    order="date_deadline", limit=30):
+                out.append({"type": "opg", "navn": t.name or "",
+                            "dato": t.date_deadline.strftime("%a %d.%m") if t.date_deadline else ""})
+        return out
+
     @api.model
     def get_presence(self):
         """TIL STEDE NÅ — samme robuste regnestykke som Kontrollrommet: innstempling
