@@ -169,6 +169,17 @@
                                     </div>
                                 </div>
 
+                                <!-- Arbeidsstatus -->
+                                <div class="statusbar">
+                                    <span class="sl">Status</span>
+                                    <select class="statussel" t-on-change="onStatusChange">
+                                        <option value="" t-att-selected="!state.trad.status">— sett status —</option>
+                                        <option value="apen" t-att-selected="state.trad.status==='apen'">Åpen</option>
+                                        <option value="pagar" t-att-selected="state.trad.status==='pagar'">Pågår</option>
+                                        <option value="ferdig" t-att-selected="state.trad.status==='ferdig'">Ferdig</option>
+                                    </select>
+                                </div>
+
                                 <!-- AI-sammendrag (vises når backend gir det) -->
                                 <div class="card aisum" t-if="state.valgt.ai_sammendrag">
                                     <div class="ch"><span class="icn">✦</span>AI-sammendrag</div>
@@ -177,6 +188,20 @@
 
                                 <!-- Meldingstekst -->
                                 <div class="prose body" t-esc="state.valgt.preview"/>
+
+                                <!-- Internt notat (team-only) -->
+                                <div class="card note">
+                                    <div class="ch"><span class="icn">📝</span>Internt notat — kun team, usynlig for avsender</div>
+                                    <div class="noteitem" t-foreach="state.trad.notater" t-as="n" t-key="n_index">
+                                        <span class="av" t-esc="initialer(n.navn)"/>
+                                        <div class="nb"><b t-esc="n.navn"/>: <t t-esc="n.body"/> <span class="nt" t-esc="n.dato"/></div>
+                                    </div>
+                                    <div class="noterow">
+                                        <input type="text" placeholder="Skriv et internt notat til teamet…"
+                                               t-att-value="state.nyNotat" t-on-input="onNotatInput"/>
+                                        <button class="notesend" t-on-click="leggNotat">Legg til</button>
+                                    </div>
+                                </div>
 
                                 <!-- Paring / tildeling (eksisterende backend) -->
                                 <div class="card paring">

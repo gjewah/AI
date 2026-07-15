@@ -172,8 +172,10 @@ class FiqMeldingssenterData(models.AbstractModel):
         if q:
             dom = ["|", "|", ("subject", "ilike", q), ("email_from", "ilike", q),
                    ("record_name", "ilike", q)] + dom
+        msgs = Msg.search(dom, order="date desc", limit=limit)
+        status_map = self._status_map(msgs.ids)
         out = []
-        for m in Msg.search(dom, order="date desc", limit=limit):
+        for m in msgs:
             internal = bool(m.author_id and m.author_id.user_ids
                             and any(not u.share for u in m.author_id.user_ids))
             # Mottakere ("Til") — kun der Odoo har løst dem (ellers tomt, ikke dikt)
@@ -196,6 +198,9 @@ class FiqMeldingssenterData(models.AbstractModel):
                 "model": m.model,
                 "res_id": m.res_id,
                 "element": element,
+                "status": status_map.get(m.id, ""),
+                "status_navn": self._STATUS_NAVN.get(status_map.get(m.id), ""),
+                "risiko": self._risiko(m.subject, m.email_from, m.preview),
             })
         return out
 
@@ -411,6 +416,73 @@ class FiqMeldingssenterData(models.AbstractModel):
             if len(pros) >= 5 and len(opp) >= 5:
                 break
         return {"prosjekt": pros[:5], "oppgave": opp[:5]}
+
+    # ---- V00.05: arbeidsstatus + internt notat + risiko-flagg ------------------------
+    _STATUS_NAVN = {"apen": "Åpen", "pagar": "Pågår", "ferdig": "Ferdig"}
+
+    # Konservativ phishing-/risiko-heuristikk (v1 — oppgraderes til AI-klassifisering).
+    _RISIKO_PAY = ["bekreft betaling", "verify your account", "confirm payment",
+                   "passord utløper", "kontoen din er sperret", "klikk her innen",
+                   "frigi forsendel", "oppdater betalingskort", "reset your password"]
+    _RISIKO_DOM = [".info", ".xyz", ".top", "-secure", "verify-", "account-", "-verify"]
+
+    def _risiko(self, subject, email_from, body=""):
+        """Enkelt risiko-signal for en innkommende e-post. Konservativ: 'hoy' kun ved
+        tydelig svindel-mønster (betalings-/konto-press + mistenkelig avsender), ellers ''."""
+        text = ("%s %s" % (subject or "", body or "")).lower()
+        frm = (email_from or "").lower()
+        pay = any(w in text for w in self._RISIKO_PAY)
+        susp = any(d in frm for d in self._RISIKO_DOM)
+        if pay and susp:
+            return "hoy"
+        return ""
+
+    def _status_map(self, message_ids):
+        """{message_id: status} for de meldingene som har fått en arbeidsstatus."""
+        if not message_ids:
+            return {}
+        recs = self.env["fiq.meldingssenter.state"].search(
+            [("message_id", "in", list(message_ids))])
+        return {r.message_id.id: r.status for r in recs}
+
+    @api.model
+    def set_status(self, message_id, status):
+        """Sett arbeidsstatus (åpen/pågår/ferdig) på en melding. Upsert per melding."""
+        if status not in self._STATUS_NAVN:
+            return False
+        S = self.env["fiq.meldingssenter.state"]
+        rec = S.search([("message_id", "=", int(message_id))], limit=1)
+        if rec:
+            rec.status = status
+        else:
+            S.create({"message_id": int(message_id), "status": status})
+        return True
+
+    @api.model
+    def add_note(self, message_id, body):
+        """Legg til et internt notat (team-only, usynlig for avsender) på en melding."""
+        body = (body or "").strip()
+        if not body:
+            return False
+        note = self.env["fiq.meldingssenter.note"].create(
+            {"message_id": int(message_id), "body": body})
+        return {"navn": note.user_id.name or "", "body": note.body,
+                "dato": note.create_date.strftime("%d.%m %H:%M") if note.create_date else ""}
+
+    @api.model
+    def get_thread(self, message_id):
+        """Lese-panel-tilstand for en melding: arbeidsstatus + interne notater (nyeste øverst)."""
+        mid = int(message_id)
+        S = self.env["fiq.meldingssenter.state"].search([("message_id", "=", mid)], limit=1)
+        notes = self.env["fiq.meldingssenter.note"].search([("message_id", "=", mid)])
+        return {
+            "status": S.status if S else "",
+            "notater": [{
+                "navn": n.user_id.name or "",
+                "body": n.body or "",
+                "dato": n.create_date.strftime("%d.%m %H:%M") if n.create_date else "",
+            } for n in notes],
+        }
 
     @api.model
     def get_presence(self):

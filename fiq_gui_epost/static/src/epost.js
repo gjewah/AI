@@ -16,6 +16,7 @@ export class FiqMeldingssenter extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+        this.STATUS_NAVN = { apen: "Åpen", pagar: "Pågår", ferdig: "Ferdig" };
         this.state = useState({
             loading: true, firms: [], current_firm: false, presence: [], user: "", logo: "", q: "",
             basis: [], tverr: [], taks: [],
@@ -23,6 +24,7 @@ export class FiqMeldingssenter extends Component {
             aktivBoks: false, aktivNavn: "", meldinger: [], valgt: false, period: "alle",
             group: "avsender", kollaps: {}, kandidater: { prosjekt: [], oppgave: [] },
             ctxTab: "rel",                                   // person-kontekst: rel | hist | week
+            trad: { status: "", notater: [] }, nyNotat: "",  // arbeidsstatus + interne notater
         });
         onWillStart(async () => {
             const cfg = await this.orm.call(DATA, "get_my_config", []);
@@ -80,8 +82,31 @@ export class FiqMeldingssenter extends Component {
     async velgMelding(m) {
         this.state.valgt = m;
         this.state.ctxTab = "rel";
+        this.state.nyNotat = "";
         this.state.kandidater = { prosjekt: [], oppgave: [] };
+        this.state.trad = { status: "", notater: [] };
         this.state.kandidater = await this.orm.call(DATA, "get_kandidater", [m.id]);
+        this.state.trad = await this.orm.call(DATA, "get_thread", [m.id]);
+    }
+
+    // Arbeidsstatus (åpen/pågår/ferdig) — persisteres + holder liste-merket i synk
+    async setStatus(status) {
+        if (!this.state.valgt) return;
+        await this.orm.call(DATA, "set_status", [this.state.valgt.id, status]);
+        this.state.trad.status = status;
+        this.state.valgt.status = status;
+        this.state.valgt.status_navn = this.STATUS_NAVN[status] || "";
+    }
+    onStatusChange(ev) { this.setStatus(ev.target.value); }
+
+    // Internt notat (team-only)
+    onNotatInput(ev) { this.state.nyNotat = ev.target.value; }
+    async leggNotat() {
+        const b = (this.state.nyNotat || "").trim();
+        if (!b || !this.state.valgt) return;
+        const note = await this.orm.call(DATA, "add_note", [this.state.valgt.id, b]);
+        if (note) this.state.trad.notater.unshift(note);
+        this.state.nyNotat = "";
     }
 
     // Gruppering + kollaps
