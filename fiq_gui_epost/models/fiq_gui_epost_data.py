@@ -172,8 +172,10 @@ class FiqMeldingssenterData(models.AbstractModel):
         if q:
             dom = ["|", "|", ("subject", "ilike", q), ("email_from", "ilike", q),
                    ("record_name", "ilike", q)] + dom
+        msgs = Msg.search(dom, order="date desc", limit=limit)
+        status_map = self._status_map(msgs.ids)
         out = []
-        for m in Msg.search(dom, order="date desc", limit=limit):
+        for m in msgs:
             internal = bool(m.author_id and m.author_id.user_ids
                             and any(not u.share for u in m.author_id.user_ids))
             # Mottakere ("Til") — kun der Odoo har løst dem (ellers tomt, ikke dikt)
@@ -196,6 +198,9 @@ class FiqMeldingssenterData(models.AbstractModel):
                 "model": m.model,
                 "res_id": m.res_id,
                 "element": element,
+                "status": status_map.get(m.id, ""),
+                "status_navn": self._STATUS_NAVN.get(status_map.get(m.id), ""),
+                "risiko": self._risiko(m.subject, m.email_from, m.preview),
             })
         return out
 
@@ -411,6 +416,213 @@ class FiqMeldingssenterData(models.AbstractModel):
             if len(pros) >= 5 and len(opp) >= 5:
                 break
         return {"prosjekt": pros[:5], "oppgave": opp[:5]}
+
+    # ---- V00.05: arbeidsstatus + internt notat + risiko-flagg ------------------------
+    _STATUS_NAVN = {"apen": "Åpen", "pagar": "Pågår", "ferdig": "Ferdig"}
+
+    # Konservativ phishing-/risiko-heuristikk (v1 — oppgraderes til AI-klassifisering).
+    _RISIKO_PAY = ["bekreft betaling", "verify your account", "confirm payment",
+                   "passord utløper", "kontoen din er sperret", "klikk her innen",
+                   "frigi forsendel", "oppdater betalingskort", "reset your password"]
+    _RISIKO_DOM = [".info", ".xyz", ".top", "-secure", "verify-", "account-", "-verify"]
+
+    def _risiko(self, subject, email_from, body=""):
+        """Enkelt risiko-signal for en innkommende e-post. Konservativ: 'hoy' kun ved
+        tydelig svindel-mønster (betalings-/konto-press + mistenkelig avsender), ellers ''."""
+        text = ("%s %s" % (subject or "", body or "")).lower()
+        frm = (email_from or "").lower()
+        pay = any(w in text for w in self._RISIKO_PAY)
+        susp = any(d in frm for d in self._RISIKO_DOM)
+        if pay and susp:
+            return "hoy"
+        return ""
+
+    def _status_map(self, message_ids):
+        """{message_id: status} for de meldingene som har fått en arbeidsstatus."""
+        if not message_ids:
+            return {}
+        recs = self.env["fiq.meldingssenter.state"].search(
+            [("message_id", "in", list(message_ids))])
+        return {r.message_id.id: r.status for r in recs}
+
+    @api.model
+    def set_status(self, message_id, status):
+        """Sett arbeidsstatus (åpen/pågår/ferdig) på en melding. Upsert per melding."""
+        if status not in self._STATUS_NAVN:
+            return False
+        S = self.env["fiq.meldingssenter.state"]
+        rec = S.search([("message_id", "=", int(message_id))], limit=1)
+        if rec:
+            rec.status = status
+        else:
+            S.create({"message_id": int(message_id), "status": status})
+        return True
+
+    @api.model
+    def add_note(self, message_id, body):
+        """Legg til et internt notat (team-only, usynlig for avsender) på en melding."""
+        body = (body or "").strip()
+        if not body:
+            return False
+        note = self.env["fiq.meldingssenter.note"].create(
+            {"message_id": int(message_id), "body": body})
+        return {"navn": note.user_id.name or "", "body": note.body,
+                "dato": note.create_date.strftime("%d.%m %H:%M") if note.create_date else ""}
+
+    @api.model
+    def get_thread(self, message_id):
+        """Lese-panel-tilstand for en melding: arbeidsstatus + interne notater (nyeste øverst)."""
+        mid = int(message_id)
+        S = self.env["fiq.meldingssenter.state"].search([("message_id", "=", mid)], limit=1)
+        notes = self.env["fiq.meldingssenter.note"].search([("message_id", "=", mid)])
+        return {
+            "status": S.status if S else "",
+            "notater": [{
+                "navn": n.user_id.name or "",
+                "body": n.body or "",
+                "dato": n.create_date.strftime("%d.%m %H:%M") if n.create_date else "",
+            } for n in notes],
+        }
+
+    # ---- V00.05: person-visning (klikk «Til stede» → person) + relasjoner (§C.2) -----
+    @api.model
+    def get_person(self, partner_id=False, user_id=False):
+        """Person-kort: e-post + tilknyttede personer (§C.2) + siste hos oss + ukesplan.
+        Åpnes fra «Til stede»-navnene (user_id) eller en meldings avsender (partner_id)."""
+        partner = False
+        if partner_id:
+            partner = self.env["res.partner"].browse(int(partner_id)).exists()
+        elif user_id:
+            u = self.env["res.users"].browse(int(user_id)).exists()
+            partner = u.partner_id if u else False
+        if not partner:
+            return {}
+        Rel = self.env["fiq.partner.relation"]
+        rtlabels = dict(Rel._fields["relation_type"].selection)
+        rels = []
+        for r in Rel.search(["|", ("partner_id", "=", partner.id),
+                             ("related_partner_id", "=", partner.id)]):
+            other = r.related_partner_id if r.partner_id.id == partner.id else r.partner_id
+            rels.append({"id": other.id, "navn": other.display_name or "",
+                         "type": r.relation_type, "type_navn": rtlabels.get(r.relation_type, "")})
+        return {
+            "id": partner.id,
+            "navn": partner.display_name or "",
+            "epost": partner.email or "",
+            "relasjoner": rels,
+            "siste": self._siste_for_partner(partner),
+            "ukesplan": self._ukesplan_for_partner(partner),
+        }
+
+    def _siste_for_partner(self, partner):
+        """«Siste hos oss»: nyeste salg/oppgaver/helpdesk knyttet til kontakten. Defensivt."""
+        out = []
+        if "crm.lead" in self.env:
+            for l in self.env["crm.lead"].search(
+                    [("partner_id", "=", partner.id)], order="write_date desc", limit=3):
+                out.append({"type": "salg", "navn": l.name or "",
+                            "dato": l.write_date.strftime("%d.%m") if l.write_date else ""})
+        for t in self.env["project.task"].search(
+                [("partner_id", "=", partner.id)], order="write_date desc", limit=3):
+            out.append({"type": "opg", "navn": t.name or "",
+                        "dato": t.write_date.strftime("%d.%m") if t.write_date else ""})
+        if "helpdesk.ticket" in self.env:
+            for h in self.env["helpdesk.ticket"].search(
+                    [("partner_id", "=", partner.id)], order="write_date desc", limit=3):
+                out.append({"type": "hd", "navn": h.name or "",
+                            "dato": h.write_date.strftime("%d.%m") if h.write_date else ""})
+        return out[:6]
+
+    def _ukesplan_for_partner(self, partner):
+        """Ukesplan denne uka: kalender-hendelser kontakten deltar på + oppgavefrister for
+        tilknyttet bruker. (v1 — kan senere delegere til Prosjekt-modulen [[gui-naming]].)"""
+        today = fields.Date.context_today(self)
+        start = today - timedelta(days=today.weekday())          # mandag denne uka
+        end = start + timedelta(days=6)
+        out = []
+        Cal = self.env["calendar.event"]
+        for e in Cal.search([("partner_ids", "in", partner.id),
+                             ("start", ">=", start), ("start", "<=", end)],
+                            order="start", limit=30):
+            out.append({"type": "kal", "navn": e.name or "",
+                        "dato": e.start.strftime("%a %d.%m") if e.start else ""})
+        users = partner.user_ids
+        if users:
+            for t in self.env["project.task"].search(
+                    [("user_ids", "in", users.ids),
+                     ("date_deadline", ">=", start), ("date_deadline", "<=", end)],
+                    order="date_deadline", limit=30):
+                out.append({"type": "opg", "navn": t.name or "",
+                            "dato": t.date_deadline.strftime("%a %d.%m") if t.date_deadline else ""})
+        return out
+
+    # ---- V00.05 lag 4: vedlegg → element (Loym) + rutingregler ------------------------
+    @api.model
+    def get_vedlegg(self, message_id):
+        """Vedleggene på en e-post (til «lagre på element»-kortet i lesepanelet)."""
+        m = self.env["mail.message"].browse(int(message_id)).exists()
+        if not m:
+            return []
+        return [{"id": a.id, "navn": a.name or "",
+                 "kb": int(round((a.file_size or 0) / 1024.0))}
+                for a in m.attachment_ids]
+
+    @api.model
+    def lagre_paa_element(self, message_id, model, res_id):
+        """Loym-modellen: lagre e-postens VEDLEGG på elementet meldingen gjelder
+        (prosjekt/salg/helpdesk) → blir en del av Documents DER, sporbart.
+        Generisk Documents-lagring skjer kun når meldingen ikke er paret til et element."""
+        m = self.env["mail.message"].browse(int(message_id)).exists()
+        if not m or not m.attachment_ids:
+            return False
+        target = self.env[model].browse(int(res_id)).exists()
+        if not target or not hasattr(target, "message_post"):
+            return False
+        target.message_post(
+            body="Vedlegg fra e-post: %s" % (m.subject or ""),
+            attachment_ids=m.attachment_ids.ids,
+            message_type="comment", subtype_xmlid="mail.mt_note")
+        return len(m.attachment_ids)
+
+    @api.model
+    def kjor_regler(self, firm=False, period="uke", limit=500):
+        """Kjør aktive rutingregler over e-post i scope: sett arbeidsstatus på treff.
+        Audit: oppdaterer «sist kjørt» + «treff» per regel. Config-drevet ([[feedback-config-driven]])."""
+        regler = self.env["fiq.komm.regel"].search([("active", "=", True)])
+        if not regler:
+            return {"regler": 0, "treff": 0}
+        Msg = self.env["mail.message"]
+        dom = _ON_RECORD + [("message_type", "=", "email")] + self._period_domain(period)
+        if firm:
+            dom.append(("record_company_id", "=", int(firm)))
+        rows = Msg.search_read(
+            dom, ["id", "subject", "email_from", "preview", "record_name"],
+            limit=limit, order="date desc")
+        getters = {
+            "avsender": lambda r: (r.get("email_from") or ""),
+            "emne": lambda r: (r.get("subject") or ""),
+            "innhold": lambda r: (r.get("preview") or ""),
+            "element": lambda r: (r.get("record_name") or ""),
+        }
+        status_av_handling = {"status_apen": "apen", "status_pagar": "pagar",
+                              "status_ferdig": "ferdig"}
+        total = 0
+        for regel in regler:
+            getter = getters.get(regel.felt, getters["emne"])
+            v = (regel.verdi or "").lower()
+            status = status_av_handling.get(regel.handling)
+            n = 0
+            for r in rows:
+                fv = getter(r).lower()
+                match = (v in fv) if regel.operator == "inneholder" else (v == fv)
+                if match:
+                    if status:
+                        self.set_status(r["id"], status)
+                    n += 1
+            regel.sist_kjort = fields.Datetime.now()
+            regel.treff = (regel.treff or 0) + n
+            total += n
+        return {"regler": len(regler), "treff": total}
 
     @api.model
     def get_presence(self):
