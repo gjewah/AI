@@ -26,6 +26,7 @@ export class FiqMeldingssenter extends Component {
             ctxTab: "rel",                                   // person-kontekst: rel | hist | week
             trad: { status: "", notater: [] }, nyNotat: "",  // arbeidsstatus + interne notater
             person: false, personOpen: false,                // person-visning (klikk «Til stede»)
+            vedlegg: [], vedleggMsg: "",                      // vedlegg → element (Loym)
         });
         onWillStart(async () => {
             const cfg = await this.orm.call(DATA, "get_my_config", []);
@@ -84,11 +85,23 @@ export class FiqMeldingssenter extends Component {
         this.state.valgt = m;
         this.state.ctxTab = "rel";
         this.state.nyNotat = "";
+        this.state.vedlegg = []; this.state.vedleggMsg = "";
         this.state.kandidater = { prosjekt: [], oppgave: [] };
         this.state.trad = { status: "", notater: [] };
         this.state.kandidater = await this.orm.call(DATA, "get_kandidater", [m.id]);
         this.state.trad = await this.orm.call(DATA, "get_thread", [m.id]);
+        this.state.vedlegg = await this.orm.call(DATA, "get_vedlegg", [m.id]);
     }
+
+    // Vedlegg → lagre på elementet meldingen gjelder (Loym-modellen)
+    async lagrePaaElement(model, resId, navn) {
+        if (!this.state.valgt) return;
+        const n = await this.orm.call(DATA, "lagre_paa_element", [this.state.valgt.id, model, resId]);
+        this.state.vedleggMsg = n ? (n + " vedlegg lagret på " + navn) : "Ingen vedlegg å lagre.";
+    }
+
+    // Overlay-skriv: ny melding uten å forlate innboksen (v1 → Discuss-komposer)
+    skrivNy() { this.action.doAction("mail.action_discuss"); }
 
     // Arbeidsstatus (åpen/pågår/ferdig) — persisteres + holder liste-merket i synk
     async setStatus(status) {

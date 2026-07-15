@@ -117,6 +117,7 @@
                                 <option value="type">Type</option>
                             </select>
                             <button class="lgrp" t-on-click="toggleAlle" t-esc="kollapsLabel()"/>
+                            <button class="lgrp skriv" t-on-click="skrivNy">✎ Skriv</button>
                         </div>
                         <div class="listbody">
                             <div t-if="!state.meldinger.length" class="empty">Ingen meldinger i <t t-esc="state.aktivNavn"/>.</div>
@@ -201,6 +202,28 @@
                                                t-att-value="state.nyNotat" t-on-input="onNotatInput"/>
                                         <button class="notesend" t-on-click="leggNotat">Legg til</button>
                                     </div>
+                                </div>
+
+                                <!-- Vedlegg → lagre på element (Loym) -->
+                                <div class="card vedlegg" t-if="state.vedlegg.length">
+                                    <div class="ch"><span class="icn">📎</span>Vedlegg → lagre på element (Loym)</div>
+                                    <div class="attitem" t-foreach="state.vedlegg" t-as="a" t-key="a.id">
+                                        <span class="fic">📄</span>
+                                        <span class="fn" t-esc="a.navn"/>
+                                        <span class="fkb" t-esc="a.kb + ' kB'"/>
+                                    </div>
+                                    <div class="saverow" t-if="state.kandidater.prosjekt.length || state.kandidater.oppgave.length">
+                                        <span class="lab">Lagre på:</span>
+                                        <button class="savebtn" t-foreach="state.kandidater.prosjekt" t-as="k" t-key="'sp'+k.id"
+                                                t-on-click="() => this.lagrePaaElement('project.project', k.id, k.navn)">
+                                            <span class="kt kt_p">Prosjekt</span><t t-esc="k.navn"/>
+                                        </button>
+                                        <button class="savebtn" t-foreach="state.kandidater.oppgave" t-as="k" t-key="'so'+k.id"
+                                                t-on-click="() => this.lagrePaaElement('project.task', k.id, k.navn)">
+                                            <span class="kt kt_o">Oppgave</span><t t-esc="k.navn"/>
+                                        </button>
+                                    </div>
+                                    <div class="savemsg" t-if="state.vedleggMsg" t-esc="state.vedleggMsg"/>
                                 </div>
 
                                 <!-- Paring / tildeling (eksisterende backend) -->

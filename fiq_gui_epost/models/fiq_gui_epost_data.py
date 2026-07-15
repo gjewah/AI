@@ -556,6 +556,74 @@ class FiqMeldingssenterData(models.AbstractModel):
                             "dato": t.date_deadline.strftime("%a %d.%m") if t.date_deadline else ""})
         return out
 
+    # ---- V00.05 lag 4: vedlegg → element (Loym) + rutingregler ------------------------
+    @api.model
+    def get_vedlegg(self, message_id):
+        """Vedleggene på en e-post (til «lagre på element»-kortet i lesepanelet)."""
+        m = self.env["mail.message"].browse(int(message_id)).exists()
+        if not m:
+            return []
+        return [{"id": a.id, "navn": a.name or "",
+                 "kb": int(round((a.file_size or 0) / 1024.0))}
+                for a in m.attachment_ids]
+
+    @api.model
+    def lagre_paa_element(self, message_id, model, res_id):
+        """Loym-modellen: lagre e-postens VEDLEGG på elementet meldingen gjelder
+        (prosjekt/salg/helpdesk) → blir en del av Documents DER, sporbart.
+        Generisk Documents-lagring skjer kun når meldingen ikke er paret til et element."""
+        m = self.env["mail.message"].browse(int(message_id)).exists()
+        if not m or not m.attachment_ids:
+            return False
+        target = self.env[model].browse(int(res_id)).exists()
+        if not target or not hasattr(target, "message_post"):
+            return False
+        target.message_post(
+            body="Vedlegg fra e-post: %s" % (m.subject or ""),
+            attachment_ids=m.attachment_ids.ids,
+            message_type="comment", subtype_xmlid="mail.mt_note")
+        return len(m.attachment_ids)
+
+    @api.model
+    def kjor_regler(self, firm=False, period="uke", limit=500):
+        """Kjør aktive rutingregler over e-post i scope: sett arbeidsstatus på treff.
+        Audit: oppdaterer «sist kjørt» + «treff» per regel. Config-drevet ([[feedback-config-driven]])."""
+        regler = self.env["fiq.komm.regel"].search([("active", "=", True)])
+        if not regler:
+            return {"regler": 0, "treff": 0}
+        Msg = self.env["mail.message"]
+        dom = _ON_RECORD + [("message_type", "=", "email")] + self._period_domain(period)
+        if firm:
+            dom.append(("record_company_id", "=", int(firm)))
+        rows = Msg.search_read(
+            dom, ["id", "subject", "email_from", "preview", "record_name"],
+            limit=limit, order="date desc")
+        getters = {
+            "avsender": lambda r: (r.get("email_from") or ""),
+            "emne": lambda r: (r.get("subject") or ""),
+            "innhold": lambda r: (r.get("preview") or ""),
+            "element": lambda r: (r.get("record_name") or ""),
+        }
+        status_av_handling = {"status_apen": "apen", "status_pagar": "pagar",
+                              "status_ferdig": "ferdig"}
+        total = 0
+        for regel in regler:
+            getter = getters.get(regel.felt, getters["emne"])
+            v = (regel.verdi or "").lower()
+            status = status_av_handling.get(regel.handling)
+            n = 0
+            for r in rows:
+                fv = getter(r).lower()
+                match = (v in fv) if regel.operator == "inneholder" else (v == fv)
+                if match:
+                    if status:
+                        self.set_status(r["id"], status)
+                    n += 1
+            regel.sist_kjort = fields.Datetime.now()
+            regel.treff = (regel.treff or 0) + n
+            total += n
+        return {"regler": len(regler), "treff": total}
+
     @api.model
     def get_presence(self):
         """TIL STEDE NÅ — samme robuste regnestykke som Kontrollrommet: innstempling

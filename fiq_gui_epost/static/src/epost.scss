@@ -137,6 +137,23 @@
   .noterow input{flex:1;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--ink)}
   .notesend{border:1px solid var(--warn);background:var(--warn);color:#fff;border-radius:8px;padding:0 13px;font-size:12px;font-weight:700}
 
+  // Skriv-knapp (overlay-skriv)
+  .lgrp.skriv{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,transparent);font-weight:700}
+
+  // Vedlegg → element (Loym)
+  .card.vedlegg{background:var(--surface-2)}
+  .attitem{display:flex;align-items:center;gap:9px;font-size:12.5px;padding:5px 0}
+  .attitem .fic{font-size:16px;flex:none}
+  .attitem .fn{font-weight:640;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .attitem .fkb{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--muted);flex:none}
+  .saverow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px}
+  .saverow .lab{font-size:11px;color:var(--muted)}
+  .savebtn{display:inline-flex;align-items:center;gap:7px;border:1px solid color-mix(in srgb,var(--gronn) 45%,var(--line));background:color-mix(in srgb,var(--gronn) 10%,var(--surface));color:var(--ink);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:640}
+  .savebtn:hover{border-color:var(--gronn)}
+  .savebtn .kt{font-family:var(--mono);font-size:9px;font-weight:800;color:#fff;border-radius:4px;padding:2px 6px;text-transform:uppercase}
+  .savebtn .kt_p{background:var(--gronn)}.savebtn .kt_o{background:var(--blaa)}
+  .savemsg{margin-top:8px;font-size:11.5px;color:var(--good);font-weight:640}
+
   // Paring
   .paring{background:var(--surface-2)}
   .kobling{background:color-mix(in srgb,#7030A0 6%,var(--surface));border:1px solid color-mix(in srgb,#7030A0 22%,var(--line));border-radius:10px;padding:10px 12px;margin-bottom:11px}
