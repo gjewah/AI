@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="project_task_view_form" model="ir.ui.view">
+        <field name="name">project.task.view.form.code</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2" />
+        <field name="arch" type="xml">
+            <h1 position="before">
+                <div class="d-flex h3">
+                    <!-- <label for="code" string="No." /> -->
+                    <field name="code" decoration-bf="1" readonly="1" />
+                </div>
+            </h1>
+        </field>
+    </record>
+    <record id="project_task_view_tree" model="ir.ui.view">
+        <field name="name">project.task.view.tree.code</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_tree2" />
+        <field name="arch" type="xml">
+            <field name="name" position="before">
+                <field name="company_code" optional="hide" />
+                <field name="code" optional="hide" readonly="1" />
+            </field>
+        </field>
+    </record>
+    <record id="project_task_view_kanban" model="ir.ui.view">
+        <field name="name">project.task.view.kanban.code</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_kanban" />
+        <field name="arch" type="xml">
+            <field name="name" position="before">
+                <field name="code" readonly="1" />
+            </field>
+        </field>
+    </record>
+    <record id="project_task_view_search" model="ir.ui.view">
+        <field name="name">project.task.view.search.code</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_search_form" />
+        <field name="arch" type="xml">
+            <field name="name" position="attributes">
+                <attribute
+                    name="filter_domain"
+                >['|', '|', ('name', 'ilike', self), ('company_code', 'ilike', self), ('code', 'ilike', self)]</attribute>
+            </field>
+        </field>
+    </record>
+
+    <!-- PORTAL -->
+
+    <record id="project_sharing_project_task_view_form" model="ir.ui.view">
+        <field name="name">project.sharing.project.task.view.form.code</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.project_sharing_project_task_view_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/group/group/field[@name='project_id']" position="before">
+                <field name="code" readonly="1" />
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,16 @@
+<odoo>
+    <record
+        id="mail_config_by_user.res_users_view_form_inherit_mail"
+        model="ir.ui.view"
+    >
+        <field name="arch" type="xml">
+            <field name="email" position="after">
+                <button
+                    name="action_mail_config_by_user"
+                    type="object"
+                    string="Koble til Outlook epost"
+                />
+            </field>
+        </field>
+    </record>
+</odoo>

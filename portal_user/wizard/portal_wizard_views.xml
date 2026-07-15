@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="portal_wizard_view_form" model="ir.ui.view">
+        <field name="name">portal_wizard.view.form.inherit</field>
+        <field name="model">portal.wizard</field>
+        <field name="inherit_id" ref="portal.wizard_view" />
+        <field name="arch" type="xml">
+            <data>
+                <button name="action_grant_access" position="attributes">
+                    <attribute name="context">{'do_not_send_email': False}</attribute>
+                </button>
+                <button name="action_grant_access" position="after">
+                    <button
+                        string="Grant Access (no email)"
+                        name="action_grant_access"
+                        context="{'do_not_send_email': True}"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="is_portal or is_internal or email_state != 'ok'"
+                    />
+                </button>
+            </data>
+        </field>
+    </record>
+</odoo>

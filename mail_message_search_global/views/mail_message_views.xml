@@ -1,0 +1,34 @@
+<odoo>
+    <record id="mail_message_view_list" model="ir.ui.view">
+        <field name="model">mail.message</field>
+        <field name="inherit_id" ref="mail.view_message_tree" />
+        <field name="arch" type="xml">
+            <list position="inside">
+                <button name="action_open_related"
+                        type="object"
+                        string="Open"
+                        class="btn btn-primary"
+                />
+            </list>
+        </field>
+    </record>
+    <record id="mail_message_view_search" model="ir.ui.view">
+        <field name="model">mail.message</field>
+        <field name="inherit_id" ref="mail.view_message_search" />
+        <field name="arch" type="xml">
+            <search position="inside">
+                <filter string="Related Model" name="model" context="{'group_by': 'model'}"/>
+                <filter string="Recipients" name="partner_ids" context="{'group_by': 'partner_ids'}"/>
+                <filter string="Date" name="date" context="{'group_by': 'date'}"/>
+            </search>
+        </field>
+    </record>
+    <menuitem
+        id="menu_view_mail_message"
+        name="Messages"
+        action="mail.action_view_mail_message"
+        parent="mail.menu_root_discuss"
+        sequence="50"
+        groups="base.group_system"
+    />
+</odoo>

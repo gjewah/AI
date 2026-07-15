@@ -1,0 +1,1 @@
+from . import test_mail_force_email_notification_compose

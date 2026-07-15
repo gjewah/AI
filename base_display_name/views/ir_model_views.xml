@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ir_model_view_form" model="ir.ui.view">
+        <field name="name">ir.model.view.form.display_name</field>
+        <field name="model">ir.model</field>
+        <field name="inherit_id" ref="base.view_model_form" />
+        <field name="arch" type="xml">
+            <field name="modules" position="after">
+                <field
+                    name="display_name_expression"
+                    placeholder="{r.pick('parent_id.sequence_number')} {r.name}"
+                    invisible="not use_display_name_expression"
+                />
+            </field>
+        </field>
+    </record>
+</odoo>

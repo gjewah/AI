@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <record id="project_project_view_form" model="ir.ui.view">
+        <field name="name">project.project.view.form.inherit.partner_ids</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project" />
+        <field name="arch" type="xml">
+            <data>
+                <notebook position="inside">
+                    <page name="partner_ids" string="Contacts">
+                        <field name="partner_ids"/>
+                    </page>
+                </notebook>
+            </data>
+        </field>
+    </record>
+    <record id="project_project_view_tree" model="ir.ui.view">
+        <field name="name">project.project.view.tree.inherit.related_contact_ids</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project" />
+        <field name="arch" type="xml">
+            <list position="inside">
+                <field name="partner_ids" widget="many2many_tags" optional="hide" />
+            </list>
+        </field>
+    </record>
+</data>

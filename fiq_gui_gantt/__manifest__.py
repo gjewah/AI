@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ GUI Gantt",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "summary": "Native web_gantt for prosjekt og oppgaver + FIQ-tillegg: "
                "disposisjonsnummer (WBS), tids-status-farge (grønn/oransje/rød), "
                "drill prosjekt→oppgave og milepæl-Gantt. Generisk, multicompany, "
@@ -39,6 +39,9 @@ per firma arves. Add-only, ingen destruktiv endring.
         "project",
         "project_enterprise",
         "web_gantt",
+        # progress-feltet paa project.task eies av hr_timesheet; _compute_time_status
+        # avhenger av det, saa modulen maa lastes foer oss (ellers: 'progress' not found).
+        "hr_timesheet",
     ],
     "data": [
         "views/project_task_gantt_views.xml",

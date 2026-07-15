@@ -1,0 +1,1 @@
+This module aims to replace base_custom_info by depending on survey.

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_partner_form_inherit_custom_info_survey" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.custom.info.survey</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//notebook" position="inside">
+                <page string="Custom Info" name="custom_info">
+
+                    <group>
+
+                        <field name="survey_id"/>
+
+                        <button name="action_open_survey"
+                                type="object"
+                                string="Open Survey"
+                                class="btn-primary"
+                                icon="fa-external-link"
+                                invisible="not survey_user_input_id"/>
+
+                        <field name="survey_user_input_id" invisible="1"/>
+
+                    </group>
+
+                </page>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

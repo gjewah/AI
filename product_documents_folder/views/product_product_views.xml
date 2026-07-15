@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_product_form_view_inherit_vidir" model="ir.ui.view">
+        <field name="name">product.product.form.vidir</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_normal_form_view"/>
+        <field name="arch" type="xml">
+            <data>
+                <group name="group_standard_price" position="inside">
+                    <group>
+                        <field name="product_folder_id" invisible="1" />
+                        <field name="product_folder_url"
+                            string="Product Document URL"
+                            widget="url"
+                            invisible="product_folder_id"
+                        />
+                        <button name="action_goto_documents"
+                                context="{'contact_type': 'product', 'internal_external': 'internal'}"
+                                type="object"
+                                string="Product Doc"
+                                icon="fa-folder-open"
+                                invisible="not product_folder_id"
+                        />
+                        <button name="action_goto_documents"
+                                context="{'contact_type': 'product', 'internal_external': 'external'}"
+                                type="object"
+                                string="Product URL"
+                                icon="fa-link"
+                                invisible="not product_folder_id"
+                        />
+                    </group>
+                    <group invisible="not product_folder_id">
+                        <field name="shared_folder_id" invisible="1" />
+                        <field name="shared_folder_url"
+                            string="Shared Document URL"
+                            widget="url"
+                            invisible="shared_folder_id"
+                        />
+                        <button name="action_goto_documents"
+                                context="{'contact_type': 'shared', 'internal_external': 'internal'}"
+                                type="object"
+                                string="Shared Doc"
+                                icon="fa-folder-open"
+                                invisible="not shared_folder_id"
+                        />
+                        <button name="action_goto_documents"
+                                context="{'contact_type': 'shared', 'internal_external': 'external'}"
+                                type="object"
+                                string="Shared URL"
+                                icon="fa-link"
+                                invisible="not shared_folder_id"
+                        />
+                    </group>
+                </group>
+            </data>
+        </field>
+    </record>
+</odoo>
