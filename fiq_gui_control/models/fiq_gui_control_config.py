@@ -97,7 +97,44 @@ class FiqControlRoomConfig(models.Model):
             "ai_cockpit_url": ICP.get_param("fiq_gui_control.ai_cockpit_url", ""),
             # 📌 Blokk-rekkefølge på flaten (per bruker)
             "widget_order": rec.widget_order or "",
+            # 📋 Pågående oppgaver (config-drevet, vist i AI-fanen)
+            "pagaende_oppgaver": self._pagaende_oppgaver(),
         }
+
+    @api.model
+    def _pagaende_oppgaver(self):
+        """Pågående oppgaver vist i AI-fanen (config-drevet). Systemparameter
+        fiq_gui_control.pagaende_oppgaver (JSON) overstyrer standarden — så listen
+        kan vedlikeholdes uten ny modulversjon. Navn er innhold (norsk), ikke UI."""
+        import json
+        raw = self.env["ir.config_parameter"].sudo().get_param(
+            "fiq_gui_control.pagaende_oppgaver")
+        if raw:
+            try:
+                return json.loads(raw)
+            except Exception:
+                pass
+        return [
+            {"nr": "01", "navn": "Plattform-konsolidering — én FIQ-eid kilde",
+             "hvem": "ai", "status": "pagar", "under": [
+                {"nr": "01.01", "navn": "Sikring — mist ingenting", "hvem": "ai", "status": "ferdig"},
+                {"nr": "01.02", "navn": "Kopier loym-modulene inn i plattformen", "hvem": "ai", "status": "apen"},
+                {"nr": "01.03", "navn": "Rydd bort de doble kopiene", "hvem": "ai", "status": "apen"},
+                {"nr": "01.04", "navn": "Koble FIQ (pilot) på + verifiser på test", "hvem": "ai", "status": "apen"},
+                {"nr": "01.05", "navn": "Rull ut til Vidir, SDV, JPC", "hvem": "ai", "status": "venter"},
+                {"nr": "01.06", "navn": "Versjonskontroll + rulle-bakover", "hvem": "ai", "status": "apen"},
+                {"nr": "01.07", "navn": "Oversiktsmodul i Kontrollrommet", "hvem": "ai", "status": "pagar"},
+            ]},
+            {"nr": "02", "navn": "Norsk + firmalogo i Kontrollrommet",
+             "hvem": "ai", "status": "parkert", "under": [
+                {"nr": "02.01", "navn": "Norsk-språk-vask på flatene", "hvem": "ai", "status": "apen"},
+                {"nr": "02.02", "navn": "Firmalogo i topplinja", "hvem": "ai", "status": "apen"},
+            ]},
+            {"nr": "03", "navn": "OCA-minimering — bytt tunge moduler mot slanke FIQ-egne",
+             "hvem": "ai", "status": "venter", "under": [
+                {"nr": "03.01", "navn": "Kandidater kartlagt; starter når plattformen er ryddet", "hvem": "ai", "status": "apen"},
+            ]},
+        ]
 
     @api.model
     def set_widget_order(self, order):

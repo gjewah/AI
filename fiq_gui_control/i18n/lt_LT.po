@@ -2965,3 +2965,9 @@ msgstr "Jis įmestas į dėžutę ir bus peržiūrėtas."
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "New suggestion"
 msgstr "Naujas pasiūlymas"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Ongoing tasks"
+msgstr "Vykdomos užduotys"

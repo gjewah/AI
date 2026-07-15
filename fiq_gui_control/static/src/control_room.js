@@ -35,7 +35,7 @@ const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj
     "taskNoQuery", "taskTextQuery", "taskStage", "taskMile", "dagVis", "aktFilter", "aktGruppe", "selectedKpi",
     "progLevel", "progProjId", "progProjName", "progSubs", "progGroup", "kalMnd", "stageHidden", "dashSel"];
 // 🚨 Utdatert-GUI-vakt: bumpes ved HVER versjon — sammenlignes med installert modulversjon
-const GUI_BUILD = "19.0.6.73.0";
+const GUI_BUILD = "19.0.6.74.0";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -174,6 +174,7 @@ export class FiqControlRoom extends Component {
             staleGui: false,      // 🚨 lastet GUI-kode er ELDRE enn installert versjon → banner
             staleGui: false,      // 🚨 lastet GUI-kode er ELDRE enn installert versjon → banner
             recent: [],           // 📌 siste N prosjekter med aktivitet (hurtigknapper)
+            oppgaver: [],         // 📋 pågående oppgaver (config-drevet, vist i AI-fanen)
             recentN: 5,           // 📌 antall (huskes per bruker, server-lagret)
             projLock: null,       // 🔒 låst gruppering {nr, id} — grunnfilter for Prosjektoversikt (server-lagret)
             vbox: null,           // 🪟 flyttbar detaljboks (Gantt-/listelinje): datoer/timer/%-fremdrift
@@ -311,6 +312,10 @@ export class FiqControlRoom extends Component {
     }
 
     // 🪟 Flyttbar detaljboks: klikk på Gantt-/listelinje → sett variabler
+    oppgSym(st) {
+        return { ferdig: "✅", pagar: "⏳", apen: "⬜", venter: "⌛", parkert: "💤" }[st] || "⬜";
+    }
+
     openVarBox(row, forceTask) {
         const task = forceTask || this.state.progLevel === "oppgave";
         this.state.vbox = {
@@ -425,6 +430,7 @@ export class FiqControlRoom extends Component {
             this.state.canUpgrade = !!cfg.can_upgrade;
             this.state.spUrls = cfg.sp_urls || {};
             this.state.aiCockpitUrl = cfg.ai_cockpit_url || "";
+            this.state.oppgaver = cfg.pagaende_oppgaver || [];
             // 📌 Rekkefølger: «blokker|nav:menypunkter» i samme felt (bakoverkompatibelt)
             const deler = (cfg.widget_order || "").split("|");
             const saved = (deler[0] || "").split(",").filter(Boolean);

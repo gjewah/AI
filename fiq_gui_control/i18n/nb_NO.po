@@ -2965,3 +2965,9 @@ msgstr "Det er lagt i postkassen og blir gjennomgått."
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "New suggestion"
 msgstr "Nytt forslag"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Ongoing tasks"
+msgstr "Pågående oppgaver"

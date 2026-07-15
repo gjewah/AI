@@ -1014,3 +1014,15 @@
 .fiq_hm_sugg_takk { padding: 26px 20px; text-align: center; display: flex; flex-direction: column; gap: 8px; align-items: center; }
 .fiq_hm_sugg_takk_ico { font-size: 40px; }
 .fiq_hm.fiq_hm_dark .fiq_hm_sugg { background: #171b24; color: #fff; }
+
+/* ============ v6.74: 📋 Pågående oppgaver i AI-fanen ============ */
+.fiq_hm_oppg { margin: 8px 0 4px; }
+.fiq_hm_oppg_h { display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin-top: 6px;
+  border-radius: 8px; background: rgba(112, 48, 160, .07); font-weight: 800; }
+.fiq_hm_oppg_r { display: flex; align-items: center; gap: 8px; padding: 3px 8px 3px 26px; font-size: 13px; }
+.fiq_hm_oppg_sym { width: 18px; text-align: center; flex: 0 0 auto; }
+.fiq_hm_oppg_n { flex: 1 1 auto; }
+.fiq_hm_oppg_t { flex: 1 1 auto; color: #384150; }
+.fiq_hm_oppg_who { flex: 0 0 auto; opacity: .8; }
+.fiq_hm.fiq_hm_dark .fiq_hm_oppg_h { background: rgba(183, 148, 230, .16); color: #fff; }
+.fiq_hm.fiq_hm_dark .fiq_hm_oppg_t { color: #c9d1dc; }

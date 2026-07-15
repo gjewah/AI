@@ -339,6 +339,26 @@
                             </div>
                         </t>
                         <t t-else=""><div class="fiq_hm_empty">No deadlines this week.</div></t>
+                        <!-- 📋 Pågående oppgaver (config-drevet, vist for AI Manager) -->
+                        <div t-if="state.oppgaver.length" class="fiq_hm_oppg">
+                            <div class="fiq_cp_okter_h">📋 <t t-esc="tr('Ongoing tasks')"/></div>
+                            <t t-foreach="state.oppgaver" t-as="ho" t-key="ho.nr">
+                                <div class="fiq_hm_oppg_h">
+                                    <span class="fiq_hm_oppg_sym" t-esc="oppgSym(ho.status)"/>
+                                    <span class="fiq_hm_no" t-esc="ho.nr"/>
+                                    <span class="fiq_hm_oppg_n" t-esc="ho.navn"/>
+                                    <span class="fiq_hm_oppg_who" t-esc="ho.hvem === 'du' ? '👤' : '🤖'"/>
+                                </div>
+                                <t t-foreach="ho.under or []" t-as="u" t-key="u.nr">
+                                    <div class="fiq_hm_oppg_r">
+                                        <span class="fiq_hm_oppg_sym" t-esc="oppgSym(u.status)"/>
+                                        <span class="fiq_hm_no" t-esc="u.nr"/>
+                                        <span class="fiq_hm_oppg_t" t-esc="u.navn"/>
+                                        <span class="fiq_hm_oppg_who" t-esc="u.hvem === 'du' ? '👤' : '🤖'"/>
+                                    </div>
+                                </t>
+                            </t>
+                        </div>
                         <div class="fiq_hm_aikr_kommer">
                             <strong>Coming to this board (designed, built step by step):</strong>
                             <ul>
