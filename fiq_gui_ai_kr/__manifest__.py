@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ AI KR – AI Kontrollrom",
-    "version": "19.0.2.0.0",
+    "version": "19.0.2.1.0",
     "summary": "FIQ AI Kontrollrom (AI KR) – operatør-cockpit: oversikt over alle AI-økter "
                "(Claude Code + Cowork), AI-organisasjonskart, redigerbare roller/skills, "
                "ressursbruk og ROI. Snippet-basert (firma → rolle → person).",
@@ -15,6 +15,15 @@ Increment 2.01 (denne versjonen): data-lag for OPPGAVE-OVERSIKT – samler alle
 AI-økter/oppgaver (Claude Code + Cowork) som er logget i Odoo, med 👤/🤖-merke,
 status og «krever handling». Config-drevet rot-prosjekt (systemparameter
 fiq_gui_ai_kr.okter_project_id), firma-scoping klar for firma-snippet.
+
+19.0.2.1.0 — NATIVE VIEWS for øktregisteret (KANON «Odoo-native først», Gjermund 16.07.2026):
+`fiq.ai.okt` fantes som modell + registrer_okt(), men UTEN egne views — øktregisteret var
+usynlig i Odoo uten KR-flaten. Testen «Virker dette i native Odoo uten KR?» besto ikke.
+Nå: liste (farget på status) · skjema · søk m/ filtre (aktive/pause/feilet/**stille >1 døgn**)
++ gruppering (status/kilde/firma/dag) · menypunkt «AI-økter» under AI Kontrollrom-roten.
+TVILLING-PRINSIPPET: dette er `brain/okt_register.md` som LEVENDE Odoo-tabell. Claude fører
+den selv — Gjermund rører den aldri. Løser den dokumenterte floka med utdaterte økt-id-er
+i md-registeret (AI PK-raden pekte 16.07.2026 på en id som ikke finnes).
 
 Kommer i senere increments:
  * AI-organisasjonskart (roller/skills som AI-ansatte per firma)
@@ -33,6 +42,7 @@ som flate i det delte skallet (Vei C).
     "data": [
         "security/ir.model.access.csv",
         "views/ai_kr_action.xml",
+        "views/fiq_ai_okt_views.xml",
     ],
     "assets": {
         "web.assets_backend": [
