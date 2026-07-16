@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+      KANON «Odoo-native først»: feltet skal VIRKE OG SYNES i native Odoo uten KR.
+      Derfor arver vi Odoos egne views i stedet for å vise dette kun i GUI-flaten.
+
+      ⚠️ VERIFISERT mot levende Odoo 19 (Vidir Production, kun lest, 2026-07-16):
+      `view_task_tree2` og `view_task_search_form` er IKKE basisvisninger — de er arv
+      som kun setter attributter. De ekte basisvisningene heter:
+        liste  -> project.project_task_view_tree_main_base
+        søk    -> project.view_task_search_form_base
+        skjema -> project.view_task_form2   (denne stemte)
+      Bygget først mot feil navn; rettet etter oppslag i ir_ui_view.
+    -->
+
+    <!-- Listevisning: disposisjonsnr. foran tittelen -->
+    <record id="view_task_tree_fiq_wbs" model="ir.ui.view">
+        <field name="name">project.task.list.fiq.wbs</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.project_task_view_tree_main_base"/>
+        <field name="arch" type="xml">
+            <field name="name" position="before">
+                <field name="fiq_wbs_number" string="Disp.nr." optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Skjemavisning: ved siden av prosjektet -->
+    <record id="view_task_form_fiq_wbs" model="ir.ui.view">
+        <field name="name">project.task.form.fiq.wbs</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='project_id']" position="after">
+                <field name="fiq_wbs_number" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Søk + gruppering på disposisjonsnr. -->
+    <record id="view_task_search_fiq_wbs" model="ir.ui.view">
+        <field name="name">project.task.search.fiq.wbs</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_search_form_base"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="fiq_wbs_number" string="Disposisjonsnr."/>
+            </field>
+        </field>
+    </record>
+</odoo>
