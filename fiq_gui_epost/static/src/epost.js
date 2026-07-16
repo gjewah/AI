@@ -27,6 +27,7 @@ export class FiqMeldingssenter extends Component {
             trad: { status: "", notater: [] }, nyNotat: "",  // arbeidsstatus + interne notater
             person: false, personOpen: false,                // person-visning (klikk «Til stede»)
             vedlegg: [], vedleggMsg: "",                      // vedlegg → element (Loym)
+            hoder: false, visHoder: false,                    // nøyaktige Fra/Til/Kopi-felter
         });
         onWillStart(async () => {
             const cfg = await this.orm.call(DATA, "get_my_config", []);
@@ -86,11 +87,22 @@ export class FiqMeldingssenter extends Component {
         this.state.ctxTab = "rel";
         this.state.nyNotat = "";
         this.state.vedlegg = []; this.state.vedleggMsg = "";
+        this.state.hoder = false; this.state.visHoder = false;
         this.state.kandidater = { prosjekt: [], oppgave: [] };
         this.state.trad = { status: "", notater: [] };
+        this.state.hoder = await this.orm.call(DATA, "get_hoder", [m.id]);
         this.state.kandidater = await this.orm.call(DATA, "get_kandidater", [m.id]);
         this.state.trad = await this.orm.call(DATA, "get_thread", [m.id]);
         this.state.vedlegg = await this.orm.call(DATA, "get_vedlegg", [m.id]);
+    }
+
+    // Vis/skjul alle detaljer i e-posthodet (Fra/Til/Kopi/Blindkopi/Svar-til)
+    toggleHoder() { this.state.visHoder = !this.state.visHoder; }
+    // «Person <adresse>» — navn OG adresse, så det aldri er tvil om hvem
+    navnAdr(p) {
+        if (!p) return "";
+        if (p.navn && p.adresse) return p.navn + " <" + p.adresse + ">";
+        return p.navn || p.adresse || "";
     }
 
     // Vedlegg → lagre på elementet meldingen gjelder (Loym-modellen)

@@ -166,7 +166,62 @@
                                     </div>
                                     <div class="rt">
                                         <div t-esc="state.valgt.dato"/>
-                                        <div t-if="state.valgt.til.length">Til: <t t-esc="state.valgt.til.join(', ')"/></div>
+                                        <button class="hodebtn" t-on-click="toggleHoder"
+                                                t-esc="state.visHoder ? 'Skjul detaljer ▴' : 'Vis alle mottakere ▾'"/>
+                                    </div>
+                                </div>
+
+                                <!-- Nøyaktig e-posthode: Fra · Til · Kopi · Blindkopi · Svar-til -->
+                                <div class="hoder" t-if="state.hoder">
+                                    <div class="hrad">
+                                        <span class="hl">Fra</span>
+                                        <span class="hv" t-esc="navnAdr(state.hoder.fra)"/>
+                                    </div>
+                                    <div class="hrad" t-if="state.hoder.til.length || state.hoder.raa_til.length">
+                                        <span class="hl">Til</span>
+                                        <span class="hv">
+                                            <t t-foreach="state.hoder.til" t-as="p" t-key="'t'+p_index">
+                                                <span class="adr" t-esc="navnAdr(p)"/>
+                                            </t>
+                                            <t t-foreach="state.hoder.raa_til" t-as="a" t-key="'rt'+a_index">
+                                                <span class="adr raa" t-esc="a"/>
+                                            </t>
+                                        </span>
+                                    </div>
+                                    <div class="hrad" t-if="state.hoder.kopi.length || state.hoder.raa_kopi.length">
+                                        <span class="hl">Kopi</span>
+                                        <span class="hv">
+                                            <t t-foreach="state.hoder.kopi" t-as="p" t-key="'k'+p_index">
+                                                <span class="adr" t-esc="navnAdr(p)"/>
+                                            </t>
+                                            <t t-foreach="state.hoder.raa_kopi" t-as="a" t-key="'rk'+a_index">
+                                                <span class="adr raa" t-esc="a"/>
+                                            </t>
+                                        </span>
+                                    </div>
+                                    <t t-if="state.visHoder">
+                                        <div class="hrad" t-if="state.hoder.blindkopi.length">
+                                            <span class="hl">Blindkopi</span>
+                                            <span class="hv">
+                                                <t t-foreach="state.hoder.blindkopi" t-as="p" t-key="'b'+p_index">
+                                                    <span class="adr" t-esc="navnAdr(p)"/>
+                                                </t>
+                                            </span>
+                                        </div>
+                                        <div class="hrad" t-if="state.hoder.svar_til">
+                                            <span class="hl">Svar-til</span>
+                                            <span class="hv"><span class="adr varsel" t-esc="state.hoder.svar_til"/></span>
+                                        </div>
+                                    </t>
+                                    <!-- Konsekvensen av Svar alle — synlig FØR man trykker -->
+                                    <div class="hrad konsekvens" t-if="state.hoder.svar_alle.length">
+                                        <span class="hl">↩ Svar alle</span>
+                                        <span class="hv">
+                                            <span class="ktall" t-esc="state.hoder.svar_alle.length + ' mottakere:'"/>
+                                            <t t-foreach="state.hoder.svar_alle" t-as="p" t-key="'sa'+p_index">
+                                                <span class="adr treff" t-esc="navnAdr(p)"/>
+                                            </t>
+                                        </span>
                                     </div>
                                 </div>
 

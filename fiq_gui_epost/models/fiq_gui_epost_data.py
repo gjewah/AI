@@ -556,6 +556,53 @@ class FiqMeldingssenterData(models.AbstractModel):
                             "dato": t.date_deadline.strftime("%a %d.%m") if t.date_deadline else ""})
         return out
 
+    # ---- V00.05.4: nøyaktige Fra/Til/Kopi-felter + «hvem treffer Svar alle» ----------
+    @staticmethod
+    def _adr_liste(rå):
+        """Splitt en rå adresse-streng («A <a@x.no>, b@y.no») til en ren liste."""
+        if not rå:
+            return []
+        return [d.strip() for d in re.split(r"[,;]", rå) if d.strip()]
+
+    @staticmethod
+    def _partner_linje(partners):
+        """[{navn, adresse}] for et partner-sett — navn OG adresse (navn ikke ID)."""
+        return [{"navn": p.display_name or "", "adresse": p.email or ""} for p in partners]
+
+    @api.model
+    def get_hoder(self, message_id):
+        """Nøyaktige e-posthoder for lesepanelet: Fra · Til · Kopi · Blindkopi · Svar-til,
+        med både navn og adresse. Viser også HVEM et «Svar alle» faktisk treffer, slik at
+        konsekvensen er synlig FØR man trykker (Gjermund 2026-07-16)."""
+        m = self.env["mail.message"].browse(int(message_id)).exists()
+        if not m:
+            return {}
+        f = m._fields
+        fra = {"navn": m.author_id.display_name if m.author_id else "",
+               "adresse": m.email_from or ""}
+        # Til: rå adresser fra e-posten (innkommende/utgående) + koblede kontakter
+        raa_til = []
+        if "incoming_email_to" in f and m.incoming_email_to:
+            raa_til = self._adr_liste(m.incoming_email_to)
+        elif "outgoing_email_to" in f and m.outgoing_email_to:
+            raa_til = self._adr_liste(m.outgoing_email_to)
+        til = self._partner_linje(m.partner_ids)
+        # Kopi: rå CC-adresser + koblede CC-kontakter
+        raa_kopi = self._adr_liste(m.incoming_email_cc) if "incoming_email_cc" in f else []
+        kopi = self._partner_linje(m.recipient_cc_ids) if "recipient_cc_ids" in f else []
+        blindkopi = self._partner_linje(m.recipient_bcc_ids) if "recipient_bcc_ids" in f else []
+        # «Svar alle» treffer: avsender + alle mottakere (samme som svar(reply_all=True))
+        svar_alle = self._partner_linje(m.author_id | m.partner_ids)
+        return {
+            "fra": fra,
+            "til": til, "raa_til": raa_til,
+            "kopi": kopi, "raa_kopi": raa_kopi,
+            "blindkopi": blindkopi,
+            "svar_til": (m.reply_to or "") if "reply_to" in f else "",
+            "svar_alle": svar_alle,
+            "svar_kun": self._partner_linje(m.author_id),
+        }
+
     # ---- V00.05 lag 4: vedlegg → element (Loym) + rutingregler ------------------------
     @api.model
     def get_vedlegg(self, message_id):
