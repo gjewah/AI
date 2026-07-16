@@ -82,7 +82,11 @@
                 <filter name="f_stille" string="Stille &gt; 1 døgn"
                         domain="[('sist_aktiv','&lt;','-1d')]"
                         help="Økter uten aktivitet siste døgn — kandidat for etterlysning."/>
-                <group expand="0" string="Grupper etter">
+                <!-- Odoo 19: <group> i en søkevisning tar hverken expand= eller string=
+                     (verifisert: expand= finnes 0 steder i 19s addons; core skriver bare
+                     <group>, se project/views/project_task_views.xml). Begge attributtene
+                     var 18-syntaks og gjorde visningen ugyldig -> bygget rødt. -->
+                <group>
                     <filter name="g_status" string="Status" context="{'group_by':'status'}"/>
                     <filter name="g_kilde" string="Kilde" context="{'group_by':'kilde'}"/>
                     <filter name="g_firma" string="Firma" context="{'group_by':'company_id'}"/>

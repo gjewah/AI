@@ -85,7 +85,8 @@
                 <field name="project_id"/>
                 <filter name="ikke_ferdig" string="Ikke ferdig" domain="[('fremdrift','&lt;',100)]"/>
                 <filter name="ferdig" string="Ferdig" domain="[('fremdrift','=',100)]"/>
-                <group expand="0" string="Grupper etter">
+                <!-- Odoo 19: <group> i søkevisning tar hverken expand= eller string=. -->
+                <group>
                     <filter name="g_nivaa" string="Nivå" context="{'group_by':'nivaa'}"/>
                     <filter name="g_type" string="Type" context="{'group_by':'type_liste'}"/>
                     <filter name="g_prosjekt" string="Prosjekt" context="{'group_by':'project_id'}"/>
