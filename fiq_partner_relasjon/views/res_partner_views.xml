@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_partner_form_fiq_relation" model="ir.ui.view">
+        <field name="name">res.partner.form.fiq.relation</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <!-- Sales &amp; Purchase is where a partner's commercial role already lives,
+                 so the FIQ relation belongs next to it rather than in a tab of its own. -->
+            <xpath expr="//field[@name='category_id']" position="after">
+                <field name="fiq_relation_type"/>
+                <field name="fiq_relation_level"
+                       invisible="fiq_relation_type != 'agreement_partner'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_partner_filter_fiq_relation" model="ir.ui.view">
+        <field name="name">res.partner.search.fiq.relation</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='type_company']" position="after">
+                <separator/>
+                <filter name="fiq_agreement_partners"
+                        string="Agreement partners"
+                        domain="[('fiq_relation_type', '=', 'agreement_partner')]"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

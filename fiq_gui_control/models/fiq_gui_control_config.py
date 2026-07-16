@@ -60,7 +60,10 @@ class FiqControlRoomConfig(models.Model):
     def get_my_config(self):
         rec = self._get_or_create_current()
         comp = self.env.company
-        logo = comp.fiq_control_logo
+        # Logo-kilde: fiq_partner_relasjon gjør firmaets EGEN logo til standard, og lar
+        # fiq_control_logo overstyre der den vanlige logoen ikke leses på mørk bakgrunn.
+        # Uten den modulen: gammel oppførsel (kun overstyrings-feltet).
+        logo = comp.fiq_brand_logo if "fiq_brand_logo" in comp._fields else comp.fiq_control_logo
         if logo:
             logo = logo.decode() if isinstance(logo, bytes) else logo
         # Companies the user may switch to (company picker)
@@ -1010,13 +1013,19 @@ class FiqControlRoomConfig(models.Model):
                 initialer = parts[0][:2].upper()
             else:
                 initialer = "?"
-            has_photo = False
+            # Bildet: hr.employee-fotoet er det «riktige» ansattbildet, men det finnes
+            # bare der HR er i bruk. res.users.avatar_128 finnes alltid (Odoo faller selv
+            # tilbake på et generert bilde), så den er kilden når HR-foto mangler.
+            # Selve bildet sendes med — uten det kan flaten bare vise initialer.
+            avatar = False
             try:
                 emp = self.env["hr.employee"].sudo().search(
                     [("user_id", "=", u.id)], limit=1)
-                has_photo = bool(emp and emp.image_128)
+                avatar = (emp and emp.image_128) or u.avatar_128 or False
             except Exception:
-                has_photo = False
+                avatar = u.avatar_128 or False
+            if isinstance(avatar, bytes):
+                avatar = avatar.decode()
 
             out.append({
                 "id": u.id,
@@ -1026,7 +1035,8 @@ class FiqControlRoomConfig(models.Model):
                 "status": im,        # bakoverkomp (dot)
                 "farge": farge,      # green | orange | red – farger HELE kortet
                 "tekst": tekst,      # Til stede | I møte | Ute | Fraværende | Ikke møtt
-                "has_photo": has_photo,
+                "has_photo": bool(avatar),
+                "avatar": ("data:image/png;base64,%s" % avatar) if avatar else False,
             })
         return out
 
