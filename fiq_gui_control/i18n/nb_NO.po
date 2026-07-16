@@ -2976,3 +2976,13 @@ msgstr "Pågående oppgaver"
 #: model:res.groups,name:fiq_gui_control.group_000_kryss_firma
 msgid "FIQ platform / 000 cross-company insight"
 msgstr "FIQ-plattform / 000 kryss-firma-innsyn"
+
+#. module: fiq_gui_control
+#: model:res.groups.privilege,name:fiq_gui_control.res_groups_privilege_control_room
+msgid "Control room"
+msgstr "Kontrollrommet"
+
+#. module: fiq_gui_control
+#: model:res.groups.privilege,name:fiq_gui_control.res_groups_privilege_platform
+msgid "FIQ platform"
+msgstr "FIQ-plattform"
