@@ -17,6 +17,15 @@
         <field name="implied_ids" eval="[(4, ref('fiq_gui_control.group_manager'))]"/>
     </record>
 
+    <!-- Platform-level cross-company insight ("000"). Deliberately NOT part of the
+         User < Manager < Administrator ladder: being a Control room administrator of
+         one company must never imply the right to look across companies. This is the
+         hard Odoo mechanism the tenant canon requires — a group, never a prompt or a
+         client-side flag. Granted to nobody by default: FIQ platform level only. -->
+    <record id="group_000_kryss_firma" model="res.groups">
+        <field name="name">FIQ platform / 000 cross-company insight</field>
+    </record>
+
     <!-- Odoo system admin automatically gets Control room admin -->
     <record id="base.group_system" model="res.groups">
         <field name="implied_ids" eval="[(4, ref('fiq_gui_control.group_admin'))]"/>

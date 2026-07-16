@@ -2971,3 +2971,8 @@ msgstr "Nytt forslag"
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Ongoing tasks"
 msgstr "Pågående oppgaver"
+
+#. module: fiq_gui_control
+#: model:res.groups,name:fiq_gui_control.group_000_kryss_firma
+msgid "FIQ platform / 000 cross-company insight"
+msgstr "FIQ-plattform / 000 kryss-firma-innsyn"

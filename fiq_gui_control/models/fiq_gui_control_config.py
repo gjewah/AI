@@ -48,6 +48,64 @@ class FiqControlRoomConfig(models.Model):
         "One Control room setup per user per company.",
     )
 
+    # =====================================================================
+    #  Firma-scope — DELT KJERNE for alle FIQ-flater (Meldingssenter, AI KR, PRJ …)
+    #
+    #  Tenant-kanonen: hvem som ser på tvers av firmaer avgjøres av en HARD
+    #  Odoo-mekanisme (sikkerhetsgruppe), aldri av en prompt, en klient-parameter
+    #  eller en visnings-innstilling. Flatene kaller hjelperne under; ingen flate
+    #  bygger sin egen scope-logikk.
+    # =====================================================================
+
+    @api.model
+    def har_000_rettighet(self):
+        """Har den innloggede plattform-nivå (000) = innsyn på tvers av firmaer?
+
+        Fail-closed: alt annet enn et utvetydig JA betyr nei. En feil under
+        oppslaget gir ETT firma, aldri alle.
+        """
+        try:
+            return self.env.user.has_group("fiq_gui_control.group_000_kryss_firma")
+        except Exception:
+            return False
+
+    @api.model
+    def tillatte_firmaer(self):
+        """Firmaene den innloggede lovlig kan se — kilden for all scope.
+
+        Uten 000: kun det aktive firmaet. Med 000: firmaene brukeren er medlem av.
+        Merk: 000 utvider til brukerens EGNE firmaer, ikke til alle firmaer i basen —
+        kryss-tenant utover det er en egen sak (avtale + DPA), ikke en gruppe.
+        """
+        if self.har_000_rettighet():
+            return self.env.user.company_ids.ids or self.env.company.ids
+        return self.env.company.ids
+
+    @api.model
+    def firma_domene(self, firm=False, felt="company_id", inkluder_uten_firma=True):
+        """Bygg et Odoo-domene som avgrenser til det brukeren lovlig kan se.
+
+        `firm` er klientens valg (f.eks. firmavelgeren i toppmenyen). Den kan bare
+        SNEVRE INN innenfor det sesjonen allerede tillater — aldri utvide. Et ugyldig
+        eller uautorisert valg faller tilbake til hele det lovlige scopet, ikke til feil.
+
+        :param felt: firmafeltet på modellen (noen modeller bruker record_company_id).
+        :param inkluder_uten_firma: ta med poster uten firma-tilhørighet. Kun relevant
+            med 000: plattform-nivået eier de firma-løse postene.
+        """
+        tillatte = self.tillatte_firmaer()
+        if firm:
+            try:
+                valgt = int(firm)
+            except (TypeError, ValueError):
+                valgt = 0
+            if valgt in tillatte:
+                return [(felt, "=", valgt)]
+            return [(felt, "in", tillatte)]
+        if inkluder_uten_firma and self.har_000_rettighet():
+            return ["|", (felt, "in", tillatte), (felt, "=", False)]
+        return [(felt, "in", tillatte)]
+
     def _get_or_create_current(self):
         rec = self.search(
             [("user_id", "=", self.env.uid), ("company_id", "=", self.env.company.id)], limit=1
@@ -66,8 +124,12 @@ class FiqControlRoomConfig(models.Model):
         logo = comp.fiq_brand_logo if "fiq_brand_logo" in comp._fields else comp.fiq_control_logo
         if logo:
             logo = logo.decode() if isinstance(logo, bytes) else logo
-        # Companies the user may switch to (company picker)
-        companies = [{"id": c.id, "name": c.name} for c in self.env.user.company_ids]
+        # Firmavelgeren viser det sesjonen tillater — samme kilde som scope-hjelperen,
+        # så velgeren aldri tilbyr noe server-siden vil avvise.
+        companies = [
+            {"id": c.id, "name": c.name}
+            for c in self.env["res.company"].browse(self.tillatte_firmaer()).exists()
+        ]
         # Config-drevet per-linje fremdrift (lag 2): form (bar/ring) + metrikk. Fornuftige
         # defaults, overstyrbare via system-parametere (Innstillinger → Teknisk → Parametere).
         ICP = self.env["ir.config_parameter"].sudo()
@@ -76,6 +138,10 @@ class FiqControlRoomConfig(models.Model):
             "level": rec.level,
             "show": {w: bool(rec["show_" + w]) for w in WIDGETS},
             "is_admin": self.env.user.has_group("fiq_gui_control.group_admin"),
+            # Plattform-nivå (000): styrer om «Alle firmaer» i det hele tatt tilbys.
+            # Selve avgrensningen skjer server-side i firma_domene() — dette flagget
+            # er kun for visningen, og gir ingen tilgang i seg selv.
+            "har_000": self.har_000_rettighet(),
             # Company/branding resolved server-side (no dependency on the company service in OWL)
             "company_name": comp.name or "",
             "company_id": comp.id,
