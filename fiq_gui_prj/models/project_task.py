@@ -17,6 +17,24 @@ from odoo import api, fields, models
 class ProjectTask(models.Model):
     _inherit = "project.task"
 
+    # Sjekklister på oppgaven — punktene ER stegene (færre oppgaver).
+    fiq_sjekkliste_ids = fields.One2many(
+        "fiq.sjekkliste", "task_id", string="Sjekklister",
+    )
+    fiq_sjekkliste_fremdrift = fields.Float(
+        string="Sjekkliste utført (%)",
+        compute="_compute_fiq_sjekkliste_fremdrift", store=True, aggregator="avg",
+        help="Snitt av sjekklistenes fremdrift. Vises i native views — virker uten KR.",
+    )
+
+    @api.depends("fiq_sjekkliste_ids.fremdrift")
+    def _compute_fiq_sjekkliste_fremdrift(self):
+        for t in self:
+            lister = t.fiq_sjekkliste_ids
+            t.fiq_sjekkliste_fremdrift = (
+                sum(lister.mapped("fremdrift")) / len(lister) if lister else 0.0
+            )
+
     # Dynamisk disposisjonsnummer (MS Project-modell): endres når oppgaven flyttes.
     # store=True så den kan sorteres/grupperes/søkes på i native views.
     fiq_wbs_number = fields.Char(

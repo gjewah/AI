@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+      KANON «Odoo-native først»: sjekklista skal VIRKE i native Odoo uten KR.
+      GUI-flaten er en penere inngang til de SAMME dataene — ikke lagringen.
+    -->
+
+    <!-- Sjekkliste: skjema -->
+    <record id="view_fiq_sjekkliste_form" model="ir.ui.view">
+        <field name="name">fiq.sjekkliste.form</field>
+        <field name="model">fiq.sjekkliste</field>
+        <field name="arch" type="xml">
+            <form string="Sjekkliste">
+                <header>
+                    <field name="fremdrift" widget="progressbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="F.eks. FDV — produktdokumentasjon"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="nivaa"/>
+                            <field name="type_liste"/>
+                        </group>
+                        <group>
+                            <field name="task_id"/>
+                            <field name="project_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="versjon"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Punkter (steg for steg)">
+                            <field name="punkt_ids">
+                                <list editable="bottom" decoration-muted="utfoert">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="beskrivelse" optional="show"/>
+                                    <field name="krav_dok" string="📄"/>
+                                    <field name="krav_foto" string="📷"/>
+                                    <field name="krav_sign" string="✍"/>
+                                    <field name="mangler" optional="show"/>
+                                    <field name="kan_kvitteres" column_invisible="True"/>
+                                    <field name="utfoert" widget="boolean_toggle"/>
+                                    <field name="kvitt_av" optional="hide"/>
+                                    <field name="kvitt_dato" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Sjekkliste: liste -->
+    <record id="view_fiq_sjekkliste_list" model="ir.ui.view">
+        <field name="name">fiq.sjekkliste.list</field>
+        <field name="model">fiq.sjekkliste</field>
+        <field name="arch" type="xml">
+            <list string="Sjekklister" decoration-success="fremdrift == 100">
+                <field name="name"/>
+                <field name="nivaa"/>
+                <field name="type_liste"/>
+                <field name="task_id" optional="show"/>
+                <field name="project_id" optional="show"/>
+                <field name="antall_ok" string="Utført"/>
+                <field name="antall_punkt" string="Av"/>
+                <field name="fremdrift" widget="progressbar"/>
+                <field name="versjon"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Sjekkliste: søk + gruppering på nivå/type -->
+    <record id="view_fiq_sjekkliste_search" model="ir.ui.view">
+        <field name="name">fiq.sjekkliste.search</field>
+        <field name="model">fiq.sjekkliste</field>
+        <field name="arch" type="xml">
+            <search string="Sjekklister">
+                <field name="name"/>
+                <field name="task_id"/>
+                <field name="project_id"/>
+                <filter name="ikke_ferdig" string="Ikke ferdig" domain="[('fremdrift','&lt;',100)]"/>
+                <filter name="ferdig" string="Ferdig" domain="[('fremdrift','=',100)]"/>
+                <group expand="0" string="Grupper etter">
+                    <filter name="g_nivaa" string="Nivå" context="{'group_by':'nivaa'}"/>
+                    <filter name="g_type" string="Type" context="{'group_by':'type_liste'}"/>
+                    <filter name="g_prosjekt" string="Prosjekt" context="{'group_by':'project_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_fiq_sjekkliste" model="ir.actions.act_window">
+        <field name="name">Sjekklister</field>
+        <field name="res_model">fiq.sjekkliste</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Ingen sjekklister ennå</p>
+            <p>Punktene ER stegene — én oppgave med flere punkter i stedet for mange oppgaver.</p>
+        </field>
+    </record>
+
+    <!-- Sjekklister som egen fane på oppgaven (native) -->
+    <record id="view_task_form_fiq_sjekkliste" model="ir.ui.view">
+        <field name="name">project.task.form.fiq.sjekkliste</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Sjekklister" name="fiq_sjekklister">
+                    <field name="fiq_sjekkliste_fremdrift" widget="progressbar" readonly="1"/>
+                    <field name="fiq_sjekkliste_ids" nolabel="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="type_liste"/>
+                            <field name="antall_ok" string="Utført"/>
+                            <field name="antall_punkt" string="Av"/>
+                            <field name="fremdrift" widget="progressbar"/>
+                            <field name="versjon"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
