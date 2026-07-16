@@ -19,6 +19,7 @@ export class FiqMeldingssenter extends Component {
         this.STATUS_NAVN = { apen: "Åpen", pagar: "Pågår", ferdig: "Ferdig" };
         this.state = useState({
             loading: true, firms: [], current_firm: false, presence: [], user: "", logo: "", q: "",
+            kryss_firma: false,                              // 000-rettighet (fra sesjonen, ikke klienten)
             basis: [], tverr: [], taks: [],
             view: "inbox",                                  // "inbox" (tre-rute) | "hjem" (cockpit)
             aktivBoks: false, aktivNavn: "", meldinger: [], valgt: false, period: "alle",

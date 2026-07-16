@@ -81,22 +81,78 @@ class FiqMeldingssenterData(models.AbstractModel):
             return [("date", ">=", fields.Datetime.now() - timedelta(days=days))]
         return []
 
+    # ---- 000-RETTIGHET: kryss-firma-innsyn er en RETTIGHET, ikke en visnings-innstilling ----
+    # Kanon: docs/0.00 IQ kanon_000_rettighet_presence_epost_UTKAST_01.md (Gjermund 2026-07-16).
+    # Scope hentes fra SESJONEN — ALDRI som parameter fra klienten/LLM. Fail-closed.
+
+    def _har_000_rettighet(self):
+        """Har den innloggede 000-rettighet (plattform-nivå → kryss-firma-innsyn)?
+        Mekanismen er ÅPEN (06.74/Gjermund avklarer: egen res.groups vs rolletype på 0.00),
+        så dette er config-drevet og pluggbart:
+          1) KR-kjernens felles hjelper når den finnes (06.74 bygger den) — foretrukket.
+          2) Gruppe navngitt i systemparameter `fiq_gui_epost.gruppe_000`.
+          3) Ellers **fail-closed: NEI** (ingen kryss-firma-innsyn)."""
+        KR = "fiq.gui.control.config"
+        if KR in self.env and hasattr(self.env[KR], "har_000_rettighet"):
+            try:
+                return bool(self.env[KR].har_000_rettighet())
+            except Exception:
+                pass                                    # fail-closed ved feil
+        grp = self.env["ir.config_parameter"].sudo().get_param("fiq_gui_epost.gruppe_000")
+        if grp:
+            try:
+                return self.env.user.has_group(grp)
+            except Exception:
+                return False
+        return False
+
+    def _tillatte_firmaer(self):
+        """Firmaene brukeren FAKTISK har lov å se post fra — utledet av sesjonen.
+        Med 000-rettighet: alle firmaene brukeren er knyttet til. Uten: kun eget firma
+        (fail-closed) — selv om brukeren har e-postlisens i flere firmaer."""
+        if self._har_000_rettighet():
+            return self.env.user.company_ids.ids or self.env.company.ids
+        return self.env.company.ids
+
+    def _firma_domene(self, firm=False):
+        """Firma-avgrensning. Klientens `firm` kan bare SNEVRE INN innenfor det brukeren
+        allerede har lov til — aldri utvide. «Alle» = de tillatte firmaene, IKKE ufiltrert."""
+        tillatte = self._tillatte_firmaer()
+        if firm:
+            try:
+                f = int(firm)
+            except (TypeError, ValueError):
+                f = 0
+            if f in tillatte:
+                return [("record_company_id", "=", f)]
+            return [("record_company_id", "in", tillatte)]   # ugyldig valg → lovlig scope
+        if self._har_000_rettighet():
+            # Plattform-nivå ser også post uten firma-tilhørighet
+            return ["|", ("record_company_id", "in", tillatte), ("record_company_id", "=", False)]
+        return [("record_company_id", "in", tillatte)]
+
     @api.model
     def get_my_config(self):
         """Oppstarts-config til den native flaten: firmaer brukeren kan velge,
         gjeldende firma, presence-liste og tema. Kjøres ved onWillStart."""
+        # 000-KANON: firmavelgeren er et FILTER, ikke en tilgangsmekanisme. Den viser kun
+        # firmaer brukeren FAKTISK har rett til å se post fra (sesjons-utledet, fail-closed).
+        kryss = self._har_000_rettighet()
+        tillatte = self._tillatte_firmaer()
         firms = [{"id": c.id, "navn": c.name,
                   "kode": c.code if "code" in c._fields else "",
                   "logo": self._logo_data(c)}
-                 for c in self.env.user.company_ids]
-        # «Alle» øverst (Gjermund: e-post i alle firmaer → velg alle eller spesifikk).
-        firms = [{"id": False, "navn": "Alle", "kode": "∗", "logo": ""}] + firms
+                 for c in self.env["res.company"].browse(tillatte).exists()]
+        # «Alle» tilbys KUN med 000-rettighet — uten den gir «alle» null ekstra innsyn.
+        if kryss and len(firms) > 1:
+            firms = [{"id": False, "navn": "Alle", "kode": "∗", "logo": ""}] + firms
         return {
             "firms": firms,
             "current_firm": self.env.company.id,
             "logo": self._logo_data(self.env.company),
             "presence": self.get_presence(),
             "user": self.env.user.name,
+            "kryss_firma": kryss,          # flaten kan vise at man er på plattform-nivå
             "theme": "system",
         }
 
@@ -124,9 +180,7 @@ class FiqMeldingssenterData(models.AbstractModel):
         Returns: {"innboks", "uleste", "sendt", "firm", "period"}
         """
         Msg = self.env["mail.message"]
-        dom = self._period_domain(period)
-        if firm:
-            dom = dom + [("record_company_id", "=", int(firm))]
+        dom = self._period_domain(period) + self._firma_domene(firm)
 
         # Alle ekte e-poster på et element (mottatt + sendt).
         epost_dom = _ON_RECORD + [("message_type", "=", "email")] + dom
@@ -155,9 +209,8 @@ class FiqMeldingssenterData(models.AbstractModel):
         boks = innboks | sendt | uleste (0–8-taksonomi krever paring, kommer med fiq_komm_match).
         Rader: {id, fra, adresse, til, emne, preview, dato, ulest, retning, model, res_id, element}."""
         Msg = self.env["mail.message"]
-        dom = _ON_RECORD + [("message_type", "in", ["email", "comment"])] + self._period_domain(period)
-        if firm:
-            dom.append(("record_company_id", "=", int(firm)))
+        dom = (_ON_RECORD + [("message_type", "in", ["email", "comment"])]
+               + self._period_domain(period) + self._firma_domene(firm))
         if boks == "uleste":
             dom.append(("needaction", "=", True))
         elif boks == "sendt":
@@ -198,6 +251,11 @@ class FiqMeldingssenterData(models.AbstractModel):
                 "model": m.model,
                 "res_id": m.res_id,
                 "element": element,
+                # 000-KANON krav 2: tydelig firmakode per melding i samlet visning
+                "firma": m.record_company_id.name if m.record_company_id else "",
+                "firmakode": (m.record_company_id.code
+                              if m.record_company_id and "code" in m.record_company_id._fields
+                              else "") or "",
                 "status": status_map.get(m.id, ""),
                 "status_navn": self._STATUS_NAVN.get(status_map.get(m.id), ""),
                 "risiko": self._risiko(m.subject, m.email_from, m.preview),
@@ -257,9 +315,8 @@ class FiqMeldingssenterData(models.AbstractModel):
         """{boks-kode: sett av message-id} for tverrgående + område + uavklart.
         Én lettvekts-crawl over e-postene i scope."""
         Msg = self.env["mail.message"]
-        dom = _ON_RECORD + [("message_type", "=", "email")] + self._period_domain(period)
-        if firm:
-            dom.append(("record_company_id", "=", int(firm)))
+        dom = (_ON_RECORD + [("message_type", "=", "email")]
+               + self._period_domain(period) + self._firma_domene(firm))
         rows = Msg.search_read(
             dom, ["id", "subject", "email_from", "model", "res_id"],
             limit=limit, order="date desc")
@@ -369,6 +426,12 @@ class FiqMeldingssenterData(models.AbstractModel):
             "default_composition_mode": "comment",
             "default_partner_ids": [(6, 0, partners.ids)],
         }
+        # 000-KANON krav 4: svaret ARVER meldingens avsender-firma — ikke plattformen.
+        # Svarer du på en Vidir-melding, går den fra Vidir. Plattformen er ingen bakvei.
+        if m.record_company_id:
+            ctx["allowed_company_ids"] = [m.record_company_id.id]
+            ctx["force_company"] = m.record_company_id.id
+            ctx["default_company_id"] = m.record_company_id.id
         return {
             "type": "ir.actions.act_window",
             "name": "Svar alle" if reply_all else "Svar",
@@ -445,6 +508,12 @@ class FiqMeldingssenterData(models.AbstractModel):
             [("message_id", "in", list(message_ids))])
         return {r.message_id.id: r.status for r in recs}
 
+    def _melding_firma(self, message_id):
+        """000-KANON krav 5: arbeidsstatus/notat skal bære MELDINGENS firma — ikke brukerens
+        aktive firma. Ellers havner en 040-melding i 012s taksonomi."""
+        m = self.env["mail.message"].browse(int(message_id)).exists()
+        return m.record_company_id.id if (m and m.record_company_id) else self.env.company.id
+
     @api.model
     def set_status(self, message_id, status):
         """Sett arbeidsstatus (åpen/pågår/ferdig) på en melding. Upsert per melding."""
@@ -455,7 +524,8 @@ class FiqMeldingssenterData(models.AbstractModel):
         if rec:
             rec.status = status
         else:
-            S.create({"message_id": int(message_id), "status": status})
+            S.create({"message_id": int(message_id), "status": status,
+                      "company_id": self._melding_firma(message_id)})
         return True
 
     @api.model
@@ -465,7 +535,8 @@ class FiqMeldingssenterData(models.AbstractModel):
         if not body:
             return False
         note = self.env["fiq.meldingssenter.note"].create(
-            {"message_id": int(message_id), "body": body})
+            {"message_id": int(message_id), "body": body,
+             "company_id": self._melding_firma(message_id)})
         return {"navn": note.user_id.name or "", "body": note.body,
                 "dato": note.create_date.strftime("%d.%m %H:%M") if note.create_date else ""}
 
@@ -639,9 +710,8 @@ class FiqMeldingssenterData(models.AbstractModel):
         if not regler:
             return {"regler": 0, "treff": 0}
         Msg = self.env["mail.message"]
-        dom = _ON_RECORD + [("message_type", "=", "email")] + self._period_domain(period)
-        if firm:
-            dom.append(("record_company_id", "=", int(firm)))
+        dom = (_ON_RECORD + [("message_type", "=", "email")]
+               + self._period_domain(period) + self._firma_domene(firm))
         rows = Msg.search_read(
             dom, ["id", "subject", "email_from", "preview", "record_name"],
             limit=limit, order="date desc")

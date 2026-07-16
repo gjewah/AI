@@ -134,7 +134,9 @@
                                         <div class="r1"><span class="fr" t-esc="m.fra"/><span class="tm" t-esc="m.dato"/></div>
                                         <div class="su" t-esc="m.emne"/>
                                         <div class="pv" t-esc="m.preview"/>
-                                        <div class="r3" t-if="m.status || m.element || m.risiko">
+                                        <div class="r3" t-if="m.status || m.element || m.risiko || (state.kryss_firma &amp;&amp; m.firma)">
+                                            <span t-if="state.kryss_firma &amp;&amp; m.firma" class="chip firma"
+                                                  t-esc="m.firmakode ? (m.firmakode + ' ' + m.firma) : m.firma"/>
                                             <span t-if="m.risiko==='hoy'" class="chip risk">⚠ Mulig svindel</span>
                                             <span t-if="m.status" t-att-class="'chip ' + statuscls(m.status)" t-esc="m.status_navn || m.status"/>
                                             <span t-if="m.element" class="chip el" t-esc="m.element"/>

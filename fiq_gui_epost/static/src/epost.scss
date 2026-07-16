@@ -97,6 +97,8 @@
   .chip.ferdig{color:var(--good);background:var(--good-soft);border-color:color-mix(in srgb,var(--good) 35%,transparent)}
   .chip.risk{color:var(--crit);background:var(--crit-soft);border-color:color-mix(in srgb,var(--crit) 40%,transparent)}
   .chip.el{color:var(--muted);background:var(--surface-2);border-color:var(--line)}
+  // 000-kanon: tydelig firmakode per melding i samlet (kryss-firma) visning
+  .chip.firma{color:var(--lilla);background:color-mix(in srgb,var(--lilla) 10%,var(--surface));border-color:color-mix(in srgb,var(--lilla) 38%,transparent);font-weight:800}
 
   // Lese-/kontekstpanel (høyre)
   .read{display:flex;flex-direction:column;max-height:calc(100vh - 210px)}
