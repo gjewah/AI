@@ -1128,6 +1128,8 @@ class FiqControlRoomConfig(models.Model):
             "gui_crm": "fiq_gui_crm.action_fiq_gui_crm",
             "gui_leads": "fiq_gui_crm_leads.action_fiq_gui_crm_leads",
             "gui_so": "fiq_gui_crm_so.action_fiq_gui_crm_so",
+            # Beholdt for oppslag, men IKKE et menypunkt lenger: e-post er en kanal inne i
+            # Kommunikasjon, ikke et eget toppnivå (Gjermund 17.07.2026).
             "gui_epost": "fiq_gui_epost.action_fiq_gui_epost",
             "gui_rgs": "fiq_gui_rgs.action_fiq_gui_rgs",
             # Kunnskap: artikler/maler (Odoo Knowledge — hjemmesiden)

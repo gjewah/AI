@@ -1429,7 +1429,9 @@ export class FiqControlRoom extends Component {
             { key: "gui_crm", label: _t("CRM") },
             { key: "gui_leads", label: _t("Leads") },
             { key: "gui_so", label: _t("Sales orders") },
-            { key: "gui_epost", label: _t("Email") },
+            // Ingen «Email» her: e-post er én KANAL inne i Kommunikasjon (Alle · E-post ·
+            // WhatsApp · Teams · chat), ikke et eget toppnivå. Gjermund 17.07.2026:
+            // «e-post skal ikke vises før vi er inne i kommunikasjonssenteret».
             { key: "gui_rgs", label: _t("Accounting") },
             { key: "kunnskap", label: _t("Knowledge"), title: _t("Articles, templates and documentation") },
         ];
