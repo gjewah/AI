@@ -1,7 +1,17 @@
 # -*- coding: utf-8 -*-
+from odoo.tests import tagged
 from odoo.tests.common import TransactionCase, new_test_user
 
 
+# Runs after ALL modules are loaded, not during fiq_gui_control's own install.
+#
+# Why this matters: other installed modules (sale_timesheet, purchase_stock) add
+# NOT NULL columns to project.project and res.partner. Those constraints live in
+# the database, but their defaults are applied by Odoo in Python. During at_install
+# the registry only holds this module's depends (web, project), so those fields are
+# unknown, no default is applied, and the INSERT omits the column -> NotNullViolation.
+# post_install gives the full registry, matching how the code actually runs.
+@tagged("-at_install", "post_install")
 class TestFiqControlRoom(TransactionCase):
 
     def setUp(self):
@@ -57,14 +67,7 @@ class TestFiqControlRoom(TransactionCase):
 
     def test_get_kommunikasjon_shape_and_direction(self):
         # Logg en melding på et prosjekt → skal dukke opp med retning + avsender
-        Project = self.env["project.project"]
-        vals = {"name": "HM Komm Test"}
-        # billing_type (sale_timesheet) er required=True + compute/store: computen rekker
-        # ikke sette default før INSERT i en test-transaksjon → NotNullViolation. Sett den
-        # eksplisitt, men bare når modulen er installert — KR avhenger ikke av den.
-        if "billing_type" in Project._fields:
-            vals["billing_type"] = "not_billable"
-        proj = Project.create(vals)
+        proj = self.env["project.project"].create({"name": "HM Komm Test"})
         proj.message_post(body="Hei", message_type="comment")
         rows = self.Config.get_kommunikasjon("alle", 50)
         self.assertIsInstance(rows, list)
