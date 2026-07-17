@@ -17,11 +17,16 @@
       single-point-of-failure for tilgjengelighet.» Følger KANON «Odoo-native først».
       KR-sidemenyen kommer i TILLEGG (06.74), ikke som forutsetning.
     -->
-    <!-- Låner Odoos eget project-ikon (samme grep som fiq_gui_gantt) — modulen har
-         ingen static/description/icon.png, og en peker dit ville feilet. Verifisert. -->
+    <!-- FIQ-logo som app-ikon (Gjermund 2026-07-17: «Logo_Svart_Sølv Elipse.png» fra
+         012 5 MAR MedBib). Original 519x446 er IKKE kvadratisk -> skalert til 140x140 med
+         bevart proporsjon, sentrert på transparent bunn (samme størrelse som
+         fiq_gui_control/static/description/icon.png — verifisert).
+         NB: `web_icon` er riktig attributt for menypunkt (Odoos egne: project, sale_management,
+         account bruker samme form). `favicon` er noe annet — nettleserfanens ikon på
+         website-modellen, ikke et menuitem-attributt. Verifisert i Odoo 19s kildekode. -->
     <menuitem id="menu_fiq_prj_root"
               name="FIQ Prosjekt"
-              web_icon="project,static/description/icon.png"
+              web_icon="fiq_gui_prj,static/description/icon.png"
               sequence="46"/>
 
     <menuitem id="menu_fiq_prj_flate"
