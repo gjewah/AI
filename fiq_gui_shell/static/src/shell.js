@@ -1,29 +1,30 @@
 /** @odoo-module **/
 
-import { Component, useState } from "@odoo/owl";
+import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
+import { useService } from "@web/core/utils/hooks";
+import { user } from "@web/core/user";
+import { _t } from "@web/core/l10n/translation";
 
 // Registry-kategorien der HVER flate registrerer innmaten sin:
 //   registry.category("fiq_gui_flates").add(key, {key, label, color, sequence, Component})
 const FLATE_CATEGORY = "fiq_gui_flates";
 
-// Demo-tilstede (byttes med ekte hr.attendance i native versjon).
-const PRESENCE = [
-    { init: "GEW", navn: "Gjermund E. Wæhre", status: "til" },
-    { init: "SSK", navn: "Sindre Skåret", status: "til" },
-    { init: "FOL", navn: "Frank Olsen", status: "mote" },
-    { init: "KHA", navn: "Kari Hansen", status: "fra" },
-    { init: "OBE", navn: "Ola Berg", status: "til" },
-];
+// Fallback-aksent når firmaet ikke har satt sin egen (samme verdi som KR bruker).
+const DEFAULT_ACCENT = "#38B44A";
 
-// Demo-firma (byttes med res.company + logo/IQ-farge i native versjon).
-const FIRMS = [
-    { code: "012", navn: "FIQ", color: "#CC0000" },
-    { code: "040", navn: "Vidir", color: "#38B44A" },
-    { code: "049", navn: "SDV", color: "#1F6B3B" },
-    { code: "060", navn: "JPC", color: "#4C9BE0" },
-    { code: "00", navn: "Alle", color: "#7030A0" },
-];
+// Firmakode utledes av navnet KUN til visning i logo-brikka. Ingen tilgang henger på
+// den — all avgrensning skjer server-side i tillatte_firmaer()/firma_domene().
+function initialer(navn) {
+    const ord = (navn || "").trim().split(/\s+/).filter(Boolean);
+    if (!ord.length) {
+        return "??";
+    }
+    if (ord.length === 1) {
+        return ord[0].slice(0, 3).toUpperCase();
+    }
+    return (ord[0][0] + ord[1][0]).toUpperCase();
+}
 
 // Det DELTE V00.04-skallet. Eier chromen (presence + firma-band + sidemeny) + en slot.
 export class FiqGuiShell extends Component {
@@ -31,17 +32,59 @@ export class FiqGuiShell extends Component {
     static props = ["*"];
 
     setup() {
+        this.orm = useService("orm");
         this.flates = registry
             .category(FLATE_CATEGORY)
             .getAll()
             .sort((a, b) => (a.sequence || 50) - (b.sequence || 50));
-        this.presence = PRESENCE;
-        this.firms = FIRMS;
+
         this.state = useState({
             current: this.flates.length ? this.flates[0].key : false,
-            firm: "012",
+            firm: false,
+            firms: [],
+            presence: [],
+            har000: false,
             theme: this._loadTheme(),
+            // Skallet skal ALDRI vise oppdiktede firmaer. Får vi ikke ekte data,
+            // sier vi det — tom chrome er ærligere enn feil chrome.
+            error: false,
         });
+
+        onWillStart(async () => {
+            await this._load();
+        });
+    }
+
+    // Ekte data fra KR (fiq_gui_control). Skallet eier ikke sikkerhet eller branding —
+    // det spør KR, som avgrenser server-side. Duplisér aldri scope-logikken her.
+    async _load() {
+        try {
+            const cfg = await this.orm.call("fiq.gui.control.config", "get_my_config", []);
+            const firms = (cfg.companies || []).map((c) => ({
+                id: c.id,
+                navn: c.name,
+                code: initialer(c.name),
+                // Aksent/logo per firma hentes under; aktivt firma har dem fra get_my_config.
+                color: c.id === cfg.company_id ? cfg.accent || DEFAULT_ACCENT : DEFAULT_ACCENT,
+                logo: c.id === cfg.company_id ? cfg.logo || false : false,
+            }));
+            this.state.firms = firms;
+            this.state.firm = cfg.company_id || (firms.length ? firms[0].id : false);
+            this.state.har000 = !!cfg.har_000;
+            this.state.error = false;
+        } catch (e) {
+            // Fail-closed på visningen også: ingen firmaer heller enn gale firmaer.
+            this.state.firms = [];
+            this.state.firm = false;
+            this.state.error = _t("Could not load companies from the control room.");
+        }
+
+        try {
+            this.state.presence = await this.orm.call("fiq.gui.control.config", "get_presence", []);
+        } catch (e) {
+            // Presence er pynt, ikke funksjon — en tom linje er greit, feil navn er ikke.
+            this.state.presence = [];
+        }
     }
 
     get currentFlate() {
@@ -51,16 +94,33 @@ export class FiqGuiShell extends Component {
         return this.currentFlate ? this.currentFlate.Component : false;
     }
     get currentFirm() {
-        return this.firms.find((f) => f.code === this.state.firm) || this.firms[0];
+        return (
+            this.state.firms.find((f) => f.id === this.state.firm) ||
+            this.state.firms[0] || { code: "", navn: "", color: DEFAULT_ACCENT, logo: false }
+        );
     }
 
     // Klikk i sidemenyen bytter INNMAT — ikke hele siden. Det er kjernen i Vei C.
     selectFlate(key) {
         this.state.current = key;
     }
-    selectFirm(code) {
-        this.state.firm = code;
+
+    // Firmabytte går gjennom Odoos EGEN mekanisme (user.activateCompanies) — samme vei
+    // som web/webclient/switch_company_menu. Skallet finner ikke opp sin egen: da ville
+    // resten av Odoo (og record rules) sett et annet aktivt firma enn skallet viste.
+    async selectFirm(id) {
+        if (id === this.state.firm) {
+            return;
+        }
+        try {
+            user.activateCompanies([id], { includeChildCompanies: false, reload: false });
+            this.state.firm = id;
+            await this._load();
+        } catch (e) {
+            this.state.error = _t("Could not switch company.");
+        }
     }
+
     toggleTheme() {
         this.state.theme = this.state.theme === "dark" ? "light" : "dark";
         try {

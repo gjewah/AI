@@ -28,12 +28,20 @@
         display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:#fff;
         padding:5px 14px 5px 5px; border-radius:100px; box-shadow:var(--shadow);
     }
-    .fiqs-pc.til { background:#16a34a; }
-    .fiqs-pc.fra { background:#dc2626; }
-    .fiqs-pc.mote { background:#d97706; }
+    // KR (get_presence) farger HELE kortet: green = Til stede · orange = I møte/Ute ·
+    // red = Fraværende/Ikke møtt. De norske klassene under er demo-arven — beholdt så
+    // en flate som ennå sender til/fra/mote ikke blir fargeløs.
+    .fiqs-pc.green, .fiqs-pc.til { background:#16a34a; }
+    .fiqs-pc.red, .fiqs-pc.fra { background:#dc2626; }
+    .fiqs-pc.orange, .fiqs-pc.mote { background:#d97706; }
     .fiqs-pa {
         width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,.28); color:#fff;
         display:grid; place-items:center; font-size:8.5px; font-weight:800; letter-spacing:.3px; flex:none;
+    }
+    // Ekte ansatt-bilde (hr.employee-foto, ellers Odoos avatar). Samme mål som initial-brikka.
+    .fiqs-pi {
+        width:28px; height:28px; border-radius:50%; object-fit:cover; flex:none;
+        background:rgba(255,255,255,.28);
     }
 
     // Firma-band (fast)
@@ -46,6 +54,14 @@
         width:52px; height:52px; border-radius:13px; display:grid; place-items:center; color:#fff;
         font-weight:800; font-size:17px; box-shadow:var(--shadow);
     }
+    // Firmaets EKTE logo når den finnes; ellers faller malen tilbake på .fiqs-logo
+    // (initialer på aksentfarge). contain = aldri beskjær en logo.
+    .fiqs-logoimg {
+        width:52px; height:52px; border-radius:13px; object-fit:contain; background:#fff;
+        padding:5px; box-shadow:var(--shadow); flex:none;
+    }
+    // Skallet lyver aldri om firmadata — feiler oppslaget, sier vi det i bandet.
+    .fiqs-err { font-size:11px; color:#CC0000; font-weight:600; align-self:center; }
     .fiqs-eb { font-family:ui-monospace,monospace; font-size:10px; letter-spacing:.13em; text-transform:uppercase; color:var(--muted); }
     .fiqs-brand h1 { font-size:16px; font-weight:750; letter-spacing:-.02em; margin:0; }
     .fiqs-sp { flex:1; }
