@@ -54,30 +54,46 @@ class ProjectTask(models.Model):
         Toppnivå i et prosjekt -> 01, 02, 03 ...
         Underoppgave           -> <forelders wbs>.<løpenr>
         Rekkefølgen følger native `sequence`, med id som stabil tiebreaker.
+
+        🔴 BUGFIKS 17.07.2026 (funnet på ekte data, fiqas Staging):
+        Forrige versjon brukte `list(sorted_recordset).index(task)`. Det sammenligner
+        RECORD-OBJEKTER og er upålitelig — med mange søsken på samme `sequence` (Odoos
+        default = 10) fant hver oppgave seg selv på plass 1. Resultat: 66 av 66 toppnivå-
+        oppgaver i PeP25_059 fikk `01`. Fikset ved å slå opp posisjon via ID-liste, som
+        er entydig, + batch-oppslag så vi ikke søker per oppgave.
         """
-        # Grupper per «forelder-kontekst» så vi teller riktig innenfor hver gren.
+        # Batch: hent alle toppnivå-søsken for de berørte prosjektene i ETT søk,
+        # i stedet for ett search() per oppgave (N+1 på store baser).
+        prosjekt_ids = self.filtered(lambda t: not t.parent_id).project_id.ids
+        topp_per_prosjekt = {}
+        if prosjekt_ids:
+            alle = self.search(
+                [("project_id", "in", prosjekt_ids), ("parent_id", "=", False)],
+                order="sequence, id",
+            )
+            for t in alle:
+                topp_per_prosjekt.setdefault(t.project_id.id, []).append(t.id)
+
         for task in self:
             if not task.project_id and not task.parent_id:
                 task.fiq_wbs_number = False
                 continue
 
             if task.parent_id:
-                sibs = task.parent_id.child_ids
+                # Søsken under samme forelder — sorter likt som Odoo (sequence, id)
+                sok = task.parent_id.child_ids.sorted(key=lambda t: (t.sequence, t.id))
+                sibs_ids = sok.ids
                 prefix = task.parent_id.fiq_wbs_number or ""
             else:
-                sibs = self.search([
-                    ("project_id", "=", task.project_id.id),
-                    ("parent_id", "=", False),
-                ])
+                sibs_ids = topp_per_prosjekt.get(task.project_id.id, [])
                 prefix = ""
 
-            # Sorter som Odoo selv gjør: sequence, så id (stabilt ved lik sequence)
-            ordered = sibs.sorted(key=lambda t: (t.sequence, t.id))
-            try:
-                pos = list(ordered).index(task) + 1
-            except ValueError:
-                # Oppgaven er ikke (ennå) i søskenlista — f.eks. under create
-                pos = len(ordered) + 1
+            # Posisjon via ID — entydig, i motsetning til record-sammenligning
+            if task.id in sibs_ids:
+                pos = sibs_ids.index(task.id) + 1
+            else:
+                # Ny/ulagret oppgave (NewId under create) — legges bakerst
+                pos = len(sibs_ids) + 1
 
             nr = str(pos).zfill(2)
             task.fiq_wbs_number = "%s.%s" % (prefix, nr) if prefix else nr
