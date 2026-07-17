@@ -8,11 +8,10 @@
         <field name="tag">fiq_gui_comm_dashboard</field>
     </record>
 
-    <!-- web_icon utelatt med vilje: ingen ikonfil finnes ennå, og en referanse til en
-         fil som ikke finnes gir app-flis uten ikon. Odoo faller da tilbake til standard.
-         Legges inn når ikonet er laget (jf. fargekart/områdeikoner). -->
+    <!-- Ikon: konvolutt i FIQ-accent (#4C63D2), static/description/icon.png. -->
     <menuitem id="menu_fiq_comm_root"
               name="Kommunikasjon"
+              web_icon="fiq_gui_comm,static/description/icon.png"
               sequence="26"/>
     <menuitem id="menu_fiq_comm_main"
               name="Kommunikasjon"

@@ -77,6 +77,21 @@ class FiqKommunikasjonData(models.AbstractModel):
         }
 
     @api.model
+    def get_kr_kobling(self):
+        """Til KR-kjernen: hvor «Kommunikasjon» i Kontrollrommet skal peke.
+
+        KR peker i dag til `fiq_gui_epost.action_fiq_gui_epost` (kanalen) — den bør peke
+        hit (paraplyen), så brukeren lander på Kommunikasjon-forsiden og velger kanal der.
+        Eksponert som metode så KR kan lese den uten å hardkode xmlid-en vår.
+        """
+        return {
+            "kode": "gui_comm",
+            "navn": "Kommunikasjon",
+            "action": "fiq_gui_comm.action_fiq_gui_comm",
+            "erstatter": "fiq_gui_epost.action_fiq_gui_epost",
+        }
+
+    @api.model
     def aapne_kanal(self, kode):
         """Åpne en kanals egen flate. Returnerer handling, eller False hvis kanalen
         ikke har en egen flate (da vises den inne i paraplyen)."""
