@@ -17,16 +17,25 @@
       single-point-of-failure for tilgjengelighet.» Følger KANON «Odoo-native først».
       KR-sidemenyen kommer i TILLEGG (06.74), ikke som forutsetning.
     -->
-    <!-- FIQ-logo som app-ikon (Gjermund 2026-07-17: «Logo_Svart_Sølv Elipse.png» fra
-         012 5 MAR MedBib). Original 519x446 er IKKE kvadratisk -> skalert til 140x140 med
-         bevart proporsjon, sentrert på transparent bunn (samme størrelse som
-         fiq_gui_control/static/description/icon.png — verifisert).
-         NB: `web_icon` er riktig attributt for menypunkt (Odoos egne: project, sale_management,
-         account bruker samme form). `favicon` er noe annet — nettleserfanens ikon på
-         website-modellen, ikke et menuitem-attributt. Verifisert i Odoo 19s kildekode. -->
+    <!--
+      APP-IKON: låner Odoos EGET project-ikon (samme grep som fiq_gui_gantt).
+      Gjermund 2026-07-17: «beste løsning at du bruker Odoo native logo.»
+
+      Hvorfor ikke egen logofil: `web_icon` er fields.Char = en FILSTI i en modul (verifisert i
+      base/models/ir_ui_menu.py) — den kan IKKE lese et databasefelt. En egen PNG i modulen måtte
+      derfor bygges+pushes hver gang logoen endres, og en HELT NY logoserie er på vei
+      (visjon: Futures IQ). Native ikon nå = ingen død vekt å rydde senere.
+
+      Firma-logoen leses derimot NATIVE i flatene: `res.company.logo` via `fiq_brand_logo`
+      (fiq_partner_relasjon, 06.74) — company-logo som kilde, KR-variant kun ved bevisst
+      overstyring. Det er databasedrevet og endres i Odoo-innstillingene, uten kode.
+
+      NB: `web_icon` (app-ikon i menyen) ≠ `favicon` (nettleserfanens ikon, Binary-felt på
+      website-modellen). Verifisert i Odoo 19s kildekode — favicon er ikke et menuitem-attributt.
+    -->
     <menuitem id="menu_fiq_prj_root"
               name="FIQ Prosjekt"
-              web_icon="fiq_gui_prj,static/description/icon.png"
+              web_icon="project,static/description/icon.png"
               sequence="46"/>
 
     <menuitem id="menu_fiq_prj_flate"
