@@ -57,7 +57,14 @@ class TestFiqControlRoom(TransactionCase):
 
     def test_get_kommunikasjon_shape_and_direction(self):
         # Logg en melding på et prosjekt → skal dukke opp med retning + avsender
-        proj = self.env["project.project"].create({"name": "HM Komm Test"})
+        Project = self.env["project.project"]
+        vals = {"name": "HM Komm Test"}
+        # billing_type (sale_timesheet) er required=True + compute/store: computen rekker
+        # ikke sette default før INSERT i en test-transaksjon → NotNullViolation. Sett den
+        # eksplisitt, men bare når modulen er installert — KR avhenger ikke av den.
+        if "billing_type" in Project._fields:
+            vals["billing_type"] = "not_billable"
+        proj = Project.create(vals)
         proj.message_post(body="Hei", message_type="comment")
         rows = self.Config.get_kommunikasjon("alle", 50)
         self.assertIsInstance(rows, list)
