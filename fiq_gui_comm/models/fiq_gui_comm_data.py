@@ -56,13 +56,24 @@ class FiqKommunikasjonData(models.AbstractModel):
                 return False
         return False
 
+    def _tillatte_firmaer(self):
+        """Firmaene brukeren lovlig kan se. Delegerer til KR-kjernens felles
+        `tillatte_firmaer()` (Økt 02) — regelen finnes ÉTT sted, kopieres aldri.
+        Fail-closed til eget firma hvis kjernen mangler."""
+        KR = "fiq.gui.control.config"
+        if KR in self.env and hasattr(self.env[KR], "tillatte_firmaer"):
+            try:
+                return self.env[KR].tillatte_firmaer() or self.env.company.ids
+            except Exception:
+                return self.env.company.ids
+        return self.env.company.ids
+
     @api.model
     def get_my_config(self):
         """Oppstarts-config til paraply-flaten. Firmavelgeren er et FILTER, ikke en
         tilgangsmekanisme — den viser kun firmaer brukeren FAKTISK har rett til."""
         kryss = self._har_000_rettighet()
-        tillatte = (self.env.user.company_ids.ids or self.env.company.ids) \
-            if kryss else self.env.company.ids
+        tillatte = self._tillatte_firmaer()
         firms = [{"id": c.id, "navn": c.name,
                   "kode": c.code if "code" in c._fields else ""}
                  for c in self.env["res.company"].browse(tillatte).exists()]

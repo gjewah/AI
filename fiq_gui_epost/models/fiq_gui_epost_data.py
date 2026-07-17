@@ -87,49 +87,47 @@ class FiqMeldingssenterData(models.AbstractModel):
 
     def _har_000_rettighet(self):
         """Har den innloggede 000-rettighet (plattform-nivå → kryss-firma-innsyn)?
-        Mekanismen er ÅPEN (06.74/Gjermund avklarer: egen res.groups vs rolletype på 0.00),
-        så dette er config-drevet og pluggbart:
-          1) KR-kjernens felles hjelper når den finnes (06.74 bygger den) — foretrukket.
-          2) Gruppe navngitt i systemparameter `fiq_gui_epost.gruppe_000`.
-          3) Ellers **fail-closed: NEI** (ingen kryss-firma-innsyn)."""
+
+        Mekanismen er AVKLART (Gjermund 17.07.2026): 000 = egen sikkerhetsgruppe
+        (`fiq_gui_control.group_000_kryss_firma`), håndhevet av Odoo — ikke av GUI-koden.
+        Vi spør KR-kjernens felles hjelper (Økt 02, KR v6.76) og eier ALDRI regelen selv.
+        Fail-closed: alt annet enn et utvetydig JA betyr nei.
+        """
         KR = "fiq.gui.control.config"
         if KR in self.env and hasattr(self.env[KR], "har_000_rettighet"):
             try:
                 return bool(self.env[KR].har_000_rettighet())
             except Exception:
-                pass                                    # fail-closed ved feil
-        grp = self.env["ir.config_parameter"].sudo().get_param("fiq_gui_epost.gruppe_000")
-        if grp:
-            try:
-                return self.env.user.has_group(grp)
-            except Exception:
-                return False
+                return False                            # fail-closed ved feil
         return False
 
     def _tillatte_firmaer(self):
-        """Firmaene brukeren FAKTISK har lov å se post fra — utledet av sesjonen.
-        Med 000-rettighet: alle firmaene brukeren er knyttet til. Uten: kun eget firma
-        (fail-closed) — selv om brukeren har e-postlisens i flere firmaer."""
-        if self._har_000_rettighet():
-            return self.env.user.company_ids.ids or self.env.company.ids
+        """Firmaene brukeren lovlig kan se post fra. Delegerer til KR-kjernens felles
+        `tillatte_firmaer()` (Økt 02) — regelen skal finnes ÉTT sted, ikke kopieres.
+        Fail-closed til eget firma hvis kjernen mangler."""
+        KR = "fiq.gui.control.config"
+        if KR in self.env and hasattr(self.env[KR], "tillatte_firmaer"):
+            try:
+                return self.env[KR].tillatte_firmaer() or self.env.company.ids
+            except Exception:
+                return self.env.company.ids
         return self.env.company.ids
 
     def _firma_domene(self, firm=False):
-        """Firma-avgrensning. Klientens `firm` kan bare SNEVRE INN innenfor det brukeren
-        allerede har lov til — aldri utvide. «Alle» = de tillatte firmaene, IKKE ufiltrert."""
-        tillatte = self._tillatte_firmaer()
-        if firm:
+        """Firma-avgrensning på meldinger. Delegerer til KR-kjernens felles
+        `firma_domene()` (Økt 02) — vårt felt er `record_company_id` (firmaet til
+        elementet meldingen henger på). Klientens `firm` kan bare SNEVRE INN i det
+        brukeren allerede har lov til; «Alle» = de tillatte firmaene, ALDRI ufiltrert.
+        Fail-closed til eget firma hvis kjernen mangler."""
+        KR = "fiq.gui.control.config"
+        if KR in self.env and hasattr(self.env[KR], "firma_domene"):
             try:
-                f = int(firm)
-            except (TypeError, ValueError):
-                f = 0
-            if f in tillatte:
-                return [("record_company_id", "=", f)]
-            return [("record_company_id", "in", tillatte)]   # ugyldig valg → lovlig scope
-        if self._har_000_rettighet():
-            # Plattform-nivå ser også post uten firma-tilhørighet
-            return ["|", ("record_company_id", "in", tillatte), ("record_company_id", "=", False)]
-        return [("record_company_id", "in", tillatte)]
+                # inkluder_uten_firma: KR sjekker 000-rettigheten SELV inne i metoden —
+                # ikke send vår egen sjekk inn, da får vi to oppslag som kan divergere.
+                return self.env[KR].firma_domene(firm=firm, felt="record_company_id")
+            except Exception:
+                pass                                    # fail-closed under
+        return [("record_company_id", "in", self.env.company.ids)]
 
     @api.model
     def get_my_config(self):
