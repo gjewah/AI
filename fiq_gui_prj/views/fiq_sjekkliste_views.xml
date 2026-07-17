@@ -105,6 +105,14 @@
         </field>
     </record>
 
+    <!-- Native menypunkt under FIQ Prosjekt (AI PK-avgjørelse 2026-07-17: hver flate-eier
+         legger egen dør; KR-sidemenyen kommer i tillegg, ikke som forutsetning). -->
+    <menuitem id="menu_fiq_sjekkliste"
+              name="Sjekklister"
+              parent="menu_fiq_prj_root"
+              action="action_fiq_sjekkliste"
+              sequence="20"/>
+
     <!-- Sjekklister som egen fane på oppgaven (native) -->
     <record id="view_task_form_fiq_sjekkliste" model="ir.ui.view">
         <field name="name">project.task.form.fiq.sjekkliste</field>
