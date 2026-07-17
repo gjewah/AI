@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 {
-    "name": "Kommunikasjon",
-    "version": "19.0.6.0.0",
+    # Paraplyen (fiq_gui_comm) eier navnet «Kommunikasjon» utad. Denne modulen er
+    # E-POST-KANALEN under den → egen etikett, ellers to like app-fliser i Apper.
+    # Teknisk modulnavn (fiq_gui_epost) er URØRT — modulen er live på Staging + Production.
+    "name": "Kommunikasjon — E-post",
+    "version": "19.0.6.1.0",
     "summary": "FIQ Meldingssenter – kommunikasjonsflaten i Kontrollrommet. "
                "V00.04-designet (godkjent) som levende flate: tilstede-topplinje, firmavelger "
                "m/ logo, taksonomi 0–8, kompakte meldingsrader, lesepanel, paring/tildeling og AI-flate.",
@@ -23,7 +26,10 @@ V00.04 bygges først som levende referanse; native OWL-port mot ekte Odoo-data
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
     "license": "OPL-1",
-    "depends": ["fiq_gui_control", "web", "mail"],
+    # fiq_gui_comm = Kommunikasjon-paraplyen. E-post er en KANAL under den og melder
+    # seg inn i kanal-registeret (models/fiq_gui_epost_kanal.py) → paraplyen må lastes
+    # først. Enveis: comm avhenger ALDRI av epost (ingen sirkulær avhengighet).
+    "depends": ["fiq_gui_comm", "fiq_gui_control", "web", "mail"],
     "data": [
         "security/fiq_gui_epost_groups.xml",
         "security/ir.model.access.csv",
@@ -38,6 +44,9 @@ V00.04 bygges først som levende referanse; native OWL-port mot ekte Odoo-data
             "fiq_gui_epost/static/src/**/*",
         ],
     },
-    "application": True,
+    # IKKE lenger egen app-flis: E-post er en KANAL inne i Kommunikasjon-paraplyen,
+    # ikke en selvstendig app (Gjermund 17.07.2026: «e-post skal ikke vises før vi er
+    # inne i kommunikasjonssenteret»). Paraplyen fiq_gui_comm er application=True.
+    "application": False,
     "installable": True,
 }

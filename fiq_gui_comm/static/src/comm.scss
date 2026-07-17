@@ -1,0 +1,67 @@
+// Kommunikasjon — paraply-flaten (V01). Samme visuelle språk som Meldingssenteret/KR.
+// Alt scoped under .commapp så ingenting lekker inn/ut av Odoo-backendens CSS.
+//
+// 🛑 ALDRI min()/max() med blandede enheter (px + vw): Sass regner ut ved kompilering,
+//    feiler «Incompatible units», og HELE assets-bundelen dør. Bruk width + max-width.
+//    (Husets beviste fiks — jf. fiq_gui_epost v5.5.2 og fiq_gui_control v6.73.)
+.commapp {
+  --ground:#EDF0F4;--surface:#FFFFFF;--surface-2:#F5F7FA;--ink:#151B23;--ink-soft:#47515D;--muted:#7A8593;
+  --line:#E0E5EC;--line-soft:#EBEEF2;--accent:#4C63D2;--accent-ink:#fff;--accent-soft:#E9ECFB;
+  --shadow:0 8px 26px -18px rgba(20,30,50,.5);--mono:ui-monospace,"Cascadia Code","SF Mono",Consolas,monospace;
+  --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--r:12px;
+  --graa:#7A8593;--blaa:#0070C0;--lilla:#7030A0;--gronn:#70AD47;--oransje:#ED7D31;--tealx:#0D9488;
+  font-family:var(--body);color:var(--ink);background:var(--ground);line-height:1.45;
+  -webkit-font-smoothing:antialiased;padding:clamp(12px,2vw,22px);min-height:100%;height:100%;overflow-y:auto;box-sizing:border-box;
+
+  @media (prefers-color-scheme:dark){
+    --ground:#0D1218;--surface:#151C24;--surface-2:#1A222B;--ink:#EAEFF5;--ink-soft:#B4BFCC;--muted:#8592A0;
+    --line:#28323D;--line-soft:#1F2831;--accent:#7C8CE8;--accent-soft:#232C46;
+    --shadow:0 10px 30px -18px rgba(0,0,0,.75);
+  }
+
+  *{box-sizing:border-box}
+  .loading{padding:40px;text-align:center;color:var(--muted)}
+  .tnum{font-variant-numeric:tabular-nums;font-family:var(--mono)}
+  button{cursor:pointer;font-family:inherit;color:inherit}
+
+  // Topplinje
+  .top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;padding:10px 15px;border-radius:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+  .logo{width:52px;height:52px;border-radius:13px;background:var(--accent);display:grid;place-items:center;color:var(--accent-ink);font-weight:800;font-size:20px;flex:none}
+  .brand .eb{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+  .brand .ti{font-size:19px;font-weight:800;letter-spacing:-.02em}
+  .top .sp{flex:1}
+  .switch{display:flex;gap:5px;flex-wrap:wrap;background:var(--surface-2);border:1px solid var(--line);padding:5px;border-radius:12px}
+  .swb{border:1px solid transparent;background:transparent;color:var(--ink-soft);font-size:12.5px;font-weight:640;padding:7px 12px;border-radius:8px;display:flex;gap:7px}
+  .swb.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+  .swb b{font-family:var(--mono);font-size:12px}
+  .ubtn{border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);border-radius:9px;padding:8px 12px;font-size:12px;font-weight:640}
+  .ubtn.kr{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,transparent);font-weight:700}
+
+  // Kanal-filter (Alle · E-post · …)
+  .kanaler{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+  .kanal{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:100px;padding:8px 15px;font-size:13px;font-weight:700;color:var(--ink-soft);box-shadow:var(--shadow)}
+  .kanal:hover{border-color:var(--c,var(--accent));color:var(--ink)}
+  .kanal.on{background:var(--c,var(--accent));border-color:var(--c,var(--accent));color:#fff}
+  .kanal .ki{font-size:14px}
+  .kanal .kc{font-family:var(--mono);font-size:11px;font-weight:800;background:color-mix(in srgb,var(--ink) 12%,transparent);border-radius:100px;padding:1px 7px}
+  .kanal.on .kc{background:rgba(255,255,255,.28)}
+
+  // Oversikt (forsiden)
+  .oversikt{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px}
+  .oh{font-size:12.5px;color:var(--muted);margin-bottom:14px}
+  .tom{text-align:center;padding:40px 20px}
+  .tomt{font-size:15px;font-weight:700;margin-bottom:6px}
+  .tomh{font-size:12.5px;color:var(--muted)}
+  .kort{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:11px}
+  .kkort{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:14px;text-align:left;position:relative;overflow:hidden;box-shadow:var(--shadow);color:var(--ink)}
+  .kkort::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c,var(--accent))}
+  .kkort:hover{border-color:var(--c,var(--accent));transform:translateY(-1px)}
+  .kkh{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:730;margin-bottom:8px}
+  .kki{font-size:15px}
+  .kkn{font-size:26px;font-weight:790;letter-spacing:-.03em;color:var(--c,var(--accent))}
+  .kkl{font-size:10.5px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}
+
+  // Fargekart
+  .c_accent{--c:var(--accent)}.c_graa{--c:var(--graa)}.c_blaa{--c:var(--blaa)}.c_lilla{--c:var(--lilla)}
+  .c_gronn{--c:var(--gronn)}.c_oransje{--c:var(--oransje)}.c_tealx{--c:var(--tealx)}
+}

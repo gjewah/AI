@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="fiq_gui_comm.Kommunikasjon">
+        <div class="commapp">
+            <div t-if="state.loading" class="loading">Laster Kommunikasjon…</div>
+            <t t-else="">
+
+                <!-- Topplinje -->
+                <div class="top">
+                    <div class="logo">FIQ</div>
+                    <div class="brand">
+                        <div class="eb">FIQ Kontrollrom · 8.50 GUI · V01</div>
+                        <div class="ti">Kommunikasjon</div>
+                    </div>
+                    <div class="sp"/>
+                    <div class="switch" t-if="state.firms.length > 1">
+                        <button t-foreach="state.firms" t-as="f" t-key="f.id"
+                                t-att-class="'swb' + (f.id===state.current_firm?' on':'')"
+                                t-on-click="() => this.byttFirma(f.id)">
+                            <b t-esc="f.kode || ''"/><span t-esc="f.navn"/>
+                        </button>
+                    </div>
+                    <button class="ubtn kr" t-on-click="tilbakeKR">‹ Kontrollrom</button>
+                </div>
+
+                <!-- KANAL-FILTER: Alle · E-post · (WhatsApp · Teams · chat når de kommer) -->
+                <div class="kanaler">
+                    <button t-foreach="state.kanaler" t-as="k" t-key="k.kode"
+                            t-att-class="kanalCls(k)" t-on-click="() => this.velgKanal(k.kode)">
+                        <span class="ki" t-esc="k.ikon"/>
+                        <span class="kn" t-esc="k.navn"/>
+                        <span class="kc tnum" t-if="k.antall" t-esc="k.antall"/>
+                    </button>
+                </div>
+
+                <!-- Oversikten (forsiden). Kun «Alle» + E-post finnes i dag; flere kanaler
+                     melder seg inn i registeret uten at denne flaten endres. -->
+                <div class="oversikt">
+                    <div t-if="state.kanaler.length &lt;= 1" class="tom">
+                        <div class="tomt">Ingen kanaler er installert ennå.</div>
+                        <div class="tomh">E-post, WhatsApp, Teams og chat melder seg inn her når de tas i bruk.</div>
+                    </div>
+                    <t t-else="">
+                        <div class="oh">Velg en kanal over for å se meldingene dine.</div>
+                        <div class="kort">
+                            <button t-foreach="state.kanaler.slice(1)" t-as="k" t-key="k.kode"
+                                    t-att-class="'kkort c_' + (k.farge || 'accent')"
+                                    t-on-click="() => this.velgKanal(k.kode)">
+                                <div class="kkh"><span class="kki" t-esc="k.ikon"/><span t-esc="k.navn"/></div>
+                                <div class="kkn tnum" t-esc="k.antall || 0"/>
+                                <div class="kkl">uleste</div>
+                            </button>
+                        </div>
+                    </t>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>
