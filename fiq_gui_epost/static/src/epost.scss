@@ -211,11 +211,12 @@
   // Person-modal (klikk «Til stede»-navn) + relasjonskort
   .pmodal{position:fixed;inset:0;z-index:1050;display:grid;place-items:center;padding:20px}
   .pmbg{position:absolute;inset:0;background:rgba(10,16,24,.5);backdrop-filter:blur(2px)}
-  /* min() må interpoleres: Sass har sin EGEN min()-funksjon og prøver å regne ut
-     svaret ved kompilering — den kan ikke sammenligne px og vw («Incompatible units»),
-     og hele assets-bundelen feiler. #{} sender uttrykket rått til CSS, som håndterer
-     det fint i nettleseren. Samme felle gjelder max(). clamp()/calc() er trygge. */
-  .pmcard{position:relative;width:#{"min(520px, 94vw)"};max-height:86vh;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 24px 60px -20px rgba(0,0,0,.6)}
+  /* IKKE bruk min(px, vw) her: Sass har sin egen min() og prøver å regne ut svaret ved
+     kompilering — den kan ikke sammenligne px og vw, og HELE assets-bundelen feiler
+     («Incompatible units: vw and px»). width + max-width gir samme resultat uten å røre
+     Sass. Dette er husets beviste fiks på denne fella, jf. v6.73 (d410d4e) som løste
+     nøyaktig det samme i .fiq_hm_sugg. */
+  .pmcard{position:relative;width:520px;max-width:94vw;max-height:86vh;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 24px 60px -20px rgba(0,0,0,.6)}
   .pmhead{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line-soft)}
   .pmav{width:44px;height:44px;border-radius:12px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:750;font-size:15px;flex:none}
   .pmwho{min-width:0}
