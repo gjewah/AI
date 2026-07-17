@@ -66,6 +66,10 @@
   .nav .dot{width:9px;height:9px;border-radius:3px;background:var(--nc,var(--accent));flex:none}
   .nav .code{font-family:var(--mono);font-size:10.5px;font-weight:800;color:var(--nc,var(--accent));flex:none;width:32px}
   .nav .c{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  // Kanal-knapp (E-post m.fl.) — hovedvalg under Kommunikasjon, tyngre enn en mappe
+  .nav button.kanal{font-size:13px;padding:10px 11px;border:1px solid var(--line)}
+  .nav button.kanal b{font-weight:750}
+  .nav button.kanal.on{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 35%,transparent);color:var(--accent)}
   .cd_graa{--nc:var(--graa)}.cd_blaa{--nc:var(--blaa)}.cd_blaam{--nc:var(--blaam)}.cd_lilla{--nc:var(--lilla)}
   .cd_gronn{--nc:var(--gronn)}.cd_oransje{--nc:var(--oransje)}.cd_rod{--nc:var(--rod)}.cd_amber{--nc:var(--amber)}
   .cd_slate{--nc:var(--slate)}.cd_tealx{--nc:var(--tealx)}.cd_crit{--nc:var(--crit)}

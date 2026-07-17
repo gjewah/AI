@@ -21,7 +21,10 @@ export class FiqMeldingssenter extends Component {
             loading: true, firms: [], current_firm: false, presence: [], user: "", logo: "", q: "",
             kryss_firma: false,                              // 000-rettighet (fra sesjonen, ikke klienten)
             basis: [], tverr: [], taks: [],
-            view: "inbox",                                  // "inbox" (tre-rute) | "hjem" (cockpit)
+            // Kommunikasjon = hovedflaten. Forsiden er OVERSIKTEN; e-post er ETT underpunkt.
+            // (Gjermund 16.07.2026: «kommunikasjon er hoved KR for kommunikasjon og er din flate —
+            //  e-post skal komme opp som et av underpunktene». Oversikt som forside.)
+            view: "hjem",                                  // "hjem" (oversikt=forside) | "inbox" (e-post)
             aktivBoks: false, aktivNavn: "", meldinger: [], valgt: false, period: "alle",
             group: "avsender", kollaps: {}, kandidater: { prosjekt: [], oppgave: [] },
             ctxTab: "rel",                                   // person-kontekst: rel | hist | week
@@ -34,8 +37,7 @@ export class FiqMeldingssenter extends Component {
             const cfg = await this.orm.call(DATA, "get_my_config", []);
             Object.assign(this.state, cfg, { loading: false });
             await this.lastBokser();
-            const inn = (this.state.basis || [])[0];         // åpne Innboks som standard
-            if (inn) await this.aapneBoks(inn.kode, inn.navn);
+            // Lander på OVERSIKTEN (forsiden) — ikke i innboksen. E-post er et underpunkt du går inn i.
         });
     }
 
@@ -53,19 +55,27 @@ export class FiqMeldingssenter extends Component {
         if (f && f.logo) this.state.logo = f.logo;
         this.state.valgt = false;
         await this.lastBokser();
-        const inn = (this.state.basis || [])[0];
-        if (inn) await this.aapneBoks(inn.kode, inn.navn); else this.state.meldinger = [];
-    }
-
-    // Navigasjon mellom tre-rute («inbox») og oversikts-cockpit («hjem»)
-    visHjem() { this.state.view = "hjem"; this.state.valgt = false; }
-    visInnboks() {
-        this.state.view = "inbox";
-        if (!this.state.aktivBoks) {
-            const inn = (this.state.basis || [])[0];
-            if (inn) this.aapneBoks(inn.kode, inn.navn);
+        // Bli der du er: er du i e-post, last den på nytt for nytt firma; ellers behold oversikten.
+        if (this.state.view === "inbox" && this.state.aktivBoks) {
+            await this.lastMeldinger();
+        } else {
+            this.state.meldinger = [];
         }
     }
+
+    // Oversikten = forsiden i Kommunikasjon. E-post = ett underpunkt man går inn i.
+    visHjem() { this.state.view = "hjem"; this.state.valgt = false; }
+
+    /** Åpne E-post-kanalen (lander på Innboks). Kalles fra «E-post» i sidemenyen. */
+    async aapneEpost() {
+        const inn = (this.state.basis || [])[0];
+        if (inn) {
+            await this.aapneBoks(inn.kode, inn.navn);
+        } else {
+            this.state.view = "inbox";
+        }
+    }
+    visInnboks() { this.aapneEpost(); }
 
     async aapneBoks(kode, navn) {
         this.state.view = "inbox";

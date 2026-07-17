@@ -21,8 +21,8 @@
                     <img t-if="state.logo" class="logo logoimg" t-att-src="state.logo" alt="Firmalogo"/>
                     <div t-else="" class="logo" t-esc="'FIQ'"/>
                     <div class="brand">
-                        <div class="eb">FIQ Kontrollrom · 8.50 GUI · V00.05</div>
-                        <div class="ti">Meldingssenter</div>
+                        <div class="eb">FIQ Kontrollrom · 8.50 GUI · V00.06</div>
+                        <div class="ti">Kommunikasjon</div>
                     </div>
                     <div class="sp"/>
                     <div class="switch">
@@ -42,13 +42,23 @@
                     <!-- Venstre: mappetre -->
                     <div class="tree">
                         <button t-att-class="'home' + (state.view==='hjem'?' on':'')" t-on-click="visHjem">
-                            🏠 <span>Hjem — områdeoversikt</span>
+                            🏠 <span>Oversikt</span>
                         </button>
 
-                        <div class="sh">Postkasse</div>
+                        <!-- E-POST = ETT underpunkt under Kommunikasjon (ikke hele flaten) -->
+                        <div class="sh">Kanaler</div>
+                        <div class="nav">
+                            <button t-att-class="'kanal' + (state.view==='inbox'?' on':'')" t-on-click="aapneEpost">
+                                <span class="dot" style="--nc:var(--blaa)"/><b>E-post</b>
+                                <span class="c tnum" t-esc="(state.basis[0] || {}).count || 0"/>
+                            </button>
+                        </div>
+
+                        <t t-if="state.view==='inbox'">
+                        <div class="sh">E-post — postkasse</div>
                         <div class="nav">
                             <button t-foreach="state.basis" t-as="b" t-key="b.kode"
-                                    t-att-class="(state.view==='inbox' &amp;&amp; state.aktivBoks===b.kode?'on':'') + ' cd_' + b.farge"
+                                    t-att-class="(state.aktivBoks===b.kode?'on':'') + ' cd_' + b.farge"
                                     t-on-click="() => this.aapneBoks(b.kode, b.navn)">
                                 <span class="dot"/><t t-esc="b.navn"/>
                                 <span class="c tnum" t-esc="b.count"/>
@@ -70,11 +80,16 @@
                                 <span class="c tnum" t-esc="b.count"/>
                             </button>
                         </div>
+                        </t>
 
-                        <div class="sh">Mer</div>
+                        <div class="sh">Møter</div>
                         <div class="nav">
                             <button class="cd_blaa" t-on-click="aapneKalender"><span class="dot"/>Møter &amp; Kalender</button>
                             <button class="cd_tealx" t-on-click="() => this.aapneBoks('motereferater','Møtereferater')"><span class="dot"/>Møtereferater</button>
+                        </div>
+
+                        <div class="sh">Mer</div>
+                        <div class="nav">
                             <button class="cd_graa" t-on-click="aapneInnstillinger"><span class="dot"/>Innstillinger</button>
                         </div>
                     </div>
@@ -82,8 +97,8 @@
                     <!-- HJEM: cockpit-oversikt (fargebokser) -->
                     <div class="col hjem" t-if="state.view==='hjem'">
                         <div class="hjemhead">
-                            <div class="crumb"><span class="cur">Områdeoversikt</span></div>
-                            <button class="tilbakeb" t-on-click="visInnboks">Til innboks ›</button>
+                            <div class="crumb"><span class="cur">Kommunikasjon — oversikt</span></div>
+                            <button class="tilbakeb" t-on-click="aapneEpost">Åpne E-post ›</button>
                         </div>
                         <div class="sub-lbl">Tverrgående</div>
                         <div class="boxes">
