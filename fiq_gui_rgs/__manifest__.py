@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Regnskap",
-    "version": "19.0.1.6.0",
+    "version": "19.0.1.7.0",
     "summary": "AI GUI Regnskap (2.80) — visningen av AI Regnskap-Rådgiveren: likviditet, "
                "cashflow, kritiske datoer og tidlig korrigering.",
     "description": """
@@ -31,6 +31,8 @@ Harde regler innebygd i flaten:
     "data": [
         "security/fiq_gui_rgs_groups.xml",
         "views/fiq_gui_rgs_action.xml",
+        # Selvregistrering i KR-menyen — MÅ lastes ETTER action-fila (viser til den).
+        "data/fiq_gui_rgs_flate.xml",
     ],
     "assets": {
         "web.assets_backend": [

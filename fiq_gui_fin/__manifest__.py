@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Finans",
-    "version": "19.0.1.2.0",
+    "version": "19.0.1.3.0",
     "summary": "AI GUI Finans (2.70) — visningen av AI Finans-Rådgiveren: analyse, "
                "framskrivning, simulator (fortid/nåtid/fremtid), KPI og POG.",
     "description": """
@@ -30,6 +30,8 @@ Harde regler innebygd i flaten:
     "data": [
         "security/fiq_gui_fin_groups.xml",
         "views/fiq_gui_fin_action.xml",
+        # Selvregistrering i KR-menyen — MÅ lastes ETTER action-fila (viser til den).
+        "data/fiq_gui_fin_flate.xml",
     ],
     "assets": {
         "web.assets_backend": [
