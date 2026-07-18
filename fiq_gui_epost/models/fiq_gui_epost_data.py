@@ -32,17 +32,32 @@ _PERIOD_DAYS = {"dag": 1, "uke": 7, "maaned": 30}
 
 # FIQ områdekart 0–8 (+ 2.90 IT, 8.50 AI) — farger fra fargekart. Count fylles av paring
 # (fiq_komm_match) senere; til da stillas med 0. (navn ikke ID i dialog.)
+# Fargekart per HOVEDområde (første siffer). Undergrupper arver forelderens farge, så
+# «2.05 JUR» og «2.30 HMS» kjennes igjen som Administrasjon. Jf. [[fargekart-omrader]].
+_AREA_FARGE = {
+    "0": "graa", "1": "graa", "2": "blaa", "3": "slate", "4": "oransje",
+    "5": "gronn", "6": "rod", "7": "gronn", "8": "gronn", "9": "lilla",
+}
+# Unntak: enkelte underområder har EGEN farge i fargekartet og skal ikke arve forelderens.
+_AREA_FARGE_UNNTAK = {"2.90": "lilla", "8.50": "lilla"}
+
+
+def _omraade_farge(kode):
+    """Farge for en områdekode. Undergrupper arver hovedområdets farge, unntatt de
+    som har egen farge i fargekartet (2.90 IT, 8.50 AI)."""
+    return _AREA_FARGE_UNNTAK.get(kode) or _AREA_FARGE.get(kode.split(".")[0], "graa")
+
+# Reserve hvis prosjekt-treet ikke er lesbart (tom base / manglende rettigheter).
+# Den LEVENDE taksonomien leses fra treet — se _taksonomi_levende().
 _TAKSONOMI = [
     ("1", "1 Ledelse", "graa"),
     ("2", "2 Administrasjon", "blaa"),
-    ("2.90", "2.90 IT", "lilla"),
     ("3", "3 Drift", "slate"),
     ("4", "4 Logistikk", "oransje"),
     ("5", "5 Marked", "gronn"),
     ("6", "6 Salg", "rod"),
     ("7", "7 Prosjekter", "gronn"),
     ("8", "8 FAG", "gronn"),
-    ("8.50", "8.50 AI", "lilla"),
 ]
 # Tverrgående bokser (Gjermund: «Urutet»→«Uavklart»).
 _TVERRGAENDE = [
@@ -215,8 +230,9 @@ class FiqMeldingssenterData(models.AbstractModel):
             dom += [("message_type", "=", "email"), ("author_id.user_ids.share", "=", False)]
         elif boks == "innboks":
             dom.append(("message_type", "=", "email"))
-        elif boks in _TVERR_CODES or boks in _AREA_CODES:
+        elif boks in _TVERR_CODES or re.match(r"^\d+(\.\d+)*$", str(boks) or ""):
             # Kategori-boks (crawl): begrens til de e-postene sorteringen la her.
+            # Områdekoder telles på alle nivåer, så «2» gir ALT under 2 (inkl. 2.61 …).
             tverr_ids, omr_ids = self._classify_all(firm, period)
             src = tverr_ids if boks in _TVERR_CODES else omr_ids
             dom.append(("id", "in", list(src.get(boks, ()))))
@@ -293,25 +309,69 @@ class FiqMeldingssenterData(models.AbstractModel):
         return hits
 
     def _area_index(self):
-        """{prosjekt-id: område-kode} for aktive prosjekter (opp til område-nivå =
-        barn av firma-rot; f.eks. «7 Prosjekter» → «7»). Defensivt."""
+        """{prosjekt-id: område-kode} — koden fra prosjektet SELV der det har en
+        (f.eks. «2.61 FUe (MP)» → «2.61»), ellers arvet fra nærmeste forelder med kode.
+        Gir FULL dybde: en e-post på «2.61 Loym Cooperation Agreement» havner på 2.61,
+        ikke bare på «2». Defensivt."""
         P = self.env["project.project"]
         if "parent_id" not in P._fields:
             return {}
         projs = P.search([("active", "=", True)])
         parent = {p.id: (p.parent_id.id if p.parent_id else False) for p in projs}
         name = {p.id: (p.name or "") for p in projs}
-        roots = set(pid for pid, par in parent.items() if not par)
 
-        def code(pid):
-            cur, hop = pid, 0
-            while parent.get(cur) and parent[cur] not in roots and hop < 20:
-                cur = parent[cur]
-                hop += 1
-            m = re.match(r"^\s*(\d+(?:\.\d+)*)\s+", name.get(cur, ""))
+        def egen_kode(pid):
+            m = re.match(r"^\s*(\d+(?:\.\d+)*)", name.get(pid, ""))
             return m.group(1) if m else None
 
-        return {pid: code(pid) for pid in parent}
+        def kode(pid):
+            cur, hop = pid, 0
+            while cur and hop < 20:
+                k = egen_kode(cur)
+                if k:
+                    return k
+                cur = parent.get(cur)
+                hop += 1
+            return None
+
+        return {pid: kode(pid) for pid in parent}
+
+    def _taksonomi_levende(self):
+        """DYNAMISK taksonomi lest fra prosjekt-treet — ikke en hardkodet liste.
+        Gjermund 08.07.2026 (masterspec §C.4): «vis KUN bokser som faktisk har innhold …
+        tomme bokser skjules». Og 18.07.2026: undergrupper må kunne vises (2 Adm har
+        2.05 JUR · 2.30 HMS · 2.40 KS · 2.50 KH · 2.60 FUi · 2.61 FUe …).
+
+        Returnerer {kode: {navn, farge, nivaa, forelder}} for ALLE koder som finnes i
+        treet. Hvilke som VISES avgjøres av om de har innhold (se get_boxes)."""
+        P = self.env["project.project"]
+        ut = {}
+        for p in P.search([("active", "=", True)]):
+            navn = (p.name or "").strip()
+            m = re.match(r"^\s*(\d+(?:\.\d+)*)\s*(.*)$", navn)
+            if not m:
+                continue
+            kode, rest = m.group(1), (m.group(2) or "").strip()
+            # Rydd bort mal-/kopimerking og (MP) — boksen skal vise fagnavnet
+            for skrot in ("(TEMPLATE)", "(COPY)", "(MAL)", "(MP)"):
+                rest = rest.replace(skrot, "").strip()
+            # Flere prosjekter deler samme kode: «2.61 FUe (MP)» er FAGOMRÅDET, mens
+            # «2.61 Loym Cooperation Agreement» er ett enkeltprosjekt under det. Boksen
+            # skal hete fagområdet → foretrekk (MP)-prosjektet, ellers korteste navn.
+            er_mp = "(MP)" in navn
+            if kode in ut:
+                if not er_mp and (ut[kode]["er_mp"] or len(rest) >= len(ut[kode]["rest"])):
+                    continue
+            ut[kode] = {
+                "navn": ("%s %s" % (kode, rest)).strip() if rest else kode,
+                "farge": _omraade_farge(kode),
+                "nivaa": kode.count("."),                  # 0 = hovedområde, 1 = undergruppe …
+                "forelder": kode.rsplit(".", 1)[0] if "." in kode else False,
+                "er_mp": er_mp, "rest": rest,
+            }
+        for v in ut.values():                              # interne hjelpefelt ut
+            v.pop("er_mp", None); v.pop("rest", None)
+        return ut
 
     def _classify_all(self, firm, period, limit=3000):
         """{boks-kode: sett av message-id} for tverrgående + område + uavklart.
@@ -331,7 +391,7 @@ class FiqMeldingssenterData(models.AbstractModel):
             for t in self.env["project.task"].browse(task_ids).exists():
                 task_proj[t.id] = t.project_id.id if t.project_id else False
         tverr = {k: set() for k, _, _ in _TVERRGAENDE}
-        omr = {k: set() for k, _, _ in _TAKSONOMI}
+        omr = {}                                    # dynamisk: kun koder som får treff
         for r in rows:
             hits = self._classify_tverr(r.get("subject"), "", r.get("email_from"))
             area = None
@@ -339,8 +399,13 @@ class FiqMeldingssenterData(models.AbstractModel):
                 area = area_idx.get(r.get("res_id"))
             elif r.get("model") == "project.task":
                 area = area_idx.get(task_proj.get(r.get("res_id")))
-            if area and area in omr:
-                omr[area].add(r["id"])
+            if area:
+                # Tell på ALLE nivåer: «2.61» teller også på «2». Da viser hovedboksen
+                # summen, og undergruppene sine egne tall — uten dobbelttelling i hver boks.
+                deler = area.split(".")
+                for i in range(len(deler)):
+                    kode = ".".join(deler[:i + 1])
+                    omr.setdefault(kode, set()).add(r["id"])
             for h in hits:
                 if h in tverr:
                     tverr[h].add(r["id"])
@@ -362,8 +427,26 @@ class FiqMeldingssenterData(models.AbstractModel):
         tverr_ids, omr_ids = self._classify_all(firm, period)
         tverr = [{"kode": k, "navn": n, "count": len(tverr_ids.get(k, ())), "farge": f}
                  for k, n, f in _TVERRGAENDE]
-        taks = [{"kode": k, "navn": n, "count": len(omr_ids.get(k, ())), "farge": f}
-                for k, n, f in _TAKSONOMI]
+
+        # DYNAMISKE områdebokser (masterspec §C.4): KUN koder som faktisk har post.
+        # Taksonomien leses fra prosjekt-treet → undergrupper (2.05 JUR, 2.61 FUe …)
+        # kommer med av seg selv når de får innhold. Ingen hardkodet liste, ingen 0-bokser.
+        levende = self._taksonomi_levende()
+        reserve = {k: {"navn": n, "farge": f, "nivaa": 0, "forelder": False}
+                   for k, n, f in _TAKSONOMI}
+        taks = []
+        for kode, ids in omr_ids.items():
+            if not ids:
+                continue                                   # tom = vises ikke
+            meta = levende.get(kode) or reserve.get(kode) or {
+                "navn": kode, "farge": _omraade_farge(kode),
+                "nivaa": kode.count("."), "forelder": kode.rsplit(".", 1)[0] if "." in kode else False}
+            taks.append({
+                "kode": kode, "navn": meta["navn"], "count": len(ids),
+                "farge": meta["farge"], "nivaa": meta["nivaa"], "forelder": meta["forelder"],
+            })
+        # Sorter som taksonomien leses: 1, 2, 2.05, 2.30, 2.61, 3 …
+        taks.sort(key=lambda b: [int(x) if x.isdigit() else 0 for x in b["kode"].split(".")])
         return {"basis": basis, "tverrgaende": tverr, "taksonomi": taks,
                 "firm": firm, "period": period}
 

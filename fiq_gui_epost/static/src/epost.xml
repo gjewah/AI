@@ -68,7 +68,7 @@
                         <div class="sh">Smarte mapper — taksonomi</div>
                         <div class="nav">
                             <button t-foreach="state.taks" t-as="b" t-key="b.kode"
-                                    t-att-class="(state.view==='inbox' &amp;&amp; state.aktivBoks===b.kode?'on':'') + ' cd_' + b.farge"
+                                    t-att-class="(state.view==='inbox' &amp;&amp; state.aktivBoks===b.kode?'on':'') + ' cd_' + b.farge + ' niva' + (b.nivaa || 0)"
                                     t-on-click="() => this.aapneBoks(b.kode, b.navn)">
                                 <span class="code" t-esc="b.kode"/><t t-esc="b.navn"/>
                                 <span class="c tnum" t-esc="b.count"/>
@@ -112,7 +112,7 @@
                         <div class="sub-lbl">Områder</div>
                         <div class="boxes">
                             <button t-foreach="state.taks" t-as="b" t-key="b.kode"
-                                    t-att-class="'box c_' + b.farge"
+                                    t-att-class="'box c_' + b.farge + ' niva' + (b.nivaa || 0)"
                                     t-on-click="() => this.aapneBoks(b.kode, b.navn)">
                                 <div class="bl"><span class="code" t-esc="b.kode"/><span class="nm" t-esc="b.navn"/></div>
                                 <div class="n tnum" t-esc="b.count"/>

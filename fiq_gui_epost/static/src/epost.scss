@@ -222,6 +222,15 @@
   .box .code{font-family:var(--mono);font-size:11px;font-weight:800;color:var(--c,var(--accent));flex:none}
   .box .nm{font-size:12px;font-weight:660;line-height:1.15}
   .box .n{font-size:22px;font-weight:780;letter-spacing:-.03em;margin-top:auto}
+  // Undergrupper (2.05 JUR, 2.61 FUe …) — mindre og rykket inn, så hierarkiet leses
+  .box.niva1{min-height:66px;padding-top:9px;padding-bottom:9px}
+  .box.niva1 .nm{font-size:11.5px}
+  .box.niva1 .n{font-size:18px}
+  .box.niva2{min-height:58px}
+  .box.niva2 .n{font-size:16px}
+  // Innrykk i sidemenyen etter nivå
+  .nav button.niva1{padding-left:24px}
+  .nav button.niva2{padding-left:38px}
 
   // Fargekart-klasser for bokser
   .c_graa{--c:var(--graa)}.c_blaa{--c:var(--blaa)}.c_blaam{--c:var(--blaam)}.c_lilla{--c:var(--lilla)}
