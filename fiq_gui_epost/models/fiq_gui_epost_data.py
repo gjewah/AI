@@ -32,20 +32,59 @@ _PERIOD_DAYS = {"dag": 1, "uke": 7, "maaned": 30}
 
 # FIQ områdekart 0–8 (+ 2.90 IT, 8.50 AI) — farger fra fargekart. Count fylles av paring
 # (fiq_komm_match) senere; til da stillas med 0. (navn ikke ID i dialog.)
-# Fargekart per HOVEDområde (første siffer). Undergrupper arver forelderens farge, så
-# «2.05 JUR» og «2.30 HMS» kjennes igjen som Administrasjon. Jf. [[fargekart-omrader]].
+# FARGEKART per HOVEDområde. Undergrupper arver forelderens farge (unntak under).
+#
+# KILDE: lest direkte fra områdeikonene i SDVp-mediebiblioteket
+# («051 SDVp/2 ADMIN/2.90 IT/2.90 IT/051 2.90 IT - 05 MedieBibl», 41 ikoner),
+# + Gjermunds korreksjoner 18.07.2026 der ikonene manglet farge eller ikke skilte:
+#   0 Info  → grå                    (ikon er gråtone)
+#   1 LED   → SOM 2.70, mørk blå     (ikon er gråtone)
+#   3 DRIFT → knall grønn            (ikon er gråtone)
+#   5 MAR   → mørk kraftig grønn  ┐  ikonene ga BEGGE #548430 — måtte skilles,
+#   7 PRJ   → lysere grønn        ┘  ellers blir boksene like
+#   8 FAG   → grønn/blå (teal)       (ikon er gul — overstyrt)
 _AREA_FARGE = {
-    "0": "graa", "1": "graa", "2": "blaa", "3": "slate", "4": "oransje",
-    "5": "gronn", "6": "rod", "7": "gronn", "8": "gronn", "9": "lilla",
+    "0": "graa",        # Info
+    "1": "blaam",       # Ledelse — samme som 2.70
+    "2": "blaa",        # Administrasjon (lys blå #0078CC)
+    "3": "gronnk",      # Drift — knall grønn
+    "4": "oransje",     # Logistikk (#E47830)
+    "5": "gronnm",      # Marked — mørk kraftig grønn
+    "6": "rod",         # Salg (#D80000)
+    "7": "gronnl",      # Prosjekter — lysere grønn
+    "8": "tealx",       # FAG — grønn/blå
+    "9": "turkis",      # Privat (#78D8D8)
 }
-# Unntak: enkelte underområder har EGEN farge i fargekartet og skal ikke arve forelderens.
-_AREA_FARGE_UNNTAK = {"2.90": "lilla", "8.50": "lilla"}
+# UNNTAK: underområder med EGEN farge — arver IKKE hovedområdets.
+# Verifisert mot ikonene i mediebiblioteket (lest fra pikslene, ikke antatt).
+_AREA_FARGE_UNNTAK = {
+    # Finans under Admin — mørk blå #243C6C (ikon-verifisert)
+    "2.70": "blaam",    # BPA / FIi
+    "2.71": "blaam",    # FIe
+    "2.80": "blaam",    # RGS
+    # IT-familien — lilla #7830A8 (ikon-verifisert). AI hører hit, ikke til gul 8-serie.
+    "2.90": "lilla",    # IT
+    "2.91": "lilla",    # ERP
+    "8.50": "lilla",    # AI
+    "8.51": "lilla",    # AID
+}
+# 8.50–8.99 er AI-serien og skal være lilla som 2.90 IT (Gjermund 18.07.2026),
+# selv om 8 FAG ellers er grønn/blå. Håndteres i _omraade_farge().
+_AI_SERIE = re.compile(r"^8\.(5\d|[6-9]\d)$")
 
 
 def _omraade_farge(kode):
-    """Farge for en områdekode. Undergrupper arver hovedområdets farge, unntatt de
-    som har egen farge i fargekartet (2.90 IT, 8.50 AI)."""
-    return _AREA_FARGE_UNNTAK.get(kode) or _AREA_FARGE.get(kode.split(".")[0], "graa")
+    """Farge for en områdekode.
+
+    Rekkefølge: eksakt unntak → AI-serien 8.50–8.99 (lilla) → hovedområdets farge.
+    Undergrupper arver altså forelderen med mindre de står i unntakslista.
+    """
+    kode = (kode or "").strip()
+    if kode in _AREA_FARGE_UNNTAK:
+        return _AREA_FARGE_UNNTAK[kode]
+    if _AI_SERIE.match(kode):
+        return "lilla"                       # hele AI-serien, som 2.90 IT
+    return _AREA_FARGE.get(kode.split(".")[0], "graa")
 
 # Reserve hvis prosjekt-treet ikke er lesbart (tom base / manglende rettigheter).
 # Den LEVENDE taksonomien leses fra treet — se _taksonomi_levende().
