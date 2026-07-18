@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.9.0",
+    "version": "19.0.1.10.0",
     "summary": "FIQ Prosjekt – native disposisjonsnummer (WBS) + generisk sjekkliste-motor "
                "(nivå × type, krav dok/foto/signatur) + OWL sjekkliste-flate (bygg/kvitter). "
                "Alt synlig i Odoos egne visninger.",
