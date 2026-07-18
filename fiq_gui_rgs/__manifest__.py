@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Regnskap",
-    "version": "19.0.1.5.0",
+    "version": "19.0.1.6.0",
     "summary": "AI GUI Regnskap (2.80) — visningen av AI Regnskap-Rådgiveren: likviditet, "
                "cashflow, kritiske datoer og tidlig korrigering.",
     "description": """
@@ -27,7 +27,7 @@ Harde regler innebygd i flaten:
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
     "license": "LGPL-3",
-    "depends": ["fiq_gui_control", "web", "account"],
+    "depends": ["fiq_gui_control", "fiq_gui_shell", "web", "account"],
     "data": [
         "security/fiq_gui_rgs_groups.xml",
         "views/fiq_gui_rgs_action.xml",
