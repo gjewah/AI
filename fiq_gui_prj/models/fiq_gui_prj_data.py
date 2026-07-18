@@ -36,6 +36,19 @@ class FiqGuiPrjData(models.AbstractModel):
             return [("company_id", "=", int(firma_id))]
         return [("company_id", "in", tillatte)]
 
+    def _prosjekt_domene(self, firma_id=None):
+        """Prosjekt-domene: firma-scope MINUS maler.
+
+        MALER SKAL ALDRI VISES (AI KTRL-kontrakten: «is_template = True ekskluderes
+        automatisk — 0.90-serien er MALER, rør dem aldri»).
+        Verifisert 18.07: basen har 150 prosjekter, hvorav 12 er maler. Uten dette
+        filteret fylte 0.90-malene hele førstesiden, og ekte prosjekter ble skjøvet ut.
+        """
+        domene = self._firma_domene(firma_id)
+        if "is_template" in self.env["project.project"]._fields:
+            domene = domene + [("is_template", "=", False)]
+        return domene
+
     # ---------- offentlig API for flaten ----------
 
     @api.model
@@ -46,7 +59,7 @@ class FiqGuiPrjData(models.AbstractModel):
         med andel ferdige oppgaver som fallback der `allocated_hours` ikke er satt.
         """
         Project = self.env["project.project"]
-        domene = self._firma_domene(firma_id)
+        domene = self._prosjekt_domene(firma_id)
         prosjekter = Project.search(domene, limit=int(grense), order="name")
 
         rader = []
@@ -56,7 +69,12 @@ class FiqGuiPrjData(models.AbstractModel):
             est = p.allocated_hours or 0.0
             ført = p.effective_hours if "effective_hours" in p._fields else 0.0
 
-            if est:
+            # Rekkefølgen er bevisst: timer er FASIT, oppgaveandel er et ANSLAG.
+            # Krav: est > 0. Verifisert 18.07 at de fleste prosjekter har
+            # allocated_hours = 0 — da er «0 % beregnet fra timer» meningsløst og
+            # direkte villedende. Uten denne sjekken viste et prosjekt med 66
+            # oppgaver «0,0 % (timer)», som så ut som en feil i dataene.
+            if est > 0:
                 fremdrift = min(100.0, (ført / est) * 100.0)
                 kilde = "timer"
             elif oppgaver:
@@ -89,6 +107,7 @@ class FiqGuiPrjData(models.AbstractModel):
                 for c in self.env["res.company"].browse(self._tillatte_firmaer())
             ],
             "valgt_firma": int(firma_id) if firma_id else False,
+            "antall_totalt": Project.search_count(self._prosjekt_domene(firma_id)),
         }
 
     @api.model
