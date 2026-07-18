@@ -1132,6 +1132,13 @@ class FiqControlRoomConfig(models.Model):
             # Kommunikasjon, ikke et eget toppnivå (Gjermund 17.07.2026).
             "gui_epost": "fiq_gui_epost.action_fiq_gui_epost",
             "gui_rgs": "fiq_gui_rgs.action_fiq_gui_rgs",
+            # 18.07.2026: KR tegnet sine EGNE gamle utgaver av disse (view: kommunikasjon/
+            # airmm/prosjektkr) i stedet for de ekte modulene. Modulene var installert og
+            # oppdaterte hele tiden — menyen pekte bare aldri paa dem. Verifisert i basen:
+            # alle tre handlingene finnes i ir_model_data.
+            "kommunikasjon": "fiq_gui_comm.action_fiq_gui_comm",
+            "airmm": "fiq_gui_ai_kr.action_fiq_ai_kr",
+            "gui_fin": "fiq_gui_fin.action_fiq_gui_fin",
             # Kunnskap: artikler/maler (Odoo Knowledge — hjemmesiden)
             "kunnskap": "knowledge.ir_actions_server_knowledge_home_page",
             # Enkel-flatens store arbeider-knapper (native der det finnes)

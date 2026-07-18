@@ -38,7 +38,7 @@ const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj
 // ⚠️ MÅ FØLGE __manifest__.py sin "version" — ellers tror KR at fanen kjører gammel
 // kode og viser «A new version is installed»-banneret som ALDRI forsvinner, uansett
 // hvor mange ganger brukeren laster på nytt. Bump denne i SAMME commit som manifestet.
-const GUI_BUILD = "19.0.6.82.0";
+const GUI_BUILD = "19.0.6.83.0";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -1432,13 +1432,20 @@ export class FiqControlRoom extends Component {
     get navItems() {
         const DEF = [
             { key: "kontrollrom", label: _t("Control Room"), view: "oversikt" },
-            { key: "kommunikasjon", label: _t("Communication"), view: "kommunikasjon", icon: "/fiq_gui_control/static/img/epost.png" },
+            // 18.07.2026 (Gjermund): «dette er testversjonen som kom som demo for 14 dager
+            // siden, ikke den nye utviklede Kommunikasjon» — og samme for Prosjekt og AI KR.
+            // ROTAARSAK: disse tre hadde view: → navDo() valgte setView() = KRs EGEN gamle
+            // innebygde utgave, og naadde ALDRI den ekte modulen. Modulene var installert og
+            // oppdaterte hele tiden (comm 1.2.0, ai_kr 2.3.0, prj 1.9.0). view: fjernet →
+            // runAction() → ekte flate. Handlingene er verifisert i basen (ir_model_data).
+            { key: "kommunikasjon", label: _t("Communication"), icon: "/fiq_gui_control/static/img/epost.png" },
             { key: "hmsks", label: _t("HSE/QA"), view: "hmsks" },
-            { key: "airmm", label: _t("AI Control room"), view: "airmm" },
-            { key: "gui_prj", label: _t("Projects"), view: "prosjektkr", title: _t("Open the Project control room") },
+            { key: "airmm", label: _t("AI Control room") },
+            { key: "gui_prj", label: _t("Projects"), title: _t("Open the Project control room") },
             { key: "gui_crm", label: _t("CRM") },
             { key: "gui_leads", label: _t("Leads") },
             { key: "gui_so", label: _t("Sales orders") },
+            { key: "gui_fin", label: _t("Finance") },
             // Ingen «Email» her: e-post er én KANAL inne i Kommunikasjon (Alle · E-post ·
             // WhatsApp · Teams · chat), ikke et eget toppnivå. Gjermund 17.07.2026:
             // «e-post skal ikke vises før vi er inne i kommunikasjonssenteret».
