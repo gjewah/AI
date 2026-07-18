@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_fiq_tilgang" model="ir.module.category">
+        <field name="name">FIQ Tilgang</field>
+    </record>
+
+    <!-- Global admin per selskap: alt i eget selskap -->
+    <record id="group_company_admin" model="res.groups">
+        <field name="name">Global admin (selskap)</field>
+        <field name="category_id" ref="module_category_fiq_tilgang"/>
+    </record>
+
+    <!-- Global admin på topp: alt, alle selskap (arver selskaps-admin) -->
+    <record id="group_global_admin" model="res.groups">
+        <field name="name">Global admin (topp)</field>
+        <field name="category_id" ref="module_category_fiq_tilgang"/>
+        <field name="implied_ids" eval="[(4, ref('group_company_admin'))]"/>
+    </record>
+</odoo>

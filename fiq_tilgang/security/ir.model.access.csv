@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_fiq_tilgang_regel_admin,fiq.tilgang.regel admin,model_fiq_tilgang_regel,group_company_admin,1,1,1,1
+access_fiq_tilgang_regel_user,fiq.tilgang.regel bruker,model_fiq_tilgang_regel,base.group_user,1,0,0,0
+access_fiq_tilgang_rolle_admin,fiq.tilgang.rolle admin,model_fiq_tilgang_rolle,group_company_admin,1,1,1,1
+access_fiq_tilgang_rolle_user,fiq.tilgang.rolle bruker,model_fiq_tilgang_rolle,base.group_user,1,0,0,0
