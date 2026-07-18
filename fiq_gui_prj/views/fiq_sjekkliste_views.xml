@@ -113,6 +113,37 @@
               action="action_fiq_sjekkliste"
               sequence="20"/>
 
+    <!--
+      OWL-FLATEN (sprettopp) — «penere inngang» til de SAMME dataene (KANON Odoo-native først).
+      To moduser i én komponent: bygg (eier lager punkter/krav) · kvitter (arbeider huker av
+      m/ foto/dok/signatur). Modus defaulter fra user.isInternalUser. Rettighetsnøytral —
+      ingen ny res.groups (rolle-motoren 00.03gew eier tilgang; meldt i koordineringsfila).
+    -->
+    <record id="action_fiq_sjekkliste_flate" model="ir.actions.client">
+        <field name="name">Sjekkliste-flate</field>
+        <field name="tag">fiq_sjekkliste_flate</field>
+    </record>
+
+    <menuitem id="menu_fiq_sjekkliste_flate"
+              name="Sjekkliste-flate"
+              parent="menu_fiq_prj_root"
+              action="action_fiq_sjekkliste_flate"
+              sequence="25"/>
+
+    <!-- Knapp i sjekkliste-skjemaet: åpne DENNE lista i flaten -->
+    <record id="view_fiq_sjekkliste_form_flateknapp" model="ir.ui.view">
+        <field name="name">fiq.sjekkliste.form.flateknapp</field>
+        <field name="model">fiq.sjekkliste</field>
+        <field name="inherit_id" ref="view_fiq_sjekkliste_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="apne_flate" type="object" string="Åpne flate"
+                        class="btn-primary" icon="fa-check-square-o"
+                        invisible="not id"/>
+            </xpath>
+        </field>
+    </record>
+
     <!-- Sjekklister som egen fane på oppgaven (native) -->
     <record id="view_task_form_fiq_sjekkliste" model="ir.ui.view">
         <field name="name">project.task.form.fiq.sjekkliste</field>
@@ -121,6 +152,11 @@
         <field name="arch" type="xml">
             <xpath expr="//notebook" position="inside">
                 <page string="Sjekklister" name="fiq_sjekklister">
+                    <div class="oe_button_box">
+                        <button name="apne_sjekkliste_flate" type="object"
+                                string="Åpne sjekkliste-flate" class="btn-primary"
+                                icon="fa-check-square-o" invisible="not id"/>
+                    </div>
                     <field name="fiq_sjekkliste_fremdrift" widget="progressbar" readonly="1"/>
                     <field name="fiq_sjekkliste_ids" nolabel="1">
                         <list>

@@ -96,6 +96,23 @@ class FiqSjekkliste(models.Model):
             except (ValueError, TypeError):
                 s.versjon = "1.0"
 
+    def apne_flate(self):
+        """Åpne OWL-sjekkliste-flaten forhåndsvalgt på DENNE lista.
+
+        Flaten er en penere inngang til de samme dataene (KANON Odoo-native først) —
+        knappen finnes i skjemaets header, men lista virker uten flaten.
+        """
+        self.ensure_one()
+        return {
+            "type": "ir.actions.client",
+            "tag": "fiq_sjekkliste_flate",
+            "name": self.name or "Sjekkliste",
+            "context": {
+                "default_sjekkliste_id": self.id,
+                "default_task_id": self.task_id.id or False,
+            },
+        }
+
 
 class FiqSjekklistePunkt(models.Model):
     _name = "fiq.sjekkliste.punkt"

@@ -35,6 +35,24 @@ class ProjectTask(models.Model):
                 sum(lister.mapped("fremdrift")) / len(lister) if lister else 0.0
             )
 
+    def apne_sjekkliste_flate(self):
+        """Åpne OWL-sjekkliste-flaten for DENNE oppgavens sjekklister.
+
+        Knappen på oppgaven; flaten laster kun task_id = denne oppgaven (se
+        sjekkliste_flate.js lastLister). Virker uten flaten — fanen «Sjekklister» finnes native.
+        """
+        self.ensure_one()
+        return {
+            "type": "ir.actions.client",
+            "tag": "fiq_sjekkliste_flate",
+            "name": "Sjekklister",
+            "context": {
+                "active_model": "project.task",
+                "active_id": self.id,
+                "default_task_id": self.id,
+            },
+        }
+
     # Dynamisk disposisjonsnummer (MS Project-modell): endres når oppgaven flyttes.
     # store=True så den kan sorteres/grupperes/søkes på i native views.
     fiq_wbs_number = fields.Char(

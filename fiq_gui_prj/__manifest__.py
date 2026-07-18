@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.8.0",
+    "version": "19.0.1.9.0",
     "summary": "FIQ Prosjekt – native disposisjonsnummer (WBS) + generisk sjekkliste-motor "
-               "(nivå × type, krav dok/foto/signatur). Alt synlig i Odoos egne visninger.",
+               "(nivå × type, krav dok/foto/signatur) + OWL sjekkliste-flate (bygg/kvitter). "
+               "Alt synlig i Odoos egne visninger.",
     "description": """
 FIQ GUI Prosjekt
 ===================
@@ -14,6 +15,27 @@ med Odoo-visning. Slås KR av, står de fortsatt.
 19.0.1.4.1 (06.74) — BYGGEFIKS: `expand=`/`string=` på `<group>` i søkevisning er
  Odoo 18-syntaks og gjør visningen ugyldig i 19 -> rødt bygg. Fanget og rettet av
  06.74 mens denne økta bygget videre. Inkludert her.
+
+19.0.1.9.0 — OWL SJEKKLISTE-FLATE (bygg / kvitter):
+ * Client action `fiq_sjekkliste_flate` — «penere inngang» til de SAMME dataene.
+   KANON Odoo-native først: modellen + native views virker uendret uten flaten.
+ * TO MODUSER i ÉN komponent (Gjermund: «PC-eier legger til / mobil-arbeider kvitterer»):
+   - bygg    — legg til punkter, veksle krav 📄 dok / 📷 foto / ✍ signatur, slett punkt
+   - kvitter — stor hake (hanske/byggeplass), last opp foto/dok, signér
+   Modus defaulter fra `user.isInternalUser`, men er togglebar (byggeleder på mobil).
+ * Opplasting via KJERNENS `FileInput` -> /web/binary/upload_attachment med
+   resModel/resId -> ir.attachment knyttes til punktet, id skrives i kvitt_foto_id/
+   kvitt_dok_id. Ingen egen base64-håndtering (verifisert mot web/core/file_input).
+ * Krav-constraint RESPEKTERES: kan et punkt ikke kvitteres, er haken sperret og
+   «Venter på: dokument + foto» vises. Feiler et forsøk, vises modellens
+   ValidationError som varsel — flaten feiler ALDRI stille.
+ * Inngangsdører: eget menypunkt · knapp i sjekkliste-skjemaets header (apne_flate)
+   · knapp på oppgavens sjekkliste-fane (apne_sjekkliste_flate, filtrerer på oppgaven).
+ * RETTIGHETSNØYTRAL: ingen ny res.groups. Arver security fra ir.model.access.csv
+   (intern = CRUD, portal = les liste + skriv punkt). Rolle-motoren eier tilgang.
+ * Verifisert mot Odoo 19-kilde på Staging: useService fra @web/core/utils/hooks,
+   user.isInternalUser/name, luxon global, `and` i t-if (575 treff i core vs 42 `&&`).
+   SCSS uten min(px,vw) (den fellen dreper hele assets-bundelen).
 
 19.0.1.5.0 — NATIVE MENYPUNKT (flaten var UÅPNELIG):
  * Modulen hadde INGEN menypunkter, og KR-skallet lenket ikke til flaten (grep: 0 treff)
