@@ -38,7 +38,7 @@ const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj
 // ⚠️ MÅ FØLGE __manifest__.py sin "version" — ellers tror KR at fanen kjører gammel
 // kode og viser «A new version is installed»-banneret som ALDRI forsvinner, uansett
 // hvor mange ganger brukeren laster på nytt. Bump denne i SAMME commit som manifestet.
-const GUI_BUILD = "19.0.6.81.0";
+const GUI_BUILD = "19.0.6.82.0";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -139,6 +139,7 @@ export class FiqControlRoom extends Component {
             kommDir: "alle",      // alle | mottatt | sendt (direction "sent from")
             kommSender: null,     // {id, name} – filter on a single sender
             dashboards: [],       // Odoo native dashboards/analyses (only the ones that exist)
+            fiqFlater: [],        // selvregistrerte FIQ-modul-flater (get_fiq_flater) – nye moduler uten kode-endring her
             presence: [],         // «Til stede nå» – interne brukere + tilgjengelighets-status
             kal: { moter: [], aktiviteter: [], mnd: [] }, // Møter/aktiviteter-panelet (periode-styrt)
             selPerson: null,      // valgt person (toggle på Til stede-kort) — styrer kalender + komm
@@ -1095,6 +1096,12 @@ export class FiqControlRoom extends Component {
         let dashboards = [];
         try { dashboards = await this.orm.call("fiq.gui.control.config", "get_dashboards", []); } catch (e) {}
 
+        // Selvregistrerte FIQ-flater: nye moduler melder seg selv inn i menyen, uten at
+        // denne fila endres. Feiler kallet, står menyen igjen med de faste punktene.
+        let fiqFlater = [];
+        try { fiqFlater = await this.orm.call("fiq.gui.control.config", "get_fiq_flater", []); } catch (e) {}
+        this.state.fiqFlater = fiqFlater;
+
         // «Til stede nå» – interne brukere + tilgjengelighets-status
         let presence = [];
         try { presence = await this.orm.call("fiq.gui.control.config", "get_presence", []); } catch (e) {}
@@ -1438,12 +1445,22 @@ export class FiqControlRoom extends Component {
             { key: "gui_rgs", label: _t("Accounting") },
             { key: "kunnskap", label: _t("Knowledge"), title: _t("Articles, templates and documentation") },
         ];
+        // Selvregistrerte flater fra andre FIQ-moduler (get_fiq_flater). En ny modul
+        // kommer inn HER uten at denne fila røres — det var nettopp koblingen som manglet:
+        // modulene var installert og hadde handlinger, men menyen visste ikke om dem.
+        // Server-siden har alt verifisert at handlingen finnes i denne basen.
+        const DYN = (this.state.fiqFlater || []).map((f) => ({
+            key: f.key, label: f.label, xmlid: f.xmlid, icon: f.icon || undefined,
+        }));
+        const alle = DEF.concat(DYN.filter((d) => !DEF.some((x) => x.key === d.key)));
         const map = {};
-        DEF.forEach((d) => { map[d.key] = d; });
+        alle.forEach((d) => { map[d.key] = d; });
         const orden = this.state.navOrder.filter((k) => map[k])
-            .concat(DEF.map((d) => d.key).filter((k) => !this.state.navOrder.includes(k)));
+            .concat(alle.map((d) => d.key).filter((k) => !this.state.navOrder.includes(k)));
         return orden.map((k) => map[k])
-            .filter((d) => d.view || this.state.actions[d.key])
+            // d.xmlid = selvregistrert flate: server-siden har ALLEREDE bekreftet at
+            // handlingen finnes i denne basen, så den skal ikke filtreres bort her.
+            .filter((d) => d.view || d.xmlid || this.state.actions[d.key])
             .map((d) => Object.assign({ active: d.view ? this.state.view === d.view : false }, d));
     }
 
@@ -1704,7 +1721,10 @@ export class FiqControlRoom extends Component {
     // Beslutningsstøtte: kjør ekte doAction hvis handlingen finnes (guardet), ellers varsel.
     // key = nøkkel fra get_actions (nytt_prosjekt/salgsordre/nytt_leads/tilbud/kunde/dokument …)
     runAction(key) {
-        const xmlid = this.state.actions[key];
+        // Selvregistrerte FIQ-flater bærer sin egen xmlid (get_fiq_flater) — uten dette
+        // oppslaget ville en ferdig, installert modul havnet i «under utvikling».
+        const dyn = (this.state.fiqFlater || []).find((f) => f.key === key);
+        const xmlid = this.state.actions[key] || (dyn && dyn.xmlid);
         if (xmlid) {
             this.action.doAction(xmlid);
         } else {

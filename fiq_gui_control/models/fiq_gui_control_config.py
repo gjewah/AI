@@ -1230,6 +1230,47 @@ class FiqControlRoomConfig(models.Model):
     ]
 
     @api.model
+    def get_fiq_flater(self):
+        """Every FIQ module that WANTS a spot in the control room menu, discovered — not hardcoded.
+
+        A module registers itself by shipping ONE ir.config_parameter:
+
+            fiq_gui_control.flate.<key> = {"label": "Inspections", "xmlid": "fiq_befaring.action_fiq_befaring",
+                                           "sequence": 60, "icon": "/mod/static/img/x.png"}
+
+        Why this exists: the menu used to be a hardcoded list inside control_room.js, so EVERY new
+        module required editing the control room core and bumping its version. Modules shipped, worked,
+        had actions — and stayed invisible. Discovery removes that coupling: the module declares, the
+        control room finds it. Nothing here needs to change when module number 30 arrives.
+
+        Safety: the action xmlid must resolve in THIS database (env.ref guard) or the entry is dropped,
+        so a menu item can never point at something the tenant doesn't have.
+        """
+        ICP = self.env["ir.config_parameter"].sudo()
+        prefix = "fiq_gui_control.flate."
+        out = []
+        for param in ICP.search([("key", "=like", prefix + "%")]):
+            key = param.key[len(prefix):]
+            if not key:
+                continue
+            try:
+                spec = json.loads(param.value or "{}")
+            except (ValueError, TypeError):
+                # A malformed declaration must never break the menu for everyone.
+                continue
+            xmlid = spec.get("xmlid")
+            if not xmlid or not self.env.ref(xmlid, raise_if_not_found=False):
+                continue
+            out.append({
+                "key": key,
+                "label": spec.get("label") or key.replace("_", " ").title(),
+                "xmlid": xmlid,
+                "icon": spec.get("icon") or False,
+                "sequence": int(spec.get("sequence") or 50),
+            })
+        return sorted(out, key=lambda f: (f["sequence"], f["label"]))
+
+    @api.model
     def get_dashboards(self):
         """Returns the native dashboard/analysis actions that actually exist in this DB
         (xmlid resolves). The front-end opens them in-page via doAction(xmlid) – SSOT,

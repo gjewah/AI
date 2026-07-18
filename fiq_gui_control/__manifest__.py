@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Control room",
-    "version": "19.0.6.81.0",
+    "version": "19.0.6.82.0",
     "summary": "Control room – the unified OWL shell (dashboard/landing) that hosts every "
                "main menu as a navigation view: company picker, Simple/Full mode, per-company "
                "accent/logo, KPIs from real Odoo data, communication and dynamic widgets.",
@@ -33,6 +33,7 @@ Key features
         "views/fiq_gui_control_admin.xml",
         "views/project_task_type_views.xml",
         "views/control_room_action.xml",
+        "data/fiq_gui_control_flater.xml",
     ],
     "assets": {
         "web.assets_backend": [
