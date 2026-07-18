@@ -18,6 +18,26 @@ class FiqGuiAiKrData(models.AbstractModel):
     _name = "fiq.gui.ai.kr.data"
     _description = "FIQ AI KR – data-lag (oppgave-oversikt over AI-økter)"
 
+    # Kandidat-navn for rot-prosjektet, i prioritert rekkefølge. Første treff vinner.
+    # «AI Økter (MP)» = det historisk seedede navnet. «8.50 AI (MP)» = AI-paraplyen som
+    # faktisk finnes på fiqas Staging (verifisert 18.07.2026).
+    OKTER_ROT_KANDIDATER = ["AI Økter (MP)", "8.50 AI (MP)", "8.50 AI"]
+
+    def _finn_okter_rot(self):
+        """Finn rot-prosjektet for AI-økter på NAVN — aldri hardkodet id.
+
+        Brukes når systemparameteren mangler (typisk etter DB-nullstilling på Staging).
+        Returnerer et project.project-recordset (tomt hvis ingenting matcher).
+        """
+        Project = self.env["project.project"].sudo()
+        for navn in self.OKTER_ROT_KANDIDATER:
+            # `name` er oversettbar (jsonb) i Odoo 19 -> `=ilike` med eksakt verdi er
+            # tryggere enn `=` mot et oversatt felt.
+            treff = Project.search([("name", "=ilike", navn)], limit=1)
+            if treff:
+                return treff
+        return Project.browse()
+
     def _stage_is_done(self, stage):
         """Ferdig-stadium = fold eller is_closed (defensivt mot feltvariasjon)."""
         if not stage:
@@ -71,15 +91,30 @@ class FiqGuiAiKrData(models.AbstractModel):
                "krever": []}
         try:
             pid = int(ICP.get_param("fiq_gui_ai_kr.okter_project_id", "0") or 0)
-        except Exception:
+        except (ValueError, TypeError):
             pid = 0
-        if not pid:
-            return out
 
         P = self.env["project.project"]
-        root = P.browse(pid).exists()
+        root = P.browse(pid).exists() if pid else False
         if not root:
-            return out
+            # SELVHELBREDENDE: finn rot-prosjektet på navn og lagre valget.
+            #
+            # Hvorfor dette trengs (målt på fiqas Staging 18.07.2026, ikke antatt):
+            # parameteren ble seedet manuelt 11.07, men **staging-DB er efemer** — den ble
+            # nullstilt og seedingen forsvant. Flaten returnerte da tomt («Ingen prosjekter
+            # matcher filtrene») mens basen hadde 150 aktive prosjekter. Gjermund så en tom
+            # flate uten å kunne vite at årsaken var en manglende parameter, ikke en ødelagt
+            # flate. Manuell re-seeding ville bare utsatt problemet til neste nullstilling.
+            #
+            # Hooks duger ikke: `post_init_hook` kjører KUN ved install, ikke ved upgrade
+            # (verifisert i Odoo 19 `odoo/modules/loading.py:239-244`) — modulen er allerede
+            # installert, så en hook ville aldri kjørt. Derfor løses det her, ved oppslag.
+            #
+            # Aldri hardkodet id: id-er varierer per base (fiqas/sdvg/jpc01/vidir).
+            root = self._finn_okter_rot()
+            if not root:
+                return out
+            ICP.set_param("fiq_gui_ai_kr.okter_project_id", str(root.id))
         out["root"] = root.name or ""
 
         projects = list(root)
