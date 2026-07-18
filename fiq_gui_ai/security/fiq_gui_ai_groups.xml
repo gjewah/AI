@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- FIQ AI co-worker access group (Odoo 19: res.groups takes name + implied_ids).
+         "AI MGM" (AI Management) governs configuration of the AI co-worker
+         (API key, model). The chat itself is open to all internal users. -->
+    <record id="group_ai_mgm" model="res.groups">
+        <field name="name">AI MGM</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <!-- Odoo system admin automatically gets AI MGM. -->
+    <record id="base.group_system" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('fiq_gui_ai.group_ai_mgm'))]"/>
+    </record>
+</odoo>
