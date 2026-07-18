@@ -34,3 +34,23 @@ class FiqKommunikasjonDataEpost(models.AbstractModel):
             "sekvens": 10,
         })
         return kanaler
+
+    def _bokser(self):
+        """Lever E-postens fargebokser inn i Kommunikasjon-oversikten (forsiden):
+        basis (Innboks/Uleste/Sendt) · tverrgående · områder 0–8. Samme tall som
+        e-post-flaten viser — ÉN kilde (`get_boxes`), ikke en kopi."""
+        bokser = super()._bokser()
+        try:
+            b = self.env["fiq.meldingssenter.data"].get_boxes()
+        except Exception:
+            return bokser                       # aldri la en teller velte forsiden
+        for gruppe, nokkel in (("basis", "basis"),
+                               ("tverrgaende", "tverrgaende"),
+                               ("omraade", "taksonomi")):
+            for x in (b.get(nokkel) or []):
+                bokser.append({
+                    "kode": x.get("kode"), "navn": x.get("navn"),
+                    "count": x.get("count") or 0, "farge": x.get("farge") or "graa",
+                    "gruppe": gruppe, "kanal": "epost",
+                })
+        return bokser

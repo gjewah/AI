@@ -233,7 +233,11 @@ class FiqMeldingssenterData(models.AbstractModel):
             til = m.partner_ids.mapped("display_name") if m.partner_ids else []
             element = ""
             try:
-                element = self.env[m.model].browse(m.res_id).display_name or ""
+                # Vis prosjektnavnet som SharePoint-MAPPENAVNET (Gjermund 18.07.2026).
+                # display_name gir «25_040 - 012 FIQ (MP)» (sekvensnr foran) — SP-mappa
+                # heter «012 FIQ (MP)». Bruk `name` der modellen har det; ellers display_name.
+                rec = self.env[m.model].browse(m.res_id)
+                element = (rec.name if "name" in rec._fields else rec.display_name) or ""
             except Exception:
                 element = ""
             out.append({

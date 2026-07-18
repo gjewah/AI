@@ -50,8 +50,24 @@
   .ubtn.ai{background:color-mix(in srgb,#7030A0 12%,var(--surface));border-color:color-mix(in srgb,#7030A0 40%,transparent);color:#8B46C0;font-weight:750}
 
   // TRE-RUTE
-  .pane{display:grid;grid-template-columns:230px 360px 1fr;gap:12px;align-items:start}
-  @media (max-width:1080px){.pane{grid-template-columns:1fr}}
+  // Dragbare kolonnebredder (Gjermund 18.07.2026). Breddene styres av CSS-variabler
+  // som JS setter fra dra-håndtakene og husker i nettleseren (localStorage).
+  .pane{display:grid;grid-template-columns:var(--w-tre,230px) 6px var(--w-liste,360px) 6px 1fr;
+        gap:0;column-gap:0;align-items:start}
+  .pane > .tree,.pane > .col{margin-right:0}
+  .pane > .col.list{margin-left:0}
+  @media (max-width:1080px){
+    .pane{grid-template-columns:1fr}
+    .drag{display:none}                      // ingen dragging på smal skjerm
+  }
+  // Dra-håndtak mellom kolonnene
+  .drag{align-self:stretch;min-height:120px;cursor:col-resize;border-radius:3px;background:transparent;
+        border:0;padding:0;position:relative;transition:background .12s}
+  .drag::before{content:"";position:absolute;left:2px;right:2px;top:0;bottom:0;border-radius:3px;background:var(--line-soft)}
+  .drag:hover::before,.drag.on::before{background:var(--accent)}
+  .drag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  // Kolonnene må kunne krympe under innholdsbredden, ellers «låser» de seg
+  .pane > .tree,.pane > .col{min-width:0}
   .col{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
 
   // Mappetre (venstre)

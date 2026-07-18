@@ -3,7 +3,7 @@
 // Meldingssenter — Outlook-utforming (tre-rute), V00.05.
 // Godkjent GUI-retning (Gjermund 2026-07-14): mappetre | meldingsliste | lese-/kontekstpanel,
 // taksonomi-boksene som «smarte mapper», cockpit-oversikten bak «Hjem». EKTE data via samme backend-API.
-import { Component, useState, onWillStart } from "@odoo/owl";
+import { Component, useState, onWillStart, onMounted } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
@@ -39,6 +39,7 @@ export class FiqMeldingssenter extends Component {
             await this.lastBokser();
             // Lander på OVERSIKTEN (forsiden) — ikke i innboksen. E-post er et underpunkt du går inn i.
         });
+        onMounted(() => this.lastBredder());     // gjenopprett dragde kolonnebredder
     }
 
     async lastBokser() {
@@ -74,6 +75,9 @@ export class FiqMeldingssenter extends Component {
         } else {
             this.state.view = "inbox";
         }
+        // Tre-ruta bygges først NÅ (den finnes ikke i «hjem»-visningen), så breddene
+        // må settes etter at den er tegnet — ellers har .pane ingen kolonner å styre.
+        requestAnimationFrame(() => this.lastBredder());
     }
     visInnboks() { this.aapneEpost(); }
 
@@ -208,6 +212,52 @@ export class FiqMeldingssenter extends Component {
     tilbakeKR() { this.action.doAction("fiq_gui_control.action_fiq_gui_control"); }
     aapneKalender() { this.action.doAction("calendar.action_calendar_event"); }
     aapneInnstillinger() { this.action.doAction("base_setup.action_general_configuration"); }
+
+    // ---- Dragbare kolonnebredder (Gjermund 18.07.2026) ------------------------------
+    // Bredden settes som CSS-variabler på .pane og huskes i nettleseren, så oppsettet
+    // står ved neste besøk. Grenser hindrer at en kolonne dras helt bort.
+    static BREDDER = { tre: { min: 170, max: 420, std: 230, css: "--w-tre" },
+                       liste: { min: 260, max: 720, std: 360, css: "--w-liste" } };
+
+    lastBredder() {
+        const pane = document.querySelector(".msapp .pane");
+        if (!pane) return;
+        for (const [key, cfg] of Object.entries(FiqMeldingssenter.BREDDER)) {
+            let v = parseInt(window.localStorage.getItem("fiq_epost_bredde_" + key) || "", 10);
+            if (!Number.isFinite(v)) v = cfg.std;
+            pane.style.setProperty(cfg.css, Math.min(cfg.max, Math.max(cfg.min, v)) + "px");
+        }
+    }
+
+    startDrag(ev, key) {
+        const cfg = FiqMeldingssenter.BREDDER[key];
+        const pane = ev.target.closest(".pane");
+        if (!cfg || !pane) return;
+        ev.preventDefault();                                   // ingen tekstmarkering
+        const start = ev.clientX;
+        const fra = parseInt(getComputedStyle(pane).getPropertyValue(cfg.css), 10) || cfg.std;
+        ev.target.classList.add("on");
+        ev.target.setPointerCapture?.(ev.pointerId);
+
+        const flytt = (e) => {
+            const bredde = Math.min(cfg.max, Math.max(cfg.min, fra + (e.clientX - start)));
+            pane.style.setProperty(cfg.css, bredde + "px");
+        };
+        const slutt = () => {
+            ev.target.classList.remove("on");
+            const naa = parseInt(getComputedStyle(pane).getPropertyValue(cfg.css), 10);
+            if (Number.isFinite(naa)) {
+                try { window.localStorage.setItem("fiq_epost_bredde_" + key, String(naa)); }
+                catch (e) { /* privat modus e.l. — bredden gjelder da kun denne økta */ }
+            }
+            window.removeEventListener("pointermove", flytt);
+            window.removeEventListener("pointerup", slutt);
+            window.removeEventListener("pointercancel", slutt);
+        };
+        window.addEventListener("pointermove", flytt);
+        window.addEventListener("pointerup", slutt);
+        window.addEventListener("pointercancel", slutt);       // rydder også ved avbrudd
+    }
 
     // Hjelpere
     initialer(navn) {

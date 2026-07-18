@@ -120,6 +120,11 @@
                         </div>
                     </div>
 
+                    <!-- Dra-håndtak: mappetre ↔ liste -->
+                    <button class="drag" t-if="state.view==='inbox'" t-ref="dragTre"
+                            t-on-pointerdown="(ev) => this.startDrag(ev, 'tre')"
+                            title="Dra for å justere bredden" aria-label="Juster bredde på mappetreet"/>
+
                     <!-- MIDT: meldingsliste -->
                     <div class="col list" t-if="state.view==='inbox'">
                         <div class="lhead">
@@ -161,6 +166,11 @@
                             </t>
                         </div>
                     </div>
+
+                    <!-- Dra-håndtak: liste ↔ lesepanel -->
+                    <button class="drag" t-if="state.view==='inbox'"
+                            t-on-pointerdown="(ev) => this.startDrag(ev, 'liste')"
+                            title="Dra for å justere bredden" aria-label="Juster bredde på meldingslisten"/>
 
                     <!-- HØYRE: lese- og kontekstpanel -->
                     <div class="col read" t-if="state.view==='inbox'">
