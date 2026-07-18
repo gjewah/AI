@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Befaring — mobil befaring → romskjema → tilbud → prosjekt",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "summary": "Backend-fundament for befaring på salgsmulighet: befaring · rom/romskjema · "
                "funn/avvik. Kobler crm.lead → tilbud (sale.order) → prosjekt (project.project) "
                "med oppgaven «Befaring». Generisk for alle FIQ-kunder, tenant-isolert (company_id "
                "+ record rules), config-drevet. Mobil-flate (PWA/OWL) bygges oppå senere.",
     "description": """
 FIQ Befaring — fundament
-========================
+==========================
 Bygger backend-modellene fra befaring_module_spec (Gjermund 2026-06-21):
 befaring starter i SALGSPROSESSEN (crm.lead), fanger rom/etasje + foto + talenotat,
 genererer romskjema, fyller tilbud, og overføres til prosjektet under oppgaven «Befaring».

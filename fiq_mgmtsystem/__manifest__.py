@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Styringssystem — ISO 9001 (krav/kontroll/sjekkliste/avvik)",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "summary": "ISO-styringssystem: krav (klausuler), kontroller, sjekklister og avvik "
                "med taksonomi-kobling (code.list / documents.tag, feature-detektert). "
                "Multi-selskap, tenant-isolert, config-drevet — generisk for alle FIQ-kunder.",
     "description": """
 FIQ Styringssystem — ISO 9001
-=============================
+===============================
 Add-only styringssystem-modul forankret i ISO 9001 (dokumentert informasjon §7.5),
 utvidbar til ISO 14001/14064/14067 (miljø/bærekraft) og ISO 27001 (informasjonssikkerhet).
 

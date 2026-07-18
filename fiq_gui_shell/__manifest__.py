@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ GUI Skall (V00.04 delt skall)",
-    "version": "19.0.1.2.0",
+    "version": "19.0.1.2.1",
     "summary": "Vei C: delt V00.04-skall — fast presence-linje + firma-band + sidemeny + innmat-slot. "
                "Flatene registrerer innmaten sin i registry-kategorien 'fiq_gui_flates'; klikk i "
                "sidemenyen bytter INNMAT, ikke hele siden. PULS-KR blir én flate til slutt (med S07).",
     "description": """
 FIQ GUI Skall — det delte V00.04-skallet (Vei C)
-================================================
+==================================================
 Det YTRE skallet alle KR-flatene plugges inn i. Skallet eier den faste chromen
 («TIL STEDE NÅ»-linje · firma-band · venstre sidemeny · låst tema) og en slot i midten.
 Hver flate (Meldingssenter, Prosjekt, Salg …) registrerer sin innmat-komponent i

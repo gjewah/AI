@@ -16,7 +16,9 @@ class FiqTilgangRolle(models.Model):
     sequence = fields.Integer(default=10)
     parent_id = fields.Many2one(
         "fiq.tilgang.rolle", "Overordnet rolle", ondelete="cascade", index=True)
-    parent_path = fields.Char(index=True, unaccent=False)
+    # Odoo 19 tar ikke lenger 'unaccent' på dette feltet (gir UserWarning ved hver lasting).
+    # Core skriver selv bare index=True — product/models/product_category.py:22.
+    parent_path = fields.Char(index=True)
     child_ids = fields.One2many("fiq.tilgang.rolle", "parent_id", "Underroller")
     art = fields.Selection(
         [("intern", "Intern (lisens)"), ("ekstern", "Ekstern (portal)")],

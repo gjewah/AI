@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Komm Ruting — profil→firma",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.1.1",
     "summary": "E-post-ruting (B5): kanaliser innkommende post til riktig firma ut fra "
                "postkasse/profil. Generisk mapping-lag fordi fetchmail.server mangler firma-felt. "
                "Per-bruker-samtykke (eier) + felles-postkasse-flagg. Tenant-isolert, alle kunder.",
     "description": """
 FIQ Komm Ruting — profil→firma (B5)
-===================================
+=======================================
 Innhentingsprofilene (Exchange/IMAP) i Odoo har ikke firma-felt. Denne modulen gir et
 lite, generisk mapping-lag: fiq.komm.profil (postkasse → firma) + finn_firma(mailbox)
 som kanaliserer ny post til riktig tenant.

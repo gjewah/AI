@@ -6,7 +6,7 @@
                "framskrivning, simulator (fortid/nåtid/fremtid), KPI og POG.",
     "description": """
 FIQ GUI Finans — flate 2.70
-===========================
+=============================
 Flaten er VISNINGEN av rolla «0.00 2.70 AI Finans-Rådgiver» (rolle bak, flate foran).
 Ingen parallell logikk: KPI/rapporter gjenbrukes fra Odoo (native-først).
 
