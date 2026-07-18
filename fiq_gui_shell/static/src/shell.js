@@ -10,6 +10,35 @@ import { _t } from "@web/core/l10n/translation";
 //   registry.category("fiq_gui_flates").add(key, {key, label, color, sequence, Component})
 const FLATE_CATEGORY = "fiq_gui_flates";
 
+// Kontrakten HÅNDHEVES, den er ikke bare beskrevet i kommentaren over. Odoo validerer
+// samme vei på sine egne registre (web/views/view.js:93, fields/field.js:65).
+//
+// Hvorfor: en flate med feil form (glemt Component, label som ikke er tekst) ga før en
+// kryptisk feil langt inne i renderingen — eller verre, en flate som bare ikke virket.
+// Nå smeller det ved registrering, med modulens egen nøkkel i meldingen.
+//
+// 🛑 MERK hva dette IKKE fanger: to moduler som tar SAMME nøkkel. Da kaster Odoos egen
+// registry.add() en DuplicatedKeyError (core/registry.js:103) under lasting, og HELE
+// grensesnittet blir blankt — med helt ren serverlogg. Det skjedde 18.07 (fiq_gui_rgs vs
+// demo-flaten). Vernet mot DET ligger i demo_flates.js (viker for ekte flater) + at hver
+// modul eier sin egen nøkkel. Ingen server-side test fanger den klassen feil.
+// Selve oppsettet er innkapslet: addValidation validerer ALLE alt registrerte oppføringer
+// med én gang (core/registry.js:202) og kaster hvis én er feil. Uten denne vakten ville en
+// annen modul med feil form tatt ned HELE skallet ved lasting — altså nøyaktig den
+// feilklassen valideringen skal verne mot. Vi vil ha en tydelig advarsel, ikke blank skjerm.
+try {
+    registry.category(FLATE_CATEGORY).addValidation({
+        key: { type: String },
+        label: { type: String },
+        Component: { validate: (c) => c && c.prototype instanceof Component },
+        color: { type: String, optional: true },
+        sequence: { type: Number, optional: true },
+        "*": true,
+    });
+} catch (e) {
+    console.warn("FIQ-skall: en registrert flate bryter kontrakten —", e);
+}
+
 // Fallback-aksent når firmaet ikke har satt sin egen (samme verdi som KR bruker).
 const DEFAULT_ACCENT = "#38B44A";
 
