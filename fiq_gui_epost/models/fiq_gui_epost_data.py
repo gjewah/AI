@@ -489,6 +489,92 @@ class FiqMeldingssenterData(models.AbstractModel):
         return {"basis": basis, "tverrgaende": tverr, "taksonomi": taks,
                 "firm": firm, "period": period}
 
+    # ---- Paring: søk etter mål (prosjekt · oppgave · ansvarlig) ----
+    #
+    # Gjermund 18.07.2026 (skjermbilde): paringsfeltene Prosjekt/Oppgave/Ansvarlig/Frist var
+    # rene input-felt UTEN funksjon — de så ut som et skjema, men gjorde ingenting. AI-forslagene
+    # over dem («Hører sannsynligvis til») virket; den MANUELLE veien manglet helt. Når AI ikke
+    # treffer, må mennesket kunne søke selv — ellers er paringen en blindvei.
+    #
+    # Søket er defensivt: det kjører som brukeren (record rules gjelder) OG snevres til firmaene
+    # brukeren lovlig ser (`_tillatte_firmaer`). Ingen kryss-tenant-lekkasje via et søkefelt.
+
+    @api.model
+    def sok_mal(self, term, slag="prosjekt", firm=False, limit=10):
+        """Søk etter paringsmål mens brukeren skriver. `slag`: prosjekt|oppgave|ansvarlig.
+
+        Søker på BÅDE nummer og navn — Gjermund oppgir ofte prosjektnr., ikke navn
+        («Prosjektnr eller navn» står i feltet). Tomt søk gir tom liste, ikke hele basen.
+        """
+        term = (term or "").strip()
+        if not term:
+            return []
+        firmaer = self._tillatte_firmaer()
+        if firm:                                   # klientvalg kan kun SNEVRE INN
+            try:
+                f = int(firm)
+                firmaer = [f] if f in firmaer else firmaer
+            except (TypeError, ValueError):
+                pass
+        ut = []
+        if slag == "ansvarlig":
+            dom = [("share", "=", False), ("name", "ilike", term)]
+            for u in self.env["res.users"].search(dom, limit=int(limit)):
+                ut.append({"id": u.id, "navn": u.name or "", "no": ""})
+            return ut
+
+        model = "project.task" if slag == "oppgave" else "project.project"
+        Rec = self.env[model]
+        f = Rec._fields
+        # Nummerfeltet heter ulikt: prosjekt = sequence_code, oppgave = code.
+        nrfelt = "code" if (slag == "oppgave" and "code" in f) else (
+            "sequence_code" if "sequence_code" in f else False)
+        dom = ["|", ("name", "ilike", term)] if nrfelt else [("name", "ilike", term)]
+        if nrfelt:
+            dom.append((nrfelt, "ilike", term))
+        if "company_id" in f:
+            dom.append(("company_id", "in", firmaer))
+        for rec in Rec.search(dom, limit=int(limit), order="write_date desc"):
+            ut.append({
+                "id": rec.id,
+                "navn": rec.name or "",
+                "no": (rec[nrfelt] or "") if nrfelt else "",
+            })
+        return ut
+
+    @api.model
+    def par_melding(self, message_id, model, res_id):
+        """PAR en melding med et element: flytt den dit den hører hjemme.
+
+        Dette er selve kjernen Gjermund har bedt om — «pare riktig e-post med riktig hendelse».
+        `tildel()` lager kun en aktivitet på elementet meldingen ALLEREDE henger på; den kan ikke
+        flytte en upart melding. Derfor denne.
+
+        Vi setter `model`/`res_id` på meldingen (paringen) i stedet for å kopiere innholdet —
+        `arkiver()` kopierer, og to kopier av samme e-post på ett element er verre enn ingen.
+        Sporbarhet: en linje i elementets chatter forteller hvem som paret og når.
+        """
+        m = self.env["mail.message"].browse(int(message_id)).exists()
+        if not m or model not in ("project.project", "project.task"):
+            return False
+        target = self.env[model].browse(int(res_id)).exists()
+        if not target:
+            return False
+        # Sjekk at brukeren FAKTISK har tilgang til målet — ellers kan en id-gjetning
+        # pare en melding inn i et firma brukeren ikke ser.
+        try:
+            target.check_access("write")
+        except Exception:
+            return False
+        m.sudo().write({"model": model, "res_id": target.id})
+        if hasattr(target, "message_post"):
+            target.message_post(
+                body="Melding paret hit fra Kommunikasjon av %s: %s" % (
+                    self.env.user.name, m.subject or "(uten emne)"),
+                message_type="comment",
+            )
+        return {"id": target.id, "navn": target.name or "", "model": model}
+
     # ---- Skriv-API: handle på en melding (tildel · arkivér · svar · presence) ----
 
     @api.model

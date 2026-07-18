@@ -32,6 +32,14 @@ export class FiqMeldingssenter extends Component {
             person: false, personOpen: false,                // person-visning (klikk «Til stede»)
             vedlegg: [], vedleggMsg: "",                      // vedlegg → element (Loym)
             hoder: false, visHoder: false,                    // nøyaktige Fra/Til/Kopi-felter
+            // Paring/tildeling — MANUELL vei når AI-forslaget ikke treffer (Gjermund 18.07.2026:
+            // feltene sto som tomme skall uten funksjon). Ett åpent søkefelt om gangen.
+            paring: {
+                prosjekt: { tekst: "", treff: [], valgt: false },
+                oppgave: { tekst: "", treff: [], valgt: false },
+                ansvarlig: { tekst: "", treff: [], valgt: false },
+                frist: "", apen: "", msg: "",
+            },
         });
         onWillStart(async () => {
             const cfg = await this.orm.call(DATA, "get_my_config", []);
@@ -125,6 +133,51 @@ export class FiqMeldingssenter extends Component {
         if (!this.state.valgt) return;
         const n = await this.orm.call(DATA, "lagre_paa_element", [this.state.valgt.id, model, resId]);
         this.state.vedleggMsg = n ? (n + " vedlegg lagret på " + navn) : "Ingen vedlegg å lagre.";
+    }
+
+    // ---- Paring / tildeling: den MANUELLE veien ------------------------------------
+    // AI-forslagene over («Hører sannsynligvis til») var klikkbare fra før. Feltene under
+    // var rene input uten binding — de så ut som et skjema, men gjorde ingenting.
+    // Nå søker de mot ekte prosjekter/oppgaver/brukere og lagrer via backend.
+
+    // Søk mens du skriver. Kort term gir ingen treff (unngå å laste halve basen på «a»).
+    async sokMal(slag, ev) {
+        const p = this.state.paring;
+        p[slag].tekst = ev.target.value;
+        p[slag].valgt = false;
+        p.apen = slag;
+        if ((p[slag].tekst || "").trim().length < 2) { p[slag].treff = []; return; }
+        p[slag].treff = await this.orm.call(DATA, "sok_mal", [
+            p[slag].tekst, slag, this.state.firm || false,
+        ]);
+    }
+
+    // Velg et treff. Prosjekt/oppgave PARES med én gang (det er selve handlingen);
+    // ansvarlig venter på «Tildel», siden frist hører sammen med den.
+    async velgMal(slag, t) {
+        const p = this.state.paring;
+        p[slag].valgt = t;
+        p[slag].tekst = (t.no ? t.no + " " : "") + t.navn;
+        p[slag].treff = [];
+        p.apen = "";
+        if (slag === "ansvarlig") { p.msg = "Velg frist og trykk Tildel."; return; }
+        if (!this.state.valgt) return;
+        const model = slag === "oppgave" ? "project.task" : "project.project";
+        const r = await this.orm.call(DATA, "par_melding", [this.state.valgt.id, model, t.id]);
+        p.msg = r ? ("Paret med " + (r.navn || "")) : "Kunne ikke pare — mangler du tilgang til målet?";
+        if (r) { await this.velgMelding(this.state.valgt); }   // kandidatlista er nå utdatert
+    }
+
+    // Tildel ansvarlig + frist. Backend lager en Odoo-aktivitet på elementet meldingen
+    // henger på — derfor må meldingen være paret FØRST hvis den ikke alt ligger et sted.
+    async tildelAnsvarlig() {
+        const p = this.state.paring;
+        if (!this.state.valgt || !p.ansvarlig.valgt) { p.msg = "Velg en ansvarlig først."; return; }
+        const r = await this.orm.call(DATA, "tildel", [
+            this.state.valgt.id, p.ansvarlig.valgt.id, p.frist || false,
+        ]);
+        p.msg = r ? ("Tildelt " + p.ansvarlig.valgt.navn + (p.frist ? " med frist " + p.frist : ""))
+                  : "Kunne ikke tildele — meldingen må være paret med et element først.";
     }
 
     // Overlay-skriv: ny melding uten å forlate innboksen (v1 → Discuss-komposer)

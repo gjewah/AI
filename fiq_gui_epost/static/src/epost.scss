@@ -222,6 +222,20 @@
   .prow{display:flex;align-items:center;gap:10px;margin-bottom:9px;flex-wrap:wrap}
   .prow label{font-size:11px;color:var(--muted);width:74px;flex:none}
   .prow input,.prow select{flex:1;min-width:150px;border:1.5px solid color-mix(in srgb,var(--ink) 26%,transparent);background:var(--surface);color:var(--ink);border-radius:8px;padding:9px 11px;font-size:12.5px}
+  // Manuell paring: treffliste under søkefeltet. Ingen min()/max() med blandede enheter —
+  // Sass regner ut ved kompilering og px mot vw velter HELE assets-bundelen.
+  .prow.psok{position:relative}
+  .ptreff{position:absolute;top:100%;left:74px;right:0;z-index:20;margin-top:3px;
+          background:var(--surface);border:1px solid var(--line);border-radius:9px;
+          box-shadow:var(--shadow);max-height:230px;overflow:auto}
+  .ptreff button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+                 border:none;background:none;color:var(--ink);padding:8px 11px;
+                 font-size:12.5px;border-bottom:1px solid var(--line-soft)}
+  .ptreff button:last-child{border-bottom:none}
+  .ptreff button:hover{background:var(--surface-2)}
+  .ptreff .kt{font-family:var(--mono);font-size:9.5px;font-weight:800;color:#fff;
+              padding:2px 7px;border-radius:100px;flex:none}
+  .ptreff .kt_p{background:var(--gronn)}.ptreff .kt_o{background:var(--blaa)}
 
   // Hjem — cockpit-oversikt
   .hjem{grid-column:2 / -1;padding:0}

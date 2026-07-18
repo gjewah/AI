@@ -321,10 +321,55 @@
                                             <span class="kt kt_o">Oppgave</span><span class="kn" t-esc="(k.no ? k.no + ' ' : '') + k.navn"/>
                                         </button>
                                     </div>
-                                    <div class="prow"><label>Prosjekt</label><input placeholder="Prosjektnr eller navn"/></div>
-                                    <div class="prow"><label>Oppgave</label><input placeholder="Oppgavenr eller navn"/></div>
-                                    <div class="prow"><label>Ansvarlig</label><input placeholder="Velg ansvarlig"/></div>
-                                    <div class="prow"><label>Frist</label><input placeholder="dd.mm.åååå"/></div>
+                                    <!-- MANUELL paring (Gjermund 18.07.2026: disse sto som tomme
+                                         skall uten funksjon). Søker på nummer OG navn; treffliste
+                                         under feltet; klikk parer/velger. -->
+                                    <div class="prow psok">
+                                        <label>Prosjekt</label>
+                                        <input placeholder="Prosjektnr eller navn"
+                                               t-att-value="state.paring.prosjekt.tekst"
+                                               t-on-input="(ev) => this.sokMal('prosjekt', ev)"/>
+                                        <div class="ptreff" t-if="state.paring.apen === 'prosjekt' and state.paring.prosjekt.treff.length">
+                                            <button t-foreach="state.paring.prosjekt.treff" t-as="t" t-key="'tp'+t.id"
+                                                    t-on-click="() => this.velgMal('prosjekt', t)">
+                                                <span class="kt kt_p" t-esc="t.no || '—'"/><t t-esc="t.navn"/>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="prow psok">
+                                        <label>Oppgave</label>
+                                        <input placeholder="Oppgavenr eller navn"
+                                               t-att-value="state.paring.oppgave.tekst"
+                                               t-on-input="(ev) => this.sokMal('oppgave', ev)"/>
+                                        <div class="ptreff" t-if="state.paring.apen === 'oppgave' and state.paring.oppgave.treff.length">
+                                            <button t-foreach="state.paring.oppgave.treff" t-as="t" t-key="'to'+t.id"
+                                                    t-on-click="() => this.velgMal('oppgave', t)">
+                                                <span class="kt kt_o" t-esc="t.no || '—'"/><t t-esc="t.navn"/>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="prow psok">
+                                        <label>Ansvarlig</label>
+                                        <input placeholder="Velg ansvarlig"
+                                               t-att-value="state.paring.ansvarlig.tekst"
+                                               t-on-input="(ev) => this.sokMal('ansvarlig', ev)"/>
+                                        <div class="ptreff" t-if="state.paring.apen === 'ansvarlig' and state.paring.ansvarlig.treff.length">
+                                            <button t-foreach="state.paring.ansvarlig.treff" t-as="t" t-key="'ta'+t.id"
+                                                    t-on-click="() => this.velgMal('ansvarlig', t)">
+                                                <t t-esc="t.navn"/>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="prow">
+                                        <label>Frist</label>
+                                        <input type="date" t-att-value="state.paring.frist"
+                                               t-on-input="(ev) => this.state.paring.frist = ev.target.value"/>
+                                    </div>
+                                    <div class="prow">
+                                        <label></label>
+                                        <button class="tbtn primary" t-on-click="tildelAnsvarlig">Tildel ansvarlig</button>
+                                    </div>
+                                    <div class="savemsg" t-if="state.paring.msg" t-esc="state.paring.msg"/>
                                 </div>
                             </div>
                         </t>
