@@ -20,7 +20,19 @@ class DemoInnmat extends Component {
 }
 
 const flates = registry.category("fiq_gui_flates");
-flates.add("meldingssenter", { key: "meldingssenter", label: "Meldingssenter", color: "#2AA79E", sequence: 10, Component: DemoInnmat });
-flates.add("prosjekt", { key: "prosjekt", label: "Prosjekt", color: "#4C63D2", sequence: 20, Component: DemoInnmat });
-flates.add("salg", { key: "salg", label: "Salg", color: "#CC0000", sequence: 30, Component: DemoInnmat });
-flates.add("regnskap", { key: "regnskap", label: "Regnskap", color: "#ED7D31", sequence: 40, Component: DemoInnmat });
+
+// Registrer KUN hvis flaten ikke allerede er tatt av en ekte modul.
+// Uten denne vakten kaster registry.add() «key already exists» og HELE
+// grensesnittet dør (blank skjerm) i det en ekte flate leveres.
+// Hendelse 2026-07-18: fiq_gui_rgs leverte ekte «regnskap» → kollisjon → blank Odoo.
+function demoFlate(key, label, color, sequence) {
+    if (flates.contains(key)) {
+        return; // ekte modul eier flaten — demo skal vike
+    }
+    flates.add(key, { key, label, color, sequence, Component: DemoInnmat });
+}
+
+demoFlate("meldingssenter", "Meldingssenter", "#2AA79E", 10);
+demoFlate("prosjekt", "Prosjekt", "#4C63D2", 20);
+demoFlate("salg", "Salg", "#CC0000", 30);
+// «regnskap» fjernet 2026-07-18 — fiq_gui_rgs eier den nå (ekte flate).
