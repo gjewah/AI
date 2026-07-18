@@ -49,13 +49,15 @@ registry.category("actions").add("fiq_gui_rgs_dashboard", FiqGuiRgs);
 // Registrering i det delte skallet (fast hovedmeny, Vei C).
 // Kontrakt verifisert mot fiq_gui_shell/static/src/shell.js:7 + demo_flates.js.
 // Farge #4472C4 = finans-familien (2.70/2.80), jf. rollefilene + control_room.js:17.
-// MERK: demo_flates.js registrerer i dag "regnskap" med demo-innmat og farge #ED7D31.
-// Denne ekte flaten overtar nøkkelen — jf. demo-fila: «I native versjon registrerer HVER
-// ekte flate sin egen innmat-komponent her i stedet for denne.»
+// HENDELSE 2026-07-18: min force:true her ga Gjermund BLANK SKJERM i Odoo.
+// Demo-flatene registrerte også "regnskap" → kollisjon i registeret. Gjermund fant
+// rotårsaken selv i nettleser-konsollen (9968032) og fjernet demo-«regnskap».
+// force er derfor FJERNET: nå er fiq_gui_rgs eneste eier av nøkkelen, og en ekte
+// kollisjon SKAL kaste feil så den oppdages — ikke overskrives i stillhet.
 registry.category("fiq_gui_flates").add("regnskap", {
     key: "regnskap",
     label: "Regnskap",
     color: "#4472C4",
     sequence: 60,
     Component: FiqGuiRgs,
-}, { force: true });
+});
