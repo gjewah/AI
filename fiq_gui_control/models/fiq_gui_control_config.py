@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 import json
+import logging
 import re
 from datetime import timedelta
 from odoo.tools import html2plaintext
 from odoo import models, fields, api, _
 from odoo.exceptions import AccessError
 from odoo.modules.module import get_manifest
+
+_logger = logging.getLogger(__name__)
 
 WIDGETS = ["kpis", "projects", "kommunikasjon", "activity", "tasks", "chart", "copilot", "quick"]
 
@@ -1263,10 +1266,29 @@ class FiqControlRoomConfig(models.Model):
             try:
                 spec = json.loads(param.value or "{}")
             except (ValueError, TypeError):
-                # A malformed declaration must never break the menu for everyone.
+                # A malformed declaration must never break the menu for everyone — but it
+                # must not vanish silently either: a typo used to produce a flate that never
+                # appeared, with nothing in the log to explain why. Reported by AI KR 18.07.2026.
+                _logger.warning(
+                    "FIQ control room: skipping flate %r — its ir.config_parameter %r is not "
+                    "valid JSON. Expected {\"label\": ..., \"xmlid\": ..., \"sequence\": ...}.",
+                    key, param.key,
+                )
                 continue
             xmlid = spec.get("xmlid")
-            if not xmlid or not self.env.ref(xmlid, raise_if_not_found=False):
+            if not xmlid:
+                _logger.warning(
+                    "FIQ control room: skipping flate %r — no 'xmlid' in %r. The entry cannot "
+                    "open anything without one.", key, param.key,
+                )
+                continue
+            if not self.env.ref(xmlid, raise_if_not_found=False):
+                # Legitimate on a tenant without that module — but it is also what a typo in
+                # the xmlid looks like, so say which one was dropped.
+                _logger.info(
+                    "FIQ control room: skipping flate %r — action %r does not exist in this "
+                    "database (module not installed, or the xmlid is misspelled).", key, xmlid,
+                )
                 continue
             out.append({
                 "key": key,
