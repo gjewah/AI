@@ -53,7 +53,9 @@
                     <div class="fiqs-sh">Kontrollrom</div>
                     <nav class="fiqs-nav">
                         <t t-foreach="flates" t-as="fl" t-key="fl.key">
-                            <button t-attf-class="fiqs-navb {{fl.key === state.current ? 'on' : ''}}"
+                            <!-- Mot currentFlate, ikke state.current: den har fallback til
+                                 første flate når `current` ennå ikke er satt. -->
+                            <button t-attf-class="fiqs-navb {{currentFlate and fl.key === currentFlate.key ? 'on' : ''}}"
                                     t-on-click="() => this.selectFlate(fl.key)">
                                 <span class="fiqs-dot" t-attf-style="background:{{fl.color or '#4C63D2'}}"/>
                                 <span t-esc="fl.label"/>

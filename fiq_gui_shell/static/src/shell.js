@@ -33,11 +33,6 @@ export class FiqGuiShell extends Component {
 
     setup() {
         this.orm = useService("orm");
-        this.flates = registry
-            .category(FLATE_CATEGORY)
-            .getAll()
-            .sort((a, b) => (a.sequence || 50) - (b.sequence || 50));
-
         this.state = useState({
             current: this.flates.length ? this.flates[0].key : false,
             firm: false,
@@ -87,8 +82,23 @@ export class FiqGuiShell extends Component {
         }
     }
 
+    // Leses ved BRUK, ikke én gang i setup(). Registeret fylles av flere moduler, og
+    // lasterekkefølgen mellom skallet og flatene er udefinert (de avhenger av
+    // fiq_gui_control, ikke av skallet). En engangs-lesing i setup() ville låst listen
+    // til det som tilfeldigvis var registrert i det øyeblikket.
+    get flates() {
+        return registry
+            .category(FLATE_CATEGORY)
+            .getAll()
+            .sort((a, b) => (a.sequence || 50) - (b.sequence || 50));
+    }
+
     get currentFlate() {
-        return this.flates.find((f) => f.key === this.state.current) || false;
+        const alle = this.flates;
+        // Faller tilbake til første flate: `current` settes i setup(), da kan registeret
+        // ennå være tomt. Uten dette ville skallet vist «ingen flater» selv etter at
+        // modulene hadde registrert seg.
+        return alle.find((f) => f.key === this.state.current) || alle[0] || false;
     }
     get currentComponent() {
         return this.currentFlate ? this.currentFlate.Component : false;
