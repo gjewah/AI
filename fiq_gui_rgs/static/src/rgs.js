@@ -1,30 +1,23 @@
 /** @odoo-module **/
 
-import { Component, useState } from "@odoo/owl";
+import { Component, useState, onWillStart } from "@odoo/owl";
 import { registry } from "@web/core/registry";
+import { useService } from "@web/core/utils/hooks";
 
 // FIQ GUI Regnskap — flate 2.80. VISNINGEN av rolla «0.00 2.80 AI Regnskap-Rådgiver».
-// Rolle bak, flate foran. Native-først: tallene eies av Odoo (account.move), ikke av flaten.
+// Rolle bak, flate foran. Native-først: tallene eies av Odoo (account.move).
 //
 // 🛑 Rollens egen regel: «ALDRI gjett — regnskap er juridisk bindende.»
-//    Bokførte tall og framskrivning holdes visuelt fra hverandre.
-
-// Likviditets-bøttene Gjermund spesifiserte.
-const BOTTER = [
-    { key: "inn", label: "Inngående", kilde: "Kundefakturaer (account.move) — ikke koblet" },
-    { key: "ut", label: "Utgående", kilde: "Leverandørfakturaer (account.move) — ikke koblet" },
-    { key: "haster", label: "Haster", kilde: "Forfall nær / passert — ikke koblet" },
-    { key: "kritisk", label: "Kritisk", kilde: "Forfalt + beløpsterskel — ikke koblet" },
-    { key: "ubetalt", label: "Ubetalt", kilde: "Åpne poster — ikke koblet" },
-];
+//    Alt som vises her er BOKFØRT (state=posted). Framskrivning er merket separat.
 
 // Cashflow LYVER hvis disse mangler (Gjermunds ord). Lønn er egen gate:
 // aggregater slipper gjennom, individuell lønns-PII gjør det ALDRI.
+// Ingen rolle EIER lønn ennå → linjene står bevisst ukoblet, ikke gjettet.
 const FORPLIKTELSER = [
-    { key: "lonn", label: "Lønnskjøringer", gate: true },
-    { key: "avgift", label: "Sosiale avgifter", gate: true },
-    { key: "ferie", label: "Feriepenger", gate: true },
-    { key: "pensjon", label: "Pensjon", gate: true },
+    { key: "lonn", label: "Lønnskjøringer" },
+    { key: "avgift", label: "Sosiale avgifter" },
+    { key: "ferie", label: "Feriepenger" },
+    { key: "pensjon", label: "Pensjon" },
 ];
 
 export class FiqGuiRgs extends Component {
@@ -32,23 +25,50 @@ export class FiqGuiRgs extends Component {
     static props = ["*"];
 
     setup() {
-        this.botter = BOTTER;
+        this.orm = useService("orm");
         this.forpliktelser = FORPLIKTELSER;
-        this.state = useState({ visForpliktelser: true });
+        this.state = useState({ laster: true, data: null, kritiske: [], feil: null });
+
+        onWillStart(async () => {
+            try {
+                // company_id sendes ALDRI med — serveren tar den fra sesjonen.
+                const [data, kritiske] = await Promise.all([
+                    this.orm.call("fiq.gui.rgs.data", "hent_grunnbilde", []),
+                    this.orm.call("fiq.gui.rgs.data", "hent_kritiske_poster", []),
+                ]);
+                this.state.data = data;
+                this.state.kritiske = kritiske;
+            } catch (e) {
+                // Feil skjules ALDRI bak et tomt tall — et blankt felt ville sett ut
+                // som «null kroner utestående», og det er en farlig løgn i regnskap.
+                this.state.feil = e.message?.data?.message || e.message || String(e);
+            } finally {
+                this.state.laster = false;
+            }
+        });
     }
 
-    // Skallet sender inn valgt firma; flaten eier ALDRI firma-valget selv.
-    // company_id hentes fra sesjonen i Odoo — aldri som parameter utenfra (tenant-isolasjon).
+    /** Beløp i hele kroner med tusenskille — norsk format, ingen desimalstøy. */
+    format(verdi) {
+        if (verdi === null || verdi === undefined) {
+            return "—";
+        }
+        return new Intl.NumberFormat("nb-NO", { maximumFractionDigits: 0 }).format(verdi);
+    }
+
+    get valuta() {
+        return this.state.data?.valuta || "";
+    }
+
+    // Skallet sender inn valgt firma til visning; flaten eier ALDRI firma-valget.
+    // Det ekte firmaet kommer fra serveren (sesjonen) — se hent_grunnbilde().
     get firma() {
-        return this.props.firm || "—";
+        return this.state.data?.firma || this.props.firm || "—";
     }
 }
 
 registry.category("actions").add("fiq_gui_rgs_dashboard", FiqGuiRgs);
 
-// Registrering i det delte skallet (fast hovedmeny, Vei C).
-// Kontrakt verifisert mot fiq_gui_shell/static/src/shell.js:7 + demo_flates.js.
-// Farge #4472C4 = finans-familien (2.70/2.80), jf. rollefilene + control_room.js:17.
 // HENDELSE 2026-07-18: min force:true her ga Gjermund BLANK SKJERM i Odoo.
 // Demo-flatene registrerte også "regnskap" → kollisjon i registeret. Gjermund fant
 // rotårsaken selv i nettleser-konsollen (9968032) og fjernet demo-«regnskap».

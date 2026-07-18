@@ -170,4 +170,66 @@
     color: var(--graa);
     font-size: 12px;
   }
+
+  // FAKTA vs IKKE KOBLET — skal aldri kunne forveksles.
+  .fiqr-korthode {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+
+    h3 { margin: 0; }
+  }
+
+  .fiqr-fakta {
+    background: #E8F3EC;
+    color: #1E7A45;
+    border: 1px solid #1E7A45;
+    border-radius: 3px;
+    padding: 1px 8px;
+    font-size: 11px;
+    letter-spacing: .04em;
+  }
+
+  .fiqr-val {
+    font-size: 13px;
+    color: var(--graa);
+  }
+
+  .fiqr-netto {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #EEF0F4;
+  }
+
+  .fiqr-positiv { color: #1E7A45; }
+  .fiqr-negativ { color: var(--kritisk); }
+
+  .fiqr-feil {
+    background: #FDECEC;
+    border: 1px solid var(--kritisk);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: var(--kritisk);
+  }
+
+  .fiqr-tabell {
+    width: 100%;
+    border-collapse: collapse;
+
+    th, td {
+      text-align: left;
+      padding: 6px 8px;
+      border-bottom: 1px solid #EEF0F4;
+    }
+
+    th {
+      color: var(--graa);
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .fiqr-h { text-align: right; }
+  }
 }

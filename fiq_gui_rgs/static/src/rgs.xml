@@ -7,76 +7,129 @@
             <div>
                 <h2 class="fiqr-tittel">Regnskap</h2>
                 <div class="fiqr-und">
-                    AI Regnskap-Rådgiver (2.80) · firma <b t-esc="firma"/>
+                    AI Regnskap-Rådgiver (2.80) · <b t-esc="firma"/>
+                    <t t-if="state.data"> · per <t t-esc="state.data.dato"/></t>
                 </div>
             </div>
             <div class="fiqr-merke">Rådgiver — ikke beslutter</div>
         </div>
 
-        <div class="fiqr-utkast">
-            <b>UTKAST 01 — rammeverk.</b> Datakildene er ikke koblet ennå. Tallfelt står tomme
-            med kilde-merknad; ingenting her er bokførte tall.
+        <div t-if="state.laster" class="fiqr-tom">Henter bokførte tall …</div>
+
+        <!-- Feil vises ALDRI som et tomt tall: blankt felt ville lest som
+             «null kroner utestående», og det er en farlig løgn i regnskap. -->
+        <div t-if="state.feil" class="fiqr-feil">
+            <b>Kunne ikke hente tallene.</b>
+            <div t-esc="state.feil"/>
+            <div class="fiqr-note">Ingen tall vises heller enn feil tall.</div>
         </div>
 
-        <!-- 1. LIKVIDITETS-OVERSIKT -->
-        <section class="fiqr-kort">
-            <h3>Oversikt</h3>
-            <div class="fiqr-botter">
-                <div t-foreach="botter" t-as="b" t-key="b.key"
-                     class="fiqr-botte"
-                     t-att-class="{
-                        'fiqr-botte-haster': b.key === 'haster',
-                        'fiqr-botte-kritisk': b.key === 'kritisk'
-                     }">
-                    <div class="fiqr-botte-navn" t-esc="b.label"/>
-                    <div class="fiqr-botte-tall">—</div>
-                    <div class="fiqr-botte-kilde" t-esc="b.kilde"/>
-                </div>
-            </div>
-        </section>
+        <t t-if="!state.laster and !state.feil and state.data">
 
-        <!-- 2. CASHFLOW + KRITISKE DATOER -->
-        <section class="fiqr-kort">
-            <h3>Cashflow og kritiske datoer</h3>
-            <p class="fiqr-hjelp">Når blir det tight? Framskrivning av likviditeten.</p>
-            <div class="fiqr-scenario-merke">FRAMSKRIVNING — ikke bokførte tall</div>
-            <div class="fiqr-tom">Kurve + kritiske datoer — ikke koblet i UTKAST 01.</div>
-        </section>
+            <!-- 1. LIKVIDITETS-OVERSIKT — bokførte tall -->
+            <section class="fiqr-kort">
+                <div class="fiqr-korthode">
+                    <h3>Oversikt</h3>
+                    <span class="fiqr-fakta">BOKFØRT</span>
+                </div>
+                <div class="fiqr-botter">
+                    <div t-foreach="state.data.botter" t-as="b" t-key="b.key"
+                         class="fiqr-botte"
+                         t-att-class="{
+                            'fiqr-botte-haster': b.key === 'haster',
+                            'fiqr-botte-kritisk': b.key === 'kritisk'
+                         }">
+                        <div class="fiqr-botte-navn" t-esc="b.label"/>
+                        <div class="fiqr-botte-tall">
+                            <t t-esc="format(b.verdi)"/> <span class="fiqr-val" t-esc="valuta"/>
+                        </div>
+                        <div class="fiqr-botte-kilde" t-esc="b.hjelp"/>
+                    </div>
+                </div>
+                <div class="fiqr-netto">
+                    Netto (inn minus ut):
+                    <b t-att-class="state.data.netto >= 0 ? 'fiqr-positiv' : 'fiqr-negativ'">
+                        <t t-esc="format(state.data.netto)"/> <t t-esc="valuta"/>
+                    </b>
+                </div>
+            </section>
 
-        <!-- 3. MÅ TA HØYDE FOR — ellers lyver cashflow-en -->
-        <section class="fiqr-kort">
-            <h3>Må tas høyde for</h3>
-            <p class="fiqr-hjelp">
-                Uten disse lyver cashflow-en. Lønn har <b>egen gate</b>: flaten viser
-                aggregater, aldri individuell lønns-PII.
-            </p>
-            <div class="fiqr-forp">
-                <div t-foreach="forpliktelser" t-as="f" t-key="f.key" class="fiqr-forp-rad">
-                    <span class="fiqr-forp-navn" t-esc="f.label"/>
-                    <span t-if="f.gate" class="fiqr-gate">Egen gate — aggregat</span>
-                    <span class="fiqr-tom fiqr-tom-liten">Ikke koblet</span>
+            <!-- 2. FORFALTE POSTER — hvilke, ikke bare hvor mye -->
+            <section class="fiqr-kort" t-if="state.kritiske.length">
+                <div class="fiqr-korthode">
+                    <h3>Forfalte poster</h3>
+                    <span class="fiqr-fakta">BOKFØRT</span>
                 </div>
-            </div>
-        </section>
+                <table class="fiqr-tabell">
+                    <thead>
+                        <tr><th>Bilag</th><th>Motpart</th><th>Forfalt</th><th class="fiqr-h">Beløp</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="state.kritiske" t-as="p" t-key="p.nummer">
+                            <td t-esc="p.nummer"/>
+                            <td t-esc="p.motpart"/>
+                            <td t-esc="p.forfall"/>
+                            <td class="fiqr-h" t-att-class="p.retning === 'inn' ? 'fiqr-positiv' : 'fiqr-negativ'">
+                                <t t-esc="format(p.belop)"/>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
 
-        <!-- 4. TIDLIG KORRIGERING — det proaktive -->
-        <section class="fiqr-kort">
-            <h3>Tidlig korrigering</h3>
-            <p class="fiqr-hjelp">Grep FØR det brenner — for å verne likviditeten.</p>
-            <div class="fiqr-forslag">
-                <div class="fiqr-forslag-rad">
-                    <span class="fiqr-forslag-navn">Kortere frister</span>
-                    <span class="fiqr-tom fiqr-tom-liten">Forslag fra rådgiveren — ikke koblet</span>
+            <!-- 3. CASHFLOW — ikke koblet, og det SKAL stå tydelig -->
+            <section class="fiqr-kort">
+                <div class="fiqr-korthode">
+                    <h3>Cashflow og kritiske datoer</h3>
+                    <span class="fiqr-scenario-merke">IKKE KOBLET</span>
                 </div>
-                <div class="fiqr-forslag-rad">
-                    <span class="fiqr-forslag-navn">Tidligere fakturering</span>
-                    <span class="fiqr-tom fiqr-tom-liten">Forslag fra rådgiveren — ikke koblet</span>
+                <p class="fiqr-hjelp">Når blir det tight? Framskrivning av likviditeten.</p>
+                <div class="fiqr-tom">
+                    Framskrivningen krever forpliktelsene under — uten dem ville kurven løyet.
                 </div>
-            </div>
-            <div class="fiqr-note">
-                Forslag — ingen automatiske finansielle handlinger. Mennesket bestemmer.
-            </div>
-        </section>
+            </section>
+
+            <!-- 4. MÅ TAS HØYDE FOR — blokkert på manglende rolle -->
+            <section class="fiqr-kort">
+                <div class="fiqr-korthode">
+                    <h3>Må tas høyde for</h3>
+                    <span class="fiqr-scenario-merke">IKKE KOBLET</span>
+                </div>
+                <p class="fiqr-hjelp">
+                    Uten disse lyver cashflow-en. Lønn har <b>egen gate</b>: flaten viser
+                    aggregater, aldri individuell lønns-PII.
+                </p>
+                <div class="fiqr-forp">
+                    <div t-foreach="forpliktelser" t-as="f" t-key="f.key" class="fiqr-forp-rad">
+                        <span class="fiqr-forp-navn" t-esc="f.label"/>
+                        <span class="fiqr-gate">Egen gate — aggregat</span>
+                        <span class="fiqr-tom fiqr-tom-liten">Ingen rolle eier lønn ennå</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. TIDLIG KORRIGERING -->
+            <section class="fiqr-kort">
+                <div class="fiqr-korthode">
+                    <h3>Tidlig korrigering</h3>
+                    <span class="fiqr-scenario-merke">IKKE KOBLET</span>
+                </div>
+                <p class="fiqr-hjelp">Grep FØR det brenner — for å verne likviditeten.</p>
+                <div class="fiqr-forslag">
+                    <div class="fiqr-forslag-rad">
+                        <span class="fiqr-forslag-navn">Kortere frister</span>
+                        <span class="fiqr-tom fiqr-tom-liten">Forslag fra rådgiveren</span>
+                    </div>
+                    <div class="fiqr-forslag-rad">
+                        <span class="fiqr-forslag-navn">Tidligere fakturering</span>
+                        <span class="fiqr-tom fiqr-tom-liten">Forslag fra rådgiveren</span>
+                    </div>
+                </div>
+                <div class="fiqr-note">
+                    Forslag — ingen automatiske finansielle handlinger. Mennesket bestemmer.
+                </div>
+            </section>
+        </t>
     </div>
 </t>
 
