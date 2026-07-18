@@ -80,6 +80,43 @@ class TestFiqWbs(TransactionCase):
         numre = [b1.fiq_wbs_number, b2.fiq_wbs_number, b3.fiq_wbs_number]
         self.assertEqual(len(set(numre)), 3, "Duplikate WBS-numre: %s" % numre)
 
+    def test_soesken_med_LIK_sequence_faar_ulike_nummer(self):
+        """🔴 REGRESJONSTEST for den ekte produksjonsfeilen (AI KR-sporet, 18.07.2026).
+
+        DETTE ER TESTEN SOM MANGLET. På ekte data fikk **66 toppnivå-oppgaver i samme
+        prosjekt alle nummeret «01»** (verifisert med duplikat-spørring mot fiqas Staging).
+
+        Årsak: computen brukte `list(sorted_recordset).index(task)`, som sammenligner
+        record-OBJEKTER. Odoos default `sequence` er 10 for ALLE oppgaver, så alle søsken
+        var «like» ved sortering og `.index()` returnerte 0 for hver av dem → alle fikk 01.
+        Fiks: slå opp posisjon i en ID-liste (`sibs_ids.index(task.id)`).
+
+        ⚠️ HVORFOR MIN FORRIGE TEST IKKE FANGET DET (lærdom):
+        `test_soesken_faar_ulike_nummer` gir hvert søsken ULIK sequence (10/20/30) — da
+        virker `.index()` tilfeldigvis. Den ekte verden bruker default-sequence, altså LIK
+        for alle. Testen var «grønn» og feilen var likevel i produksjon. Jeg meldte til og
+        med mistanken som «avkreftet» på grunn av den. **En test som ikke speiler ekte
+        data beviser ingenting.** [[feedback-compute-index-recordset]]
+        """
+        mor = self._task("Mor")
+        # ALLE med samme sequence — nøyaktig som Odoos default i virkeligheten
+        barn = [self._task("B%d" % i, parent=mor, sequence=10) for i in range(5)]
+        numre = [b.fiq_wbs_number for b in barn]
+        self.assertEqual(
+            len(set(numre)), len(barn),
+            "Søsken med LIK sequence fikk duplikate WBS-numre: %s "
+            "(dette er produksjonsfeilen der 66 oppgaver alle fikk «01»)" % numre,
+        )
+
+    def test_toppnivaa_med_lik_sequence_faar_ulike_nummer(self):
+        """Samme regresjon på toppnivå — der de 66 duplikatene faktisk oppsto."""
+        toppnivaa = [self._task("T%d" % i, sequence=10) for i in range(5)]
+        numre = [t.fiq_wbs_number for t in toppnivaa]
+        self.assertEqual(
+            len(set(numre)), len(toppnivaa),
+            "Toppnivå-oppgaver med lik sequence fikk duplikate numre: %s" % numre,
+        )
+
     def test_wbs_rekalkuleres_naar_oppgave_flyttes(self):
         """Kjernen i «dynamisk»: flytter du oppgaven, endres nummeret."""
         mor_a = self._task("MorA", sequence=10)
