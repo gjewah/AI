@@ -1,16 +1,140 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
+    <!--
+      Prosjektoversikt — ekte innmat (erstatter «Kommer»-stubben).
+      Odoo 19: bruk `and`/`or` i t-if (575 treff i core mot 42 for &&), aldri if()-setning
+      i inline t-on-* (kompilerer ikke og dreper hele malen).
+    -->
     <t t-name="fiq_gui_prj.Dashboard">
         <div class="fiq_gui_prj">
+
             <div class="fiq_gui_prj_top">
                 <span class="fiq_gui_prj_mark">F</span>
-                <span class="fiq_gui_prj_name" t-esc="flate"/>
+                <span class="fiq_gui_prj_name">Prosjektoversikt</span>
+                <select class="fiq_prj_firma" t-on-change="velgFirma"
+                        t-if="state.firmaer.length > 1">
+                    <option value="">Alle firmaer</option>
+                    <t t-foreach="state.firmaer" t-as="f" t-key="f.id">
+                        <option t-att-value="f.id"
+                                t-att-selected="f.id === state.valgtFirma"
+                                t-esc="f.navn"/>
+                    </t>
+                </select>
             </div>
-            <div class="fiq_gui_prj_card">
-                <h3 t-esc="flate"/>
-                <p class="fiq_gui_prj_soon">Kommer</p>
+
+            <div t-if="state.laster" class="fiq_prj_info">Laster …</div>
+
+            <div t-elif="state.feil" class="fiq_prj_feil">
+                <t t-esc="state.feil"/>
             </div>
-            <div class="fiq_gui_prj_foot">Drevet av <strong>FIQ</strong> · <t t-esc="flate"/></div>
+
+            <!-- NIVÅ 1 — prosjektliste -->
+            <div t-elif="!state.apentProsjekt">
+                <div t-if="!state.prosjekter.length" class="fiq_prj_info">
+                    Ingen prosjekter å vise.
+                </div>
+                <table t-else="" class="fiq_prj_tabell">
+                    <thead>
+                        <tr>
+                            <th class="fiq_prj_nr">#</th>
+                            <th>Prosjekt</th>
+                            <th>Kunde</th>
+                            <th class="fiq_prj_tall">Oppgaver</th>
+                            <th class="fiq_prj_tall">Timer</th>
+                            <th>Fremdrift</th>
+                            <th>Frist</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="state.prosjekter" t-as="p" t-key="p.id"
+                            class="fiq_prj_rad" t-on-click="() => this.apneProsjekt(p)">
+                            <td class="fiq_prj_nr" t-esc="p.nummer"/>
+                            <td>
+                                <span class="fiq_prj_navn" t-esc="p.navn"/>
+                                <span class="fiq_prj_firmanavn" t-if="!state.valgtFirma"
+                                      t-esc="p.firma"/>
+                            </td>
+                            <td t-esc="p.kunde"/>
+                            <td class="fiq_prj_tall">
+                                <t t-esc="p.antall_ferdige"/> / <t t-esc="p.antall_oppgaver"/>
+                            </td>
+                            <td class="fiq_prj_tall">
+                                <t t-esc="p.forte_timer"/>
+                                <t t-if="p.estimerte_timer"> / <t t-esc="p.estimerte_timer"/></t>
+                            </td>
+                            <td>
+                                <div class="fiq_prj_stripe">
+                                    <div t-att-class="'fiq_prj_fyll ' + fremdriftsfarge(p.fremdrift)"
+                                         t-att-style="'width:' + p.fremdrift + '%'"/>
+                                </div>
+                                <span class="fiq_prj_pst"><t t-esc="p.fremdrift"/> %</span>
+                                <!-- Ærlighet om tallet: timer er fasit, oppgaveandel er et estimat. -->
+                                <span class="fiq_prj_kilde"
+                                      t-if="p.fremdrift_kilde === 'oppgaver'">anslag</span>
+                            </td>
+                            <td t-esc="p.frist or '—'"/>
+                            <td>
+                                <button class="fiq_prj_lenke"
+                                        t-on-click.stop="() => this.apneIOdoo(p.id)">
+                                    Åpne i Odoo
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- NIVÅ 2 — oppgavene i valgt prosjekt -->
+            <div t-else="">
+                <div class="fiq_prj_drill">
+                    <button class="fiq_prj_tilbake" t-on-click="tilbake">‹ Alle prosjekter</button>
+                    <span class="fiq_prj_navn" t-esc="state.apentProsjekt.navn"/>
+                </div>
+
+                <div t-if="state.lasterOppgaver" class="fiq_prj_info">Laster oppgaver …</div>
+                <div t-elif="!state.oppgaver.length" class="fiq_prj_info">
+                    Ingen oppgaver i dette prosjektet.
+                </div>
+                <table t-else="" class="fiq_prj_tabell">
+                    <thead>
+                        <tr>
+                            <th class="fiq_prj_nr">Disp.nr</th>
+                            <th class="fiq_prj_nr">Oppg.nr</th>
+                            <th>Oppgave</th>
+                            <th>Ansvarlig</th>
+                            <th>Stadium</th>
+                            <th>Sjekkliste</th>
+                            <th>Frist</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="state.oppgaver" t-as="t" t-key="t.id"
+                            class="fiq_prj_rad" t-on-click="() => this.apneOppgave(t.id)">
+                            <td class="fiq_prj_nr" t-esc="t.wbs"/>
+                            <td class="fiq_prj_nr" t-esc="t.oppgavenr"/>
+                            <td>
+                                <span t-att-class="t.ferdig ? 'fiq_prj_ferdig' : ''" t-esc="t.navn"/>
+                            </td>
+                            <td>
+                                <!-- 🤖 uten mennesker, 👤 med — samme merking som AI KTRL -->
+                                <span t-if="t.er_ai" title="AI">🤖</span>
+                                <t t-else="" t-esc="t.ansvarlige"/>
+                            </td>
+                            <td t-esc="t.stadium"/>
+                            <td>
+                                <t t-if="t.antall_sjekklister">
+                                    <t t-esc="t.sjekkliste_fremdrift"/> %
+                                </t>
+                                <t t-else="">—</t>
+                            </td>
+                            <td t-esc="t.frist or '—'"/>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="fiq_gui_prj_foot">Drevet av <strong>FIQ</strong> · Prosjektoversikt</div>
         </div>
     </t>
 </templates>
