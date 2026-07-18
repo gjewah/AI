@@ -1,17 +1,27 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Regnskap",
-    "version": "19.0.1.2.0",
-    "summary": "FIQ GUI-skjelett for flaten Regnskap – OWL klient-handling "
-               "(placeholder-dashbord), menuitem og rettighetsgruppe. Klar for ekte funksjonalitet.",
+    "version": "19.0.1.3.0",
+    "summary": "AI GUI Regnskap (2.80) — visningen av AI Regnskap-Rådgiveren: likviditet, "
+               "cashflow, kritiske datoer og tidlig korrigering.",
     "description": """
-FIQ GUI Regnskap
-===================
-Minimalt, installerbart skjelett i FIQ GUI-familien (jf. fiq_gui_hoved):
- * OWL klient-handling «FIQ GUI Regnskap» – enkel placeholder-side («Kommer»).
- * Menuitem som åpner flaten.
- * Rettighetsgruppe (arver base.group_user).
-Bygd rent og konsistent med Hovedmeny-stilen, klart for å fylles med ekte funksjonalitet.
+FIQ GUI Regnskap — flate 2.80
+=============================
+Flaten er VISNINGEN av rolla «0.00 2.80 AI Regnskap-Rådgiver» (rolle bak, flate foran).
+Native-først: tallene eies av Odoo (account.move) — flaten er et LAG, ingen parallell logikk.
+
+Innhold (UTKAST 01 — rammeverk, ikke ferdig funksjonalitet):
+ * Oversikt — inngående · utgående · haster · kritisk · ubetalt
+ * Cashflow + mulige kritiske likviditetsdatoer
+ * Må tas høyde for — lønnskjøring, sosiale avgifter, feriepenger, pensjon
+ * Tidlig korrigering — kortere frister, tidligere fakturering
+
+Harde regler innebygd i flaten:
+ * «ALDRI gjett — regnskap er juridisk bindende» (rollens egen regel): bokført FAKTA
+   skilles skarpt fra FRAMSKRIVNING.
+ * Rådgiver, ikke beslutter — ingen automatiske finansielle handlinger.
+ * Lønn = egen gate: aggregater vises, individuell lønns-PII ALDRI.
+ * Production-posteringer / regnskaps-avslutning / innsending = menneske.
 """,
     "author": "FIQ AS",
     "website": "https://fiq.no",

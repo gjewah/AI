@@ -1,23 +1,19 @@
-// FIQ GUI Regnskap (2.80) — finans-familiens farge #4472C4 (jf. rollefilene + control_room.js).
-//
-// MERK: skjelettet brukte #38B44A = VIDIRS grønnfarge. Feil på to måter: finans er mørk blå,
-// og en KUNDES merkefarge hører ikke hjemme i en generisk plattform-modul. Rettet.
+// FIQ GUI Finans (2.70) — finans-familiens farge #4472C4 (jf. rollefilene + control_room.js).
 //
 // 🛑 ALDRI min()/max() med blandede enheter (px + vw) — Sass regner ut ved kompilering,
 //    feiler «Incompatible units», og HELE assets-bundelen dør (tok ned fiqas Staging 16.07.2026).
 //    Bruk width + max-width. [[feedback-scss-min-vw-px]]
 
-.fiqr {
+.fiqf {
   --fin: #4472C4;
   --fin-myk: #EDF1FA;
-  --haster: #ED7D31;
-  --kritisk: #C00000;
+  --fare: #C00000;
   --graa: #7A8593;
 
   padding: 16px;
   font-size: 13px;
 
-  .fiqr-topp {
+  .fiqf-topp {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -28,18 +24,18 @@
     margin-bottom: 14px;
   }
 
-  .fiqr-tittel {
+  .fiqf-tittel {
     margin: 0;
     color: var(--fin);
     font-size: 20px;
   }
 
-  .fiqr-und {
+  .fiqf-und {
     color: var(--graa);
     margin-top: 2px;
   }
 
-  .fiqr-merke {
+  .fiqf-merke {
     border: 1px solid var(--fin);
     color: var(--fin);
     border-radius: 12px;
@@ -48,7 +44,7 @@
     white-space: nowrap;
   }
 
-  .fiqr-utkast {
+  .fiqf-utkast {
     background: #FFF8E5;
     border: 1px solid #E0B400;
     border-radius: 6px;
@@ -56,7 +52,7 @@
     margin-bottom: 14px;
   }
 
-  .fiqr-kort {
+  .fiqf-kort {
     background: #fff;
     border: 1px solid #E3E6EC;
     border-radius: 8px;
@@ -70,12 +66,14 @@
     }
   }
 
-  .fiqr-hjelp {
+  .fiqf-kort-vent { opacity: .65; }
+
+  .fiqf-hjelp {
     color: var(--graa);
     margin: 0 0 8px;
   }
 
-  .fiqr-tom {
+  .fiqf-tom {
     color: var(--graa);
     font-style: italic;
     background: #F7F8FA;
@@ -84,50 +82,45 @@
     padding: 8px 10px;
   }
 
-  .fiqr-tom-liten {
-    padding: 3px 8px;
-    font-size: 12px;
-  }
-
-  // Likviditets-bøtter
-  .fiqr-botter {
+  // Tidsakse-velger
+  .fiqf-akser {
     display: flex;
-    gap: 10px;
+    gap: 6px;
     flex-wrap: wrap;
+    margin-bottom: 10px;
   }
 
-  .fiqr-botte {
-    flex: 1 1 150px;
-    background: #fff;
+  .fiqf-akse {
     border: 1px solid #D6DAE2;
-    border-top: 3px solid var(--fin);
+    background: #fff;
+    border-radius: 16px;
+    padding: 5px 14px;
+    cursor: pointer;
+    color: #23303F;
+
+    &:hover { border-color: var(--fin); }
+  }
+
+  .fiqf-akse-valgt {
+    background: var(--fin);
+    border-color: var(--fin);
+    color: #fff;
+  }
+
+  .fiqf-akse-hint {
+    color: var(--graa);
+    margin-bottom: 8px;
+  }
+
+  // SCENARIO — skal ALDRI kunne forveksles med bokførte tall.
+  .fiqf-scenario {
+    border: 1px dashed var(--fin);
     border-radius: 6px;
     padding: 10px;
+    background: var(--fin-myk);
   }
 
-  .fiqr-botte-haster { border-top-color: var(--haster); }
-  .fiqr-botte-kritisk { border-top-color: var(--kritisk); }
-
-  .fiqr-botte-navn {
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-
-  .fiqr-botte-tall {
-    font-size: 22px;
-    color: var(--graa);
-    line-height: 1.2;
-  }
-
-  .fiqr-botte-kilde {
-    color: var(--graa);
-    font-size: 11px;
-    font-style: italic;
-    margin-top: 4px;
-  }
-
-  // Framskrivning skal ALDRI forveksles med bokførte tall.
-  .fiqr-scenario-merke {
+  .fiqf-scenario-merke {
     display: inline-block;
     background: var(--fin);
     color: #fff;
@@ -138,8 +131,34 @@
     margin-bottom: 8px;
   }
 
-  .fiqr-forp-rad,
-  .fiqr-forslag-rad {
+  .fiqf-ab {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .fiqf-ab-boks {
+    flex: 1 1 220px;
+    background: #fff;
+    border: 1px solid #D6DAE2;
+    border-radius: 6px;
+    padding: 10px;
+  }
+
+  .fiqf-ab-tittel {
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .fiqf-anbef {
+    margin-top: 10px;
+    background: #fff;
+    border: 1px solid #D6DAE2;
+    border-radius: 6px;
+    padding: 10px;
+  }
+
+  .fiqf-rad {
     display: flex;
     gap: 10px;
     align-items: baseline;
@@ -150,24 +169,10 @@
     &:last-child { border-bottom: 0; }
   }
 
-  .fiqr-forp-navn,
-  .fiqr-forslag-navn {
-    flex: 0 0 170px;
+  .fiqf-etikett {
+    flex: 0 0 190px;
     font-weight: 600;
   }
 
-  .fiqr-gate {
-    background: var(--fin-myk);
-    color: var(--fin);
-    border: 1px solid var(--fin);
-    border-radius: 10px;
-    padding: 1px 8px;
-    font-size: 11px;
-  }
-
-  .fiqr-note {
-    margin-top: 8px;
-    color: var(--graa);
-    font-size: 12px;
-  }
+  .fiqf-rad-fare .fiqf-etikett { color: var(--fare); }
 }

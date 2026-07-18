@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="fiq_gui_fin.Flate">
+    <div class="fiqf">
+        <div class="fiqf-topp">
+            <div>
+                <h2 class="fiqf-tittel">Finans</h2>
+                <div class="fiqf-und">
+                    AI Finans-Rådgiver (2.70) · firma <b t-esc="firma"/>
+                </div>
+            </div>
+            <!-- Rådgiver, ikke beslutter. Står synlig i flaten, ikke bare i speccen. -->
+            <div class="fiqf-merke">Rådgiver — ikke beslutter</div>
+        </div>
+
+        <!-- UTKAST-banner: hindrer at en tom flate leses som et regnskapstall. -->
+        <div class="fiqf-utkast">
+            <b>UTKAST 01 — rammeverk.</b> Datakildene er ikke koblet ennå. Tallfelt står tomme
+            med kilde-merknad; ingenting her er bokførte tall.
+        </div>
+
+        <!-- 1. ANALYSE + FRAMSKRIVNING -->
+        <section class="fiqf-kort">
+            <h3>Hvordan går firmaet?</h3>
+            <p class="fiqf-hjelp">
+                Løpende vurdering fra rådgiveren: styrker, svakheter og hva som kan forbedres.
+                Lesbar vurdering — ikke bare tall.
+            </p>
+            <div class="fiqf-tom">Kilde: bokførte tall (account.move) — ikke koblet i UTKAST 01.</div>
+        </section>
+
+        <!-- 2. SIMULATOREN -->
+        <section class="fiqf-kort">
+            <h3>Simulator</h3>
+            <p class="fiqf-hjelp">For styret og daglig leder — støtter avgjørelsen, tar den aldri.</p>
+
+            <div class="fiqf-akser">
+                <button t-foreach="tidsakser" t-as="t" t-key="t.key"
+                        class="fiqf-akse"
+                        t-att-class="{ 'fiqf-akse-valgt': state.akse === t.key }"
+                        t-on-click="() => this.velgAkse(t.key)">
+                    <span t-esc="t.label"/>
+                </button>
+            </div>
+
+            <div class="fiqf-akse-innhold">
+                <div class="fiqf-akse-hint" t-esc="valgtAkse.hint"/>
+
+                <!-- SCENARIO-merket er hele poenget: aldri forveksle med bokført fakta. -->
+                <div t-if="state.akse === '03'" class="fiqf-scenario">
+                    <div class="fiqf-scenario-merke">SCENARIO — ikke bokførte tall</div>
+                    <div class="fiqf-ab">
+                        <div class="fiqf-ab-boks">
+                            <div class="fiqf-ab-tittel">Kursen endres</div>
+                            <div class="fiqf-tom">3 / 6 / 12 mnd — ikke koblet</div>
+                        </div>
+                        <div class="fiqf-ab-boks">
+                            <div class="fiqf-ab-tittel">Kursen endres ikke</div>
+                            <div class="fiqf-tom">3 / 6 / 12 mnd — ikke koblet</div>
+                        </div>
+                    </div>
+                    <div class="fiqf-anbef">
+                        <b>Hva bør endringen være?</b>
+                        <div class="fiqf-tom">Anbefaling fra rådgiveren — ikke koblet</div>
+                    </div>
+                </div>
+
+                <div t-if="state.akse === '02'" class="fiqf-naatid">
+                    <div class="fiqf-rad">
+                        <span class="fiqf-etikett">Bransjen · hva gjør andre</span>
+                        <span class="fiqf-tom">
+                            Kilde: bransje-/markedsdata — ÅPENT spørsmål til Gjermund.
+                            Aldri en annen FIQ-kundes tall.
+                        </span>
+                    </div>
+                    <div class="fiqf-rad">
+                        <span class="fiqf-etikett">Nye reguleringer</span>
+                        <span class="fiqf-tom">Kilde for regnskapslov-oppdatering — ÅPENT spørsmål.</span>
+                    </div>
+                    <div class="fiqf-rad fiqf-rad-fare">
+                        <span class="fiqf-etikett">Kunder med faresignaler</span>
+                        <span class="fiqf-tom">Kilde: åpne poster (account.move) — ikke koblet.</span>
+                    </div>
+                </div>
+
+                <div t-if="state.akse === '01'" class="fiqf-fortid">
+                    <div class="fiqf-tom">
+                        Avgjørelser med utfall — hva lærte vi? Kilde ikke koblet i UTKAST 01.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. KPI -->
+        <section class="fiqf-kort">
+            <h3>KPI-rapporter</h3>
+            <p class="fiqf-hjelp">
+                Odoos egne rapporter vises her inne — brukeren velger selv hvilke (native-først,
+                ingen parallelle rapporter bygges).
+            </p>
+            <div class="fiqf-tom">Rapport-velger — bygges når datakildene er avklart.</div>
+        </section>
+
+        <!-- 4. POG -->
+        <section class="fiqf-kort fiqf-kort-vent">
+            <h3>POG</h3>
+            <p class="fiqf-hjelp">
+                Dashbord + lenke til POG-rapportene. Kommer ETTER POG er implementert —
+                eget spor, ikke blokkerende for resten.
+            </p>
+        </section>
+    </div>
+</t>
+
+</templates>
