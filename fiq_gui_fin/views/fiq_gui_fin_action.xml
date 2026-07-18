@@ -5,9 +5,10 @@
         <field name="tag">fiq_gui_fin_dashboard</field>
     </record>
 
+    <!-- Ingen web_icon: modulen har ingen static/description/icon.png (verifisert).
+         En peker til en fil som ikke finnes gir tomt/brutt app-ikon. -->
     <menuitem id="menu_fiq_gui_fin_root"
               name="FIQ Finans"
-              web_icon="fiq_gui_fin,static/description/icon.png"
               sequence="70"
               groups="fiq_gui_fin.group_user"/>
 

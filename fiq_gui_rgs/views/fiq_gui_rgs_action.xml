@@ -5,5 +5,17 @@
         <field name="name">FIQ Regnskap</field>
         <field name="tag">fiq_gui_rgs_dashboard</field>
     </record>
-    <!-- Ingen topp-meny: flaten åpnes fra FIQ Hovedmeny sin sidemeny (samlende skall). -->
+    <!-- Native menypunkt (AI PK-avgjørelse 17.07.2026): hver flate SKAL ha egen vei inn.
+         KR/skallet som eneste dør = single-point-of-failure. Skallets sidemeny kommer
+         I TILLEGG, ikke som forutsetning. Jf. «Odoo-native først — KR er et LAG». -->
+    <menuitem id="menu_fiq_gui_rgs_root"
+              name="FIQ Regnskap"
+              sequence="80"
+              groups="fiq_gui_rgs.group_user"/>
+
+    <menuitem id="menu_fiq_gui_rgs_flate"
+              name="Regnskap"
+              parent="menu_fiq_gui_rgs_root"
+              action="action_fiq_gui_rgs"
+              sequence="10"/>
 </odoo>
