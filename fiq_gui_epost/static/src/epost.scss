@@ -255,6 +255,10 @@
   // Manuell paring: treffliste under søkefeltet. Ingen min()/max() med blandede enheter —
   // Sass regner ut ved kompilering og px mot vw velter HELE assets-bundelen.
   .prow.psok{position:relative}
+  // Smalt nummerfelt ved siden av navnefeltet (mockup-fasit). Fast bredde: nummer er
+  // korte og skal stå på linje nedover, så øyet kan skumme dem.
+  .prow input.nofield{flex:0 0 108px;min-width:108px;font-family:var(--mono);
+                      font-weight:660;letter-spacing:.02em}
   .ptreff{position:absolute;top:100%;left:74px;right:0;z-index:20;margin-top:3px;
           background:var(--surface);border:1px solid var(--line);border-radius:9px;
           box-shadow:var(--shadow);max-height:230px;overflow:auto}

@@ -39,8 +39,8 @@ export class FiqMeldingssenter extends Component {
             // Paring/tildeling — MANUELL vei når AI-forslaget ikke treffer (Gjermund 18.07.2026:
             // feltene sto som tomme skall uten funksjon). Ett åpent søkefelt om gangen.
             paring: {
-                prosjekt: { tekst: "", treff: [], valgt: false },
-                oppgave: { tekst: "", treff: [], valgt: false },
+                prosjekt: { nr: "", tekst: "", treff: [], valgt: false },
+                oppgave: { nr: "", tekst: "", treff: [], valgt: false },
                 ansvarlig: { tekst: "", treff: [], valgt: false },
                 frist: "", apen: "", msg: "",
             },
@@ -161,14 +161,20 @@ export class FiqMeldingssenter extends Component {
     // Nå søker de mot ekte prosjekter/oppgaver/brukere og lagrer via backend.
 
     // Søk mens du skriver. Kort term gir ingen treff (unngå å laste halve basen på «a»).
-    async sokMal(slag, ev) {
+    /** Søk fra ENTEN nummerfeltet (`felt="nr"`) eller navnefeltet.
+     *  Backend søker uansett på både nummer og navn — feltene er to innganger til
+     *  samme kilde, ikke to ulike søk. Nummer godtar 1 tegn (prosjektnr. er korte),
+     *  navn krever 2 (ellers laster «a» halve basen). */
+    async sokMal(slag, ev, felt) {
         const p = this.state.paring;
-        p[slag].tekst = ev.target.value;
+        const verdi = ev.target.value;
+        if (felt === "nr") { p[slag].nr = verdi; } else { p[slag].tekst = verdi; }
         p[slag].valgt = false;
         p.apen = slag;
-        if ((p[slag].tekst || "").trim().length < 2) { p[slag].treff = []; return; }
+        const term = (verdi || "").trim();
+        if (term.length < (felt === "nr" ? 1 : 2)) { p[slag].treff = []; return; }
         p[slag].treff = await this.orm.call(DATA, "sok_mal", [
-            p[slag].tekst, slag, this.state.firm || false,
+            term, slag, this.state.firm || false,
         ]);
     }
 
@@ -177,7 +183,10 @@ export class FiqMeldingssenter extends Component {
     async velgMal(slag, t) {
         const p = this.state.paring;
         p[slag].valgt = t;
-        p[slag].tekst = (t.no ? t.no + " " : "") + t.navn;
+        // Nummer og navn i HVERT SITT felt (mockup-fasit) — ikke smeltet sammen til én
+        // tekst. Da ser du alltid hvilket nummer som faktisk er valgt.
+        p[slag].nr = t.no || "";
+        p[slag].tekst = t.navn || "";
         p[slag].treff = [];
         p.apen = "";
         if (slag === "ansvarlig") { p.msg = "Velg frist og trykk Tildel."; return; }

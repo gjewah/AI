@@ -335,9 +335,17 @@
                                     <!-- MANUELL paring (Gjermund 18.07.2026: disse sto som tomme
                                          skall uten funksjon). Søker på nummer OG navn; treffliste
                                          under feltet; klikk parer/velger. -->
+                                    <!-- TO FELT, som den godkjente mockupen: smalt NUMMER-felt +
+                                         eget NAVN-felt. Gjermund 19.07.2026: «oppgave og PRJ nummer
+                                         mangler». Ett felt tvang deg til å søke deg fram selv når du
+                                         VET nummeret; nå kan du taste 24_108 rett inn. Begge felt
+                                         søker mot samme kilde og fyller hverandre ut. -->
                                     <div class="prow psok">
                                         <label>Prosjekt</label>
-                                        <input placeholder="Prosjektnr eller navn"
+                                        <input class="nofield" placeholder="Nr."
+                                               t-att-value="state.paring.prosjekt.nr"
+                                               t-on-input="(ev) => this.sokMal('prosjekt', ev, 'nr')"/>
+                                        <input placeholder="Prosjektnavn"
                                                t-att-value="state.paring.prosjekt.tekst"
                                                t-on-input="(ev) => this.sokMal('prosjekt', ev)"/>
                                         <div class="ptreff" t-if="state.paring.apen === 'prosjekt' and state.paring.prosjekt.treff.length">
@@ -349,7 +357,10 @@
                                     </div>
                                     <div class="prow psok">
                                         <label>Oppgave</label>
-                                        <input placeholder="Oppgavenr eller navn"
+                                        <input class="nofield" placeholder="Nr."
+                                               t-att-value="state.paring.oppgave.nr"
+                                               t-on-input="(ev) => this.sokMal('oppgave', ev, 'nr')"/>
+                                        <input placeholder="Oppgavenavn"
                                                t-att-value="state.paring.oppgave.tekst"
                                                t-on-input="(ev) => this.sokMal('oppgave', ev)"/>
                                         <div class="ptreff" t-if="state.paring.apen === 'oppgave' and state.paring.oppgave.treff.length">
