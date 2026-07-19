@@ -857,19 +857,34 @@ class FiqMeldingssenterData(models.AbstractModel):
         end = start + timedelta(days=6)
         out = []
         Cal = self.env["calendar.event"]
+        # `calendar.event.start` er DATETIME (verifisert mot levende Odoo 19) — samme
+        # felle som date_deadline: `<= end` mot et date-objekt kuttet ved midnatt og
+        # skjulte alt som lå senere på ukas siste dag.
         for e in Cal.search([("partner_ids", "in", partner.id),
-                             ("start", ">=", start), ("start", "<=", end)],
+                             ("start", ">=", fields.Datetime.to_string(
+                                 datetime.combine(start, datetime.min.time()))),
+                             ("start", "<=", fields.Datetime.to_string(
+                                 datetime.combine(end, datetime.max.time())))],
                             order="start", limit=30):
+            lokal = fields.Datetime.context_timestamp(self, e.start) if e.start else False
             out.append({"type": "kal", "navn": e.name or "",
-                        "dato": e.start.strftime("%a %d.%m") if e.start else ""})
+                        "dato": lokal.strftime("%a %d.%m") if lokal else ""})
         users = partner.user_ids
         if users:
+            # Samme datetime-felle som i get_kalender(): `date_deadline` er DATETIME.
+            # `<= end` mot et rent date-objekt kuttet ved midnatt og skjulte fredagens
+            # frister i en ukesplan som skulle vist dem. Verifisert mot levende Odoo 19.
             for t in self.env["project.task"].search(
                     [("user_ids", "in", users.ids),
-                     ("date_deadline", ">=", start), ("date_deadline", "<=", end)],
+                     ("date_deadline", ">=", fields.Datetime.to_string(
+                         datetime.combine(start, datetime.min.time()))),
+                     ("date_deadline", "<=", fields.Datetime.to_string(
+                         datetime.combine(end, datetime.max.time())))],
                     order="date_deadline", limit=30):
+                lokal_f = fields.Datetime.context_timestamp(self, t.date_deadline) \
+                    if t.date_deadline else False
                 out.append({"type": "opg", "navn": t.name or "",
-                            "dato": t.date_deadline.strftime("%a %d.%m") if t.date_deadline else ""})
+                            "dato": lokal_f.strftime("%a %d.%m") if lokal_f else ""})
         return out
 
     # ---- Kalender INNE i flaten (Gjermund 19.07.2026: «kalenderen mangler») ----------
@@ -921,7 +936,15 @@ class FiqMeldingssenterData(models.AbstractModel):
         # 2) Oppgavefrister som er MINE — ellers drukner møtene i andres frister.
         Task = self.env["project.task"]
         if "date_deadline" in Task._fields:
-            dom = [("date_deadline", ">=", start), ("date_deadline", "<=", end),
+            # 🛑 VERIFISERT MOT LEVENDE ODOO 19 (ikke antatt): `project.task.date_deadline`
+            # er **datetime**, ikke date («2026-04-30 19:00:00»). Sammenlignet man den med
+            # et rent date-objekt, ble `<= end` tolket som «<= end 00:00:00» → ALLE frister
+            # senere enn midnatt på månedens siste dag falt ut av kalenderen, stille.
+            # Derfor eksplisitt tidsvindu til slutten av siste dag.
+            dom = [("date_deadline", ">=", fields.Datetime.to_string(
+                        datetime.combine(start, datetime.min.time()))),
+                   ("date_deadline", "<=", fields.Datetime.to_string(
+                        datetime.combine(end, datetime.max.time()))),
                    ("user_ids", "in", self.env.user.ids)]
             if firm and "company_id" in Task._fields:
                 try:
@@ -929,8 +952,13 @@ class FiqMeldingssenterData(models.AbstractModel):
                 except (TypeError, ValueError):
                     pass
             for t in Task.search(dom, order="date_deadline", limit=300):
-                _legg(t.date_deadline, {
-                    "type": "frist", "navn": t.name or "", "tid": "",
+                # datetime → brukerens tidssone FØR vi plukker datoen. En frist
+                # «30.04 23:00 UTC» er 1. mai i Oslo og hører i mai-ruta, ikke april.
+                frist = t.date_deadline
+                lokal_frist = fields.Datetime.context_timestamp(self, frist) if frist else False
+                _legg(lokal_frist.date() if lokal_frist else False, {
+                    "type": "frist", "navn": t.name or "",
+                    "tid": lokal_frist.strftime("%H:%M") if lokal_frist else "",
                     "id": t.id, "model": "project.task",
                 })
 
