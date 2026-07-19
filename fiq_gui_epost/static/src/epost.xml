@@ -155,7 +155,7 @@
                             <t t-foreach="grupper()" t-as="g" t-key="g.key">
                                 <button class="grp" t-on-click="() => this.toggleGroup(g.key)">
                                     <span class="ch" t-esc="state.kollaps[g.key] ? '▸' : '▾'"/>
-                                    <span class="gk" t-esc="g.key"/>
+                                    <span class="gk" t-esc="g.label"/>
                                     <span class="gc tnum" t-esc="g.n"/>
                                 </button>
                                 <t t-if="!state.kollaps[g.key]">

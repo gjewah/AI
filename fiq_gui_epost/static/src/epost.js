@@ -26,8 +26,11 @@ export class FiqMeldingssenter extends Component {
             //  e-post skal komme opp som et av underpunktene». Oversikt som forside.)
             view: "hjem",                                  // "hjem" (oversikt=forside) | "inbox" (e-post)
             aktivBoks: false, aktivNavn: "", meldinger: [], valgt: false, period: "alle",
-            group: "avsender", kollaps: {}, kandidater: { prosjekt: [], oppgave: [] },
-            trekollaps: {},              // mappetreet i sidemenyen: {kode: true} = kollapset
+            group: "avsender", kandidater: { prosjekt: [], oppgave: [] },
+            // Kollaps-tilstand hentes fra forrige økt (kun de FOLDEDE lagres).
+            // Default = utvidet: en tom lagring skal aldri skjule noe.
+            kollaps: this._lesKollaps("kollaps"),
+            trekollaps: this._lesKollaps("trekollaps"),   // mappetreet: {kode: true} = foldet
             ctxTab: "rel",                                   // person-kontekst: rel | hist | week
             trad: { status: "", notater: [] }, nyNotat: "",  // arbeidsstatus + interne notater
             person: false, personOpen: false,                // person-visning (klikk «Til stede»)
@@ -106,7 +109,10 @@ export class FiqMeldingssenter extends Component {
     async aapneBoks(kode, navn) {
         this.state.view = "inbox";
         this.state.aktivBoks = kode; this.state.aktivNavn = navn;
-        this.state.valgt = false; this.state.q = ""; this.state.kollaps = {};
+        // NB: `kollaps` nullstilles IKKE her lenger. Nøklene er prefikset med
+        // grupperingsvalget, så de kolliderer ikke på tvers av bokser — og folding
+        // brukeren har gjort skal overleve at hun bytter mappe.
+        this.state.valgt = false; this.state.q = "";
         await this.lastMeldinger();
     }
 
@@ -218,14 +224,40 @@ export class FiqMeldingssenter extends Component {
     }
 
     // Gruppering + kollaps
-    setGroup(ev) { this.state.group = ev.target.value; this.state.kollaps = {}; }
-    toggleGroup(k) { this.state.kollaps[k] = !this.state.kollaps[k]; }
+    // Bytte gruppering nullstiller IKKE folding: nøklene bærer grupperingsnavnet, så
+    // «avsender::Frank» og «type::Sendt» lever side om side. Bytter du fram og tilbake,
+    // er foldingen din fortsatt der.
+    setGroup(ev) { this.state.group = ev.target.value; }
+    // ---- Kollaps-tilstand som HUSKES -----------------------------------------------
+    // Krav 19.07 (via AI KR): «kollapse og utvide på alle nivåer i visninger med mange
+    // elementer» + tilstand skal huskes. Uten lagring folder du sammen 40 grupper og
+    // mister alt ved neste lasting.
+    // 🛑 Nøkkelen er prefikset med grupperingsvalget (se grupper()) — ALDRI et bart navn.
+
+    _lesKollaps(navn) {
+        try { return JSON.parse(window.localStorage.getItem("fiq_epost_" + navn) || "{}") || {}; }
+        catch (e) { return {}; }                 // korrupt lagring skal aldri velte flaten
+    }
+    _lagreKollaps(navn, obj) {
+        try {
+            // Lagre KUN de foldede. Ellers vokser lagringen med hver gruppe brukeren ser.
+            const kun = {};
+            for (const k in obj) { if (obj[k]) kun[k] = true; }
+            window.localStorage.setItem("fiq_epost_" + navn, JSON.stringify(kun));
+        } catch (e) { /* privat modus / full disk — folding virker, den huskes bare ikke */ }
+    }
+
+    toggleGroup(k) {
+        this.state.kollaps[k] = !this.state.kollaps[k];
+        this._lagreKollaps("kollaps", this.state.kollaps);
+    }
     toggleAlle() {
         const keys = this.grupper().map(g => g.key);
         const anyOpen = keys.some(k => !this.state.kollaps[k]);
         const s = {};
         for (const k of keys) s[k] = anyOpen;
         this.state.kollaps = s;
+        this._lagreKollaps("kollaps", s);
     }
     kollapsLabel() {
         const keys = this.grupper().map(g => g.key);
@@ -261,6 +293,7 @@ export class FiqMeldingssenter extends Component {
     vekslTre(kode, ev) {
         if (ev) { ev.stopPropagation(); }
         this.state.trekollaps[kode] = !this.state.trekollaps[kode];
+        this._lagreKollaps("trekollaps", this.state.trekollaps);
     }
 
     /** Kollaps/utvid HELE treet på én gang. */
@@ -271,6 +304,7 @@ export class FiqMeldingssenter extends Component {
         const s = {};
         for (const k of foreldre) s[k] = noenApne;
         this.state.trekollaps = s;
+        this._lagreKollaps("trekollaps", s);
     }
 
     treLabel() {
@@ -292,7 +326,17 @@ export class FiqMeldingssenter extends Component {
             if (!grp[k]) { grp[k] = []; order.push(k); }
             grp[k].push(m);
         }
-        return order.map(k => ({ key: k, items: grp[k], n: grp[k].length }));
+        // `key` = STABIL nøkkel til kollaps-tilstand · `label` = det brukeren ser.
+        // Nøkkelen prefikses med grupperingsvalget: ellers ville «Sendt» (type) og en
+        // avsender som heter «Sendt» delt samme kollaps-tilstand, og bytte av gruppering
+        // ville dratt med seg foldingen fra forrige visning.
+        // (Jf. 00.03s WBS-funn: nøkle ALDRI på et navn som kan gjentas.)
+        return order.map(k => ({
+            key: this.state.group + "::" + k,
+            label: k,
+            items: grp[k],
+            n: grp[k].length,
+        }));
     }
     // ---- Dato-gruppering: trapp fra dag → uke → måned → kvartal → år ----------------
     // Gjermund 19.07.2026: «på gruppering på dato må man kunne ha en logikk og ikke minst
