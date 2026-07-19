@@ -44,6 +44,10 @@ class FiqControlRoomConfig(models.Model):
     show_quick = fields.Boolean("Quick actions", default=True)
     # 📌 Rekkefølge på flatens blokker (komma-liste; per bruker, følger på tvers av maskiner)
     widget_order = fields.Char("Block order", default="")
+    # Flater brukeren selv har skrudd AV (komma-liste med flate-nøkler). Lagres på serveren,
+    # ikke i localStorage, så «mitt KR» følger brukeren mellom maskiner. Kan bare SKJULE —
+    # tilgang avgjøres av gruppene i get_fiq_flater(), aldri av dette feltet.
+    skjulte_flater = fields.Char("Hidden flates", default="")
 
     # Odoo 19: use models.Constraint (not the deprecated _sql_constraints)
     _user_company_uniq = models.Constraint(
@@ -1246,7 +1250,12 @@ class FiqControlRoomConfig(models.Model):
         A module registers itself by shipping ONE ir.config_parameter:
 
             fiq_gui_control.flate.<key> = {"label": "Inspections", "xmlid": "fiq_befaring.action_fiq_befaring",
-                                           "sequence": 60, "icon": "/mod/static/img/x.png"}
+                                           "sequence": 60, "icon": "/mod/static/img/x.png",
+                                           "groups": ["fiq_gui_control.group_manager"]}
+
+        Optional "groups": only users in at least one of those groups see the flate. Omit it and the
+        flate is visible to everyone with control room access. This is TIDINESS, not security — the
+        real gate is the action's own access rules; hiding a menu item never grants or denies access.
 
         Why this exists: the menu used to be a hardcoded list inside control_room.js, so EVERY new
         module required editing the control room core and bumping its version. Modules shipped, worked,
@@ -1290,6 +1299,20 @@ class FiqControlRoomConfig(models.Model):
                     "database (module not installed, or the xmlid is misspelled).", key, xmlid,
                 )
                 continue
+            # Group gate (layer 1). Decided SERVER-side from the session's own user — never from
+            # anything the client sends. A malformed 'groups' hides the flate rather than exposing
+            # it: fail-closed, the same rule as har_000_rettighet().
+            groups = spec.get("groups") or []
+            if groups:
+                try:
+                    if not any(self.env.user.has_group(g) for g in groups):
+                        continue
+                except Exception:
+                    _logger.warning(
+                        "FIQ control room: hiding flate %r — its 'groups' could not be evaluated "
+                        "(%r). Fail-closed: hidden rather than shown.", key, groups,
+                    )
+                    continue
             out.append({
                 "key": key,
                 "label": spec.get("label") or key.replace("_", " ").title(),
@@ -1297,7 +1320,91 @@ class FiqControlRoomConfig(models.Model):
                 "icon": spec.get("icon") or False,
                 "sequence": int(spec.get("sequence") or 50),
             })
+        # Layer 2: the user's own choice, on top of what layer 1 already allowed. «Sy ditt eget KR.»
+        #
+        # The order matters and is not negotiable: layer 1 (groups, above) decides what the user MAY
+        # see; this only decides what she WANTS to see among those. A stored preference can hide a
+        # flate, never reveal one — so a stale preference for a flate she has lost access to simply
+        # has nothing to act on. Client input can only narrow, never widen.
+        skjulte = self._skjulte_flater()
+        for f in out:
+            f["skjult"] = f["key"] in skjulte
         return sorted(out, key=lambda f: (f["sequence"], f["label"]))
+
+    @api.model
+    def get_kr_bokser(self, company_id=False):
+        """One summary box per flate for the control room front page.
+
+        Each flate owns its own numbers: the control room asks the flate's data model for them and
+        does not know how they are computed. Contract — the flate ships a model named
+        `fiq.gui.<key>.data` (same <key> as in its self-registration) with:
+
+            def get_kr_boks(self, company_id=False)
+                -> {"haster": int, "i_dag": int, "totalt": int,
+                    "linjer": [{"tekst": str, "res_id": int}, ...]}
+
+        A flate without that model or method simply has no box — no empty placeholders, no noise.
+        A flate whose box raises is skipped and logged; one broken module must never take down the
+        front page for everything else.
+
+        Respects the same two layers as the menu: only flates the user may see (groups) and has not
+        switched off (her own choice) are asked at all.
+        """
+        out = []
+        for flate in self.get_fiq_flater():
+            if flate.get("skjult"):
+                continue
+            model_name = "fiq.gui.%s.data" % flate["key"]
+            Model = self.env.get(model_name)
+            if Model is None or not hasattr(Model, "get_kr_boks"):
+                continue
+            try:
+                boks = Model.get_kr_boks(company_id=company_id)
+            except Exception:
+                # Deliberately broad: a flate's box is decoration on the front page, never worth
+                # a white screen. Logged with the module name so the owner can find it.
+                _logger.warning(
+                    "FIQ control room: box for flate %r failed (%s.get_kr_boks) — skipping it.",
+                    flate["key"], model_name, exc_info=True,
+                )
+                continue
+            if not boks:
+                continue
+            out.append({
+                "key": flate["key"],
+                "label": flate["label"],
+                "xmlid": flate["xmlid"],
+                "icon": flate.get("icon") or False,
+                "sequence": flate["sequence"],
+                "haster": int(boks.get("haster") or 0),
+                "i_dag": int(boks.get("i_dag") or 0),
+                "totalt": int(boks.get("totalt") or 0),
+                # Ro-budsjett: tall og korte linjer, aldri varsler som maser.
+                "linjer": (boks.get("linjer") or [])[:5],
+            })
+        return out
+
+    def _skjulte_flater(self):
+        """Flate keys this user has switched off, as a set. Stored per user+company."""
+        rec = self._get_or_create_current()
+        raw = rec.skjulte_flater or ""
+        return {k.strip() for k in raw.split(",") if k.strip()}
+
+    @api.model
+    def set_flate_synlig(self, key, synlig):
+        """Turn one flate on or off for the current user. Returns the new hidden set.
+
+        Only ever writes to this user's own row — a user cannot change what anyone else sees, and
+        cannot grant herself a flate: hiding is subtraction only (see get_fiq_flater, layer 2).
+        """
+        rec = self._get_or_create_current()
+        skjulte = self._skjulte_flater()
+        if synlig:
+            skjulte.discard(key)
+        else:
+            skjulte.add(key)
+        rec.skjulte_flater = ",".join(sorted(skjulte))
+        return sorted(skjulte)
 
     @api.model
     def get_dashboards(self):

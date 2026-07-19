@@ -38,7 +38,7 @@ const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj
 // ⚠️ MÅ FØLGE __manifest__.py sin "version" — ellers tror KR at fanen kjører gammel
 // kode og viser «A new version is installed»-banneret som ALDRI forsvinner, uansett
 // hvor mange ganger brukeren laster på nytt. Bump denne i SAMME commit som manifestet.
-const GUI_BUILD = "19.0.6.84.0";
+const GUI_BUILD = "19.0.6.85.0";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -1456,7 +1456,10 @@ export class FiqControlRoom extends Component {
         // kommer inn HER uten at denne fila røres — det var nettopp koblingen som manglet:
         // modulene var installert og hadde handlinger, men menyen visste ikke om dem.
         // Server-siden har alt verifisert at handlingen finnes i denne basen.
-        const DYN = (this.state.fiqFlater || []).map((f) => ({
+        // .skjult = brukeren har selv slått av flaten (server-lagret, per bruker+firma).
+        // Serveren har alt filtrert bort det hun ikke har TILGANG til — dette er kun hennes
+        // eget valg blant resten. «Sy ditt eget KR.»
+        const DYN = (this.state.fiqFlater || []).filter((f) => !f.skjult).map((f) => ({
             key: f.key, label: f.label, xmlid: f.xmlid, icon: f.icon || undefined,
         }));
         const alle = DEF.concat(DYN.filter((d) => !DEF.some((x) => x.key === d.key)));
