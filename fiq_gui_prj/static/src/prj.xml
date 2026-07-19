@@ -1,25 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <!--
-      Prosjektoversikt — ekte innmat (erstatter «Kommer»-stubben).
-      Odoo 19: bruk `and`/`or` i t-if (575 treff i core mot 42 for &&), aldri if()-setning
-      i inline t-on-* (kompilerer ikke og dreper hele malen).
+      Prosjektoversikt — WBS-tre med timer mot budsjett (kravspek batch 15).
+
+      🔴 OMSKREVET V0.03: forrige mal var to <table>-er (prosjektliste -> oppgaveliste).
+      Det er en listevisning Odoo allerede har native. Nå: foldbart WBS-tre,
+      Blokk -> Fase -> Leilighet -> Aktivitet, med timer/budsjett og rød/blå/grønn per node.
+
+      Odoo 19-feller unngått her:
+      · `and`/`or` i t-if, aldri `&&` (575 treff i core mot 42)
+      · aldri if()-setning i inline t-on-* — kompilerer ikke og dreper HELE malen stille.
+        Bruk ternary eller kall en metode.
     -->
     <t t-name="fiq_gui_prj.Dashboard">
         <div class="fiq_gui_prj">
 
+            <!-- Firma-velger som SMÅ BOKSER øverst (batch 15 / firma-velger-seksjonen):
+                 049 SDVg = konsern-total, så 050/051/052/054 som egne bokser. -->
+            <div class="fiq_prj_firmabokser" t-if="state.firmaer.length > 1">
+                <button class="fiq_prj_firmaboks"
+                        t-att-class="{ 'fiq_prj_valgt': !state.valgtFirma }"
+                        t-on-click="() => this.velgFirma(false)">
+                    <span class="fiq_prj_fb_navn">Alle firmaer</span>
+                    <span class="fiq_prj_fb_sub">konsern-total</span>
+                </button>
+                <button t-foreach="state.firmaer" t-as="f" t-key="f.id"
+                        class="fiq_prj_firmaboks"
+                        t-att-class="{ 'fiq_prj_valgt': f.id === state.valgtFirma }"
+                        t-on-click="() => this.velgFirma(f.id)">
+                    <span class="fiq_prj_fb_navn" t-esc="f.navn"/>
+                </button>
+            </div>
+
             <div class="fiq_gui_prj_top">
                 <span class="fiq_gui_prj_mark">F</span>
                 <span class="fiq_gui_prj_name">Prosjektoversikt</span>
-                <select class="fiq_prj_firma" t-on-change="velgFirma"
-                        t-if="state.firmaer.length > 1">
-                    <option value="">Alle firmaer</option>
-                    <t t-foreach="state.firmaer" t-as="f" t-key="f.id">
-                        <option t-att-value="f.id"
-                                t-att-selected="f.id === state.valgtFirma"
-                                t-esc="f.navn"/>
-                    </t>
-                </select>
+                <span class="fiq_prj_kicker" t-if="!state.apentProsjekt">
+                    timer mot budsjett
+                </span>
             </div>
 
             <div t-if="state.laster" class="fiq_prj_info">Laster …</div>
@@ -28,110 +46,174 @@
                 <t t-esc="state.feil"/>
             </div>
 
-            <!-- NIVÅ 1 — prosjektliste -->
+            <!-- ══ NIVÅ 1 — velg prosjekt ══ -->
             <div t-elif="!state.apentProsjekt">
                 <div t-if="!state.prosjekter.length" class="fiq_prj_info">
                     Ingen prosjekter å vise.
                 </div>
-                <table t-else="" class="fiq_prj_tabell">
-                    <thead>
-                        <tr>
-                            <th class="fiq_prj_nr">#</th>
-                            <th>Prosjekt</th>
-                            <th>Kunde</th>
-                            <th class="fiq_prj_tall">Oppgaver</th>
-                            <th class="fiq_prj_tall">Timer</th>
-                            <th>Fremdrift</th>
-                            <th>Frist</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr t-foreach="state.prosjekter" t-as="p" t-key="p.id"
-                            class="fiq_prj_rad" t-on-click="() => this.apneProsjekt(p)">
-                            <td class="fiq_prj_nr" t-esc="p.nummer"/>
-                            <td>
-                                <span class="fiq_prj_navn" t-esc="p.navn"/>
-                                <span class="fiq_prj_firmanavn" t-if="!state.valgtFirma"
-                                      t-esc="p.firma"/>
-                            </td>
-                            <td t-esc="p.kunde"/>
-                            <td class="fiq_prj_tall">
-                                <t t-esc="p.antall_ferdige"/> / <t t-esc="p.antall_oppgaver"/>
-                            </td>
-                            <td class="fiq_prj_tall">
-                                <t t-esc="p.forte_timer"/>
-                                <t t-if="p.estimerte_timer"> / <t t-esc="p.estimerte_timer"/></t>
-                            </td>
-                            <td>
-                                <div class="fiq_prj_stripe">
-                                    <div t-att-class="'fiq_prj_fyll ' + fremdriftsfarge(p.fremdrift)"
-                                         t-att-style="'width:' + p.fremdrift + '%'"/>
-                                </div>
-                                <span class="fiq_prj_pst"><t t-esc="p.fremdrift"/> %</span>
-                                <!-- Ærlighet om tallet: timer er fasit, oppgaveandel er et estimat. -->
-                                <span class="fiq_prj_kilde"
-                                      t-if="p.fremdrift_kilde === 'oppgaver'">anslag</span>
-                            </td>
-                            <td t-esc="p.frist or '—'"/>
-                            <td>
-                                <button class="fiq_prj_lenke"
-                                        t-on-click.stop="() => this.apneIOdoo(p.id)">
-                                    Åpne i Odoo
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div t-else="" class="fiq_prj_kort">
+                    <div t-foreach="state.prosjekter" t-as="p" t-key="p.id"
+                         class="fiq_prj_kort_en"
+                         t-att-class="statusKlasse(p.budsjett_status)"
+                         t-on-click="() => this.apneProsjekt(p)">
+
+                        <div class="fiq_prj_kort_topp">
+                            <span class="fiq_prj_nr" t-esc="p.nummer"/>
+                            <span class="fiq_prj_status_pille"
+                                  t-att-class="statusKlasse(p.budsjett_status)"
+                                  t-esc="statusTekst(p.budsjett_status)"/>
+                        </div>
+
+                        <div class="fiq_prj_navn" t-esc="p.navn"/>
+                        <div class="fiq_prj_kunde" t-if="p.kunde" t-esc="p.kunde"/>
+                        <div class="fiq_prj_firmanavn" t-if="!state.valgtFirma" t-esc="p.firma"/>
+
+                        <!-- Timer / budsjett — «X / Y» med stort tall og dempet nevner -->
+                        <div class="fiq_prj_timer">
+                            <span class="fiq_prj_stor"><t t-esc="timer(p.forte_timer)"/></span>
+                            <span class="fiq_prj_liten" t-if="p.budsjett_timer">
+                                / <t t-esc="timer(p.budsjett_timer)"/> t
+                            </span>
+                            <span class="fiq_prj_liten" t-else="">t ført · uten budsjett</span>
+                        </div>
+
+                        <!-- Stripa klippes på 100 %; tallet ved siden av gjør det ALDRI -->
+                        <div class="fiq_prj_stripe" t-if="p.budsjett_timer">
+                            <div class="fiq_prj_fyll"
+                                 t-att-class="statusKlasse(p.budsjett_status)"
+                                 t-att-style="'width:' + barBredde(p.forbruk_prosent) + '%'"/>
+                        </div>
+                        <div class="fiq_prj_pst" t-if="p.budsjett_timer">
+                            <span t-att-class="statusKlasse(p.budsjett_status)">
+                                <t t-esc="p.forbruk_prosent"/> % av budsjett
+                            </span>
+                        </div>
+
+                        <div class="fiq_prj_kort_bunn">
+                            <span><t t-esc="p.antall_ferdige"/> / <t t-esc="p.antall_oppgaver"/> oppgaver</span>
+                            <span t-if="p.frist">frist <t t-esc="p.frist"/></span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- NIVÅ 2 — oppgavene i valgt prosjekt -->
+            <!-- ══ NIVÅ 2 — WBS-treet for valgt prosjekt ══ -->
             <div t-else="">
                 <div class="fiq_prj_drill">
                     <button class="fiq_prj_tilbake" t-on-click="tilbake">‹ Alle prosjekter</button>
                     <span class="fiq_prj_navn" t-esc="state.apentProsjekt.navn"/>
+                    <button class="fiq_prj_lenke"
+                            t-on-click="() => this.apneIOdoo(state.apentProsjekt.id)">
+                        Åpne i Odoo
+                    </button>
                 </div>
 
-                <div t-if="state.lasterOppgaver" class="fiq_prj_info">Laster oppgaver …</div>
-                <div t-elif="!state.oppgaver.length" class="fiq_prj_info">
-                    Ingen oppgaver i dette prosjektet.
-                </div>
-                <table t-else="" class="fiq_prj_tabell">
-                    <thead>
-                        <tr>
-                            <th class="fiq_prj_nr">Disp.nr</th>
-                            <th class="fiq_prj_nr">Oppg.nr</th>
-                            <th>Oppgave</th>
-                            <th>Ansvarlig</th>
-                            <th>Stadium</th>
-                            <th>Sjekkliste</th>
-                            <th>Frist</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr t-foreach="state.oppgaver" t-as="t" t-key="t.id"
-                            class="fiq_prj_rad" t-on-click="() => this.apneOppgave(t.id)">
-                            <td class="fiq_prj_nr" t-esc="t.wbs"/>
-                            <td class="fiq_prj_nr" t-esc="t.oppgavenr"/>
-                            <td>
-                                <span t-att-class="t.ferdig ? 'fiq_prj_ferdig' : ''" t-esc="t.navn"/>
-                            </td>
-                            <td>
+                <div t-if="state.lasterTre" class="fiq_prj_info">Laster arbeidsnedbrytning …</div>
+
+                <t t-elif="state.tre">
+                    <!-- Prosjektsummen øverst: totalen som treet ruller opp til -->
+                    <div class="fiq_prj_sum"
+                         t-att-class="statusKlasse(state.tre.prosjekt.budsjett_status)">
+                        <div class="fiq_prj_sum_venstre">
+                            <span class="fiq_prj_sum_merke">Timer mot budsjett</span>
+                            <span class="fiq_prj_sum_tall">
+                                <t t-esc="timer(state.tre.prosjekt.forte_timer)"/>
+                                <span class="fiq_prj_liten" t-if="state.tre.prosjekt.budsjett_timer">
+                                    / <t t-esc="timer(state.tre.prosjekt.budsjett_timer)"/> t
+                                </span>
+                                <span class="fiq_prj_liten" t-else="">t ført · budsjett ikke satt</span>
+                            </span>
+                        </div>
+                        <div class="fiq_prj_sum_hoyre" t-if="state.tre.prosjekt.budsjett_timer">
+                            <span class="fiq_prj_sum_pst"
+                                  t-att-class="statusKlasse(state.tre.prosjekt.budsjett_status)">
+                                <t t-esc="state.tre.prosjekt.forbruk_prosent"/> %
+                            </span>
+                            <span class="fiq_prj_status_pille"
+                                  t-att-class="statusKlasse(state.tre.prosjekt.budsjett_status)"
+                                  t-esc="statusTekst(state.tre.prosjekt.budsjett_status)"/>
+                        </div>
+                    </div>
+
+                    <!-- Fargeforklaring — brukeren skal aldri måtte gjette hva rødt betyr -->
+                    <div class="fiq_prj_forklaring">
+                        <span><i class="fiq_prj_prikk fiq_prj_innenfor"/> innenfor budsjett</span>
+                        <span><i class="fiq_prj_prikk fiq_prj_over"/> over budsjett</span>
+                        <span><i class="fiq_prj_prikk fiq_prj_ferdig"/> ferdig</span>
+                        <span><i class="fiq_prj_prikk fiq_prj_plan"/> ikke startet</span>
+                    </div>
+
+                    <div t-if="!state.tre.noder.length" class="fiq_prj_info">
+                        Ingen oppgaver i dette prosjektet ennå.
+                    </div>
+
+                    <div t-else="" class="fiq_prj_tre">
+                        <div class="fiq_prj_tre_hode">
+                            <span class="fiq_prj_th_navn">Arbeidsnedbrytning</span>
+                            <span class="fiq_prj_th_timer">Timer / budsjett</span>
+                            <span class="fiq_prj_th_bar">Forbruk</span>
+                            <span class="fiq_prj_th_ans">Ansvarlig</span>
+                        </div>
+
+                        <div t-foreach="rader" t-as="r" t-key="r.node.id"
+                             class="fiq_prj_node"
+                             t-att-class="statusKlasse(r.node.budsjett_status)"
+                             t-att-style="'--fiq-dybde:' + r.dybde">
+
+                            <!-- Navn + fold-pil. Innrykket styres av dybde-variabelen i SCSS,
+                                 så det skalerer til vilkårlig mange nivåer. -->
+                            <span class="fiq_prj_n_navn">
+                                <button class="fiq_prj_pil" t-if="r.harBarn"
+                                        t-att-class="{ 'fiq_prj_lukket': erFoldet(r.node.id) }"
+                                        t-on-click.stop="() => this.fold(r.node.id)">▾</button>
+                                <span class="fiq_prj_pil_tom" t-else=""/>
+
+                                <span class="fiq_prj_hake" t-if="r.node.ferdig">✓</span>
+                                <span class="fiq_prj_wbs" t-esc="r.node.wbs"/>
+                                <span class="fiq_prj_n_tekst"
+                                      t-att-class="{ 'fiq_prj_ferdig_tekst': r.node.ferdig }"
+                                      t-on-click.stop="() => this.apneOppgave(r.node.id)"
+                                      t-esc="r.node.navn"/>
+                                <span class="fiq_prj_barnetall" t-if="r.harBarn">
+                                    <t t-esc="r.node.barn.length"/>
+                                </span>
+                            </span>
+
+                            <!-- Effektive timer / budsjett -->
+                            <span class="fiq_prj_n_timer">
+                                <t t-esc="timer(r.node.forte_timer)"/>
+                                <span class="fiq_prj_liten" t-if="r.node.budsjett_timer">
+                                    / <t t-esc="timer(r.node.budsjett_timer)"/>
+                                </span>
+                                <span class="fiq_prj_liten" t-else="">/ —</span>
+                            </span>
+
+                            <!-- Fremdriftsbar + ekte prosent. Ved overforbruk sier vi
+                                 rett ut hvor mange timer over — ikke bare en farge. -->
+                            <span class="fiq_prj_n_bar">
+                                <span class="fiq_prj_stripe" t-if="r.node.budsjett_timer">
+                                    <span class="fiq_prj_fyll"
+                                          t-att-class="statusKlasse(r.node.budsjett_status)"
+                                          t-att-style="'width:' + barBredde(r.node.forbruk_prosent) + '%'"/>
+                                </span>
+                                <span class="fiq_prj_n_pst"
+                                      t-att-class="statusKlasse(r.node.budsjett_status)"
+                                      t-if="r.node.budsjett_timer">
+                                    <t t-esc="r.node.forbruk_prosent"/> %
+                                </span>
+                                <span class="fiq_prj_over_tekst" t-if="r.node.budsjett_status === 'over'">
+                                    +<t t-esc="timer(overforbruk(r.node))"/> t over
+                                </span>
+                            </span>
+
+                            <span class="fiq_prj_n_ans">
                                 <!-- 🤖 uten mennesker, 👤 med — samme merking som AI KTRL -->
-                                <span t-if="t.er_ai" title="AI">🤖</span>
-                                <t t-else="" t-esc="t.ansvarlige"/>
-                            </td>
-                            <td t-esc="t.stadium"/>
-                            <td>
-                                <t t-if="t.antall_sjekklister">
-                                    <t t-esc="t.sjekkliste_fremdrift"/> %
-                                </t>
-                                <t t-else="">—</t>
-                            </td>
-                            <td t-esc="t.frist or '—'"/>
-                        </tr>
-                    </tbody>
-                </table>
+                                <span t-if="r.node.er_ai" title="AI">🤖</span>
+                                <t t-else="" t-esc="r.node.ansvarlige"/>
+                            </span>
+                        </div>
+                    </div>
+                </t>
             </div>
 
             <div class="fiq_gui_prj_foot">Drevet av <strong>FIQ</strong> · Prosjektoversikt</div>

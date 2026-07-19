@@ -59,23 +59,77 @@ class TestPrjData(TransactionCase):
         """
         res = self.Data.get_prosjektoversikt(grense=200)
         for p in res["prosjekter"]:
-            if not p["estimerte_timer"]:
+            if not p["budsjett_timer"]:
                 self.assertNotEqual(
                     p["fremdrift_kilde"], "timer",
                     "«%s» har ingen estimerte timer, men oppgir «timer» som "
                     "fremdriftskilde — det er villedende." % p["navn"],
                 )
 
-    def test_fremdrift_er_alltid_mellom_0_og_100(self):
-        """Overført tid skal aldri gi over 100 % — det bryter fremdriftsstripa."""
+    def test_overforbruk_vises_ekte_og_kappes_aldri(self):
+        """🔴 REGRESJON: kappingen skjulte et 22x overforbruk.
+
+        Denne testen ERSTATTER `test_fremdrift_er_alltid_mellom_0_og_100`, som
+        asserterte det motsatte: at fremdrift aldri oversteg 100, «fordi stripa
+        ikke tåler over 100». Den testen SEMENTERTE feilen i stedet for å avsløre
+        den — koden gjorde `min(100.0, ...)`, og testen sa at det var riktig.
+
+        Ekte tilfelle fra basen: 215,9 timer ført mot budsjett 10 ble vist som
+        «100 % grønn». Et 2159 % overforbruk — nettopp det varselet den som styrer
+        økonomien MÅ se — var usynlig. Det er ikke en visningsfeil; det er å skjule
+        et varsku.
+
+        Kravspek batch 15: blå = innenfor budsjett · RØD = OVER budsjett.
+        Stripa klippes visuelt i SCSS (width kan ikke være 2159 %), men TALLET
+        og STATUSEN skal alltid være ærlige.
+
+        Skrevet slik at `min(100.0, ...)` ville FEILET den.
+        """
         res = self.Data.get_prosjektoversikt(grense=200)
         for p in res["prosjekter"]:
-            self.assertGreaterEqual(p["fremdrift"], 0.0, p["navn"])
-            self.assertLessEqual(
-                p["fremdrift"], 100.0,
-                "«%s» viser %s %% — stripa tåler ikke over 100."
-                % (p["navn"], p["fremdrift"]),
-            )
+            fort = p["forte_timer"]
+            budsjett = p["budsjett_timer"]
+            pst = p["forbruk_prosent"]
+
+            self.assertGreaterEqual(pst, 0.0, p["navn"])
+
+            if budsjett > 0 and fort > budsjett:
+                # Over budsjett: prosenten SKAL passere 100 og statusen SKAL være «over».
+                self.assertGreater(
+                    pst, 100.0,
+                    "«%s» har ført %s t mot budsjett %s t — det er over budsjett, "
+                    "men forbruket vises som %s %%. Kappes tallet, skjuler flaten "
+                    "overforbruket." % (p["navn"], fort, budsjett, pst),
+                )
+                self.assertEqual(
+                    p["budsjett_status"], "over",
+                    "«%s» er over budsjett (%s t mot %s t), men status er «%s» — "
+                    "skal være «over» (rød)." % (p["navn"], fort, budsjett, p["budsjett_status"]),
+                )
+
+    def test_forbruk_regnes_uten_kapping(self):
+        """Regnestykket direkte: 215,9 timer mot budsjett 10 = 2159 %, ikke 100.
+
+        Uavhengig av hva som ligger i basen — dette er tallet fra det ekte funnet,
+        og det skal aldri kappes igjen.
+        """
+        self.assertEqual(self.Data._forbruk_prosent(215.9, 10.0), 2159.0)
+        self.assertEqual(self.Data._forbruk_prosent(50.0, 100.0), 50.0)
+        # Uten budsjett er en prosentandel meningsløs — ikke null, men «ingen».
+        self.assertEqual(self.Data._forbruk_prosent(80.0, 0.0), 0.0)
+
+    def test_budsjett_status_er_rod_ved_overforbruk(self):
+        """Fargeaksen i batch 15: blå innenfor · rød over · grønn ferdig.
+
+        🔴 Ferdig SLÅR IKKE UT over rødt: en ferdig aktivitet som brukte 3x
+        budsjettet er ikke en suksess å farge grønn — det er erfaringen neste
+        kalkyle skal bygge på.
+        """
+        self.assertEqual(self.Data._budsjett_status(5.0, 10.0, False), "innenfor")
+        self.assertEqual(self.Data._budsjett_status(15.0, 10.0, False), "over")
+        self.assertEqual(self.Data._budsjett_status(8.0, 10.0, True), "ferdig")
+        self.assertEqual(self.Data._budsjett_status(30.0, 10.0, True), "over")
+        self.assertEqual(self.Data._budsjett_status(0.0, 0.0, False), "plan")
 
     def test_fremdrift_kilde_er_alltid_oppgitt(self):
         """Brukeren skal alltid kunne se om tallet er fasit eller anslag."""
@@ -139,3 +193,120 @@ class TestPrjData(TransactionCase):
             "«%s»: oversikten sier %d oppgaver, drill viser %d"
             % (p["navn"], p["antall_oppgaver"], len(drill["oppgaver"])),
         )
+
+    # ---------- WBS-TREET (kravspek batch 15) ----------
+
+    def _et_tre(self, minst_noder=1):
+        """Hent WBS-treet for et prosjekt som faktisk har oppgaver."""
+        res = self.Data.get_prosjektoversikt(grense=50)
+        for p in sorted(res["prosjekter"], key=lambda x: -x["antall_oppgaver"]):
+            if p["antall_oppgaver"] >= minst_noder:
+                return self.Data.get_wbs_tre(p["id"])
+        return None
+
+    def test_wbs_tre_har_noder_naar_prosjektet_har_oppgaver(self):
+        """🔴 «Installert + grønt» betyr ikke «flaten viser noe».
+
+        Fire ganger i juli var alt grønt mens flaten var tom. Denne testen krever
+        at treet faktisk inneholder noder når prosjektet har oppgaver — den ville
+        fanget «Kommer»-stubben.
+        """
+        tre = self._et_tre()
+        if not tre:
+            self.skipTest("Ingen prosjekter med oppgaver å teste mot")
+        self.assertTrue(
+            tre["noder"],
+            "Prosjektet «%s» har %d oppgaver, men WBS-treet er tomt."
+            % (tre["prosjekt"]["navn"], tre["antall_noder"]),
+        )
+
+    def test_wbs_tre_teller_alle_oppgaver_inkludert_underoppgaver(self):
+        """Ingen oppgave skal falle ut av treet.
+
+        En oppgave hvis forelder ligger utenfor domenet må behandles som rot —
+        ellers blir den usynlig OG timene forsvinner fra rollupen. Summen av
+        noder i treet skal alltid være lik antall oppgaver i prosjektet.
+        """
+        tre = self._et_tre()
+        if not tre:
+            self.skipTest("Ingen prosjekter med oppgaver å teste mot")
+
+        def tell(noder):
+            return sum(1 + tell(n["barn"]) for n in noder)
+
+        self.assertEqual(
+            tell(tre["noder"]), tre["antall_noder"],
+            "«%s»: %d oppgaver i basen, men %d noder i treet — noe falt ut."
+            % (tre["prosjekt"]["navn"], tre["antall_noder"], tell(tre["noder"])),
+        )
+
+    def test_wbs_rollup_summerer_barnas_timer(self):
+        """En forelders timer = egne timer + alle barnas.
+
+        Odoo lar deg føre timer direkte på en forelder selv om den har barn,
+        så begge deler må med. Uten dette forsvinner timer ført på en fase.
+        """
+        tre = self._et_tre()
+        if not tre:
+            self.skipTest("Ingen prosjekter med oppgaver å teste mot")
+
+        def sjekk(node):
+            if node["barn"]:
+                ventet = node["egne_timer"] + sum(b["forte_timer"] for b in node["barn"])
+                self.assertAlmostEqual(
+                    node["forte_timer"], round(ventet, 1), places=1,
+                    msg="«%s»: rollup gir %s t, men egne (%s) + barnas (%s) = %s"
+                    % (node["navn"], node["forte_timer"], node["egne_timer"],
+                       sum(b["forte_timer"] for b in node["barn"]), ventet),
+                )
+            for b in node["barn"]:
+                sjekk(b)
+
+        for n in tre["noder"]:
+            sjekk(n)
+
+    def test_wbs_rod_status_arves_oppover(self):
+        """Verste status vinner: ett rødt barn gjør forelderen rød.
+
+        Ellers ville et overforbrukt rom druknet i et stort prosjekt som
+        «ser fint ut» på toppnivå — akkurat den skjulingen vi rettet.
+        """
+        tre = self._et_tre()
+        if not tre:
+            self.skipTest("Ingen prosjekter med oppgaver å teste mot")
+
+        def sjekk(node):
+            if any(b["budsjett_status"] == "over" for b in node["barn"]):
+                self.assertEqual(
+                    node["budsjett_status"], "over",
+                    "«%s» har et barn over budsjett, men står som «%s» — "
+                    "overforbruk skal aldri skjules bak en forelder."
+                    % (node["navn"], node["budsjett_status"]),
+                )
+            for b in node["barn"]:
+                sjekk(b)
+
+        for n in tre["noder"]:
+            sjekk(n)
+
+    def test_wbs_tre_respekterer_tenant_isolasjon(self):
+        """Treet skal aldri vise oppgaver utenfor sesjonens firmaer."""
+        tre = self._et_tre()
+        if not tre:
+            self.skipTest("Ingen prosjekter med oppgaver å teste mot")
+
+        tillatte = set(self.env.companies.ids or [self.env.company.id])
+        ider = []
+
+        def samle(noder):
+            for n in noder:
+                ider.append(n["id"])
+                samle(n["barn"])
+
+        samle(tre["noder"])
+        if ider:
+            firmaer = set(self.env["project.task"].browse(ider).mapped("company_id").ids)
+            self.assertTrue(
+                firmaer.issubset(tillatte | {False}),
+                "WBS-treet viser oppgaver fra firmaer utenfor sesjonen: %s" % (firmaer - tillatte),
+            )

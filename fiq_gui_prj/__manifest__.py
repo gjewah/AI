@@ -1,16 +1,43 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.14.0",
-    "summary": "FIQ Prosjekt – native disposisjonsnummer (WBS) + generisk sjekkliste-motor "
-               "(nivå × type, krav dok/foto/signatur) + OWL sjekkliste-flate (bygg/kvitter). "
-               "Alt synlig i Odoos egne visninger.",
+    "version": "19.0.1.15.0",
+    "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
+               "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
+               "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
     "description": """
 FIQ GUI Prosjekt
 ===================
 KANON «Odoo-native først» (Gjermund 2026-07-16): KR er et LAG, ikke systemet.
 Testen: «Virker dette i native Odoo uten KR?» — feltene her er ekte Odoo-felt
 med Odoo-visning. Slås KR av, står de fortsatt.
+
+19.0.1.15.0 — WBS-TRE MED TIMER MOT BUDSJETT (kravspek batch 15):
+ 🔴 TO FEIL RETTET FRA 1.14.0:
+ 1. FLATEN VAR EN LISTEVISNING. Tabell over prosjekter -> tabell over oppgaver.
+    Gjermund: «du har kun knapt gjenskapt listevisning fra Odoo NATIVE!!!»
+    Odoo HAR allerede prosjekter i liste — den flaten ga ingen ny verdi.
+ 2. FREMDRIFT BLE KAPPET PÅ 100 %. `min(100.0, (ført/est)*100)` viste 215,9 timer
+    mot budsjett 10 som «100 % grønn» — et skjult 22x overforbruk. Å skjule nettopp
+    det varselet den som styrer økonomien må se, er ikke en visningsfeil.
+    Testen `test_fremdrift_er_alltid_mellom_0_og_100` SEMENTERTE feilen; den er
+    erstattet av tester som ville FEILET kappingen.
+ * NÅ: foldbart WBS-tre Blokk -> Fase -> Leilighet -> Aktivitet, bygget rekursivt
+   fra Odoos EGET project.task-hierarki (parent_id). Ingen ny struktur oppfunnet.
+ * Per node: effektive timer / budsjett + fremdriftsbar. Rollup nedenfra —
+   forelderens timer = egne + barnas (Odoo tillater timer på forelder med barn).
+ * FARGEAKSE (batch 15, linje 198-199) — KOST/timer, ikke frist:
+   blå = innenfor budsjett · RØD = OVER budsjett · grønn = ferdig · grå = ikke startet.
+   Verste status vinner oppover: ett rødt barn gjør forelderen rød, ellers drukner
+   et overforbrukt rom i et prosjekt som «ser fint ut».
+   Over budsjett slår ut SELV OM noden er ferdig — en ferdig aktivitet som brukte
+   3x budsjettet er ikke en suksess å farge grønn.
+ * Stripa klippes visuelt i SCSS (width kan ikke være 2159 %), men TALLET og
+   STATUSEN er alltid ærlige. Overforbruk sies dessuten med ord: «+205,9 t over».
+ * Firma-bokser øverst (batch 15): konsern-total + ett valg per firma.
+ * Visuelt språk hentet fra fasit-mockupen prosjektoversikt_utkast02.html (V00.04):
+   samme token-sett, mono-tall med tabular-nums, «X / Y»-mønster, mørk modus.
+ * SCSS-fellen `min(px,vw)` (dreper HELE assets-bundelen) unngått bevisst.
 
 19.0.1.4.1 (06.74) — BYGGEFIKS: `expand=`/`string=` på `<group>` i søkevisning er
  Odoo 18-syntaks og gjør visningen ugyldig i 19 -> rødt bygg. Fanget og rettet av

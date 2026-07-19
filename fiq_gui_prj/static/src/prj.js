@@ -5,11 +5,17 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
 
-// FIQ Prosjektoversikt — ekte innmat.
+// FIQ Prosjektoversikt — WBS-tre med timer mot budsjett.
 //
-// Erstatter stubben som viste «Kommer». Modulen var installert, grønn og riktig registrert
-// i KR-menyen, men flaten hadde ingen innmat — «installert» er ikke «ferdig» (lærdom 18.07,
-// funnet av KR-sporet 01.01 som målte hele kjeden og fant at feilen lå her, ikke i menyen).
+// 🔴 OMSKREVET V0.03 (2026-07-19). Forrige versjon var en LISTEVISNING: tabell over
+// prosjekter -> tabell over oppgaver. Gjermund: «du har kun knapt gjenskapt listevisning
+// fra Odoo NATIVE!!!» Odoo HAR allerede prosjekter i liste — den flaten ga null ny verdi.
+//
+// Kravspek batch 15 (docs/0.00 IQ kontrollrom_flate_spec.md, linje 195-206) ber om:
+//   · WBS-tre som driller: Blokk -> Fase -> Leilighet -> Aktivitet, foldbart per nivå
+//   · Per node: effektive timer / budsjett + fremdriftsbar
+//   · Fargekoding på BUDSJETT-status: blå = innenfor · RØD = over budsjett · grønn = ferdig
+//   · Firma-velger som små bokser øverst (049 SDVg konsern + 050/051/052/054)
 //
 // KANON «Odoo-native først»: flaten er et LAG. Alt den viser finnes i Odoos egne visninger;
 // slås flaten av, står dataene uendret. Den oppretter ingenting og eier ingen forretningslogikk.
@@ -31,10 +37,13 @@ export class FiqGuiPrj extends Component {
             prosjekter: [],
             firmaer: [],
             valgtFirma: false,
-            // Drill: null = prosjektliste, ellers viser vi oppgavene i valgt prosjekt.
+            // Drill: null = prosjektvalg, ellers WBS-treet for valgt prosjekt.
             apentProsjekt: null,
-            oppgaver: [],
-            lasterOppgaver: false,
+            tre: null,
+            lasterTre: false,
+            // Foldede noder, nøklet på node-ID (ikke navn — leilighetsnavn som «H0101»
+            // gjentas på tvers av blokker og ville kollidert).
+            foldet: {},
         });
 
         onWillStart(async () => {
@@ -59,31 +68,95 @@ export class FiqGuiPrj extends Component {
         this.state.laster = false;
     }
 
-    async velgFirma(ev) {
-        const v = ev.target.value;
-        this.state.valgtFirma = v ? parseInt(v, 10) : false;
+    async velgFirma(firmaId) {
+        this.state.valgtFirma = firmaId;
         this.state.apentProsjekt = null;
+        this.state.tre = null;
         await this.last();
     }
 
     async apneProsjekt(p) {
         this.state.apentProsjekt = p;
-        this.state.lasterOppgaver = true;
+        this.state.lasterTre = true;
+        this.state.tre = null;
+        this.state.foldet = {};
         try {
-            const res = await this.orm.call(DATA, "get_oppgaver", [], {
+            const res = await this.orm.call(DATA, "get_wbs_tre", [], {
                 prosjekt_id: p.id,
                 firma_id: this.state.valgtFirma || null,
             });
-            this.state.oppgaver = res.oppgaver || [];
+            this.state.tre = res;
         } catch (e) {
-            this.state.oppgaver = [];
+            this.state.tre = null;
+            this.state.feil = _t("Could not load the work breakdown.");
         }
-        this.state.lasterOppgaver = false;
+        this.state.lasterTre = false;
     }
 
     tilbake() {
         this.state.apentProsjekt = null;
-        this.state.oppgaver = [];
+        this.state.tre = null;
+        this.state.foldet = {};
+    }
+
+    fold(nodeId) {
+        this.state.foldet[nodeId] = !this.state.foldet[nodeId];
+    }
+
+    erFoldet(nodeId) {
+        return !!this.state.foldet[nodeId];
+    }
+
+    // Flat ut treet til render-rader med dybde. OWL-maler kan ikke rekursere over
+    // seg selv uten en egen underkomponent; å flate ut her gir én enkel t-foreach
+    // og lar oss hoppe over foldede undertrær uten å bygge DOM vi straks skjuler.
+    get rader() {
+        const ut = [];
+        const gaa = (noder, dybde) => {
+            for (const n of noder) {
+                ut.push({ node: n, dybde: dybde, harBarn: n.barn.length > 0 });
+                if (n.barn.length && !this.erFoldet(n.id)) {
+                    gaa(n.barn, dybde + 1);
+                }
+            }
+        };
+        if (this.state.tre) {
+            gaa(this.state.tre.noder, 0);
+        }
+        return ut;
+    }
+
+    // ---------- visning ----------
+
+    // Timer med norsk desimaltegn. 7.5 -> «7,5». Heltall vises uten desimal.
+    timer(t) {
+        const n = Math.round((t || 0) * 10) / 10;
+        return (Number.isInteger(n) ? String(n) : n.toFixed(1)).replace(".", ",");
+    }
+
+    // Bredden på fremdriftsbaren klippes på 100 — men TALLET gjør det aldri.
+    // Det er hele poenget: stripa er full, tallet sier 2159 %, fargen er rød.
+    barBredde(pst) {
+        return Math.min(100, Math.max(0, pst || 0));
+    }
+
+    statusKlasse(status) {
+        return "fiq_prj_" + (status || "plan");
+    }
+
+    statusTekst(status) {
+        const t = {
+            over: _t("Over budget"),
+            innenfor: _t("Within budget"),
+            ferdig: _t("Done"),
+            plan: _t("Not started"),
+        };
+        return t[status] || t.plan;
+    }
+
+    // Hvor mye over budsjett, i timer. Vises kun når det ER et overforbruk.
+    overforbruk(node) {
+        return Math.max(0, (node.forte_timer || 0) - (node.budsjett_timer || 0));
     }
 
     // Native-først: «Åpne i Odoo» tar brukeren til Odoos EGEN visning.
@@ -107,17 +180,6 @@ export class FiqGuiPrj extends Component {
             views: [[false, "form"]],
             target: "current",
         });
-    }
-
-    // Fargen følger fremdrift, ikke pynt: rødt = ligger etter, grønt = i mål.
-    fremdriftsfarge(pst) {
-        if (pst >= 90) {
-            return "fiq_prj_gronn";
-        }
-        if (pst >= 50) {
-            return "fiq_prj_gul";
-        }
-        return "fiq_prj_rod";
     }
 }
 
