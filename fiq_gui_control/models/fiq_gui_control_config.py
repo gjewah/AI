@@ -1014,11 +1014,17 @@ class FiqControlRoomConfig(models.Model):
         # Batch: hvem er i et møte NÅ (calendar.event der nå ∈ [start, stop]) → partner_ids
         in_meeting = set()
         try:
-            now = fields.Datetime.now()
-            evs = self.env["calendar.event"].sudo().search(
-                [("start", "<=", now), ("stop", ">=", now)])
-            for e in evs:
-                in_meeting.update(e.partner_ids.ids)
+            # Savepoint, ikke bare try/except: calendar/hr/bus er VALGFRIE moduler. Feiler
+            # oppslaget i SQL (modul avinstallert, kolonne mangler etter halv oppgradering),
+            # avbryter Postgres HELE transaksjonen — og alt lenger nede i get_presence, samt
+            # alt kalleren gjør etterpå, faller med «current transaction is aborted».
+            # Savepointen ruller tilbake bare dette oppslaget. Meldt av AI KR (00.04) 19.07.2026.
+            with self.env.cr.savepoint():
+                now = fields.Datetime.now()
+                evs = self.env["calendar.event"].sudo().search(
+                    [("start", "<=", now), ("stop", ">=", now)])
+                for e in evs:
+                    in_meeting.update(e.partner_ids.ids)
         except Exception:
             pass
 
@@ -1026,12 +1032,13 @@ class FiqControlRoomConfig(models.Model):
         attendance_avail = False
         checked_in_users = set()
         try:
-            open_att = self.env["hr.attendance"].sudo().search([("check_out", "=", False)])
-            attendance_avail = True
-            emp_ids = open_att.mapped("employee_id").ids
-            if emp_ids:
-                emps = self.env["hr.employee"].sudo().browse(emp_ids)
-                checked_in_users = set(emps.mapped("user_id").ids)
+            with self.env.cr.savepoint():
+                open_att = self.env["hr.attendance"].sudo().search([("check_out", "=", False)])
+                attendance_avail = True
+                emp_ids = open_att.mapped("employee_id").ids
+                if emp_ids:
+                    emps = self.env["hr.employee"].sudo().browse(emp_ids)
+                    checked_in_users = set(emps.mapped("user_id").ids)
         except Exception:
             attendance_avail = False
 
@@ -1039,10 +1046,11 @@ class FiqControlRoomConfig(models.Model):
         # etter ~3 min (im_status alene henger igjen lenge etter utlogging).
         bus_map = {}
         try:
-            now = fields.Datetime.now()
-            for bp in self.env["bus.presence"].sudo().search([("user_id", "in", users.ids)]):
-                fresh = bool(bp.last_poll and (now - bp.last_poll).total_seconds() < 180)
-                bus_map[bp.user_id.id] = (bp.status or "offline") if fresh else "offline"
+            with self.env.cr.savepoint():
+                now = fields.Datetime.now()
+                for bp in self.env["bus.presence"].sudo().search([("user_id", "in", users.ids)]):
+                    fresh = bool(bp.last_poll and (now - bp.last_poll).total_seconds() < 180)
+                    bus_map[bp.user_id.id] = (bp.status or "offline") if fresh else "offline"
         except Exception:
             bus_map = {}
 
@@ -1096,9 +1104,12 @@ class FiqControlRoomConfig(models.Model):
             # Selve bildet sendes med — uten det kan flaten bare vise initialer.
             avatar = False
             try:
-                emp = self.env["hr.employee"].sudo().search(
-                    [("user_id", "=", u.id)], limit=1)
-                avatar = (emp and emp.image_128) or u.avatar_128 or False
+                # Savepoint: dette kjører i en løkke PER bruker. Uten den ville én feilende
+                # oppslag avbrutt transaksjonen midt i, og alle gjenstående brukere falt med.
+                with self.env.cr.savepoint():
+                    emp = self.env["hr.employee"].sudo().search(
+                        [("user_id", "=", u.id)], limit=1)
+                    avatar = (emp and emp.image_128) or u.avatar_128 or False
             except Exception:
                 avatar = u.avatar_128 or False
             if isinstance(avatar, bytes):
