@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Regnskap",
-    "version": "19.0.1.8.0",
+    "version": "19.0.1.9.0",
     "summary": "AI GUI Regnskap (2.80) — visningen av AI Regnskap-Rådgiveren: likviditet, "
                "cashflow, kritiske datoer og tidlig korrigering.",
     "description": """
@@ -27,7 +27,11 @@ Harde regler innebygd i flaten:
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
     "license": "LGPL-3",
-    "depends": ["fiq_gui_control", "fiq_gui_shell", "web", "account"],
+    # fiq_gui_fin: Regnskap (2.80) ligger som UNDERMENY under Finans (2.70) —
+    # Gjermund 18.07.2026: «Finans skal være hoved, Regnskap en undermeny».
+    # Uten denne avhengigheten laster ikke Odoo FIN-menyen først → menyrota finnes ikke.
+    # Speiler rollehierarkiet: 2.80 rapporterer til 2.70 (CFO).
+    "depends": ["fiq_gui_control", "fiq_gui_shell", "fiq_gui_fin", "web", "account"],
     "data": [
         "security/fiq_gui_rgs_groups.xml",
         "views/fiq_gui_rgs_action.xml",
