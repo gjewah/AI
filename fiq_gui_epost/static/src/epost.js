@@ -282,7 +282,7 @@ export class FiqMeldingssenter extends Component {
         const fnMap = {
             avsender: m => m.fra || "—",
             prosjekt: m => m.element || "(uten element)",
-            dato: m => (m.dato || "—").slice(0, 5),
+            dato: m => this.datoBolk(m),
             type: m => (m.retning === "sendt" ? "Sendt" : "Mottatt"),
         };
         const fn = fnMap[this.state.group] || fnMap.avsender;
@@ -294,6 +294,78 @@ export class FiqMeldingssenter extends Component {
         }
         return order.map(k => ({ key: k, items: grp[k], n: grp[k].length }));
     }
+    // ---- Dato-gruppering: trapp fra dag → uke → måned → kvartal → år ----------------
+    // Gjermund 19.07.2026: «på gruppering på dato må man kunne ha en logikk og ikke minst
+    // årstall. Logikken kan være dager på inneværende uke, deretter på uke siste 4 uker
+    // (ukenummer) deretter måned (3 mnd) Kvartal og deretter År».
+    //
+    // Før: `m.dato.slice(0,5)` — én bolk per DATO, uten årstall. 515 e-poster ga hundrevis
+    // av grupper, og «01.06» i fjor havnet sammen med «01.06» i år. Nå blir nær tid finkornet
+    // og gammel tid grovkornet, slik øyet faktisk leter.
+
+    /** ISO-8601 ukenummer. Kan ikke utledes fra dato alene i JS — må regnes ut.
+     *  Torsdag-regelen: uka tilhører året som eier dens torsdag (derfor kan 31.12 være uke 1). */
+    ukenummer(d) {
+        const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));      // flytt til torsdag
+        const nyttaar = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+        return { uke: Math.ceil(((t - nyttaar) / 86400000 + 1) / 7), aar: t.getUTCFullYear() };
+    }
+
+    /** Mandag i uka som datoen ligger i (norsk uke starter mandag, ikke søndag). */
+    mandag(d) {
+        const m = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        m.setDate(m.getDate() - ((m.getDay() + 6) % 7));
+        return m;
+    }
+
+    datoBolk(m) {
+        const iso = m.dato_iso || "";
+        if (!iso) return "Uten dato";
+        const d = new Date(iso + "T00:00:00");
+        if (isNaN(d)) return "Uten dato";
+
+        const naa = new Date();
+        const idag = new Date(naa.getFullYear(), naa.getMonth(), naa.getDate());
+        const dager = Math.round((idag - d) / 86400000);
+
+        // Fremtid (møteinvitasjoner, planlagt utsending) — egen bolk, aldri «i dag».
+        if (dager < 0) return "Kommende";
+
+        // 1) INNEVÆRENDE UKE → dag for dag
+        const mandagDenneUka = this.mandag(naa);
+        if (d >= mandagDenneUka) {
+            if (dager === 0) return "I dag";
+            if (dager === 1) return "I går";
+            const DAG = ["Søndag", "Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag"];
+            return DAG[d.getDay()];
+        }
+
+        // 2) SISTE 4 UKER → ukenummer. Grensen regnes i HELE uker (fra mandag), ikke 28 dager,
+        //    ellers ville en e-post fra mandag for 4 uker siden falt ut midt i uka si.
+        const uker = Math.round((mandagDenneUka - this.mandag(d)) / (7 * 86400000));
+        const u = this.ukenummer(d);
+        if (uker <= 4) {
+            return "Uke " + u.uke + (u.aar !== naa.getFullYear() ? " (" + u.aar + ")" : "");
+        }
+
+        // 3) SISTE 3 MÅNEDER → månedsnavn
+        const MND = ["Januar", "Februar", "Mars", "April", "Mai", "Juni",
+                     "Juli", "August", "September", "Oktober", "November", "Desember"];
+        const mndDiff = (naa.getFullYear() - d.getFullYear()) * 12 + (naa.getMonth() - d.getMonth());
+        if (mndDiff <= 3) {
+            return MND[d.getMonth()] + (d.getFullYear() !== naa.getFullYear() ? " " + d.getFullYear() : "");
+        }
+
+        // 4) SAMME ÅR → kvartal
+        if (d.getFullYear() === naa.getFullYear()) {
+            return "Q" + (Math.floor(d.getMonth() / 3) + 1) + " " + d.getFullYear();
+        }
+
+        // 5) ELDRE → år
+        return String(d.getFullYear());
+    }
+
     harKobling() {
         const k = this.state.kandidater || {};
         return (k.prosjekt || []).length + (k.oppgave || []).length > 0;

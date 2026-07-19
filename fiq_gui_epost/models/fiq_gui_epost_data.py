@@ -303,6 +303,10 @@ class FiqMeldingssenterData(models.AbstractModel):
                 "emne": (m.subject or m.preview or "").strip()[:120] or "(uten emne)",
                 "preview": (m.preview or "")[:140],
                 "dato": m.date.strftime("%d.%m %H:%M") if m.date else "",
+                # Full ISO-dato I TILLEGG til visningsformatet. Uten årstall kan front-enden
+                # ikke gruppere riktig: «01.06» kan være i år eller for tre år siden, og en
+                # e-post fra i fjor ville havnet i «denne uka». Visningen er uendret.
+                "dato_iso": m.date.strftime("%Y-%m-%d") if m.date else "",
                 "ulest": bool(m.needaction) if "needaction" in m._fields else False,
                 "retning": "sendt" if internal else "mottatt",
                 "model": m.model,
