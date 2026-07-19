@@ -105,6 +105,39 @@
                         </div>
                     </div>
 
+                    <!-- KALENDER: måned INNE i flaten (Gjermund 19.07.2026: «kalenderen mangler»).
+                         Før kastet knappen brukeren ut til Odoos native kalender — samme feil som
+                         `view:`-fella. Native kalender finnes fortsatt, som eget valg. -->
+                    <div class="col kalender" t-if="state.view==='kalender' and state.kal">
+                        <div class="hjemhead">
+                            <div class="crumb">
+                                <button class="kbla" t-on-click="() => this.blaMnd(-1)">‹</button>
+                                <span class="cur"><t t-esc="state.kal.mnd_navn"/> <t t-esc="state.kal.aar"/></span>
+                                <button class="kbla" t-on-click="() => this.blaMnd(1)">›</button>
+                            </div>
+                            <span class="kantall"><t t-esc="state.kal.antall"/> i måneden</span>
+                            <button class="tilbakeb" t-on-click="aapneNativKalender">Odoo-kalender ›</button>
+                        </div>
+                        <div class="kaluker">
+                            <span>Man</span><span>Tir</span><span>Ons</span><span>Tor</span>
+                            <span>Fre</span><span>Lør</span><span>Søn</span>
+                        </div>
+                        <div class="kalgrid">
+                            <t t-foreach="kalCeller()" t-as="c" t-key="c.key">
+                                <div t-if="c.tom" class="kdag tom"/>
+                                <div t-else="" t-att-class="'kdag' + (c.i_dag ? ' idag' : '') + (c.hendelser.length ? ' har' : '')">
+                                    <span class="kd" t-esc="c.dag"/>
+                                    <button t-foreach="c.hendelser" t-as="h" t-key="h.model + h.id"
+                                            t-att-class="'kev ' + h.type"
+                                            t-on-click="() => this.aapneHendelse(h)">
+                                        <span t-if="h.tid" class="kt" t-esc="h.tid"/>
+                                        <t t-esc="h.navn"/>
+                                    </button>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+
                     <!-- HJEM: cockpit-oversikt (fargebokser) -->
                     <div class="col hjem" t-if="state.view==='hjem'">
                         <div class="hjemhead">

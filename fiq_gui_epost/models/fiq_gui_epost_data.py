@@ -16,7 +16,7 @@
 
 import json
 import re
-from datetime import timedelta
+from datetime import date, datetime, timedelta
 
 from odoo import api, fields, models
 
@@ -871,6 +871,81 @@ class FiqMeldingssenterData(models.AbstractModel):
                 out.append({"type": "opg", "navn": t.name or "",
                             "dato": t.date_deadline.strftime("%a %d.%m") if t.date_deadline else ""})
         return out
+
+    # ---- Kalender INNE i flaten (Gjermund 19.07.2026: «kalenderen mangler») ----------
+    #
+    # Menypunktet «Møter & Kalender» kalte `doAction("calendar.action_calendar_event")`
+    # → brukeren ble kastet UT av Kommunikasjon og mistet flaten. Det er nøyaktig samme
+    # feil som `view:`-fella KR-økta fant 18.07 (menypunkter som forlot Kontrollrommet).
+    # Kalenderen hører hjemme INNE i flaten; Odoos egen kalender finnes fortsatt native
+    # for den som vil dit ([[0.00 IQ kanon_odoo_native_forst]] — vi kaprer ikke native).
+
+    @api.model
+    def get_kalender(self, aar=False, mnd=False, firm=False):
+        """Møter + oppgavefrister for én måned, til månedsrutenettet i flaten.
+
+        Returnerer {aar, mnd, mnd_navn, dager: {"YYYY-MM-DD": [hendelser]}, antall}.
+        Hendelse: {type: mote|frist, navn, tid, id, model}.
+        Kjøres som brukeren (record rules gjelder) — ingen sudo, ingen fremmed kalender.
+        """
+        today = fields.Date.context_today(self)
+        aar = int(aar or today.year)
+        mnd = int(mnd or today.month)
+        start = date(aar, mnd, 1)
+        end = date(aar + (mnd == 12), (mnd % 12) + 1, 1) - timedelta(days=1)
+
+        dager = {}
+
+        def _legg(d, post):
+            if not d:
+                return
+            dager.setdefault(d.strftime("%Y-%m-%d"), []).append(post)
+
+        # 1) Møter der brukeren selv deltar. `partner_ids` — ikke alle møter i basen.
+        meg = self.env.user.partner_id
+        Cal = self.env["calendar.event"]
+        for e in Cal.search([("partner_ids", "in", meg.ids),
+                             ("start", ">=", fields.Datetime.to_string(
+                                 datetime.combine(start, datetime.min.time()))),
+                             ("start", "<=", fields.Datetime.to_string(
+                                 datetime.combine(end, datetime.max.time())))],
+                            order="start", limit=300):
+            lokal = fields.Datetime.context_timestamp(self, e.start) if e.start else False
+            _legg(lokal.date() if lokal else False, {
+                "type": "mote",
+                "navn": e.name or "(uten tittel)",
+                "tid": lokal.strftime("%H:%M") if (lokal and not e.allday) else "",
+                "id": e.id, "model": "calendar.event",
+            })
+
+        # 2) Oppgavefrister som er MINE — ellers drukner møtene i andres frister.
+        Task = self.env["project.task"]
+        if "date_deadline" in Task._fields:
+            dom = [("date_deadline", ">=", start), ("date_deadline", "<=", end),
+                   ("user_ids", "in", self.env.user.ids)]
+            if firm and "company_id" in Task._fields:
+                try:
+                    dom.append(("company_id", "in", [int(firm)]))
+                except (TypeError, ValueError):
+                    pass
+            for t in Task.search(dom, order="date_deadline", limit=300):
+                _legg(t.date_deadline, {
+                    "type": "frist", "navn": t.name or "", "tid": "",
+                    "id": t.id, "model": "project.task",
+                })
+
+        MND = ["Januar", "Februar", "Mars", "April", "Mai", "Juni",
+               "Juli", "August", "September", "Oktober", "November", "Desember"]
+        return {
+            "aar": aar, "mnd": mnd, "mnd_navn": MND[mnd - 1],
+            "dager": dager,
+            "antall": sum(len(v) for v in dager.values()),
+            # Mandag=0. Rutenettet må vite hvor 1. i måneden skal starte, ellers
+            # havner datoene på feil ukedag (norsk uke starter mandag, ikke søndag).
+            "start_ukedag": start.weekday(),
+            "antall_dager": (end - start).days + 1,
+            "i_dag": today.strftime("%Y-%m-%d"),
+        }
 
     # ---- V00.05.4: nøyaktige Fra/Til/Kopi-felter + «hvem treffer Svar alle» ----------
     @staticmethod

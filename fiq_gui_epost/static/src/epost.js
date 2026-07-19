@@ -24,7 +24,8 @@ export class FiqMeldingssenter extends Component {
             // Kommunikasjon = hovedflaten. Forsiden er OVERSIKTEN; e-post er ETT underpunkt.
             // (Gjermund 16.07.2026: «kommunikasjon er hoved KR for kommunikasjon og er din flate —
             //  e-post skal komme opp som et av underpunktene». Oversikt som forside.)
-            view: "hjem",                                  // "hjem" (oversikt=forside) | "inbox" (e-post)
+            view: "hjem",                    // "hjem" (forside) | "inbox" (e-post) | "kalender"
+            kal: false,                      // månedsdata fra get_kalender()
             aktivBoks: false, aktivNavn: "", meldinger: [], valgt: false, period: "alle",
             group: "avsender", kandidater: { prosjekt: [], oppgave: [] },
             // Kollaps-tilstand hentes fra forrige økt (kun de FOLDEDE lagres).
@@ -456,7 +457,58 @@ export class FiqMeldingssenter extends Component {
     }
 
     tilbakeKR() { this.action.doAction("fiq_gui_control.action_fiq_gui_control"); }
-    aapneKalender() { this.action.doAction("calendar.action_calendar_event"); }
+    // ---- Kalender INNE i flaten ------------------------------------------------------
+    // Gjermund 19.07.2026: «og kalenderen mangler». Den gjorde det: knappen kalte
+    // doAction("calendar.action_calendar_event") → brukeren ble kastet UT av
+    // Kommunikasjon. Samme feil som `view:`-fella KR fant 18.07. Nå bygges måneden her.
+
+    async aapneKalender(aar, mnd) {
+        this.state.view = "kalender";
+        this.state.kal = await this.orm.call(DATA, "get_kalender", [
+            aar || false, mnd || false, this.state.firm || false,
+        ]);
+    }
+
+    /** Bla måned. Håndterer årsskifte: desember → januar neste år, og motsatt. */
+    async blaMnd(steg) {
+        const k = this.state.kal;
+        if (!k) return;
+        let m = k.mnd + steg, a = k.aar;
+        if (m > 12) { m = 1; a += 1; }
+        if (m < 1) { m = 12; a -= 1; }
+        await this.aapneKalender(a, m);
+    }
+
+    /** Rutenett-celler: tomme plassholdere før den 1., så dagene. Norsk uke =
+     *  mandag først (backend gir `start_ukedag` med mandag=0). */
+    kalCeller() {
+        const k = this.state.kal;
+        if (!k) return [];
+        const ut = [];
+        for (let i = 0; i < k.start_ukedag; i++) ut.push({ tom: true, key: "t" + i });
+        for (let d = 1; d <= k.antall_dager; d++) {
+            const iso = k.aar + "-" + String(k.mnd).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+            ut.push({
+                tom: false, key: iso, dag: d, iso,
+                hendelser: (k.dager && k.dager[iso]) || [],
+                i_dag: iso === k.i_dag,
+            });
+        }
+        return ut;
+    }
+
+    /** Klikk en hendelse: åpne den native posten (møte/oppgave). Her forlater vi
+     *  flaten BEVISST — brukeren ba om å se selve elementet. */
+    aapneHendelse(h) {
+        if (!h || !h.id) return;
+        this.action.doAction({
+            type: "ir.actions.act_window", res_model: h.model,
+            res_id: h.id, views: [[false, "form"]], target: "current",
+        });
+    }
+
+    /** Odoos egen kalender — for den som vil dit. Vi kaprer ikke native. */
+    aapneNativKalender() { this.action.doAction("calendar.action_calendar_event"); }
     aapneInnstillinger() { this.action.doAction("base_setup.action_general_configuration"); }
 
     // ---- Dragbare kolonnebredder (Gjermund 18.07.2026) ------------------------------
