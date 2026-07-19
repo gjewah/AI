@@ -14,6 +14,7 @@
                     <div class="sp"/>
                     <div class="tabs">
                         <button t-att-class="state.view==='oppgaver'?'on':''" t-on-click="() => this.settFane('oppgaver')">Oppgaver</button>
+                        <button t-att-class="state.view==='spor'?'on':''" t-on-click="() => this.settFane('spor')">Prosjektspor</button>
                         <button t-att-class="state.view==='okter'?'on':''" t-on-click="() => this.settFane('okter')">Øktregister</button>
                         <button t-att-class="state.view==='org'?'on':''" t-on-click="() => this.settFane('org')">Org-kart</button>
                     </div>
@@ -114,6 +115,31 @@
                             <span t-if="o.alder" class="oalder">(<t t-esc="o.alder"/> siden)</span>
                         </div>
                         <div class="osum" t-esc="o.sammendrag"/>
+                    </div>
+                </div>
+
+                <!-- PROSJEKTSPOR — den varige enheten. Oekter er arbeidsperioder i den. -->
+                <div t-if="state.view==='spor'">
+                    <div t-if="!state.spor.length" class="empty">Ingen prosjektspor ennå.</div>
+                    <div t-else="" class="sporliste">
+                        <div t-foreach="state.spor" t-as="s" t-key="s.id"
+                             t-att-class="'spor' + (s.uten_eier ? ' uteneier' : '')">
+                            <div class="sp1">
+                                <span class="spver" t-esc="s.versjon"/>
+                                <span class="spkode" t-esc="s.kode"/>
+                                <span class="spnavn" t-esc="s.navn"/>
+                                <span t-if="s.uten_eier" class="spvarsel">uten eier</span>
+                                <span class="sp_sp"/>
+                                <span t-if="s.aktive" class="spaktiv"><t t-esc="s.aktive"/> aktive</span>
+                                <span t-att-class="'spstat spstat_' + s.status" t-esc="s.status"/>
+                            </div>
+                            <div class="sp2">
+                                <t t-esc="s.modul"/>
+                                <t t-if="s.i_odoo"> · står i Odoo <t t-esc="s.modul_versjon"/></t>
+                                <t t-else=""> · ikke i Odoo</t>
+                            </div>
+                            <div class="spbesk" t-if="s.beskrivelse" t-esc="s.beskrivelse"/>
+                        </div>
                     </div>
                 </div>
 

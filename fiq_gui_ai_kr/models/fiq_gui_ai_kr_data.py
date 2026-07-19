@@ -109,7 +109,14 @@ class FiqGuiAiKrData(models.AbstractModel):
         Finnes den ikke, eller mangler den metoden, leverer flaten ingen boks — og det
         er helt greit. Ingen skal tvinges til å implementere kontrakten.
         """
-        for navn in ("fiq.gui.%s.data" % key, "fiq.gui.%s" % key):
+        # 🔴 FUNNET PÅ EKTE DATA 19.07.2026: nøkkelen bruker UNDERSTREK («ai_kr»), mens
+        # modellnavn bruker PUNKTUM («fiq.gui.ai.kr.data»). Uten oversettelsen under lette
+        # koden etter «fiq.gui.ai_kr.data» — som ikke finnes — og get_kr_bokser returnerte
+        # 0 bokser for ALLE flater, inkludert min egen. Flaten så ut til å virke; den var tom.
+        # Nok et tilfelle av «koden kjørte, resultatet var galt».
+        prikk = key.replace("_", ".")
+        for navn in ("fiq.gui.%s.data" % prikk, "fiq.gui.%s.data" % key,
+                     "fiq.gui.%s" % prikk, "fiq.gui.%s" % key):
             if navn in self.env and hasattr(self.env[navn], self.KR_BOKS_METODE):
                 return self.env[navn]
         return None
@@ -288,6 +295,35 @@ class FiqGuiAiKrData(models.AbstractModel):
     # ÆRLIG hva som faktisk lever — en «aktiv» økt som sist meldte seg i går er en løgn
     # som gjør at han tror noe er under arbeid når det står stille.
     STILLE_TIMER = 3
+
+    @api.model
+    def get_spor(self, company_id=False):
+        """Prosjektsporene til AI KR-flaten — den varige enheten.
+
+        Gjermund 19.07.2026: «Jeg ser ikke paa dette som oekter men som PROSJEKTER.»
+        Sporene er derfor det foerste han skal se, ikke oektene.
+        """
+        dom = []
+        if company_id:
+            dom.append(("company_id", "=", int(company_id)))
+        out = []
+        for s in self.env["fiq.ai.spor"].search(dom, order="kode"):
+            out.append({
+                "id": s.id,
+                "kode": s.kode or "",
+                "navn": s.name or "",
+                "versjon": s.versjon or "",
+                "modul": s.modul or "",
+                "i_odoo": bool(s.modul_installert),
+                "modul_versjon": s.modul_versjon or "",
+                "status": s.status or "",
+                "aktive": s.aktive_okter,
+                "okter": s.antall_okter,
+                "beskrivelse": s.beskrivelse or "",
+                # UTEN EIER: ingen aktive oekter og status planlagt = hullet skal SYNES.
+                "uten_eier": bool(s.status == "planlagt" and not s.aktive_okter),
+            })
+        return out
 
     @api.model
     def get_okter(self, company_id=False, status=False):

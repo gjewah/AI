@@ -138,3 +138,37 @@
     }
     .oalder { color: #9aa0a8; font-size: 11px; margin-left: 4px; }
 }
+
+// PROSJEKTSPOR — den varige enheten. Gjermund 19.07: «Jeg ser ikke paa dette som
+// oekter men som PROSJEKTER.» Sporene er det foerste han skal se.
+.aikr {
+    .sporliste { display: flex; flex-direction: column; gap: 8px; }
+    .spor {
+        background: #fff; border: 1px solid #e3e5e9; border-left: 3px solid #cfd3da;
+        border-radius: 11px; padding: 11px 13px;
+        // UTEN EIER: hullet skal SYNES, ikke ligge usett i git slik Salg gjorde i 10 dager.
+        &.uteneier { border-left-color: #d0342c; background: #fffafa; }
+    }
+    .sp1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .spver {
+        font-variant-numeric: tabular-nums; font-weight: 700; color: #7030A0;
+        background: #f4eefb; border-radius: 6px; padding: 1px 7px; font-size: 12px;
+    }
+    .spkode { font-weight: 700; color: #1f2228; font-size: 12px; letter-spacing: .3px; }
+    .spnavn { color: #1f2228; font-size: 13px; }
+    .sp_sp { flex: 1 1 auto; }
+    .spvarsel {
+        background: #fdecea; color: #d0342c; border: 1px solid #f5c6c2;
+        border-radius: 6px; padding: 1px 7px; font-size: 11px; font-weight: 600;
+    }
+    .spaktiv { color: #38B44A; font-size: 11.5px; font-weight: 600; }
+    .spstat {
+        border-radius: 6px; padding: 1px 8px; font-size: 11px; font-weight: 600;
+        background: #eef0f3; color: #6b7280;
+        &.spstat_i_odoo { background: #e8f1fb; color: #0070C0; }
+        &.spstat_produksjon, &.spstat_godkjent { background: #eaf7ec; color: #2c9c3c; }
+        &.spstat_planlagt { background: #fdecea; color: #d0342c; }
+    }
+    .sp2 { color: #6b7280; font-size: 11.5px; margin-top: 3px; }
+    .spbesk { color: #6b7280; font-size: 12px; margin-top: 5px; line-height: 1.5; }
+}

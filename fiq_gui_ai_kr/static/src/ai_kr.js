@@ -21,6 +21,7 @@ export class FiqAiKontrollrom extends Component {
             oppg: { groups: [], tot: {}, krever: [], root: "" },
             okter: [], org: { roller: [], installert: false },
             bokser: [],   // samlebokser fra hver flate — «hva haster hvor»
+            spor: [],     // prosjektsporene — den VARIGE enheten (Gjermund 19.07)
         });
         onWillStart(async () => {
             // Boksene FØRST: de er Pulse-laget (kravspek: «Pulse-først, RPC-SLA <500 ms»).
@@ -110,6 +111,9 @@ export class FiqAiKontrollrom extends Component {
 
     async settFane(v) {
         this.state.view = v;
+        if (v === "spor" && !this.state.spor.length) {
+            this.state.spor = await this.orm.call(DATA, "get_spor", []);
+        }
         if (v === "okter" && !this.state.okter.length) {
             this.state.okter = await this.orm.call(DATA, "get_okter", []);
         }
