@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Relations",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.2.0",
     "summary": "Typed, directed relations between contacts, companies, properties and "
                "projects. One person, many affiliations - without duplicate contacts.",
     "description": """
@@ -39,6 +39,7 @@ rewritten.
         "data/fiq_gui_relation_type_data.xml",
         "views/fiq_gui_relation_views.xml",
         "views/res_partner_views.xml",
+        "data/fiq_gui_relations_flate.xml",
     ],
     "installable": True,
     "application": False,
