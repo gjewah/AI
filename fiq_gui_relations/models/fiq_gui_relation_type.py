@@ -45,9 +45,14 @@ class FiqGuiRelationType(models.Model):
         "res.company", string="Enabled for",
         help="Companies where this type is offered. Empty = available to all.")
 
-    _sql_constraints = [
-        ("code_uniq", "UNIQUE(code)", "The relation type code must be unique."),
-    ]
+    # Odoo 19: models.Constraint, not the deprecated _sql_constraints list. The old form
+    # still creates the constraint, but warns on every registry load - which turns the
+    # build orange and buries warnings that actually matter.
+    # Core pattern: project/models/project_tags.py:25.
+    _code_uniq = models.Constraint(
+        "unique (code)",
+        "The relation type code must be unique.",
+    )
 
     @api.constrains("symmetric", "name_inverse")
     def _check_inverse(self):
