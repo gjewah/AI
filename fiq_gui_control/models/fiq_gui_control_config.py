@@ -48,6 +48,10 @@ class FiqControlRoomConfig(models.Model):
     # ikke i localStorage, så «mitt KR» følger brukeren mellom maskiner. Kan bare SKJULE —
     # tilgang avgjøres av gruppene i get_fiq_flater(), aldri av dette feltet.
     skjulte_flater = fields.Char("Hidden flates", default="")
+    # Foldede grupper/rader, per bruker+firma. JSON: {"<omraade>": ["<id>", ...]}.
+    # «Område» = hvilken liste/tre det gjelder (prosjekttre, avviksliste …), så to flater
+    # aldri folder hverandres rader. Nøkler er ID-er, ALDRI navn — se _fold_nokkel().
+    fold_state = fields.Text("Collapsed groups", default="{}")
 
     # Odoo 19: use models.Constraint (not the deprecated _sql_constraints)
     _user_company_uniq = models.Constraint(
@@ -1383,6 +1387,82 @@ class FiqControlRoomConfig(models.Model):
                 "linjer": (boks.get("linjer") or [])[:5],
             })
         return out
+
+    # =====================================================================
+    #  Fold/utvid — ÉN oppførsel for alle flater
+    #
+    #  Målt 19.07.2026: vi hadde SEKS ulike kollaps-implementasjoner (cpFold, cpDiagFold,
+    #  aktGrpFold, collapsed, treeClosed i control_room.js + foldet i prj.js), og bare ÉN
+    #  av dem husket noe. Samme handling oppførte seg ulikt avhengig av hvor brukeren sto —
+    #  samme klasse feil som `view:`-fella. Gjermund 19.07: «generell kollapse og utvide på
+    #  alle nivåer». Flatene kaller disse i stedet for å skrive sin egen sjuende variant.
+    #
+    #  To nivåer med BEVISST ulik logikk (fra PRJ-fasiten, 00.03 — «ikke rydd den bort»):
+    #    · «Fold alt» / «Utvid alt» = EKSPLISITT. Samme resultat hver gang, uansett tilstand.
+    #    · Klikk på én overskrift    = VEKSLENDE. Viser tilstanden der du står.
+    # =====================================================================
+
+    def _fold_nokkel(self, node):
+        """En stabil fold-nøkkel for én rad.
+
+        🛑 ALLTID ID, ALDRI NAVN. «H0101» går igjen på tvers av blokker, mappenavn gjentas i
+        Kommunikasjon, kontonavn i Finans — folder du på navn, folder du feil rader et helt
+        annet sted i treet. Fella er verifisert av PRJ (00.03).
+        """
+        if isinstance(node, dict):
+            node = node.get("id")
+        return str(node)
+
+    @api.model
+    def get_fold_state(self, omraade):
+        """Which rows this user has folded in `omraade`, as a list of keys."""
+        rec = self._get_or_create_current()
+        try:
+            alle = json.loads(rec.fold_state or "{}")
+        except (ValueError, TypeError):
+            # A corrupt preference must never break a view: everything shows, nothing is lost.
+            _logger.warning("FIQ control room: fold_state for user %s is not valid JSON — "
+                            "treating as empty.", self.env.uid)
+            return []
+        return list(alle.get(omraade) or [])
+
+    @api.model
+    def set_fold(self, omraade, node, foldet):
+        """Fold or unfold ONE row. Toggling is the caller's business — this stores a fact.
+
+        Returns the area's new key list so the client never has to guess what was stored.
+        """
+        rec = self._get_or_create_current()
+        try:
+            alle = json.loads(rec.fold_state or "{}")
+        except (ValueError, TypeError):
+            alle = {}
+        nokler = set(alle.get(omraade) or [])
+        n = self._fold_nokkel(node)
+        if foldet:
+            nokler.add(n)
+        else:
+            nokler.discard(n)
+        alle[omraade] = sorted(nokler)
+        rec.fold_state = json.dumps(alle)
+        return alle[omraade]
+
+    @api.model
+    def set_fold_alle(self, omraade, noder, foldet):
+        """«Fold alt» / «Utvid alt» — explicit, not a toggle.
+
+        Verified 19.07.2026 that no such control existed anywhere in the 24 modules; this is the
+        only place it lives now. `noder` is what the flate currently shows, so folding all only
+        touches the rows in front of the user — not rows she filtered away.
+        """
+        rec = self._get_or_create_current()
+        try:
+            alle = json.loads(rec.fold_state or "{}")
+        except (ValueError, TypeError):
+            alle = {}
+        alle[omraade] = sorted({self._fold_nokkel(n) for n in (noder or [])}) if foldet else []
+        rec.fold_state = json.dumps(alle)
+        return alle[omraade]
 
     def _flate_label(self, spec, key):
         """The flate's menu label in the user's language.

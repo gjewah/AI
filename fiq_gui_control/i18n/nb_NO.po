@@ -2987,36 +2987,50 @@ msgstr "Kontrollrommet"
 msgid "FIQ platform"
 msgstr "FIQ-plattform"
 
-#. Selvregistrerte flate-etiketter (get_fiq_flater). Modulen sender en ren streng, og
-#. den slås opp her. Sender modulen {"en_US": ..., "nb_NO": ...} eier den navnet selv.
+#. module: fiq_gui_control
+#. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "AI roles"
 msgstr "AI-roller"
 
+#. module: fiq_gui_control
+#. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "Inspections"
 msgstr "Befaringer"
 
+#. module: fiq_gui_control
+#. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "Timeline"
 msgstr "Tidslinje"
 
+#. module: fiq_gui_control
+#. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "Deviations"
 msgstr "Avvik"
 
+#. module: fiq_gui_control
+#. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "Relations"
 msgstr "Relasjoner"
 
+#. module: fiq_gui_control
+#. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "Message routing"
 msgstr "Meldingsruting"
 
+#. module: fiq_gui_control
+#. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "AI control room"
 msgstr "AI-kontrollrom"
 
+#. module: fiq_gui_control
+#. odoo-python
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "Project overview"
 msgstr "Prosjektoversikt"
