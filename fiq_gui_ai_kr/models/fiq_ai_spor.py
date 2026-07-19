@@ -72,9 +72,15 @@ class FiqAiSpor(models.Model):
     company_id = fields.Many2one("res.company", string="Firma", index=True,
                                  default=lambda self: self.env.company)
 
-    _sql_constraints = [
-        ("kode_unik", "unique(kode, company_id)", "Sporkoden må være unik per firma."),
-    ]
+    # 🔴 ODOO 19: `_sql_constraints` er UTGÅTT — gir «Model attribute '_sql_constraints'
+    # is no longer supported» og gjør bygget oransje. Riktig form er `models.Constraint`
+    # som klasseattributt (verifisert mot core: addons/project/models/project_tags.py:25,
+    # project_project.py:186, project_task.py:331). Skrevet fra hukommelsen første gang —
+    # det er nettopp slik 18-syntaks sniker seg inn.
+    _kode_unik = models.Constraint(
+        "unique (kode, company_id)",
+        "Sporkoden må være unik per firma.",
+    )
 
     @api.depends("versjon_hoved", "versjon_lop")
     def _compute_versjon(self):
