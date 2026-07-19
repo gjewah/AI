@@ -1495,10 +1495,16 @@ class FiqControlRoomConfig(models.Model):
         """
         label = spec.get("label")
         if isinstance(label, dict):
-            # Module ships its own translations. Fall back through language → English → any value,
-            # so a missing translation shows a real name rather than an empty menu entry.
-            lang = self.env.lang or "en_US"
-            return label.get(lang) or label.get("en_US") or next(iter(label.values()), key)
+            # Module ships its own translations. Fall back user's language → NORWEGIAN → English
+            # → any value, so a missing translation shows a real name rather than an empty entry.
+            #
+            # Norwegian before English is deliberate (Gjermund 19.07.2026, [[norsk-spraklinje-er-fasit]]):
+            # nb_NO is the main language in every company and every Odoo database, and the English
+            # line is often a stale string nobody has touched in years. Falling back to it would
+            # show an outdated name as if it were current.
+            lang = self.env.lang or "nb_NO"
+            return (label.get(lang) or label.get("nb_NO") or label.get("en_US")
+                    or next(iter(label.values()), key))
         if label:
             # Plain string: run it through gettext so labels listed in our own i18n/*.po translate.
             return _(label)  # pylint: disable=gettext-variable
