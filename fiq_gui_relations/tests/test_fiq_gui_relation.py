@@ -1,0 +1,211 @@
+# -*- coding: utf-8 -*-
+from odoo.exceptions import ValidationError
+from odoo.tests import TransactionCase, tagged
+
+
+# post_install is REQUIRED here, not a preference.
+#
+# Under the default at_install the registry holds only this module's own depends, while
+# the database still carries NOT NULL columns added by modules that are installed but not
+# yet in the registry - group_rfq on res.partner (purchase_stock) is the one that bites.
+# The constraint lives in Postgres, but the default is set by Odoo in Python, so a field
+# unknown to the registry never gets its default and the INSERT omits the column
+# entirely: NotNullViolation on a field this module neither owns nor can see.
+#
+# Every test below creates res.partner records, so all of them would hit it.
+# Odoo core does the same thing - project/tests/test_project_mail_features.py:9.
+@tagged("-at_install", "post_install")
+class TestFiqGuiRelation(TransactionCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        Partner = cls.env["res.partner"]
+        cls.person = Partner.create({"name": "Test Person", "is_company": False})
+        cls.person_b = Partner.create({"name": "Other Person", "is_company": False})
+        cls.company_a = Partner.create({"name": "Alpha AS", "is_company": True})
+        cls.company_b = Partner.create({"name": "Beta AS", "is_company": True})
+
+        cls.Type = cls.env["fiq.gui.relation.type"]
+        cls.Relation = cls.env["fiq.gui.relation"]
+        cls.type_employee = cls.env.ref("fiq_gui_relations.type_employee")
+        cls.type_partner = cls.env.ref("fiq_gui_relations.type_partner")
+
+    # ---- the core case: one person, several companies -----------------------------
+
+    def test_one_person_many_companies(self):
+        """The whole reason the module exists: a person holds several affiliations at
+        once, each with its own job title, without being duplicated as a contact."""
+        self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+            "note": "Backoffice",
+        })
+        self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_b.id,
+            "type_id": self.env.ref("fiq_gui_relations.type_general_manager").id,
+            "note": "General Manager",
+        })
+        rels = self.Relation.relations_for_partner(self.person.id)
+        self.assertEqual(len(rels), 2)
+        notes = sorted(r["note"] for r in rels)
+        self.assertEqual(notes, ["Backoffice", "General Manager"])
+        # The person is still ONE contact - that is the point.
+        self.assertEqual(
+            self.env["res.partner"].search_count([("name", "=", "Test Person")]), 1)
+
+    def test_parent_id_untouched(self):
+        """The module must not disturb the native address book. A relation is added
+        alongside parent_id, never instead of it."""
+        self.person.parent_id = self.company_a
+        self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_b.id,
+            "type_id": self.type_employee.id,
+        })
+        self.assertEqual(self.person.parent_id, self.company_a)
+
+    # ---- reading from both sides ---------------------------------------------------
+
+    def test_read_from_both_sides(self):
+        """One stored row, read correctly from either end: forward from A, inverted
+        from B. This is what a plain Many2many cannot do - it has no direction."""
+        self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+        })
+        from_person = self.Relation.relations_for_partner(self.person.id)
+        from_company = self.Relation.relations_for_partner(self.company_a.id)
+
+        self.assertEqual(len(from_person), 1)
+        self.assertEqual(len(from_company), 1)
+        self.assertEqual(from_person[0]["label"], self.type_employee.name)
+        self.assertEqual(from_company[0]["label"], self.type_employee.name_inverse)
+        # Each side names the OTHER party, never itself.
+        self.assertEqual(from_person[0]["partner_id"], self.company_a.id)
+        self.assertEqual(from_company[0]["partner_id"], self.person.id)
+
+    def test_symmetric_reads_same_both_ways(self):
+        rel = self.Relation.create({
+            "partner_a_id": self.company_a.id,
+            "partner_b_id": self.company_b.id,
+            "type_id": self.type_partner.id,
+        })
+        self.assertTrue(rel.type_id.symmetric)
+        a = self.Relation.relations_for_partner(self.company_a.id)[0]
+        b = self.Relation.relations_for_partner(self.company_b.id)[0]
+        self.assertEqual(a["label"], b["label"])
+
+    def test_relation_stored_once(self):
+        """No mirror row is written. Two copies of the same fact drift apart."""
+        self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+        })
+        self.assertEqual(self.Relation.search_count([]), 1)
+
+    # ---- validity period -----------------------------------------------------------
+
+    def test_ended_relation_keeps_person(self):
+        """A relation that ends is dated, not deleted - and the person stays active.
+        Explicit requirement: never archive someone because they changed employer."""
+        rel = self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+            "date_start": "2020-01-01",
+            "date_end": "2021-01-01",
+        })
+        self.assertFalse(rel.is_current)
+        self.assertTrue(rel.exists())
+        self.assertTrue(self.person.active)
+        # It still shows in history, just not among the current ones.
+        self.assertEqual(len(self.Relation.relations_for_partner(self.person.id)), 1)
+        self.assertEqual(
+            len(self.Relation.relations_for_partner(self.person.id, only_current=True)), 0)
+
+    def test_open_ended_is_current(self):
+        rel = self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+            "date_start": "2020-01-01",
+        })
+        self.assertTrue(rel.is_current)
+
+    def test_end_before_start_rejected(self):
+        with self.assertRaises(ValidationError):
+            self.Relation.create({
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+                "date_start": "2021-01-01",
+                "date_end": "2020-01-01",
+            })
+
+    # ---- guards --------------------------------------------------------------------
+
+    def test_self_relation_rejected(self):
+        with self.assertRaises(ValidationError):
+            self.Relation.create({
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.person.id,
+                "type_id": self.type_partner.id,
+            })
+
+    def test_person_company_kind_enforced(self):
+        """"is employed by" expects a person on the A side. A company there is a
+        catalogue mistake and should fail loudly at write time."""
+        with self.assertRaises(ValidationError):
+            self.Relation.create({
+                "partner_a_id": self.company_a.id,
+                "partner_b_id": self.company_b.id,
+                "type_id": self.type_employee.id,
+            })
+
+    def test_type_needs_inverse_unless_symmetric(self):
+        with self.assertRaises(ValidationError):
+            self.Type.create({
+                "code": "test_no_inverse",
+                "name": "points at",
+                "symmetric": False,
+            })
+
+    def test_type_code_unique(self):
+        from psycopg2 import IntegrityError
+        from odoo.tools.misc import mute_logger
+        self.Type.create({
+            "code": "test_unique", "name": "a", "name_inverse": "b"})
+        with mute_logger("odoo.sql_db"), self.assertRaises(IntegrityError):
+            with self.env.cr.savepoint():
+                self.Type.create({
+                    "code": "test_unique", "name": "c", "name_inverse": "d"})
+
+    # ---- partner counters ----------------------------------------------------------
+
+    def test_count_includes_both_sides(self):
+        """The count must include relations where the partner is the B side - that is
+        precisely the half native parent_id cannot express."""
+        self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+        })
+        self.Relation.create({
+            "partner_a_id": self.person_b.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+        })
+        self.assertEqual(self.person.fiq_relation_count, 1)
+        self.assertEqual(self.company_a.fiq_relation_count, 2)
+
+    def test_no_relations_returns_empty(self):
+        self.assertEqual(self.Relation.relations_for_partner(self.person.id), [])
+
+    def test_missing_partner_returns_empty(self):
+        """Defensive: a stale id must not raise for the caller."""
+        self.assertEqual(self.Relation.relations_for_partner(999999999), [])
