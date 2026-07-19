@@ -203,6 +203,16 @@
     letter-spacing: .04em;
   }
 
+  // Ærlig scope-merke: gult, ikke rødt — det er en presisering, ikke en feil.
+  .fiqr-scope {
+    background: #FFF8E5;
+    color: #7A5C00;
+    border: 1px solid #E0B400;
+    border-radius: 3px;
+    padding: 1px 8px;
+    font-size: 11px;
+  }
+
   .fiqr-val {
     font-size: 13px;
     color: var(--graa);

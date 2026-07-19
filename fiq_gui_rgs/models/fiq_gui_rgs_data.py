@@ -79,10 +79,18 @@ class FiqGuiRgsData(models.AbstractModel):
 
         valuta = self.env.company.currency_id
 
+        # ÆRLIG SCOPE (GUI Prosjekt 19.07): tallet gjelder ETT firma. Har brukeren
+        # tilgang til flere, er dette IKKE et konserntall — og det må stå, ellers
+        # leses et ufullstendig tall som helheten. Fail-closed er riktig; stille
+        # fail-closed er ikke.
+        antall_tilgjengelige = len(self.env.companies)
+
         return {
             "firma": self.env.company.name,
             "valuta": valuta.symbol or valuta.name,
             "dato": fields.Date.to_string(i_dag),
+            "scope_ett_firma": True,
+            "antall_firmaer": antall_tilgjengelige,
             "botter": [
                 {"key": "inn", "label": "Inngående", "verdi": inn,
                  "hjelp": "Bokførte kundefakturaer som ikke er betalt"},

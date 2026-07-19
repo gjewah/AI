@@ -31,6 +31,11 @@
                 <div class="fiqr-korthode">
                     <h3>Oversikt</h3>
                     <span class="fiqr-fakta">BOKFØRT</span>
+                    <!-- Ærlig scope: et ett-firma-tall skal ALDRI kunne leses som konserntall. -->
+                    <span t-if="state.data.antall_firmaer > 1" class="fiqr-scope">
+                        Kun <t t-esc="state.data.firma"/> — du har tilgang til
+                        <t t-esc="state.data.antall_firmaer"/> firmaer
+                    </span>
                 </div>
                 <div class="fiqr-botter">
                     <!-- Klikkbar: tall → Odoos egen fakturaliste, filtrert. Ikke blindvei. -->
