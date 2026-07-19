@@ -22,6 +22,45 @@
 
                 <!-- OPPGAVER -->
                 <div t-if="state.view==='oppgaver'">
+
+                    <!--
+                      SAMLEBOKSER — «hva haster hvor», én boks per flate.
+                      Gjermund 19.07.2026: «5 saker som haster på finans og tre i dag vises
+                      som en boks i KR; trykker jeg på den kommer jeg inn i finans.»
+                      Kravspek kontrollrom_spec.md: Pulse-laget («3 KPI + hva haster»).
+                      Ro-budsjett: tall, ikke varsler. Ingen popup, ingen masing.
+                    -->
+                    <div t-if="state.bokser.length" class="bokser">
+                        <div t-foreach="state.bokser" t-as="b" t-key="b.key"
+                             t-att-class="'boks ' + b.farge"
+                             t-on-click="() => this.apneFlate(b)">
+                            <div class="boks_topp">
+                                <span class="boks_navn" t-esc="b.label"/>
+                                <span class="boks_pil">›</span>
+                            </div>
+                            <div class="boks_tall">
+                                <span t-if="b.haster" class="tall haster">
+                                    <b t-esc="b.haster"/> haster
+                                </span>
+                                <span t-if="b.i_dag" class="tall i_dag">
+                                    <b t-esc="b.i_dag"/> i dag
+                                </span>
+                                <span t-if="!b.haster and !b.i_dag" class="tall rolig">
+                                    <b t-esc="b.totalt"/> åpne
+                                </span>
+                            </div>
+                            <div t-if="b.linjer.length" class="boks_linjer">
+                                <div t-foreach="b.linjer" t-as="l" t-key="l_index"
+                                     class="boks_linje" t-esc="l.tekst"/>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Draghåndtak: styrer boksbredden. Samme mønster som Meldingssenteret. -->
+                    <div t-if="state.bokser.length" class="boks_drag_rad">
+                        <span class="boks_drag" title="Dra for å endre bredden på boksene"
+                              t-on-pointerdown="startDragBoks"/>
+                    </div>
+
                     <div class="filters">
                         <label><input type="checkbox" t-att-checked="state.skjul_ferdig" t-on-change="() => this.veksle('skjul_ferdig')"/> Skjul fullførte</label>
                         <label><input type="checkbox" t-att-checked="state.skjul_kansellert" t-on-change="() => this.veksle('skjul_kansellert')"/> Skjul kansellerte</label>
@@ -57,9 +96,23 @@
                 <!-- ØKTREGISTER -->
                 <div t-if="state.view==='okter'">
                     <div t-if="!state.okter.length" class="empty">Ingen økter registrert ennå (Claude fører dem automatisk).</div>
-                    <div t-foreach="state.okter" t-as="o" t-key="o.id" class="okt">
-                        <div class="or1"><span class="onm" t-esc="o.navn"/><span t-att-class="'ost ost_' + o.status" t-esc="o.status"/></div>
-                        <div class="or2"><span class="okilde" t-esc="o.kilde"/> · <t t-esc="o.firma"/> · <t t-esc="o.sist_aktiv"/></div>
+                    <div t-foreach="state.okter" t-as="o" t-key="o.id"
+                         t-att-class="'okt' + (o.stille ? ' stille' : '')">
+                        <div class="or1">
+                            <span class="onm" t-esc="o.navn"/>
+                            <span t-att-class="'ost ost_' + o.status" t-esc="o.status"/>
+                            <!-- STILLE: meldte seg aktiv, men har ikke gitt lyd siden.
+                                 Uten dette ser en stoppet økt ut som en som jobber. -->
+                            <span t-if="o.stille" class="ost ost_stille"
+                                  t-att-title="'Ingen aktivitet på ' + o.alder">
+                                stille i <t t-esc="o.alder"/>
+                            </span>
+                        </div>
+                        <div class="or2">
+                            <span class="okilde" t-esc="o.kilde"/> · <t t-esc="o.firma"/>
+                            · <t t-esc="o.sist_aktiv"/>
+                            <span t-if="o.alder" class="oalder">(<t t-esc="o.alder"/> siden)</span>
+                        </div>
                         <div class="osum" t-esc="o.sammendrag"/>
                     </div>
                 </div>

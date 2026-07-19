@@ -23,6 +23,97 @@ class FiqGuiAiKrData(models.AbstractModel):
     # faktisk finnes på fiqas Staging (verifisert 18.07.2026).
     OKTER_ROT_KANDIDATER = ["AI Økter (MP)", "8.50 AI (MP)", "8.50 AI"]
 
+    # ── SAMLEBOKSER PÅ KR-FORSIDEN ──────────────────────────────────────────────
+    # Gjermund 19.07.2026: «KR må egentlig være en samling av Samlebokser fra hver av de
+    # forskjellige Rommene med de mest prioriterte oppgaver — om det er 5 saker som haster
+    # på finans og tre i dag, vises det som en boks i KR, og trykker jeg på en av boksene
+    # kommer jeg inn i finans eller RGS. Trykker jeg på PRJ haster, kommer jeg til PRJ.»
+    #
+    # Kravspek `kontrollrom_spec.md`: «Pulse (3 KPI + hva haster)» + «hendelser gruppert på
+    # viktighet, hva haster nå». Dette er Pulse-laget realisert per FLATE.
+    #
+    # MEKANISMEN FINNES ALLEREDE: `get_fiq_flater()` i fiq_gui_control vet hvilke flater
+    # som er registrert (ir.config_parameter). Vi spør hver av dem om ETT tall.
+    #
+    # KONTRAKTEN — en flate leverer sine hastesaker med én metode på sin egen modell:
+    #
+    #     def get_kr_boks(self, company_id=False):
+    #         return {"haster": 5, "i_dag": 3, "totalt": 12,
+    #                 "linjer": [{"tekst": "Faktura forfalt 45 dager", "res_id": 42}]}
+    #
+    # Flater UTEN metoden vises ikke — ingen tomme bokser, ingen støy. En ny modul får
+    # sin boks ved å legge til metoden; ingenting her må endres.
+    #
+    # RO-BUDSJETT (spec: «HARDT ro-budsjett, default STILLE leseflate»): boksen viser TALL,
+    # ikke varsler. Ingen popup, ingen badge som maser. Bare et tall du kan klikke på.
+    KR_BOKS_METODE = "get_kr_boks"
+
+    @api.model
+    def get_kr_bokser(self, company_id=False):
+        """Samle ett boks-kort per registrert flate. Klikk → åpner flaten.
+
+        Returnerer: [{key, label, xmlid, haster, i_dag, totalt, linjer, farge}, …]
+        sortert med det som haster mest øverst — det er hele poenget med forsiden.
+        """
+        out = []
+        try:
+            flater = self.env["fiq.gui.control.config"].get_fiq_flater()
+        except Exception:
+            # KR-kjernen kan mangle (modulen er valgfri) — da har vi ingen flater å spørre.
+            return out
+
+        for flate in flater or []:
+            key = flate.get("key")
+            xmlid = flate.get("xmlid")
+            if not (key and xmlid):
+                continue
+
+            # Hvilken modell eier flaten? Handlingen vet det ikke alltid, så vi slår opp
+            # en modell med samme «familie»-navn: fiq.gui.<key>.data er husets mønster.
+            data = self._finn_boks_leverandor(key)
+            if data is None:
+                continue  # flaten har ingen boks å levere — vises ikke
+
+            try:
+                boks = data.get_kr_boks(company_id=company_id) or {}
+            except Exception:
+                # En flate som feiler skal ALDRI ta ned forsiden for de andre.
+                # (Samme lærdom som blank-skjerm-fella 18.07: én modul veltet hele GUI-et.)
+                continue
+
+            haster = int(boks.get("haster") or 0)
+            i_dag = int(boks.get("i_dag") or 0)
+            totalt = int(boks.get("totalt") or 0)
+            if not (haster or i_dag or totalt):
+                continue  # ingenting å vise — ikke lag en tom boks
+
+            out.append({
+                "key": key,
+                "label": flate.get("label") or key,
+                "xmlid": xmlid,
+                "haster": haster,
+                "i_dag": i_dag,
+                "totalt": totalt,
+                "linjer": (boks.get("linjer") or [])[:5],  # topp 5, ikke en hel liste
+                "farge": "rod" if haster else ("gul" if i_dag else "nøytral"),
+            })
+
+        # Haster øverst, så dagens, så resten. Forsiden skal svare på «hva nå?».
+        out.sort(key=lambda b: (-b["haster"], -b["i_dag"], b["label"]))
+        return out
+
+    def _finn_boks_leverandor(self, key):
+        """Finn modellen som kan levere boks-tall for en flate.
+
+        Husets mønster er `fiq.gui.<key>.data` (fiq.gui.rgs.data, fiq.gui.prj.data …).
+        Finnes den ikke, eller mangler den metoden, leverer flaten ingen boks — og det
+        er helt greit. Ingen skal tvinges til å implementere kontrakten.
+        """
+        for navn in ("fiq.gui.%s.data" % key, "fiq.gui.%s" % key):
+            if navn in self.env and hasattr(self.env[navn], self.KR_BOKS_METODE):
+                return self.env[navn]
+        return None
+
     def _finn_okter_rot(self):
         """Finn rot-prosjektet for AI-økter på NAVN — aldri hardkodet id.
 
@@ -191,18 +282,34 @@ class FiqGuiAiKrData(models.AbstractModel):
         tot["pct"] = int(round(tot["done"] * 100.0 / tot["tot"])) if tot["tot"] else 0
         return out
 
+    # En økt som ikke har meldt seg på så lenge er sannsynligvis død, ikke aktiv.
+    # Gjermund 19.07.2026: «Jeg ser ikke på dette som økter men som prosjekter og det er
+    # den tullete økt-opplegget til Claude som skaper kaoset.» Registeret må derfor si
+    # ÆRLIG hva som faktisk lever — en «aktiv» økt som sist meldte seg i går er en løgn
+    # som gjør at han tror noe er under arbeid når det står stille.
+    STILLE_TIMER = 3
+
     @api.model
     def get_okter(self, company_id=False, status=False):
         """Øktregisteret (D5) til AI KR-oversikten: alle Claude Code + Cowork-økter
-        Claude har ført. Kjøres som brukeren. Firma-scoping for firma-snippet."""
+        Claude har ført. Kjøres som brukeren. Firma-scoping for firma-snippet.
+
+        Hver økt får `alder` (menneskelig: «12 min», «3 t», «2 d») og `stille` (bool).
+        Uten det kan man ikke skille en økt som JOBBER fra en som har stoppet opp — og
+        det er nettopp den forskjellen som gjør registeret verdt å ha.
+        """
         dom = []
         if company_id:
             dom.append(("company_id", "=", int(company_id)))
         if status:
             dom.append(("status", "=", status))
         Okt = self.env["fiq.ai.okt"]
+        naa = fields.Datetime.now()
         out = []
         for o in Okt.search(dom, order="sist_aktiv desc", limit=200):
+            minutter = None
+            if o.sist_aktiv:
+                minutter = int((naa - o.sist_aktiv).total_seconds() // 60)
             out.append({
                 "id": o.id,
                 "navn": o.name or "",
@@ -213,8 +320,47 @@ class FiqGuiAiKrData(models.AbstractModel):
                 "oppgave": o.task_id.display_name if o.task_id else "",
                 "sammendrag": o.sammendrag or "",
                 "sist_aktiv": o.sist_aktiv.strftime("%d.%m %H:%M") if o.sist_aktiv else "",
+                "minutter": minutter,
+                "alder": self._alder_tekst(minutter),
+                # STILLE = meldte seg som aktiv, men har ikke gitt lyd fra seg siden.
+                "stille": bool(
+                    o.status == "aktiv" and minutter is not None
+                    and minutter > self.STILLE_TIMER * 60
+                ),
             })
         return out
+
+    def _alder_tekst(self, minutter):
+        """«12 min» / «3 t» / «2 d» — menneskelig, ikke et tidsstempel å regne på."""
+        if minutter is None:
+            return ""
+        if minutter < 1:
+            return "nå"
+        if minutter < 60:
+            return "%d min" % minutter
+        if minutter < 60 * 24:
+            return "%d t" % (minutter // 60)
+        return "%d d" % (minutter // (60 * 24))
+
+    @api.model
+    def get_kr_boks(self, company_id=False):
+        """AI KRs EGEN samleboks — samme kontrakt som alle andre flater leverer.
+
+        AI KR skal ikke være unntaket som bare viser andres bokser. «Haster» her =
+        økter som har stoppet opp uten å melde fra, for det er dem Gjermund må gripe inn i.
+        """
+        okter = self.get_okter(company_id=company_id)
+        stille = [o for o in okter if o.get("stille")]
+        aktive = [o for o in okter if o.get("status") == "aktiv"]
+        return {
+            "haster": len(stille),
+            "i_dag": len(aktive) - len(stille),
+            "totalt": len(aktive),
+            "linjer": [
+                {"tekst": "%s — stille i %s" % (o["navn"], o["alder"]), "res_id": o["id"]}
+                for o in stille[:5]
+            ],
+        }
 
     @api.model
     def get_org(self, company_id=False):

@@ -59,3 +59,82 @@
   .rt{font-size:11px;color:var(--muted);text-transform:uppercase;font-family:var(--mono);margin:3px 0}
   .rfirma{font-size:12px;color:var(--ink-soft)} .rskill{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:3px}
 }
+
+// ── SAMLEBOKSER — «hva haster hvor» ────────────────────────────────────────────
+// Gjermund 19.07.2026: én boks per rom, klikk går inn i rommet.
+// Ro-budsjett (kravspek): farge som AKSENT, ikke alarm. Tall, ikke varsler.
+// 🛑 Ingen min(px,vw) — den kombinasjonen dreper HELE assets-bundelen i Sass.
+.aikr {
+    .bokser {
+        display: grid;
+        // Bredden styres av --w-boks (dragbar, husket i localStorage — samme mønster
+        // som Meldingssenterets kolonner). Griddet fyller raden selv med så mange
+        // bokser det er plass til, så flaten tåler alt fra mobil til bred skjerm.
+        grid-template-columns: repeat(auto-fill, minmax(var(--w-boks, 240px), 1fr));
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+    .boks {
+        background: #fff;
+        border: 1px solid #e3e5e9;
+        border-left: 3px solid #cfd3da;
+        border-radius: 11px;
+        padding: 11px 13px;
+        cursor: pointer;
+        transition: box-shadow .15s ease, transform .15s ease;
+
+        &:hover {
+            box-shadow: 0 2px 10px rgba(20, 22, 26, .09);
+            transform: translateY(-1px);
+        }
+        // Aksentfarge på kanten — rolig, ikke rød flate som roper
+        &.rod  { border-left-color: #d0342c; }
+        &.gul  { border-left-color: #d99100; }
+    }
+    .boks_topp {
+        display: flex; align-items: center; gap: 6px;
+        font-weight: 600; color: #1f2228; font-size: 13px;
+    }
+    .boks_navn { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .boks_pil { color: #9aa0a8; font-size: 15px; line-height: 1; }
+    .boks_tall {
+        display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;
+        .tall { font-size: 12px; color: #6b7280;
+            b { font-size: 17px; font-variant-numeric: tabular-nums; margin-right: 3px; } }
+        .haster b { color: #d0342c; }
+        .i_dag  b { color: #d99100; }
+        .rolig  b { color: #1f2228; }
+    }
+    .boks_linjer { margin-top: 8px; border-top: 1px solid #f0f1f3; padding-top: 6px; }
+    .boks_linje {
+        font-size: 11.5px; color: #6b7280; line-height: 1.55;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+}
+
+@media (max-width: 560px) {
+    .aikr .bokser { grid-template-columns: 1fr 1fr; }
+}
+
+// Draghåndtak for boksbredde — diskret, samme oppførsel som Meldingssenterets kolonner.
+.aikr {
+    .boks_drag_rad { display: flex; justify-content: flex-start; margin: -8px 0 12px; }
+    .boks_drag {
+        width: 46px; height: 7px; border-radius: 4px; background: #e3e5e9;
+        cursor: ew-resize; touch-action: none;
+        &:hover, &.on { background: #38B44A; }
+    }
+}
+
+// STILLE ØKT — meldte seg aktiv, men har ikke gitt lyd fra seg.
+// Gjermund 19.07.2026: registeret må si ÆRLIG hva som lever. En «aktiv» økt som
+// sist meldte seg i går er en løgn som gjør at han tror noe er under arbeid.
+.aikr {
+    .okt.stille { border-left: 3px solid #d0342c; background: #fffafa; }
+    .ost_stille {
+        background: #fdecea; color: #d0342c; border: 1px solid #f5c6c2;
+        border-radius: 6px; padding: 1px 7px; font-size: 11px; font-weight: 600;
+        margin-left: 6px;
+    }
+    .oalder { color: #9aa0a8; font-size: 11px; margin-left: 4px; }
+}
