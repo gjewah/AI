@@ -65,14 +65,25 @@
                             </button>
                         </div>
 
-                        <div class="sh">Smarte mapper — taksonomi</div>
+                        <div class="sh trehead">
+                            <span>Smarte mapper — taksonomi</span>
+                            <button class="trealle" t-on-click="vekslHeleTreet" t-esc="treLabel()"/>
+                        </div>
                         <div class="nav">
-                            <button t-foreach="state.taks" t-as="b" t-key="b.kode"
-                                    t-att-class="(state.view==='inbox' &amp;&amp; state.aktivBoks===b.kode?'on':'') + ' cd_' + b.farge + ' niva' + (b.nivaa || 0)"
-                                    t-on-click="() => this.aapneBoks(b.kode, b.navn)">
-                                <span class="code" t-esc="b.kode"/><t t-esc="b.navn"/>
-                                <span class="c tnum" t-esc="b.count"/>
-                            </button>
+                            <t t-foreach="state.taks" t-as="b" t-key="b.kode">
+                                <button t-if="!skjult(b.kode)"
+                                        t-att-class="(state.view==='inbox' &amp;&amp; state.aktivBoks===b.kode?'on':'') + ' cd_' + b.farge + ' niva' + (b.nivaa || 0)"
+                                        t-on-click="() => this.aapneBoks(b.kode, b.navn)">
+                                    <!-- Pil KUN på mapper som faktisk har undermapper. Egen knapp
+                                         inni raden: klikk på pilen folder, klikk på navnet åpner. -->
+                                    <span t-if="harBarn(b.kode)"
+                                          t-att-class="'ch' + (state.trekollaps[b.kode] ? ' col' : '')"
+                                          t-on-click="(ev) => this.vekslTre(b.kode, ev)">▾</span>
+                                    <span t-else="" class="ch tom"/>
+                                    <span class="code" t-esc="b.kode"/><t t-esc="b.navn"/>
+                                    <span class="c tnum" t-esc="b.count"/>
+                                </button>
+                            </t>
                             <button t-foreach="state.tverr" t-as="b" t-key="b.kode"
                                     t-att-class="(state.view==='inbox' &amp;&amp; state.aktivBoks===b.kode?'on':'') + ' cd_' + b.farge"
                                     t-on-click="() => this.aapneBoks(b.kode, b.navn)">

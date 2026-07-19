@@ -27,6 +27,7 @@ export class FiqMeldingssenter extends Component {
             view: "hjem",                                  // "hjem" (oversikt=forside) | "inbox" (e-post)
             aktivBoks: false, aktivNavn: "", meldinger: [], valgt: false, period: "alle",
             group: "avsender", kollaps: {}, kandidater: { prosjekt: [], oppgave: [] },
+            trekollaps: {},              // mappetreet i sidemenyen: {kode: true} = kollapset
             ctxTab: "rel",                                   // person-kontekst: rel | hist | week
             trad: { status: "", notater: [] }, nyNotat: "",  // arbeidsstatus + interne notater
             person: false, personOpen: false,                // person-visning (klikk «Til stede»)
@@ -229,6 +230,53 @@ export class FiqMeldingssenter extends Component {
     kollapsLabel() {
         const keys = this.grupper().map(g => g.key);
         return keys.some(k => !this.state.kollaps[k]) ? "Kollaps alle" : "Utvid alle";
+    }
+
+    // ---- Mappetreet i sidemenyen: kollaps per nivå ---------------------------------
+    // Gjermund 19.07.2026: «Kollaps og minimer hoved på hvert nivå mangler».
+    // Treet var en FLAT liste — 2 Adm med alle undermapper alltid utbrettet. Med 40+
+    // koder ble sidemenyen umulig å skumme. Kodene bærer hierarkiet selv («2.30» hører
+    // under «2»), så vi trenger ingen ny datastruktur — bare å lese dem.
+
+    /** Er denne mappa skjult fordi en forelder over den er kollapset?
+     *  Sjekker ALLE forfedre, ikke bare nærmeste: kollapser du «2», skal «2.30.01»
+     *  også forsvinne. */
+    skjult(kode) {
+        const deler = (kode || "").split(".");
+        for (let i = 1; i < deler.length; i++) {
+            if (this.state.trekollaps[deler.slice(0, i).join(".")]) return true;
+        }
+        return false;
+    }
+
+    /** Har mappa barn? Kun da vises pilen — ellers ville blindveier fått en pil
+     *  som ikke gjør noe. */
+    harBarn(kode) {
+        const p = (kode || "") + ".";
+        return (this.state.taks || []).some((b) => (b.kode || "").startsWith(p));
+    }
+
+    /** Klikk på pilen: kollaps/utvid. Stopper klikket fra å åpne mappa samtidig —
+     *  ellers ville ett trykk både folde sammen OG bytte visning. */
+    vekslTre(kode, ev) {
+        if (ev) { ev.stopPropagation(); }
+        this.state.trekollaps[kode] = !this.state.trekollaps[kode];
+    }
+
+    /** Kollaps/utvid HELE treet på én gang. */
+    vekslHeleTreet() {
+        const foreldre = (this.state.taks || [])
+            .filter((b) => this.harBarn(b.kode)).map((b) => b.kode);
+        const noenApne = foreldre.some((k) => !this.state.trekollaps[k]);
+        const s = {};
+        for (const k of foreldre) s[k] = noenApne;
+        this.state.trekollaps = s;
+    }
+
+    treLabel() {
+        const foreldre = (this.state.taks || [])
+            .filter((b) => this.harBarn(b.kode)).map((b) => b.kode);
+        return foreldre.some((k) => !this.state.trekollaps[k]) ? "Kollaps alle" : "Utvid alle";
     }
     grupper() {
         const fnMap = {

@@ -95,6 +95,18 @@
   .nav button.on{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 28%,transparent);color:var(--accent)}
   .nav .dot{width:9px;height:9px;border-radius:3px;background:var(--nc,var(--accent));flex:none}
   .nav .code{font-family:var(--mono);font-size:10.5px;font-weight:800;color:var(--nc,var(--accent));flex:none;width:32px}
+  // Mappetreet: kollaps per nivå (Gjermund 19.07.2026 — treet var flatt og alltid utbrettet).
+  // Pilen er en egen klikkflate INNI raden: pil = fold, resten av raden = åpne mappa.
+  .sh.trehead{display:flex;align-items:center;gap:8px}
+  .trealle{margin-left:auto;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);
+           border-radius:7px;padding:3px 8px;font-size:10px;font-weight:640;text-transform:none;
+           letter-spacing:0;font-family:var(--body)}
+  .trealle:hover{border-color:var(--accent);color:var(--ink)}
+  .nav .ch{flex:none;width:14px;font-size:9px;color:var(--muted);transition:transform .12s;
+           display:inline-flex;align-items:center;justify-content:center;border-radius:4px}
+  .nav .ch:hover{background:var(--surface-2);color:var(--ink)}
+  .nav .ch.col{transform:rotate(-90deg)}          // kollapset: pilen peker mot høyre
+  .nav .ch.tom{visibility:hidden}                 // blindvei: plassholder, så navnene står i linje
   .nav .c{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)}
   // Kanal-knapp (E-post m.fl.) — hovedvalg under Kommunikasjon, tyngre enn en mappe
   .nav button.kanal{font-size:13px;padding:10px 11px;border:1px solid var(--line)}
