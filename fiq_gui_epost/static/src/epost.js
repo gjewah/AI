@@ -315,7 +315,14 @@ export class FiqMeldingssenter extends Component {
     grupper() {
         const fnMap = {
             avsender: m => m.fra || "—",
-            prosjekt: m => m.element || "(uten element)",
+            // «Prosjekt» skal vise PROSJEKTER — ikke emnelinjer. Gjermund 19.07.2026:
+            // «Skjønner ikke igjen dette som prosjekter. Er det oppgaver??» Nei: alt som
+            // ikke er paret med project.project/project.task falt før tilbake på emnet,
+            // så lista viste «RE», «FACEBOOK», «IWRYRECY.JPEG». Nå samles ALT uparet i
+            // én ærlig bolk, og de parede vises med nummer foran navnet.
+            prosjekt: m => (m.er_paret
+                ? ((m.element_nr ? m.element_nr + " " : "") + (m.element || "")).trim()
+                : "Ikke paret ennå"),
             dato: m => this.datoBolk(m),
             type: m => (m.retning === "sendt" ? "Sendt" : "Mottatt"),
         };

@@ -287,12 +287,25 @@ class FiqMeldingssenterData(models.AbstractModel):
             # Mottakere ("Til") — kun der Odoo har løst dem (ellers tomt, ikke dikt)
             til = m.partner_ids.mapped("display_name") if m.partner_ids else []
             element = ""
+            element_nr = ""
+            er_paret = False
             try:
                 # Vis prosjektnavnet som SharePoint-MAPPENAVNET (Gjermund 18.07.2026).
                 # display_name gir «25_040 - 012 FIQ (MP)» (sekvensnr foran) — SP-mappa
                 # heter «012 FIQ (MP)». Bruk `name` der modellen har det; ellers display_name.
                 rec = self.env[m.model].browse(m.res_id)
                 element = (rec.name if "name" in rec._fields else rec.display_name) or ""
+                # Gjermund 19.07.2026: «Skjønner ikke igjen dette som prosjekter. Er det
+                # oppgaver??» — nei. Gruppering på «Prosjekt» viste EMNELINJER (RE, FACEBOOK,
+                # IWRYRECY.JPEG), fordi `element` ble satt for ENHVER modell meldingen hang
+                # på — også mail.thread/discuss. Bare project.project og project.task er
+                # et ekte paringsmål; alt annet er «ikke paret».
+                if m.model in ("project.project", "project.task"):
+                    er_paret = True
+                    f = rec._fields
+                    nrfelt = "code" if (m.model == "project.task" and "code" in f) else (
+                        "sequence_code" if "sequence_code" in f else False)
+                    element_nr = (rec[nrfelt] or "") if nrfelt else ""
             except Exception:
                 element = ""
             out.append({
@@ -312,6 +325,8 @@ class FiqMeldingssenterData(models.AbstractModel):
                 "model": m.model,
                 "res_id": m.res_id,
                 "element": element,
+                "element_nr": element_nr,     # prosjekt-/oppgavenummer (tomt om uparet)
+                "er_paret": er_paret,         # TRUE kun for project.project/project.task
                 # 000-KANON krav 2: tydelig firmakode per melding i samlet visning
                 "firma": m.record_company_id.name if m.record_company_id else "",
                 "firmakode": (m.record_company_id.code
