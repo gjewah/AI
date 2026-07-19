@@ -203,6 +203,46 @@ class TestFiqGuiRelation(TransactionCase):
         self.assertEqual(self.person.fiq_relation_count, 1)
         self.assertEqual(self.company_a.fiq_relation_count, 2)
 
+    # ---- the daily refresh ---------------------------------------------------------
+
+    def test_cron_fixes_expired_relation(self):
+        """A stored compute does not recalculate because the calendar moved. Without the
+        cron, a relation that ended last night keeps reading as current - and searches
+        and groupings quietly return yesterday's truth."""
+        rel = self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+            "date_start": "2020-01-01",
+        })
+        self.assertTrue(rel.is_current)
+        # End it behind the compute's back, exactly as the passage of time would.
+        self.env.cr.execute(
+            "UPDATE fiq_gui_relation SET date_end = '2021-01-01' WHERE id = %s", (rel.id,))
+        rel.invalidate_recordset(["date_end"])
+        self.assertTrue(rel.is_current, "stale value should persist until the cron runs")
+
+        self.Relation._cron_recompute_is_current()
+        self.assertFalse(rel.is_current)
+
+    def test_cron_leaves_correct_rows_alone(self):
+        """Only rows that actually disagree with today are touched, so the job stays
+        cheap on a table that is mostly settled history."""
+        self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+            "date_start": "2020-01-01",
+        })
+        self.Relation.create({
+            "partner_a_id": self.person_b.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+            "date_start": "2020-01-01",
+            "date_end": "2021-01-01",
+        })
+        self.assertEqual(self.Relation._cron_recompute_is_current(), 0)
+
     def test_no_relations_returns_empty(self):
         self.assertEqual(self.Relation.relations_for_partner(self.person.id), [])
 

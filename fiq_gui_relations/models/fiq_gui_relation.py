@@ -102,6 +102,32 @@ class FiqGuiRelation(models.Model):
                         type=rec.type_id.name, side=label, name=partner.display_name))
 
     @api.model
+    def _cron_recompute_is_current(self):
+        """Refresh is_current daily.
+
+        is_current is stored so it can be searched and grouped, but a stored compute only
+        recalculates when a DEPENDENCY changes - and time passing is not a dependency. A
+        relation that ended last night would keep reading as current until something
+        happened to touch the row.
+
+        Only rows whose stored value actually disagrees with today are recomputed, so the
+        job stays cheap on a table that mostly holds settled history.
+        """
+        today = fields.Date.context_today(self)
+        stale = self.search([
+            "|",
+            # Marked current, but the end date has passed.
+            "&", ("is_current", "=", True), ("date_end", "<", today),
+            # Marked not current, but the window now includes today.
+            "&", "&", ("is_current", "=", False),
+            "|", ("date_end", "=", False), ("date_end", ">=", today),
+            "|", ("date_start", "=", False), ("date_start", "<=", today),
+        ])
+        if stale:
+            stale._compute_is_current()
+        return len(stale)
+
+    @api.model
     def relations_for_partner(self, partner_id, only_current=False):
         """Every relation the partner takes part in, from either side, each already
         turned around so it reads correctly from that partner's point of view.
