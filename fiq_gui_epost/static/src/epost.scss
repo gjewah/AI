@@ -90,11 +90,29 @@
   .home.on,.home:hover{border-color:var(--accent)}
   .sh{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:12px 6px 6px}
   .nav{display:flex;flex-direction:column;gap:1px}
-  .nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid transparent;background:transparent;border-radius:8px;padding:8px 10px;font-size:12.5px;font-weight:600;color:var(--ink)}
+  // Gjermund 19.07.2026: «gjør fargekodene mer fremtredende». Fargen lå kun i den lille
+  // koden + en 9px prikk — områdene var ikke til å skille på et blikk. Nå bærer HVER rad
+  // en fargestripe i venstrekant (samme grep som fargeboksene på forsiden bruker), så
+  // øyet finner «2 Adm» vs «3 Drift» uten å lese teksten.
+  .nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid transparent;background:transparent;border-radius:8px;padding:8px 10px 8px 13px;font-size:12.5px;font-weight:600;color:var(--ink);position:relative;overflow:hidden}
+  .nav button::before{content:"";position:absolute;left:0;top:3px;bottom:3px;width:4px;
+                      border-radius:0 3px 3px 0;background:var(--nc,transparent)}
   .nav button:hover{background:var(--surface-2)}
-  .nav button.on{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 28%,transparent);color:var(--accent)}
+  .nav button:hover::before{top:0;bottom:0}
+  // Valgt rad: fargen tar over hele raden i stedet for standard blå, så det er tydelig
+  // BÅDE hvilket område du står i og hvilken farge det har.
+  .nav button.on{background:color-mix(in srgb,var(--nc,var(--accent)) 13%,transparent);
+                 border-color:color-mix(in srgb,var(--nc,var(--accent)) 38%,transparent);
+                 color:var(--ink);font-weight:700}
+  .nav button.on::before{top:0;bottom:0;width:5px}
   .nav .dot{width:9px;height:9px;border-radius:3px;background:var(--nc,var(--accent));flex:none}
-  .nav .code{font-family:var(--mono);font-size:10.5px;font-weight:800;color:var(--nc,var(--accent));flex:none;width:32px}
+  // Koden bærer også fargen — men som farget brikke, ikke løs tekst. Da leses «2.30»
+  // som en etikett med tilhørighet, og hovedområder (nivå 0) skiller seg fra undernivå.
+  .nav .code{font-family:var(--mono);font-size:10px;font-weight:800;flex:none;
+             color:var(--nc,var(--accent));background:color-mix(in srgb,var(--nc,var(--accent)) 14%,transparent);
+             border-radius:5px;padding:2px 5px;min-width:34px;text-align:center}
+  .nav button.niva0{font-weight:750}
+  .nav button.niva0 .code{color:#fff;background:var(--nc,var(--accent))}   // hovedområde: fylt brikke
   // Mappetreet: kollaps per nivå (Gjermund 19.07.2026 — treet var flatt og alltid utbrettet).
   // Pilen er en egen klikkflate INNI raden: pil = fold, resten av raden = åpne mappa.
   .sh.trehead{display:flex;align-items:center;gap:8px}

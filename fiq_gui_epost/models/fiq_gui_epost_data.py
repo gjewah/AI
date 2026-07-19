@@ -485,7 +485,23 @@ class FiqMeldingssenterData(models.AbstractModel):
                 "farge": meta["farge"], "nivaa": meta["nivaa"], "forelder": meta["forelder"],
             })
         # Sorter som taksonomien leses: 1, 2, 2.05, 2.30, 2.61, 3 …
-        taks.sort(key=lambda b: [int(x) if x.isdigit() else 0 for x in b["kode"].split(".")])
+        # STIGENDE, hierarkisk sortering. Foreldre kommer FØR barna sine, og «2.9» < «2.10»
+        # (numerisk, ikke alfabetisk — ellers hadde 2.10 kommet før 2.9).
+        #
+        # ⚠️ Ikke-numeriske ledd må ALDRI bli 0: «0.90 MAL» og «800.01» finnes i den ekte
+        # taksonomien (SDV-økta R01.04, 41 project.type seedet fra SP-områdestrukturen), og
+        # med `else 0` kollapset alt ukjent til samme plass. Vi sorterer derfor på et par:
+        # tallet hvis leddet er numerisk, ellers teksten — tall alltid før tekst.
+        def _sortnokkel(kode):
+            ut = []
+            for ledd in (kode or "").split("."):
+                ledd = ledd.strip()
+                if ledd.isdigit():
+                    ut.append((0, int(ledd), ""))
+                else:
+                    ut.append((1, 0, ledd.lower()))
+            return ut
+        taks.sort(key=lambda b: _sortnokkel(b["kode"]))
         return {"basis": basis, "tverrgaende": tverr, "taksonomi": taks,
                 "firm": firm, "period": period}
 
