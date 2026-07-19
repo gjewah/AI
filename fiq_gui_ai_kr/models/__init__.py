@@ -1,3 +1,4 @@
 # -*- coding: utf-8 -*-
+from . import fiq_ai_spor   # sporet er den varige enheten
 from . import fiq_ai_okt
 from . import fiq_gui_ai_kr_data

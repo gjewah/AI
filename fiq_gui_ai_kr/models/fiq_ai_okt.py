@@ -37,9 +37,36 @@ class FiqAiOkt(models.Model):
     start = fields.Datetime(string="Startet", default=fields.Datetime.now)
     sist_aktiv = fields.Datetime(string="Sist aktiv", default=fields.Datetime.now, index=True)
 
+    # ── SPOR-TILHØRIGHET (Gjermund 19.07) ───────────────────────────────────────
+    # «Alle økter bør klassifiseres og samles inn under respektive prosjektspor.
+    #  De øktene som flyter over flere spor må vise dette.»
+    # Valgt modell: ETT hovedspor + gjestespor. Entydig eierskap, synlig overlapp —
+    # så ingen tror to spor eier det samme. Vises som «AI KR (+ Prosjekt)».
+    spor_id = fields.Many2one(
+        "fiq.ai.spor", string="Hovedspor", index=True, ondelete="set null",
+        help="Sporet økta hører hjemme i. Den varige enheten — økter kommer og går.")
+    gjestespor_ids = fields.Many2many(
+        "fiq.ai.spor", "fiq_ai_okt_gjestespor_rel", "okt_id", "spor_id",
+        string="Jobber også i",
+        help="Andre spor økta skriver i. Eksempel: AI KR eier sjekkliste-motoren "
+             "som ligger i Prosjekt-modulen.")
+    spor_visning = fields.Char(string="Spor", compute="_compute_spor_visning",
+                               help="«AI KR (+ Prosjekt)» — hovedspor med gjestespor bak.")
+
+    @api.depends("spor_id", "spor_id.name", "gjestespor_ids", "gjestespor_ids.name")
+    def _compute_spor_visning(self):
+        for o in self:
+            if not o.spor_id:
+                o.spor_visning = ""
+                continue
+            navn = o.spor_id.kode or o.spor_id.name
+            gjester = [g.kode or g.name for g in o.gjestespor_ids if g != o.spor_id]
+            o.spor_visning = "%s (+ %s)" % (navn, ", ".join(gjester)) if gjester else navn
+
     @api.model
     def registrer_okt(self, name, okt_ref=False, kilde="claude_code",
-                      status="aktiv", sammendrag=False, task_id=False, company_id=False):
+                      status="aktiv", sammendrag=False, task_id=False, company_id=False,
+                      spor_kode=False, gjestespor_koder=False):
         """Claude fører øktregisteret selv (get-or-update på okt_ref, ellers navn).
         Ett kall pr. checkpoint → holder AI KR à jour uten menneske-inngripen.
         Returnerer record-id."""
@@ -62,6 +89,15 @@ class FiqAiOkt(models.Model):
             vals["task_id"] = int(task_id)
         if company_id:
             vals["company_id"] = int(company_id)
+        # Spor-tilhørighet: økta melder hvilket spor den hører til, og hvilke andre
+        # den skriver i. Sporet opprettes hvis det ikke finnes — da slipper vi at en
+        # økt faller utenfor bare fordi ingen har opprettet sporet på forhånd.
+        if spor_kode:
+            vals["spor_id"] = self.env["fiq.ai.spor"]._finn_eller_lag(spor_kode).id
+        if gjestespor_koder:
+            Spor = self.env["fiq.ai.spor"]
+            ids = [Spor._finn_eller_lag(k).id for k in gjestespor_koder if k]
+            vals["gjestespor_ids"] = [(6, 0, ids)]
         if rec:
             rec.write(vals)
             return rec.id
