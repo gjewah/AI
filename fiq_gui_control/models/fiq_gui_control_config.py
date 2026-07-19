@@ -1363,7 +1363,17 @@ class FiqControlRoomConfig(models.Model):
             if Model is None or not hasattr(Model, "get_kr_boks"):
                 continue
             try:
-                boks = Model.get_kr_boks(company_id=company_id)
+                # SAVEPOINT PER FLATE — ikke bare try/except.
+                #
+                # PostgreSQL avbryter HELE transaksjonen ved en SQL-feil. Et bare `except`
+                # fanger unntaket, men transaksjonen er allerede død: hvert påfølgende kall
+                # feiler med «current transaction is aborted», og ÉN ødelagt flate tar ned
+                # hele forsiden. Savepointen ruller tilbake bare denne flatens arbeid, så
+                # resten kan spørres videre. Meldt av AI KR (00.04) 19.07.2026 etter at
+                # nøyaktig dette slo ut i deres modul: én SQL-feil felte fire urelaterte
+                # metoder. Core bruker samme mønster (account/models/chart_template.py:248).
+                with self.env.cr.savepoint():
+                    boks = Model.get_kr_boks(company_id=company_id)
             except Exception:
                 # Deliberately broad: a flate's box is decoration on the front page, never worth
                 # a white screen. Logged with the module name so the owner can find it.
