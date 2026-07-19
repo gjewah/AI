@@ -38,7 +38,7 @@ const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj
 // ⚠️ MÅ FØLGE __manifest__.py sin "version" — ellers tror KR at fanen kjører gammel
 // kode og viser «A new version is installed»-banneret som ALDRI forsvinner, uansett
 // hvor mange ganger brukeren laster på nytt. Bump denne i SAMME commit som manifestet.
-const GUI_BUILD = "19.0.6.91.0";
+const GUI_BUILD = "19.0.6.92.0";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -1462,7 +1462,17 @@ export class FiqControlRoom extends Component {
         const DYN = (this.state.fiqFlater || []).filter((f) => !f.skjult).map((f) => ({
             key: f.key, label: f.label, xmlid: f.xmlid, icon: f.icon || undefined,
         }));
-        const alle = DEF.concat(DYN.filter((d) => !DEF.some((x) => x.key === d.key)));
+        // Dedup på HANDLINGEN, ikke bare nøkkelen. Den faste lista og selvregistreringen
+        // bruker ulike nøkler for SAMME flate (kommunikasjon/komm · gui_rgs/rgs · gui_fin/fin ·
+        // airmm/ai_kr · gui_prj/prj) → menyen fikk dubletter: «Regnskap» to ganger, «Kommunikasjon»
+        // ved siden av «Communication». Gjermund 19.07.2026, med skjermbilde.
+        // Den faste lista vinner: den er oversatt og har brukerens egen rekkefølge.
+        const fastXmlid = new Set(
+            DEF.map((d) => this.state.actions[d.key]).filter(Boolean)
+        );
+        const alle = DEF.concat(
+            DYN.filter((d) => !DEF.some((x) => x.key === d.key) && !fastXmlid.has(d.xmlid))
+        );
         const map = {};
         alle.forEach((d) => { map[d.key] = d; });
         const orden = this.state.navOrder.filter((k) => map[k])
