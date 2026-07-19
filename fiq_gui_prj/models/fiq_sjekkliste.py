@@ -61,12 +61,61 @@ class FiqSjekkliste(models.Model):
         ],
         string="Type", default="arbeid", required=True,
     )
-    task_id = fields.Many2one("project.task", string="Oppgave", ondelete="cascade", index=True)
-    project_id = fields.Many2one("project.project", string="Prosjekt", index=True)
+    # ── GENERISK KOBLING — sjekklista kan henge på HVA SOM HELST ────────────────
+    # Gjermund 19.07.2026: «både sjekkliste og steg for steg forklaringer skal være
+    # redigerbare og kunne opprettes på oppgaver, helst også på prosjekter og på HD og
+    # Feltservice og Salgsmuligheter osv. denne funksjonen kan være på det meste.»
+    #
+    # Hardkodede felt (ett per modell: task_id, project_id, helpdesk_ticket_id,
+    # fsm_id, lead_id …) blir teknisk gjeld fra dag én — hver ny modul krever endring
+    # HER. Derfor Odoos eget mønster for «kan henge på hva som helst»: res_model +
+    # res_id, slik `ir.attachment` og `mail.activity` gjør det. En ny modul kobler seg
+    # på uten en eneste kodelinje i denne motoren.
+    res_model = fields.Char(
+        string="Knyttet til (modell)", index=True,
+        help="Teknisk modellnavn, f.eks. project.task, helpdesk.ticket, crm.lead. "
+             "Sjekklista kan henge på en hvilken som helst Odoo-post.",
+    )
+    res_id = fields.Many2oneReference(
+        string="Knyttet til (post)", model_field="res_model", index=True,
+        help="Id på posten sjekklista hører til.",
+    )
+    res_navn = fields.Char(string="Knyttet til", compute="_compute_res_navn",
+                           help="Menneskelig navn på posten — navn, ikke ID.")
+
+    # ── BAKOVERKOMPATIBLE HJELPEFELT ────────────────────────────────────────────
+    # 🔴 IKKE bare pynt: `project_task.fiq_sjekkliste_ids` er en One2many på task_id, og
+    # den er i aktiv bruk i `fiq_gui_prj_data.get_wbs_tre()` (WBS-treet leser
+    # task.fiq_sjekkliste_ids + fiq_sjekkliste_fremdrift per node, meldt av 00.03
+    # 19.07.2026). Ryker task_id, ryker WBS-treet samtidig.
+    # Derfor: computed + STORE, slik at One2many, søk og gruppering virker som før.
+    task_id = fields.Many2one(
+        "project.task", string="Oppgave", ondelete="cascade", index=True,
+        compute="_compute_koblinger", store=True, readonly=False,
+        help="Utledet av res_model/res_id når lista henger på en oppgave. "
+             "Beholdt så Odoos egne visninger og WBS-treet virker uendret.",
+    )
+    project_id = fields.Many2one(
+        "project.project", string="Prosjekt", index=True,
+        compute="_compute_koblinger", store=True, readonly=False,
+        help="Settes direkte når lista henger på et prosjekt, ellers arvet fra oppgaven.",
+    )
     company_id = fields.Many2one(
         "res.company", string="Firma", index=True,
         default=lambda self: self.env.company,
         help="Tenant-isolert. Scope hentes fra sesjonen — aldri fra klient.",
+    )
+
+    # ── MAL ─────────────────────────────────────────────────────────────────────
+    # «FDV — produktdokumentasjon» skrives ÉN gang og gjenbrukes på 50 leiligheter.
+    # Samme mønster som 0.90-malprosjektene. Kopien redigeres fritt uten å røre malen.
+    er_mal = fields.Boolean(
+        string="Er mal", index=True,
+        help="Maler henger ikke på en post — de kopieres til en når de skal brukes.",
+    )
+    mal_id = fields.Many2one(
+        "fiq.sjekkliste", string="Laget fra mal", ondelete="set null", index=True,
+        help="Hvilken mal denne kopien kom fra. Kopien er selvstendig og kan endres fritt.",
     )
     versjon = fields.Char(string="Versjon", default="1.0", readonly=True,
                           help="ISO 9001: bumpes ved hver endring. Kan rulles tilbake.")
@@ -78,6 +127,67 @@ class FiqSjekkliste(models.Model):
     # addons/project/models/project_task.py i levende 19-installasjon 2026-07-16).
     fremdrift = fields.Float(string="Utført (%)", compute="_compute_fremdrift", store=True,
                              aggregator="avg")
+
+    @api.depends("res_model", "res_id")
+    def _compute_koblinger(self):
+        """Hold task_id/project_id i synk med den generiske koblingen.
+
+        Skrives task_id direkte (gammel kode, Odoos egne visninger, One2many-en på
+        oppgaven), speiles det tilbake til res_model/res_id i `create`/`write` — se
+        `_speil_til_generisk`. Begge veier virker, så ingenting brekker.
+        """
+        for s in self:
+            if s.res_model == "project.task" and s.res_id:
+                oppgave = self.env["project.task"].browse(s.res_id).exists()
+                s.task_id = oppgave.id or False
+                # Prosjektet arves fra oppgaven — praktisk for gruppering og filtre.
+                s.project_id = oppgave.project_id.id or False
+            elif s.res_model == "project.project" and s.res_id:
+                s.task_id = False
+                s.project_id = self.env["project.project"].browse(s.res_id).exists().id or False
+            elif not s.res_model:
+                # Ingen generisk kobling satt — la eksisterende verdier stå (mal, eller
+                # rad opprettet før omleggingen).
+                s.task_id = s.task_id
+                s.project_id = s.project_id
+            else:
+                # Knyttet til noe annet (helpdesk, feltservice, salg …) — da finnes
+                # verken oppgave eller prosjekt, og det er helt i orden.
+                s.task_id = False
+                s.project_id = False
+
+    @api.depends("res_model", "res_id")
+    def _compute_res_navn(self):
+        """Menneskelig navn på posten lista henger på — navn, ikke ID."""
+        for s in self:
+            s.res_navn = False
+            if not (s.res_model and s.res_id):
+                continue
+            if s.res_model not in self.env:
+                # Modulen kan være avinstallert; da skal vi ikke krasje.
+                s.res_navn = "%s/%s" % (s.res_model, s.res_id)
+                continue
+            post = self.env[s.res_model].browse(s.res_id).exists()
+            s.res_navn = post.display_name if post else False
+
+    def _speil_til_generisk(self, vals):
+        """Skrives task_id/project_id direkte, sett den generiske koblingen tilsvarende.
+
+        Uten dette ville en post opprettet fra Odoos egen oppgave-fane (som setter
+        task_id via One2many-en) fått res_model tomt, og forsvunnet ut av den generiske
+        visningen. Begge veier må virke — ellers er omleggingen en felle.
+        """
+        if vals.get("task_id") and not vals.get("res_model"):
+            vals["res_model"] = "project.task"
+            vals["res_id"] = vals["task_id"]
+        elif vals.get("project_id") and not vals.get("res_model") and not vals.get("task_id"):
+            vals["res_model"] = "project.project"
+            vals["res_id"] = vals["project_id"]
+        return vals
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        return super().create([self._speil_til_generisk(dict(v)) for v in vals_list])
 
     @api.depends("punkt_ids", "punkt_ids.utfoert")
     def _compute_fremdrift(self):
@@ -95,6 +205,50 @@ class FiqSjekkliste(models.Model):
                 s.versjon = "%.1f" % (float(s.versjon or "1.0") + 0.1)
             except (ValueError, TypeError):
                 s.versjon = "1.0"
+
+    def write(self, vals):
+        # Samme speiling som i create: settes task_id/project_id direkte (Odoos egne
+        # visninger gjør det), skal den generiske koblingen følge med.
+        return super().write(self._speil_til_generisk(dict(vals)))
+
+    # ── MAL → BRUK ──────────────────────────────────────────────────────────────
+    def kopier_til(self, res_model, res_id):
+        """Kopier denne lista (typisk en mal) til en post — med alle punkter.
+
+        Kopien er SELVSTENDIG: den kan redigeres, punkter legges til og fjernes, uten
+        at malen endres. Det er hele poenget — «FDV — produktdokumentasjon» skrives én
+        gang og brukes på 50 leiligheter, der hver leilighet kan avvike.
+
+        Kvitteringer følger ALDRI med. En kopi starter alltid ukvittert; alt annet
+        ville vært å arve andres signatur.
+        """
+        self.ensure_one()
+        if res_model not in self.env:
+            raise ValidationError("Ukjent modell «%s»." % res_model)
+        if not self.env[res_model].browse(res_id).exists():
+            raise ValidationError("Fant ikke posten det skal kopieres til.")
+
+        ny = self.copy({
+            "name": self.name,
+            "er_mal": False,
+            "mal_id": self.id if self.er_mal else (self.mal_id.id or False),
+            "res_model": res_model,
+            "res_id": res_id,
+            "versjon": "1.0",
+            "punkt_ids": False,   # punktene kopieres eksplisitt under, uten kvitteringer
+        })
+        for p in self.punkt_ids:
+            self.env["fiq.sjekkliste.punkt"].create({
+                "sjekkliste_id": ny.id,
+                "sequence": p.sequence,
+                "name": p.name,
+                "beskrivelse": p.beskrivelse,
+                "krav_dok": p.krav_dok,
+                "krav_foto": p.krav_foto,
+                "krav_sign": p.krav_sign,
+                # utfoert/kvitt_* med vilje IKKE kopiert — se docstring.
+            })
+        return ny
 
     def apne_flate(self):
         """Åpne OWL-sjekkliste-flaten forhåndsvalgt på DENNE lista.

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.15.0",
+    "version": "19.0.1.16.0",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
@@ -11,6 +11,28 @@ FIQ GUI Prosjekt
 KANON «Odoo-native først» (Gjermund 2026-07-16): KR er et LAG, ikke systemet.
 Testen: «Virker dette i native Odoo uten KR?» — feltene her er ekte Odoo-felt
 med Odoo-visning. Slås KR av, står de fortsatt.
+
+19.0.1.16.0 — SJEKKLISTER PÅ HVA SOM HELST + MALER (Gjermund 19.07.2026):
+ * «både sjekkliste og steg for steg forklaringer skal være redigerbare og kunne
+   opprettes på oppgaver, helst også på prosjekter og på HD og Feltservice og
+   Salgsmuligheter osv. denne funksjonen kan være på det meste.»
+ * GENERISK KOBLING `res_model` + `res_id` (Odoos eget mønster fra ir.attachment /
+   mail.activity). Hardkodede felt per modell (task_id, helpdesk_ticket_id, lead_id …)
+   ville krevd endring i motoren for HVER ny modul — teknisk gjeld fra dag én.
+   Nå kobles en ny modul på uten en eneste kodelinje her.
+ * `fiq.sjekkliste.mixin` — en modell får sjekklister med ÉN linje:
+   _inherit = ["helpdesk.ticket", "fiq.sjekkliste.mixin"]
+   Gir fiq_sjekkliste_ids, fremdrift, antall + apne_sjekkliste_flate().
+ * PROSJEKT koblet på nå (fane «Sjekklister» på project.project). HD/feltservice/salg
+   kobles på når modulene er der — motoren er allerede klar.
+ * 🔴 `task_id` BEHOLDT som computed+store, ikke fjernet: get_wbs_tre() leser
+   task.fiq_sjekkliste_ids per node (00.03, 19.07). Ryker task_id, ryker WBS-treet.
+   Speiling går BEGGE veier (create/write) så Odoos egne visninger virker uendret.
+ * MALER: er_mal + kopier_til(res_model, res_id). «FDV — produktdokumentasjon» skrives
+   ÉN gang og kopieres til 50 leiligheter; kopien redigeres fritt uten å røre malen.
+   Kvitteringer følger ALDRI med en kopi — å arve andres signatur er utelukket.
+ * Migrering 19.0.1.16.0/post-migrate.py fyller res_model/res_id på eksisterende rader
+   (SQL, ikke ORM — computen går motsatt vei). Idempotent.
 
 19.0.1.15.0 — WBS-TRE MED TIMER MOT BUDSJETT (kravspek batch 15):
  🔴 TO FEIL RETTET FRA 1.14.0:

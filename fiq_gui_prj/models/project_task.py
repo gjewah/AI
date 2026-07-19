@@ -14,10 +14,26 @@ NUMMER-MODELLEN (bland dem ALDRI — jf. dashboard_kontrollrom_spec §6):
 from odoo import api, fields, models
 
 
+class ProjectProject(models.Model):
+    """Prosjekter får sjekklister via mixin-en — samme motor som alt annet.
+
+    Gjermund 19.07.2026: sjekklister skal kunne opprettes «på oppgaver, helst også på
+    prosjekter og på HD og Feltservice og Salgsmuligheter osv.» Dette er prosjekt-halvdelen;
+    HD/feltservice/salg kobles på med samme ene linje når modulene er der.
+    """
+    _name = "project.project"
+    _inherit = ["project.project", "fiq.sjekkliste.mixin"]
+
+
 class ProjectTask(models.Model):
     _inherit = "project.task"
 
     # Sjekklister på oppgaven — punktene ER stegene (færre oppgaver).
+    # 🔴 BEHOLDT PÅ `task_id`, IKKE flyttet til mixin-ens res_id: `get_wbs_tre()` i
+    # fiq_gui_prj_data leser `task.fiq_sjekkliste_ids` + `fiq_sjekkliste_fremdrift` per
+    # node i WBS-treet (meldt av 00.03 19.07.2026). Bytter vi bærefeltet her, ryker
+    # WBS-treet samtidig. `task_id` holdes i synk med res_model/res_id av computen i
+    # fiq_sjekkliste.py, så begge veier virker.
     fiq_sjekkliste_ids = fields.One2many(
         "fiq.sjekkliste", "task_id", string="Sjekklister",
     )

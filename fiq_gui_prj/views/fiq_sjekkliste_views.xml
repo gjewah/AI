@@ -22,10 +22,17 @@
                         <group>
                             <field name="nivaa"/>
                             <field name="type_liste"/>
+                            <field name="er_mal"/>
                         </group>
                         <group>
-                            <field name="task_id"/>
-                            <field name="project_id"/>
+                            <!-- Generisk kobling: lista kan henge på hva som helst.
+                                 Maler henger ikke på noe — de kopieres til en post. -->
+                            <field name="res_model" invisible="er_mal"
+                                   placeholder="project.task, helpdesk.ticket, crm.lead …"/>
+                            <field name="res_navn" invisible="er_mal or not res_model"/>
+                            <field name="task_id" invisible="er_mal"/>
+                            <field name="project_id" invisible="er_mal"/>
+                            <field name="mal_id" invisible="not mal_id" readonly="1"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                             <field name="versjon"/>
                         </group>
@@ -83,13 +90,20 @@
                 <field name="name"/>
                 <field name="task_id"/>
                 <field name="project_id"/>
+                <field name="res_model"/>
                 <filter name="ikke_ferdig" string="Ikke ferdig" domain="[('fremdrift','&lt;',100)]"/>
                 <filter name="ferdig" string="Ferdig" domain="[('fremdrift','=',100)]"/>
+                <separator/>
+                <!-- Maler vs. lister i bruk. Standard er å SKJULE maler i lista, ellers
+                     drukner de ekte listene slik 0.90-malprosjektene gjorde i oversikten. -->
+                <filter name="kun_maler" string="Kun maler" domain="[('er_mal','=',True)]"/>
+                <filter name="ikke_maler" string="Skjul maler" domain="[('er_mal','=',False)]"/>
                 <!-- Odoo 19: <group> i søkevisning tar hverken expand= eller string=. -->
                 <group>
                     <filter name="g_nivaa" string="Nivå" context="{'group_by':'nivaa'}"/>
                     <filter name="g_type" string="Type" context="{'group_by':'type_liste'}"/>
                     <filter name="g_prosjekt" string="Prosjekt" context="{'group_by':'project_id'}"/>
+                    <filter name="g_res_model" string="Knyttet til" context="{'group_by':'res_model'}"/>
                 </group>
             </search>
         </field>
@@ -140,6 +154,41 @@
                 <button name="apne_flate" type="object" string="Åpne flate"
                         class="btn-primary" icon="fa-check-square-o"
                         invisible="not id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!--
+      Sjekklister på PROSJEKTET (native) — Gjermund 19.07.2026: «på oppgaver, helst også
+      på prosjekter og på HD og Feltservice og Salgsmuligheter osv.»
+      Feltene kommer fra `fiq.sjekkliste.mixin`; en ny modul får det samme med ÉN linje
+      (_inherit = [..., "fiq.sjekkliste.mixin"]) uten endring i sjekkliste-motoren.
+    -->
+    <record id="view_project_form_fiq_sjekkliste" model="ir.ui.view">
+        <field name="name">project.project.form.fiq.sjekkliste</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Sjekklister" name="fiq_sjekklister">
+                    <div class="oe_button_box">
+                        <button name="apne_sjekkliste_flate" type="object"
+                                string="Åpne sjekkliste-flate" class="btn-primary"
+                                icon="fa-check-square-o" invisible="not id"/>
+                    </div>
+                    <field name="fiq_sjekkliste_fremdrift" widget="progressbar" readonly="1"/>
+                    <field name="fiq_sjekkliste_ids" nolabel="1"
+                           context="{'default_res_model': 'project.project', 'default_res_id': id}">
+                        <list>
+                            <field name="name"/>
+                            <field name="type_liste"/>
+                            <field name="antall_ok" string="Utført"/>
+                            <field name="antall_punkt" string="Av"/>
+                            <field name="fremdrift" widget="progressbar"/>
+                            <field name="versjon"/>
+                        </list>
+                    </field>
+                </page>
             </xpath>
         </field>
     </record>
