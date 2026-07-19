@@ -25,7 +25,7 @@
 
         <record id="flate_rgs" model="ir.config_parameter">
             <field name="key">fiq_gui_control.flate.rgs</field>
-            <field name="value">{"label": "Accounting", "xmlid": "fiq_gui_rgs.action_fiq_gui_rgs", "sequence": 75}</field>
+            <field name="value">{"label": {"en_US": "Accounting", "nb_NO": "Regnskap"}, "xmlid": "fiq_gui_rgs.action_fiq_gui_rgs", "sequence": 75}</field>
         </record>
 
     </data>

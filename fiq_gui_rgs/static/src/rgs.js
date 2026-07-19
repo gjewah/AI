@@ -26,6 +26,7 @@ export class FiqGuiRgs extends Component {
 
     setup() {
         this.orm = useService("orm");
+        this.action = useService("action");
         this.forpliktelser = FORPLIKTELSER;
         this.state = useState({ laster: true, data: null, kritiske: [], feil: null });
 
@@ -46,6 +47,13 @@ export class FiqGuiRgs extends Component {
                 this.state.laster = false;
             }
         });
+    }
+
+    /** Klikk på en bøtte → Odoos egen fakturaliste, filtrert på den bøtta.
+     *  «Tall → klikk → liste med det som ligger bak. Ikke tall som blindvei.» */
+    async apneBotte(key) {
+        const handling = await this.orm.call("fiq.gui.rgs.data", "apne_botte", [key]);
+        this.action.doAction(handling);
     }
 
     /** Beløp i hele kroner med tusenskille — norsk format, ingen desimalstøy. */

@@ -105,6 +105,17 @@
     padding: 10px;
   }
 
+  // Klikkbare tall — «tall → klikk → liste», aldri blindvei.
+  .fiqr-klikk {
+    cursor: pointer;
+    transition: border-color .12s, box-shadow .12s;
+
+    &:hover {
+      border-color: var(--fin);
+      box-shadow: 0 1px 6px rgba(68, 114, 196, .18);
+    }
+  }
+
   .fiqr-botte-haster { border-top-color: var(--haster); }
   .fiqr-botte-kritisk { border-top-color: var(--kritisk); }
 

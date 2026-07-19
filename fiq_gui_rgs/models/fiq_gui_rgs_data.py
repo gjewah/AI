@@ -100,6 +100,45 @@ class FiqGuiRgsData(models.AbstractModel):
         }
 
     @api.model
+    def apne_botte(self, key):
+        """Åpner Odoos EGEN fakturaliste, filtrert på bøtta brukeren klikket.
+
+        Gjermund/GUI Prosjekt 19.07: «tall → klikk → liste med det som ligger bak.
+        Ikke tall som blindvei.»
+
+        Native-først i praksis: vi bygger ingen egen liste — vi sender brukeren til
+        Odoos fakturavisning med riktig filter. Da får hun alle Odoos egne verktøy
+        (sortering, gruppering, eksport) uten at vi gjenskaper dem.
+        """
+        i_dag = fields.Date.context_today(self)
+        alle = self.INN_TYPER + self.UT_TYPER
+
+        if key == "inn":
+            domene, tittel = self._basis_domene(self.INN_TYPER), "Inngående"
+        elif key == "ut":
+            domene, tittel = self._basis_domene(self.UT_TYPER), "Utgående"
+        elif key == "haster":
+            domene = self._basis_domene(alle) + [
+                ("invoice_date_due", ">=", i_dag),
+                ("invoice_date_due", "<=", fields.Date.add(i_dag, days=7)),
+            ]
+            tittel = "Haster"
+        elif key == "kritisk":
+            domene = self._basis_domene(alle) + [("invoice_date_due", "<", i_dag)]
+            tittel = "Kritisk"
+        else:
+            domene, tittel = self._basis_domene(alle), "Ubetalt"
+
+        return {
+            "type": "ir.actions.act_window",
+            "name": tittel,
+            "res_model": "account.move",
+            "view_mode": "list,form",  # Odoo 19: «list», ikke «tree»
+            "domain": domene,
+            "context": {"create": False},  # lesing fra en oversikt — ikke opprettelse
+        }
+
+    @api.model
     def get_kr_boks(self, company_id=False):
         """Samleboks til Kontrollrom-forsiden (KR-kontrakt, verifisert i
         `fiq_gui_control_config.py:1335`).

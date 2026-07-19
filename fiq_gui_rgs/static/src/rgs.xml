@@ -33,8 +33,11 @@
                     <span class="fiqr-fakta">BOKFØRT</span>
                 </div>
                 <div class="fiqr-botter">
+                    <!-- Klikkbar: tall → Odoos egen fakturaliste, filtrert. Ikke blindvei. -->
                     <div t-foreach="state.data.botter" t-as="b" t-key="b.key"
-                         class="fiqr-botte"
+                         class="fiqr-botte fiqr-klikk"
+                         t-on-click="() => this.apneBotte(b.key)"
+                         t-att-title="'Åpne ' + b.label.toLowerCase() + ' i fakturalisten'"
                          t-att-class="{
                             'fiqr-botte-haster': b.key === 'haster',
                             'fiqr-botte-kritisk': b.key === 'kritisk'

@@ -25,7 +25,7 @@
 
         <record id="flate_fin" model="ir.config_parameter">
             <field name="key">fiq_gui_control.flate.fin</field>
-            <field name="value">{"label": "Finance", "xmlid": "fiq_gui_fin.action_fiq_gui_fin", "sequence": 70}</field>
+            <field name="value">{"label": {"en_US": "Finance", "nb_NO": "Finans"}, "xmlid": "fiq_gui_fin.action_fiq_gui_fin", "sequence": 70}</field>
         </record>
 
     </data>
