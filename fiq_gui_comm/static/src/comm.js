@@ -21,11 +21,59 @@ export class FiqKommunikasjon extends Component {
             loading: true, firms: [], current_firm: false, user: "",
             kryss_firma: false,          // 000-rettighet — fra sesjonen, aldri fra klienten
             kanaler: [], aktivKanal: "alle",
+            grupper: { basis: [], tverrgaende: [], omraade: [] },   // fargeboksene (originalen)
+            presence: [], visTomme: false,
+            krMeny: [],                  // hovedmenyen fra KR — I TILLEGG til mappetreet
         });
         onWillStart(async () => {
             const cfg = await this.orm.call(DATA, "get_my_config", []);
             Object.assign(this.state, cfg, { loading: false });
+            await this.lastOversikt();
         });
+    }
+
+    /** Forsiden: fargeboksene + Til stede + KR-menyen. Ett kall, ikke tre. */
+    async lastOversikt() {
+        const o = await this.orm.call(DATA, "get_oversikt", [this.state.current_firm || false]);
+        this.state.grupper = o.grupper || { basis: [], tverrgaende: [], omraade: [] };
+        this.state.presence = o.presence || [];
+        this.state.krMeny = o.kr_meny || [];
+    }
+
+    /** Bokser som skal vises. Tomme skjules til brukeren ber om dem —
+     *  Gjermund: «vær dynamisk, ikke vis bokser som er tomme». */
+    bokser(gruppe) {
+        const alle = (this.state.grupper && this.state.grupper[gruppe]) || [];
+        return this.state.visTomme ? alle : alle.filter((b) => !b.tom);
+    }
+
+    harBokser() {
+        return ["basis", "tverrgaende", "omraade"].some((g) => this.bokser(g).length);
+    }
+
+    /** Antall tomme bokser — så bryteren kan si hvor mange den skjuler. */
+    antallTomme() {
+        const g = this.state.grupper || {};
+        return ["basis", "tverrgaende", "omraade"]
+            .reduce((n, k) => n + ((g[k] || []).filter((b) => b.tom).length), 0);
+    }
+
+    vekslTomme() { this.state.visTomme = !this.state.visTomme; }
+
+    /** Klikk en fargeboks → kanalens flate åpnes FILTRERT på boksen
+     *  («Haster» → alle hastende meldinger). */
+    async aapneBoks(b) {
+        const act = await this.orm.call(DATA, "aapne_boks", [b.kode, b.kanal || "epost"]);
+        if (act) this.action.doAction(act);
+    }
+
+    /** Menypunkt i KR-menyen: åpne flaten uten å gå veien om Kontrollrommet. */
+    aapneKrFlate(f) {
+        if (f.xmlid) this.action.doAction(f.xmlid);
+    }
+
+    boksCls(b) {
+        return "boks c_" + (b.farge || "graa") + (b.tom ? " tom" : "");
     }
 
     /** Klikk en kanal: har den egen flate, åpnes den; ellers vises den inne i paraplyen. */

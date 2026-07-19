@@ -9,7 +9,23 @@
   --line:#E0E5EC;--line-soft:#EBEEF2;--accent:#4C63D2;--accent-ink:#fff;--accent-soft:#E9ECFB;
   --shadow:0 8px 26px -18px rgba(20,30,50,.5);--mono:ui-monospace,"Cascadia Code","SF Mono",Consolas,monospace;
   --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--r:12px;
-  --graa:#7A8593;--blaa:#0070C0;--lilla:#7030A0;--gronn:#70AD47;--oransje:#ED7D31;--tealx:#0D9488;
+  // FARGEKART — kanonisk (brand/fiq_fargekart_omrader.md, lest fra 41 områdeikoner +
+  // Gjermunds korreksjoner 18.07.2026). Verdiene er IDENTISKE med epost-kanalens, fordi
+  // boksene kommer DERFRA: avvik her ville gitt samme boks to farger i to flater.
+  // 🛑 De tre grønne (3 · 5 · 7) er MÅLT for å kunne skilles side om side — endres én,
+  //    må de andre måles på nytt.
+  --graa:#7A8593;          // 0 Info
+  --blaa:#0078CC;          // 2 Admin
+  --blaam:#243C6C;         // 1 Ledelse · 2.70/2.71/2.80 finans
+  --lilla:#7830A8;         // 2.90 IT · 2.91 ERP · 8.50–8.99 AI
+  --gronnk:#00A83C;        // 3 Drift — knall grønn
+  --gronnm:#26521A;        // 5 Marked — mørk kraftig grønn
+  --gronnl:#95D97A;        // 7 Prosjekter — lysere grønn
+  --oransje:#E47830;       // 4 Logistikk
+  --rod:#D80000;           // 6 Salg
+  --tealx:#0E7C86;         // 8 FAG — grønn/blå
+  --turkis:#78D8D8;        // 9 Privat
+  --gronn:#70AD47;         // reserve/øvrig bruk
   font-family:var(--body);color:var(--ink);background:var(--ground);line-height:1.45;
   -webkit-font-smoothing:antialiased;padding:clamp(12px,2vw,22px);min-height:100%;height:100%;overflow-y:auto;box-sizing:border-box;
 
@@ -61,7 +77,66 @@
   .kkn{font-size:26px;font-weight:790;letter-spacing:-.03em;color:var(--c,var(--accent))}
   .kkl{font-size:10.5px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}
 
-  // Fargekart
-  .c_accent{--c:var(--accent)}.c_graa{--c:var(--graa)}.c_blaa{--c:var(--blaa)}.c_lilla{--c:var(--lilla)}
-  .c_gronn{--c:var(--gronn)}.c_oransje{--c:var(--oransje)}.c_tealx{--c:var(--tealx)}
+  // ---- TIL STEDE ----------------------------------------------------------------
+  .presence{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 15px;margin-bottom:11px;
+            border-radius:11px;background:color-mix(in srgb,#2AA79E 11%,var(--surface));
+            border:1px solid color-mix(in srgb,#2AA79E 22%,var(--line));box-shadow:var(--shadow)}
+  .presence .pl{font-size:12.5px;font-weight:800;letter-spacing:.02em;text-transform:uppercase}
+  .pchips{display:flex;gap:10px;flex-wrap:wrap}
+  .pc{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#fff;
+      padding:5px 14px 5px 5px;border-radius:100px;background:#dc2626}
+  .pc.til{background:#16a34a}.pc.fra{background:#dc2626}.pc.mote{background:#d97706}
+  .pc .pa{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.28);
+          display:grid;place-items:center;font-size:8.5px;font-weight:800;flex:none}
+
+  // ---- TO MENYER + innhold ------------------------------------------------------
+  // Gjermund 19.07.2026: KR-hovedmenyen skal stå fast til venstre I TILLEGG til
+  // Kommunikasjons eget mappetre. Derfor to bolker i samme kolonne — aldri blandet,
+  // hver med sin overskrift, så det alltid er tydelig hvilket system du er i.
+  .wrap{display:grid;grid-template-columns:212px 1fr;gap:14px;align-items:start}
+  @media (max-width:860px){.wrap{grid-template-columns:1fr}}
+  .side{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+        box-shadow:var(--shadow);padding:12px;position:sticky;top:10px}
+  .side .sh{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+            color:var(--muted);margin:4px 6px 8px}
+  .side .krnav{margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line-soft)}
+  .nav{display:flex;flex-direction:column;gap:2px}
+  .nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+              border:1px solid transparent;background:transparent;color:var(--ink);
+              border-radius:9px;padding:9px 11px;font-size:13px;font-weight:600}
+  .nav button:hover{background:var(--surface-2)}
+  .nav button.on{background:color-mix(in srgb,var(--accent) 12%,transparent);
+                 border-color:color-mix(in srgb,var(--accent) 30%,transparent);color:var(--accent)}
+  .nav .dot{width:9px;height:9px;border-radius:3px;background:var(--muted);flex:none}
+  .nav .nl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .nav .c{font-family:var(--mono);font-size:11px;color:var(--muted);flex:none}
+  .nav .ki{font-size:14px;flex:none}
+
+  // ---- FORSIDEN: fargeboksene (ORIGINALEN, ikke hjulene) -------------------------
+  .ohead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 2px 10px}
+  .ohead .oh{font-size:12px;color:var(--muted)}
+  .vt{margin-left:auto;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);
+      border-radius:8px;padding:6px 11px;font-size:11.5px;font-weight:640}
+  .vt:hover{border-color:var(--accent);color:var(--ink)}
+  .gh{font-size:11px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;
+      letter-spacing:.08em;margin:15px 2px 8px}
+  .bokser{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:9px}
+  .boks{border:1px solid var(--line);background:var(--surface);border-radius:11px;
+        padding:11px 12px 11px 14px;display:flex;flex-direction:column;gap:6px;text-align:left;
+        min-height:78px;box-shadow:var(--shadow);position:relative;overflow:hidden;color:var(--ink)}
+  .boks::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c,var(--accent))}
+  .boks:hover{border-color:var(--c,var(--accent));transform:translateY(-1px)}
+  .boks .bl{display:flex;align-items:center;gap:7px;min-width:0}
+  .boks .kode{font-family:var(--mono);font-size:11px;font-weight:800;color:var(--c,var(--accent));flex:none}
+  .boks .bn{font-size:12px;font-weight:660;line-height:1.15;overflow:hidden;text-overflow:ellipsis}
+  .boks .n{font-size:22px;font-weight:780;letter-spacing:-.03em;margin-top:auto}
+  .boks.tom{opacity:.45}                 // vises kun når «Vis tomme» er på
+
+  // Fargekart — klassenavnene MÅ dekke alle verdier `_omraade_farge()` kan gi,
+  // ellers faller en boks stille tilbake til standardfargen og skiller seg ikke.
+  .c_accent{--c:var(--accent)}.c_graa{--c:var(--graa)}.c_blaa{--c:var(--blaa)}
+  .c_blaam{--c:var(--blaam)}.c_lilla{--c:var(--lilla)}
+  .c_gronnk{--c:var(--gronnk)}.c_gronnm{--c:var(--gronnm)}.c_gronnl{--c:var(--gronnl)}
+  .c_gronn{--c:var(--gronn)}.c_oransje{--c:var(--oransje)}.c_rod{--c:var(--rod)}
+  .c_tealx{--c:var(--tealx)}.c_turkis{--c:var(--turkis)}
 }

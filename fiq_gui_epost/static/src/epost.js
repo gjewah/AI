@@ -46,6 +46,19 @@ export class FiqMeldingssenter extends Component {
             Object.assign(this.state, cfg, { loading: false });
             await this.lastBokser();
             // Lander på OVERSIKTEN (forsiden) — ikke i innboksen. E-post er et underpunkt du går inn i.
+            //
+            // UNNTAK: kom vi hit fra en fargeboks i Kommunikasjon (paraplyen sender `fiq_boks`
+            // i konteksten), skal vi åpne DEN boksen med én gang. Gjermund 18.07.2026: «viktig
+            // at riktig mappe åpnes når jeg trykker på en av boksene — da åpnes f.eks. "Haster"
+            // alle meldinger som haster». Uten dette lander klikket i Innboks, og filteret er tapt.
+            const boks = this.props.action?.context?.fiq_boks;
+            if (boks) {
+                const alle = [...(this.state.basis || []), ...(this.state.tverr || []),
+                              ...(this.state.taks || [])];
+                const t = alle.find((b) => b.kode === boks);
+                await this.aapneBoks(boks, t ? t.navn : boks);
+                requestAnimationFrame(() => this.lastBredder());
+            }
         });
         onMounted(() => this.lastBredder());     // gjenopprett dragde kolonnebredder
     }

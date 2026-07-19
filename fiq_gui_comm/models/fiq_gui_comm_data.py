@@ -87,6 +87,86 @@ class FiqKommunikasjonData(models.AbstractModel):
             "kanaler": self.get_kanaler(),
         }
 
+    # ---- Oversikten (forsiden): fargebokser + Til stede ------------------------------
+    # ORIGINALEN (V00.04-designet), ikke hjulene fra Forslag A. Gjermund 18.07.2026:
+    # «vi ble enige om å kutte hjulene og ta den originale som var før den».
+    # Paraplyen EIER oversikten; kanalene leverer boksene inn via registeret.
+
+    def _bokser(self):
+        """Boks-data. Kanal-moduler UTVIDER denne (super() + append), som _kanaler().
+        Hver boks: {kode, navn, count, farge, gruppe} — gruppe = basis|tverrgaende|omraade."""
+        return []
+
+    @api.model
+    def get_oversikt(self, firm=False):
+        """Forsiden: fargeboksene (basis · tverrgående · områder 0–8) + «Til stede».
+        Tomme bokser merkes så flaten kan skjule dem til de får innhold."""
+        bokser = self._bokser()
+        for b in bokser:
+            b["tom"] = not int(b.get("count") or 0)
+        grupper = {"basis": [], "tverrgaende": [], "omraade": []}
+        for b in bokser:
+            grupper.setdefault(b.get("gruppe", "omraade"), []).append(b)
+        return {"grupper": grupper, "presence": self.get_presence(),
+                "kr_meny": self.get_kr_meny()}
+
+    @api.model
+    def get_kr_meny(self):
+        """Hovedmenyen fra Kontrollrommet — skal stå fast til venstre, I TILLEGG til
+        Kommunikasjons eget mappetre (Gjermund 19.07.2026: «i tillegg»).
+
+        Vi leser KR-kjernens EGEN `get_fiq_flater()` — samme kilde Kontrollrommet selv
+        bruker. Da kan menyen aldri drifte fra KRs: melder en ny modul seg inn der, dukker
+        den opp her også, uten at denne fila endres.
+
+        Fail-closed til tom liste: mangler kjernen, viser vi ingen KR-meny framfor å gjette
+        på en. En feil meny er verre enn ingen.
+        """
+        KR = "fiq.gui.control.config"
+        if KR in self.env and hasattr(self.env[KR], "get_fiq_flater"):
+            try:
+                return self.env[KR].get_fiq_flater() or []
+            except Exception:
+                return []
+        return []
+
+    @api.model
+    def aapne_boks(self, kode, kanal="epost"):
+        """Klikk på en fargeboks → åpne kanalens flate FILTRERT på den boksen.
+
+        Gjermund 18.07.2026: «viktig at riktig mappe åpnes når jeg trykker på en av boksene
+        og da åpnes f.eks. "Haster" alle meldinger som haster. Klikker jeg deretter på en
+        e-post skal epost åpne med å vise de som haster.»
+
+        Boksen bærer selv hvilken kanal den kom fra (`_bokser()` setter "kanal"), så
+        paraplyen slipper å vite noe om e-post spesielt. Filteret sendes i handlingens
+        kontekst — kanalflaten leser det ved oppstart.
+        """
+        for k in self._kanaler():
+            if k.get("kode") != kanal or not k.get("action"):
+                continue
+            try:
+                act = self.env["ir.actions.actions"]._for_xml_id(k["action"])
+            except Exception:
+                return False
+            ctx = dict(act.get("context") or {})
+            ctx["fiq_boks"] = kode                  # kanalflaten åpner filtrert på denne
+            act["context"] = ctx
+            return act
+        return False
+
+    @api.model
+    def get_presence(self):
+        """«Til stede» — delegerer til KR-kjernen så det betyr det SAMME overalt.
+        Fail-closed til tom liste hvis kjernen mangler (aldri gjett hvem som er til stede)."""
+        KR = "fiq.gui.control.config"
+        if KR in self.env and hasattr(self.env[KR], "get_presence"):
+            try:
+                return self.env[KR].get_presence()
+            except Exception:
+                return []
+        return []
+
     @api.model
     def get_kr_kobling(self):
         """Til KR-kjernen: hvor «Kommunikasjon» i Kontrollrommet skal peke.
