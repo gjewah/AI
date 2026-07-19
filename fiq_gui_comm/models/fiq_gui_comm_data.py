@@ -13,6 +13,9 @@
 # (fiq.gui.control.config.har_000_rettighet) — ALDRI fra klienten. Fail-closed.
 
 from odoo import api, models
+# Import-stien er verifisert mot Odoo 19s egen kilde (ir_actions.py:23), ikke antatt:
+# `from odoo.tools.safe_eval import safe_eval`. Den ligger IKKE i `odoo.tools`-roten.
+from odoo.tools.safe_eval import safe_eval
 
 
 class FiqKommunikasjonData(models.AbstractModel):
@@ -149,7 +152,16 @@ class FiqKommunikasjonData(models.AbstractModel):
                 act = self.env["ir.actions.actions"]._for_xml_id(k["action"])
             except Exception:
                 return False
-            ctx = dict(act.get("context") or {})
+            # 🔴 KRASJET FLATEN (Gjermund 19.07: RPC_ERROR ved klikk på en samleboks).
+            # `context` er et **Char-felt** på handlingen — verifisert i Odoo 19s kilde:
+            # `ir_actions.py:312  context = fields.Char(...)`. Det kommer altså ut som
+            # TEKST, ikke dict. `dict("{'a': 1}")` får Python til å tolke hvert TEGN som
+            # et nøkkelpar → «dictionary update sequence element #0 has length 1».
+            # Odoo løser det selv med `safe_eval` (samme fil, linje 351) — vi gjør likt.
+            # `isinstance`-sjekken gjør det robust begge veier hvis Odoo en dag gir dict.
+            # 🛑 Aldri `eval()` her: konteksten kommer fra databasen.
+            raa = act.get("context") or {}
+            ctx = dict(safe_eval(raa)) if isinstance(raa, str) else dict(raa)
             ctx["fiq_boks"] = kode                  # kanalflaten åpner filtrert på denne
             act["context"] = ctx
             return act
