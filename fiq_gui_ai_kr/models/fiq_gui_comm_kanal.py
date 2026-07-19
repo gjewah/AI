@@ -25,9 +25,13 @@ class FiqKommunikasjonDataAi(models.AbstractModel):
     def _kanaler(self):
         kanaler = super()._kanaler()
         try:
-            antall = self.env["fiq.ai.melding"].search_count(
-                self._ai_ubesvart_domene()
-            )
+            # Savepoint: en SQL-feil her (tabell/kolonne mangler ved delvis oppgradering)
+            # ville ellers avbryte transaksjonen og ta ned HELE Kommunikasjon-flaten,
+            # ikke bare denne kanalen.
+            with self.env.cr.savepoint():
+                antall = self.env["fiq.ai.melding"].search_count(
+                    self._ai_ubesvart_domene()
+                )
         except Exception:
             # En kanal som feiler skal aldri ta ned hele Kommunikasjon-flaten.
             antall = 0

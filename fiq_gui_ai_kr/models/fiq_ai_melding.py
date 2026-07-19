@@ -155,9 +155,12 @@ class FiqAiMeldingData(models.AbstractModel):
         KR = "fiq.gui.control.config"
         if KR in self.env and hasattr(self.env[KR], "har_000_rettighet"):
             try:
-                return bool(self.env[KR].har_000_rettighet())
+                # Savepoint: KR kan være en versjon bak i DB (manglende kolonne) → SQL-feil
+                # som ellers avbryter HELE transaksjonen, ikke bare dette kallet.
+                with self.env.cr.savepoint():
+                    return bool(self.env[KR].har_000_rettighet())
             except Exception:
-                return False
+                return False   # fail-closed: uten svar gis IKKE drifts-innsyn
         return False
 
     @api.model

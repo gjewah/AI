@@ -56,10 +56,20 @@ class FiqGuiAiKrData(models.AbstractModel):
         sortert med det som haster mest øverst — det er hele poenget med forsiden.
         """
         out = []
+        # 🔴 SAVEPOINT — ikke pynt. Funnet på ekte data 19.07.2026 (meldt av Finans-økta):
+        # `get_fiq_flater()` i KR 6.85+ leser kolonnen `skjulte_flater`. Er KR-modulen to
+        # versjoner bak i DB (6.84 installert, 6.85 i kode), kaster den en SQL-feil —
+        # og PostgreSQL avbryter da HELE transaksjonen. Et bart `except Exception` fanger
+        # unntaket, men transaksjonen er allerede død: alle ETTERFØLGENDE kall feiler med
+        # «current transaction is aborted», også kall som ikke har noe med KR å gjøre.
+        # Målt: fire urelaterte metoder falt av samme grunn.
+        # `cr.savepoint()` ruller tilbake KUN dette kallet, så resten av flaten overlever.
         try:
-            flater = self.env["fiq.gui.control.config"].get_fiq_flater()
+            with self.env.cr.savepoint():
+                flater = self.env["fiq.gui.control.config"].get_fiq_flater()
         except Exception:
-            # KR-kjernen kan mangle (modulen er valgfri) — da har vi ingen flater å spørre.
+            # KR-kjernen kan mangle (valgfri modul) ELLER være for gammel for kontrakten.
+            # Begge deler betyr det samme her: ingen flater å spørre — ikke en krasj.
             return out
 
         for flate in flater or []:
@@ -75,7 +85,11 @@ class FiqGuiAiKrData(models.AbstractModel):
                 continue  # flaten har ingen boks å levere — vises ikke
 
             try:
-                boks = data.get_kr_boks(company_id=company_id) or {}
+                # Savepoint per flate: feiler ÉN flates boks i SQL (manglende kolonne,
+                # utdatert modul), avbryter Postgres hele transaksjonen — og da faller
+                # ALLE de andre boksene med den. Savepoint isolerer skaden til én flate.
+                with self.env.cr.savepoint():
+                    boks = data.get_kr_boks(company_id=company_id) or {}
             except Exception:
                 # En flate som feiler skal ALDRI ta ned forsiden for de andre.
                 # (Samme lærdom som blank-skjerm-fella 18.07: én modul veltet hele GUI-et.)
