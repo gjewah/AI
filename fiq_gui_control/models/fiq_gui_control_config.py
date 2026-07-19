@@ -1315,7 +1315,7 @@ class FiqControlRoomConfig(models.Model):
                     continue
             out.append({
                 "key": key,
-                "label": spec.get("label") or key.replace("_", " ").title(),
+                "label": self._flate_label(spec, key),
                 "xmlid": xmlid,
                 "icon": spec.get("icon") or False,
                 "sequence": int(spec.get("sequence") or 50),
@@ -1383,6 +1383,36 @@ class FiqControlRoomConfig(models.Model):
                 "linjer": (boks.get("linjer") or [])[:5],
             })
         return out
+
+    def _flate_label(self, spec, key):
+        """The flate's menu label in the user's language.
+
+        Reported by Finans (2.70) 19.07.2026: the control room menu was English for ALL eleven
+        flates («Accounting» in the control room, «Regnskap» in Odoo's own menu — same flate, two
+        names). The label came straight out of ir.config_parameter and was returned raw.
+
+        Why .po files cannot fix this: ir.config_parameter.value is a plain string, not a
+        translatable field — gettext never sees it. (And in Odoo 19 there is no ir_translation
+        table to fall back on; translations live as JSON inside the field itself. Verified:
+        information_schema has 0 rows for ir_translation.)
+
+        Two ways in, so no flate is forced to change:
+          "label": "Accounting"                              → looked up in OUR translations
+          "label": {"en_US": "Accounting", "nb_NO": "Regnskap"}  → the module owns its own name
+
+        The dict form is the right one long-term: each flate owns what it is called, rather than
+        the control room translating everyone else's words. Both keep working.
+        """
+        label = spec.get("label")
+        if isinstance(label, dict):
+            # Module ships its own translations. Fall back through language → English → any value,
+            # so a missing translation shows a real name rather than an empty menu entry.
+            lang = self.env.lang or "en_US"
+            return label.get(lang) or label.get("en_US") or next(iter(label.values()), key)
+        if label:
+            # Plain string: run it through gettext so labels listed in our own i18n/*.po translate.
+            return _(label)  # pylint: disable=gettext-variable
+        return key.replace("_", " ").title()
 
     def _skjulte_flater(self):
         """Flate keys this user has switched off, as a set. Stored per user+company."""

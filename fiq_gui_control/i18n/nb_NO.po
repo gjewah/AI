@@ -2986,3 +2986,37 @@ msgstr "Kontrollrommet"
 #: model:res.groups.privilege,name:fiq_gui_control.res_groups_privilege_platform
 msgid "FIQ platform"
 msgstr "FIQ-plattform"
+
+#. Selvregistrerte flate-etiketter (get_fiq_flater). Modulen sender en ren streng, og
+#. den slås opp her. Sender modulen {"en_US": ..., "nb_NO": ...} eier den navnet selv.
+#: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
+msgid "AI roles"
+msgstr "AI-roller"
+
+#: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
+msgid "Inspections"
+msgstr "Befaringer"
+
+#: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
+msgid "Timeline"
+msgstr "Tidslinje"
+
+#: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
+msgid "Deviations"
+msgstr "Avvik"
+
+#: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
+msgid "Relations"
+msgstr "Relasjoner"
+
+#: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
+msgid "Message routing"
+msgstr "Meldingsruting"
+
+#: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
+msgid "AI control room"
+msgstr "AI-kontrollrom"
+
+#: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
+msgid "Project overview"
+msgstr "Prosjektoversikt"
