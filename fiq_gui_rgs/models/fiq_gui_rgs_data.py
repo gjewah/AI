@@ -100,6 +100,60 @@ class FiqGuiRgsData(models.AbstractModel):
         }
 
     @api.model
+    def get_kr_boks(self, company_id=False):
+        """Samleboks til Kontrollrom-forsiden (KR-kontrakt, verifisert i
+        `fiq_gui_control_config.py:1335`).
+
+        Gjermund 19.07.2026: «om det er 5 saker som haster på finans og tre i dag så
+        vises det som en boks i KR og om jeg trykker på en av boksene kommer jeg inn
+        i finans eller RGS ihht hva jeg trykker på.»
+
+        Her er «saker» = ubetalte bokførte fakturaer:
+          haster = forfaller innen 7 dager (ikke forfalt ennå)
+          i_dag  = forfaller nøyaktig i dag
+          totalt = alt utestående
+
+        🛑 TENANT: `company_id` kommer fra KR, men brukes ALDRI rått. Vi bytter firma
+           via `with_company()` — da gjelder `ir.rule` fortsatt, og en bruker uten
+           tilgang får ingenting. Klienten kan ikke be seg til et annet firmas tall.
+
+        🛑 ÆRLIGHET: kan tallet ikke regnes, returneres INGEN boks (None) — aldri 0.
+           «0 kr utestående» er en farlig løgn i regnskap; en manglende boks er ærlig.
+        """
+        selv = self.with_company(company_id) if company_id else self
+        i_dag = fields.Date.context_today(selv)
+        om_en_uke = fields.Date.add(i_dag, days=7)
+        alle = selv.INN_TYPER + selv.UT_TYPER
+
+        Move = selv.env["account.move"]
+        haster = Move.search_count(
+            selv._basis_domene(alle)
+            + [("invoice_date_due", ">=", i_dag), ("invoice_date_due", "<=", om_en_uke)]
+        )
+        i_dag_ant = Move.search_count(
+            selv._basis_domene(alle) + [("invoice_date_due", "=", i_dag)]
+        )
+        totalt = Move.search_count(selv._basis_domene(alle))
+
+        # Forfalte først — det er dem som haster mest, uansett hva kalenderen sier.
+        forfalte = Move.search_read(
+            selv._basis_domene(alle) + [("invoice_date_due", "<", i_dag)],
+            ["name", "partner_id", "amount_residual", "invoice_date_due"],
+            order="amount_residual desc",
+            limit=5,
+        )
+        linjer = []
+        for p in forfalte:
+            dager = (i_dag - p["invoice_date_due"]).days if p["invoice_date_due"] else 0
+            motpart = p["partner_id"][1] if p["partner_id"] else "—"
+            linjer.append({
+                "tekst": "%s forfalt %s dager — %s" % (p["name"], dager, motpart),
+                "res_id": p["id"],
+            })
+
+        return {"haster": haster, "i_dag": i_dag_ant, "totalt": totalt, "linjer": linjer}
+
+    @api.model
     def hent_kritiske_poster(self, grense=10):
         """De største forfalte postene — så flaten kan vise HVILKE, ikke bare hvor mye.
 
