@@ -83,7 +83,12 @@ class FiqGuiRgsData(models.AbstractModel):
         # tilgang til flere, er dette IKKE et konserntall — og det må stå, ellers
         # leses et ufullstendig tall som helheten. Fail-closed er riktig; stille
         # fail-closed er ikke.
-        antall_tilgjengelige = len(self.env.companies)
+        #
+        # ⚠️ `company_ids` (tilgang), IKKE `env.companies` (aktivert akkurat nå).
+        # Med env.companies forsvinner merket nettopp når brukeren har skrudd AV de
+        # andre firmaene — altså akkurat da tallet er mest ufullstendig. Verifisert
+        # 19.07: env.companies=1 mens brukeren har tilgang til flere.
+        antall_tilgjengelige = len(self.env.user.company_ids)
 
         return {
             "firma": self.env.company.name,
