@@ -33,7 +33,11 @@ rewritten.
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
     "license": "LGPL-3",
-    "depends": ["base", "contacts"],
+    # fiq_gui_shell is NOT optional: the surface registers itself in the shell's
+    # fiq_gui_flates registry, so it depends on the shell. Without the declaration the
+    # load order is undefined - that was the root cause of the blank screen on 18.07
+    # (registry collision, with a clean server log). Pattern copied from fiq_gui_rgs.
+    "depends": ["base", "contacts", "fiq_gui_control", "fiq_gui_shell", "web"],
     "data": [
         "security/ir.model.access.csv",
         "data/fiq_gui_relation_type_data.xml",
@@ -42,6 +46,11 @@ rewritten.
         "data/fiq_gui_relations_flate.xml",
         "data/fiq_gui_relation_cron.xml",
     ],
+    "assets": {
+        "web.assets_backend": [
+            "fiq_gui_relations/static/src/**/*",
+        ],
+    },
     "installable": True,
     "application": False,
 }

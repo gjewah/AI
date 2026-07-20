@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="fiq_gui_relations.Flate">
+        <div class="fiq-rel o_fiq_flate">
+
+            <div t-if="state.laster" class="fiq-rel-melding">
+                Henter relasjoner…
+            </div>
+
+            <div t-elif="state.feil" class="fiq-rel-melding fiq-rel-feil">
+                Relasjonene kunne ikke hentes. Prøv igjen, eller si fra hvis det vedvarer.
+            </div>
+
+            <t t-else="">
+                <div class="fiq-rel-verktoy">
+                    <button class="btn btn-sm btn-light" t-on-click="() => this.foldAlt(true)">
+                        Slå sammen alle
+                    </button>
+                    <button class="btn btn-sm btn-light" t-on-click="() => this.foldAlt(false)">
+                        Utvid alle
+                    </button>
+                    <span class="fiq-rel-tall">
+                        <t t-esc="state.noder.length"/> kontakter ·
+                        <t t-esc="state.kanter.length"/> relasjoner
+                    </span>
+                </div>
+
+                <div t-if="state.utenfor" class="fiq-rel-utenfor">
+                    <strong><t t-esc="state.utenfor"/></strong>
+                    <t t-if="state.utenfor === 1"> relasjon peker</t>
+                    <t t-else=""> relasjoner peker</t>
+                    på firmaer du ikke har innsyn i, og vises ikke her.
+                    Grafen under er derfor ikke hele bildet.
+                </div>
+
+                <div t-if="!state.noder.length" class="fiq-rel-melding">
+                    Ingen relasjoner er registrert ennå. Legg dem inn på kontaktkortet,
+                    under fanen Relasjoner.
+                </div>
+
+                <div class="fiq-rel-grupper">
+                    <div t-foreach="grupper" t-as="g" t-key="g.kind" class="fiq-rel-gruppe">
+                        <div class="fiq-rel-gruppehode" t-on-click="() => this.vippFold(g.kind)">
+                            <span class="fiq-rel-vipp">
+                                <t t-esc="erFoldet(g.kind) ? '+' : '−'"/>
+                            </span>
+                            <span class="fiq-rel-gruppenavn" t-esc="g.navn"/>
+                            <span class="fiq-rel-antall" t-esc="g.noder.length"/>
+                        </div>
+
+                        <div t-if="!erFoldet(g.kind)" class="fiq-rel-noder">
+                            <div t-foreach="g.noder" t-as="n" t-key="n.id"
+                                 class="fiq-rel-node"
+                                 t-att-class="{ 'fiq-rel-valgt': state.valgt and state.valgt.id === n.id }"
+                                 t-on-click="() => this.velg(n)">
+                                <span class="fiq-rel-navn" t-esc="n.navn"/>
+                                <span t-if="n.antall" class="fiq-rel-badge" t-esc="n.antall"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div t-if="state.valgt" class="fiq-rel-panel">
+                    <div class="fiq-rel-panelhode">
+                        <strong t-esc="state.valgt.navn"/>
+                        <span class="fiq-rel-lukk" t-on-click="() => this.velg(state.valgt)">×</span>
+                    </div>
+                    <div t-if="!valgteRelasjoner.length" class="fiq-rel-tomt">
+                        Ingen relasjoner å vise for denne kontakten.
+                    </div>
+                    <div t-foreach="valgteRelasjoner" t-as="r" t-key="r.id" class="fiq-rel-rad">
+                        <span class="fiq-rel-type" t-esc="r.label"/>
+                        <span class="fiq-rel-motpart" t-esc="r.partner_name"/>
+                        <span t-if="r.periode" class="fiq-rel-periode" t-esc="r.periode"/>
+                        <span t-if="!r.is_current" class="fiq-rel-avsluttet">avsluttet</span>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+</templates>

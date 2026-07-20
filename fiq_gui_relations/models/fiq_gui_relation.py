@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
+from odoo.tools import format_date
 
 
 class FiqGuiRelation(models.Model):
@@ -100,6 +101,81 @@ class FiqGuiRelation(models.Model):
                         '"%(type)s" expects a company on the %(side)s side, but '
                         "%(name)s is a person.",
                         type=rec.type_id.name, side=label, name=partner.display_name))
+
+    @api.model
+    def get_graf(self, firma_id=False):
+        """The graph for the relations surface, scoped server-side.
+
+        Returns {noder, kanter, utenfor}. `utenfor` is the count of relations this user
+        may NOT see in full, and it is the reason this method exists rather than letting
+        the client read the model directly.
+
+        A relation joins two parties. If one of them sits outside the user's companies,
+        the relation does not vanish — it becomes half. And half a graph looks complete:
+        no empty rows, no error, just fewer nodes than reality has. So the omission is
+        counted and handed to the surface, which says it in plain words.
+
+        Scope comes from the session via the control room's helpers, never from the
+        client: a company id sent in can only narrow what the user was already allowed
+        to see. Falls back to the active company if the core is unavailable, which fails
+        closed — one company, never all.
+        """
+        try:
+            config = self.env["fiq.gui.control.config"]
+            lovlige = config.tillatte_firmaer().ids
+        except Exception:
+            lovlige = self.env.company.ids
+        if firma_id and int(firma_id) in lovlige:
+            lovlige = [int(firma_id)]
+
+        alle = self.search([("is_current", "=", True)])
+        synlige = alle.filtered(
+            lambda r: not r.company_id or r.company_id.id in lovlige)
+
+        noder, kanter = {}, []
+        for rel in synlige:
+            for partner, motpart, forward in (
+                (rel.partner_a_id, rel.partner_b_id, True),
+                (rel.partner_b_id, rel.partner_a_id, False),
+            ):
+                node = noder.setdefault(partner.id, {
+                    "id": partner.id,
+                    "navn": partner.display_name or "",
+                    "kind": "company" if partner.is_company else "person",
+                    "kind_navn": _("Companies") if partner.is_company else _("People"),
+                    "antall": 0,
+                    "relasjoner": [],
+                })
+                node["antall"] += 1
+                node["relasjoner"].append({
+                    "id": rel.id,
+                    "label": rel.type_id.label_for_direction(forward),
+                    "partner_name": motpart.display_name or "",
+                    "periode": self._periode_tekst(rel),
+                    "is_current": rel.is_current,
+                })
+            kanter.append({
+                "id": rel.id,
+                "a": rel.partner_a_id.id,
+                "b": rel.partner_b_id.id,
+                "type": rel.type_id.code,
+            })
+
+        return {
+            "noder": sorted(noder.values(), key=lambda n: n["navn"]),
+            "kanter": kanter,
+            "utenfor": len(alle) - len(synlige),
+        }
+
+    def _periode_tekst(self, rel):
+        """Human-readable validity, or empty when the relation has no dates at all."""
+        if not rel.date_start and not rel.date_end:
+            return ""
+        start = format_date(self.env, rel.date_start) if rel.date_start else ""
+        if not rel.date_end:
+            return _("%s →", start) if start else ""
+        slutt = format_date(self.env, rel.date_end)
+        return _("%(fra)s – %(til)s", fra=start or "…", til=slutt)
 
     @api.model
     def _cron_recompute_is_current(self):

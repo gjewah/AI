@@ -203,6 +203,80 @@ class TestFiqGuiRelation(TransactionCase):
         self.assertEqual(self.person.fiq_relation_count, 1)
         self.assertEqual(self.company_a.fiq_relation_count, 2)
 
+    # ---- the surface payload -------------------------------------------------------
+
+    def test_graf_returns_nodes_and_edges(self):
+        """Both parties become nodes; the relation becomes one edge."""
+        self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+        })
+        graf = self.Relation.get_graf()
+        ids = {n["id"] for n in graf["noder"]}
+        self.assertIn(self.person.id, ids)
+        self.assertIn(self.company_a.id, ids)
+        self.assertEqual(len(graf["kanter"]), 1)
+
+    def test_graf_labels_each_side_correctly(self):
+        """Each node carries the relation worded from ITS side, not the stored side."""
+        self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+        })
+        graf = self.Relation.get_graf()
+        by_id = {n["id"]: n for n in graf["noder"]}
+        self.assertEqual(
+            by_id[self.person.id]["relasjoner"][0]["label"], self.type_employee.name)
+        self.assertEqual(
+            by_id[self.company_a.id]["relasjoner"][0]["label"],
+            self.type_employee.name_inverse)
+
+    def test_graf_counts_what_it_cannot_show(self):
+        """The key honesty guarantee: a relation the user may not see is COUNTED, not
+        silently dropped. Half a graph looks complete, so the omission must be reported.
+        """
+        other = self.env["res.company"].create({"name": "Foreign Co"})
+        self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+        })
+        self.Relation.create({
+            "partner_a_id": self.person_b.id,
+            "partner_b_id": self.company_b.id,
+            "type_id": self.type_employee.id,
+            "company_id": other.id,
+        })
+        graf = self.Relation.get_graf()
+        self.assertEqual(len(graf["kanter"]), 1, "only the in-scope relation is shown")
+        self.assertEqual(graf["utenfor"], 1, "the hidden one must still be counted")
+
+    def test_graf_client_company_cannot_widen_scope(self):
+        """A company id from the client can only narrow. Asking for a company the user
+        has no access to must not reveal it."""
+        other = self.env["res.company"].create({"name": "Foreign Co 2"})
+        self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+            "company_id": other.id,
+        })
+        graf = self.Relation.get_graf(firma_id=other.id)
+        self.assertEqual(len(graf["kanter"]), 0)
+        self.assertEqual(graf["utenfor"], 1)
+
+    def test_graf_excludes_ended_relations(self):
+        self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+            "date_start": "2020-01-01",
+            "date_end": "2021-01-01",
+        })
+        self.assertEqual(len(self.Relation.get_graf()["kanter"]), 0)
+
     # ---- the daily refresh ---------------------------------------------------------
 
     def test_cron_fixes_expired_relation(self):
