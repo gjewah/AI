@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Relations",
-    "version": "19.0.1.3.1",
+    "version": "19.0.1.4.0",
     "summary": "Typed, directed relations between contacts, companies, properties and "
                "projects. One person, many affiliations - without duplicate contacts.",
     "description": """
