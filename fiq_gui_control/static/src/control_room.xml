@@ -1101,6 +1101,24 @@
                         <t t-else=""><div class="fiq_hm_empty">No communication in the selected period.</div></t>
                     </div>
 
+                    <!-- SLOT: flaten åpnes HER, inni rammen. Menyen, firmavelgeren og
+                         «Til stede nå» står urørt — det er hele poenget. Registeret
+                         (fiq_gui_flates) er skallets, med vilje: da kan skallet overta
+                         rammen senere uten at flate-eierne må endre noe. -->
+                    <div t-if="!state.loading and state.view === 'flate' and slotComponent" class="fiq_hm_card fiq_hm_slot">
+                        <div class="fiq_hm_slot_bar">
+                            <span class="fiq_hm_slot_back" t-on-click="() => this.lukkFlate()"
+                                  t-att-title="tr('Back to the control room')">←</span>
+                            <strong t-esc="slotLabel"/>
+                        </div>
+                        <!-- SAMME props-form som skallet sender (shell.xml:71): flatene skal
+                             ikke merke forskjell på om de står i skallet eller her. Merk at
+                             Kontrollrommet kaller feltet `companyId`, skallet `firm` — vi
+                             oversetter her, slik at ingen flate-eier må vite om forskjellen. -->
+                        <t t-component="slotComponent"
+                           t-props="{ firm: state.companyId, har000: state.har000, label: slotLabel }"/>
+                    </div>
+
                     <div class="fiq_hm_foot">Powered by <img class="fiq_hm_footlogo" src="/fiq_gui_control/static/img/fiq_logo.png" alt="FIQ"/> <strong>FIQ</strong> · Control room</div>
                 </section>
             </div>

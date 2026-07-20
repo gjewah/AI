@@ -1026,3 +1026,34 @@
 .fiq_hm_oppg_who { flex: 0 0 auto; opacity: .8; }
 .fiq_hm.fiq_hm_dark .fiq_hm_oppg_h { background: rgba(183, 148, 230, .16); color: #fff; }
 .fiq_hm.fiq_hm_dark .fiq_hm_oppg_t { color: #c9d1dc; }
+
+// ── SLOT: flaten som åpnes INNE i Kontrollrommet ────────────────────────────────
+// Rammen (meny, firmavelger, «Til stede nå») står — bare innmaten byttes.
+.fiq_hm_slot {
+    padding: 0;
+    overflow: hidden;
+
+    .fiq_hm_slot_bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        border-bottom: 1px solid rgba(0, 0, 0, .08);
+        // Tilbake-linja skal ALLTID være synlig, også når flaten under skroller.
+        // Uten dette mister man veien tilbake i lange visninger.
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: var(--fiq-card-bg, #fff);
+    }
+
+    .fiq_hm_slot_back {
+        cursor: pointer;
+        font-size: 18px;
+        line-height: 1;
+        padding: 2px 8px;
+        border-radius: 4px;
+        user-select: none;
+        &:hover { background: rgba(0, 0, 0, .06); }
+    }
+}

@@ -140,6 +140,8 @@ export class FiqControlRoom extends Component {
             kommSender: null,     // {id, name} – filter on a single sender
             dashboards: [],       // Odoo native dashboards/analyses (only the ones that exist)
             fiqFlater: [],        // selvregistrerte FIQ-modul-flater (get_fiq_flater) – nye moduler uten kode-endring her
+            slotKey: false,       // flaten som står i sloten nå (false = forsiden). Rammen står uansett.
+            har000: false,        // kryss-firma-innsyn (server-avgjort, fail-closed) — sendes til flater i sloten
             presence: [],         // «Til stede nå» – interne brukere + tilgjengelighets-status
             kal: { moter: [], aktiviteter: [], mnd: [] }, // Møter/aktiviteter-panelet (periode-styrt)
             selPerson: null,      // valgt person (toggle på Til stede-kort) — styrer kalender + komm
@@ -420,6 +422,12 @@ export class FiqControlRoom extends Component {
             this.state.companyName = cfg.company_name || "";
             this.state.companies = cfg.companies || [];
             this.state.companyId = cfg.company_id || false;
+            // 000-rettigheten avgjøres SERVER-SIDE (har_000_rettighet(), fail-closed) og
+            // sendes videre til flater som står i sloten — samme kilde som skallet bruker.
+            // Klienten kan aldri utvide den; den bare formidler et svar den har fått.
+            // 🛑 Normaltilstand er FALSE: gruppa har i dag 0 medlemmer (AI PK 19.07).
+            // Bygg for begge tilstander — ikke anta at den er tildelt.
+            this.state.har000 = !!cfg.har_000;
             if (cfg.accent) this.state.accent = cfg.accent;
             if (cfg.logo) this.state.logo = cfg.logo;
             if (cfg.progress_shape) this.state.progressShape = cfg.progress_shape;
@@ -1729,11 +1737,41 @@ export class FiqControlRoom extends Component {
         );
     }
 
+    // ── SLOT: åpne flaten INNI Kontrollrommet, ikke i stedet for det ───────────────────
+    //
+    // Gjermund 20.07.2026: rammen (meny, firmavelger, «Til stede nå», tidslinje) skal STÅ
+    // når man åpner Kommunikasjon eller AI Kontrollrom. Før byttet `doAction` HELE siden,
+    // og da forsvant rammen — man var i en annen app.
+    //
+    // Mekanismen fantes allerede i skallet (`fiq_gui_flates`), men bare 2 av 11 flater
+    // brukte den. Vi bruker SAMME register her, med vilje: da kan skallet overta rammen
+    // senere uten at en eneste flate-eier må endre noe.
+    //
+    // `doAction` beholdes som fallback for NATIVE Odoo-handlinger (Kunnskap, dashbord) —
+    // dit SKAL man forlate Kontrollrommet.
+    _slotKomponent(key) {
+        try {
+            const reg = registry.category("fiq_gui_flates");
+            const e = reg && reg.get(key, null);
+            return e && e.Component ? e : null;
+        } catch (_e) {
+            return null;   // registeret finnes ikke (skallet ikke installert) — bruk doAction
+        }
+    }
+
     // Beslutningsstøtte: kjør ekte doAction hvis handlingen finnes (guardet), ellers varsel.
     // key = nøkkel fra get_actions (nytt_prosjekt/salgsordre/nytt_leads/tilbud/kunde/dokument …)
     runAction(key) {
-        // Selvregistrerte FIQ-flater bærer sin egen xmlid (get_fiq_flater) — uten dette
-        // oppslaget ville en ferdig, installert modul havnet i «under utvikling».
+        // 1) Er flaten registrert som komponent? Bytt INNMAT — rammen står.
+        const slot = this._slotKomponent(key);
+        if (slot) {
+            this.state.slotKey = key;
+            this.state.view = "flate";
+            return;
+        }
+        // 2) Ellers: som før. Selvregistrerte FIQ-flater bærer sin egen xmlid
+        // (get_fiq_flater) — uten dette oppslaget ville en ferdig, installert modul
+        // havnet i «under utvikling».
         const dyn = (this.state.fiqFlater || []).find((f) => f.key === key);
         const xmlid = this.state.actions[key] || (dyn && dyn.xmlid);
         if (xmlid) {
@@ -1741,6 +1779,29 @@ export class FiqControlRoom extends Component {
         } else {
             this._underUtvikling();
         }
+    }
+
+    // Komponenten som skal stå i sloten nå (null = ingen).
+    get slotComponent() {
+        const e = this.state.slotKey ? this._slotKomponent(this.state.slotKey) : null;
+        return e ? e.Component : null;
+    }
+
+    // Navnet på flaten i sloten — til overskrift og «tilbake»-linja.
+    get slotLabel() {
+        const e = this.state.slotKey ? this._slotKomponent(this.state.slotKey) : null;
+        if (!e) { return ""; }
+        // Etiketten kan være tekst ELLER {en_US, nb_NO}. Norsk før engelsk — samme
+        // rekkefølge som resten av Kontrollrommet (kanon 19.07: norsk er fasit).
+        const l = e.label;
+        if (l && typeof l === "object") { return l[user.lang] || l.nb_NO || l.en_US || this.state.slotKey; }
+        return l || this.state.slotKey;
+    }
+
+    // Lukk flaten og gå tilbake til forsiden. Rammen har stått hele tiden.
+    lukkFlate() {
+        this.state.slotKey = false;
+        this.state.view = "oversikt";
     }
 
     // «Legg til knapp» (tilpass) – ennå ikke bygget
