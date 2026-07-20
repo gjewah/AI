@@ -456,8 +456,14 @@
     // er mettet nok til å leses på avstand, teksten mørk nok til å leses av alle — også på
     // små skjermer og av eldre ansatte. Derfor mørk tekst på lys flate, ikke hvit på farge.
 
-    .fiq_hm_pres_green  { border-width: 1px; border-left-width: 5px; border-color: #16a34a; background: #dcfce7;
-        .fiq_hm_pnavn { color: #14532d; } .fiq_hm_pstat { color: #15803d; font-weight: 600; } }
+    // GRØNN = invertert (Gjermund 20.07: «tydeligere, skarpere, tekst invertert»).
+    // Tilgjengelig/Til stede er den viktigste statusen — den du kan handle på. Derfor er
+    // den eneste som fyller boksen med mettet farge og hvit tekst: den skal ses først,
+    // på avstand, uten å lete. De andre nivåene beholder lys flate så grønn skiller seg ut.
+    // Kontrast hvit på #16a34a ≈ 3,9:1 — over kravet for stor/halvfet tekst.
+    .fiq_hm_pres_green  { border-width: 1px; border-left-width: 5px; border-color: #15803d; background: #16a34a;
+        .fiq_hm_pnavn { color: #fff; font-weight: 600; } .fiq_hm_pstat { color: #f0fdf4; font-weight: 600; }
+        .fiq_hm_ini { color: #14532d; } }
     .fiq_hm_pres_orange { border-width: 1px; border-left-width: 5px; border-color: #d97706; background: #fef3c7;
         .fiq_hm_pnavn { color: #78350f; } .fiq_hm_pstat { color: #b45309; font-weight: 600; } }
     .fiq_hm_pres_red    { border-width: 1px; border-left-width: 5px; border-color: #dc2626; background: #fee2e2;
@@ -798,8 +804,10 @@
     // MØRK MODUS: samme prinsipp — hele boksen bærer fargen — men snudd. På mørk flate må
     // teksten være LYS, ellers blir den uleselig. Bakgrunnen er dempet (mettet farge på mørk
     // bakgrunn blir grell og sliter øynene), mens venstrekanten er KRAFTIG og bærer signalet.
-    .fiq_hm_pres_green  { background: #14331f; border-color: #22c55e;
-        .fiq_hm_pnavn { color: #dcfce7; } .fiq_hm_pstat { color: #4ade80; font-weight: 600; } }
+    // Grønn er invertert også her, men ett hakk dempet: full #16a34a på mørk flate blir
+    // grell ved siden av de dempede nabokortene. Hvit tekst beholdes — signalet er det samme.
+    .fiq_hm_pres_green  { background: #15803d; border-color: #22c55e;
+        .fiq_hm_pnavn { color: #fff; font-weight: 600; } .fiq_hm_pstat { color: #dcfce7; font-weight: 600; } }
     .fiq_hm_pres_orange { background: #3a2c10; border-color: #f59e0b;
         .fiq_hm_pnavn { color: #fef3c7; } .fiq_hm_pstat { color: #fbbf24; font-weight: 600; } }
     .fiq_hm_pres_red    { background: #3a1c1f; border-color: #ef4444;
