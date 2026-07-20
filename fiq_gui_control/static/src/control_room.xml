@@ -507,12 +507,12 @@
                             <t t-if="state.presence.length">
                                 <div class="fiq_hm_presence">
                                     <t t-foreach="state.presence" t-as="pr" t-key="pr.id">
-                                        <div t-att-class="'fiq_hm_chip_p fiq_hm_chip_click fiq_hm_pres_' + (pr.farge || 'red') + ((state.selPerson and state.selPerson.id === pr.id) ? ' valgt' : '')"
+                                        <div t-att-class="'fiq_hm_chip_p fiq_hm_chip_click fiq_hm_pres_' + (pr.farge || 'grey') + ((state.selPerson and state.selPerson.id === pr.id) ? ' valgt' : '')"
                                              t-att-title="pr.tekst + tr(' — click to show alerts/meetings/activities for ') + pr.navn" t-on-click="() =&gt; this.selectPerson(pr)">
                                             <span class="fiq_hm_avatar">
                                                 <span class="fiq_hm_ini" t-esc="pr.initialer"/>
                                                 <img t-if="pr.has_photo" class="fiq_hm_photo" t-att-src="'/web/image/res.users/' + pr.id + '/avatar_128'" t-att-alt="pr.navn" t-on-error="(ev) =&gt; ev.target.style.display = 'none'"/>
-                                                <span t-att-class="'fiq_hm_dot ' + (pr.farge || 'red')"/>
+                                                <span t-att-class="'fiq_hm_dot ' + (pr.farge || 'grey')"/>
                                             </span>
                                             <span class="fiq_hm_pcol">
                                                 <span class="fiq_hm_pnavn" t-esc="pr.navn"/>

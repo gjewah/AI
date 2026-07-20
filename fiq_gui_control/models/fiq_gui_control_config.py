@@ -1135,24 +1135,57 @@ class FiqControlRoomConfig(models.Model):
             # Fargelogikk for HELE kortet. OPPMØTE (innstemplet) er sterkeste signal =
             # «Til stede», UANSETT im_status (im_status er upålitelig uten sanntids-buss,
             # f.eks. på Staging). Deretter im_status som fallback.
+            # BRUKERENS EGET VALG VINNER over det systemet gjetter seg til.
+            # Gjermund 20.07.2026: man vil vise tilgjengelighet «stort sett uavhengig av hvor
+            # vi er» — for forstyrrelser og for å kunne sette over telefon.
+            #
+            # ⭐ Odoo eier dette allerede: `manual_im_status` (mail/models/res_users.py:45) =
+            # 'away' | 'busy' (= «Ikke forstyrr») | 'offline', satt av brukeren selv. Odoos egen
+            # `_compute_im_status` (:111) lar det manuelle valget slå det automatiske — vi følger
+            # SAMME rangering her i stedet for å bygge et konkurrerende FIQ-felt.
+            # Velger brukeren «Ikke forstyrr» i Odoo, gjelder det også i Kontrollrommet.
+            manuell = ""
+            try:
+                if "manual_im_status" in u._fields:
+                    manuell = u.manual_im_status or ""
+            except Exception:
+                manuell = ""
+
             if u.id in away_users:
                 # Fravær slår ALT annet: er du borte i dag, hjelper det ikke at nettleseren
                 # står åpen. Uten dette sto folk på ferie som «Til stede» fordi en fane var
                 # glemt oppe — og da lyver hele tavla.
                 # 🛑 Kun «Fraværende». Aldri type, aldri årsak, aldri hvor lenge.
                 farge, tekst = "red", _("Away")
+            elif manuell == "busy":
+                # «Til stede, men ikke forstyrr» — nivå 3 i godkjent spec §12.
+                # Personen ER på jobb (derfor ikke rød), men har bedt om ro.
+                farge, tekst = "orange", _("Do not disturb")
             elif meeting:
                 farge, tekst = "orange", _("In a meeting")
+            elif moett and im == "online":
+                # NIVÅ 1 «Tilgjengelig»: på jobb OG ved maskinen OG ikke bedt om ro.
+                # Sterkeste positive signal — det er denne du kan ringe.
+                farge, tekst = "green", _("Available")
             elif moett:
+                # NIVÅ 2 «Til stede»: innstemplet, men ikke aktiv ved maskinen.
+                # På jobb — men kanskje ikke ved telefonen akkurat nå.
                 farge, tekst = "green", _("Present")
             elif im == "online":
                 farge, tekst = "green", _("Present")
             elif im == "away":
                 farge, tekst = "orange", _("Out")
             elif attendance_avail:
-                farge, tekst = "red", _("Not checked in")
+                # 🔑 GRÅ, IKKE RØD (Gjermund 20.07, mot skjermbilde av ekte data).
+                # «Ikke møtt» betyr bare at ingen har stemplet inn — det er IKKE fravær.
+                # Med rødt ble tre av fire kort røde uten at noe var galt, og da slutter
+                # rødt å bety noe. Rødt er nå reservert for REELT fravær (godkjent fravær).
+                farge, tekst = "grey", _("Not checked in")
             else:
-                farge, tekst = "red", _("Absent")
+                # Verken oppmøte-modul, pålogging eller fravær sier noe. Vi VET ikke —
+                # og da skal fargen si «ukjent», ikke «fraværende». Å påstå fravær vi ikke
+                # har grunnlag for er samme feilklasse som rødt på «ikke møtt».
+                farge, tekst = "grey", _("Unknown")
 
             name = u.name or u.login or "—"
             parts = [p for p in name.replace("-", " ").split(" ") if p]

@@ -442,7 +442,7 @@
                 display: flex; align-items: center; justify-content: center; }
             .fiq_hm_dot { position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 50%; border: 2px solid #fff;
                 &.online, &.green { background: #22c55e; } &.away, &.orange { background: #f59e0b; }
-                &.offline { background: #9ca3af; } &.red { background: #ef4444; } } }
+                &.offline, &.grey { background: #9ca3af; } &.red { background: #ef4444; } } }
         .fiq_hm_pcol { display: flex; flex-direction: column; line-height: 1.15; }
         .fiq_hm_pnavn { font-size: 11.5px; white-space: nowrap; }
         .fiq_hm_pstat { font-size: 9.5px; color: var(--fiq-mut); white-space: nowrap; } }
@@ -450,6 +450,10 @@
     .fiq_hm_pres_green  { border-color: #22c55e; background: #f0fdf4; .fiq_hm_pstat { color: #15803d; } }
     .fiq_hm_pres_orange { border-color: #f59e0b; background: #fffbeb; .fiq_hm_pstat { color: #b45309; } }
     .fiq_hm_pres_red    { border-color: #ef4444; background: #fef2f2; .fiq_hm_pstat { color: #b91c1c; } }
+    // GRÅ = «vi vet ikke» (ikke stemplet inn / ingen kilde sier noe).
+    // Gjermund 20.07: rødt på «ikke møtt» gjorde tre av fire kort røde uten at noe var galt.
+    // Da slutter rødt å bety noe. Rødt er nå KUN reelt fravær; grått er fravær av informasjon.
+    .fiq_hm_pres_grey   { border-color: #cbd5e1; background: #f8fafc; .fiq_hm_pstat { color: #64748b; } }
     .fiq_hm_chip_click { cursor: pointer; transition: border-color .12s, background .12s;
         &:hover { border-color: var(--fiq-accent); background: rgba(56,180,74,.06); } }
 
@@ -780,6 +784,7 @@
     .fiq_hm_pres_green { background: #1c3a2b; }
     .fiq_hm_pres_orange { background: #3d3117; }
     .fiq_hm_pres_red { background: #3a2326; }
+    .fiq_hm_pres_grey { background: #2a2f36; border-color: #3f4650; }
     .fiq_hm_ini { color: #22303c; }
     .fiq_hm_toplbl { color: #aab3c2; }
     .fiq_hm_ai_send { background: var(--fiq-accent); color: #fff !important; border-color: var(--fiq-accent); }
