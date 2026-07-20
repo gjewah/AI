@@ -15,6 +15,7 @@ first" canon, every field here is a real Odoo field usable without any FIQ GUI.
 Two concerns, one model area (res.partner / res.company):
 
 1. Relation classification (B2B foundation)
+
    - `fiq_relation_type`: plain customer vs. agreement partner.
    - `fiq_relation_level`: graded level for agreement partners.
    - Opens NO data: this is classification metadata only. Cross-tenant access
@@ -22,10 +23,11 @@ Two concerns, one model area (res.partner / res.company):
      requires a two-party agreement + DPA. See docs/0.00 IQ b2b_partner_tilgang_UTKAST_01.md
 
 2. Branding source
+
    - `fiq_brand_logo`: resolves the logo to use, preferring the native company/partner
      image, with an optional Control-room-specific override for dark backgrounds.
 """,
-    "version": "19.0.1.0.1",
+    "version": "19.0.1.0.2",
     "author": "FIQ AS",
     "website": "https://www.fiq.no",
     "license": "LGPL-3",
