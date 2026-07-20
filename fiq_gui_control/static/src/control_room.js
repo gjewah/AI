@@ -12,19 +12,49 @@ import { FileModel } from "@web/core/file_viewer/file_model";
 const WIDGETS = ["kpis", "projects", "kommunikasjon", "activity", "tasks", "chart", "copilot", "quick"];
 
 // Kanonisk fargekart per fagområde (fiq-fargekart-omrader). Underområde-unntak først.
+// KANONISK FARGEKART — synket mot `brand/fiq_fargekart_omrader.md` (Gjermund 18.07.2026).
+//
+// 🔴 Kanon-fila pekte navngitt på DENNE koden som avvikende og utdatert: «gir ulike farger
+// på samme område avhengig av flate». Åtte av ti hovedområder var feil. Rettet 20.07.2026
+// etter at Gjermund ba meg sjekke fargekartet i taksonomien.
+//
+// 🛑 DE FIRE GRØNNE (3 · 5 · 7 · 8) MÅ KUNNE SKILLES. Ikonene ga 5 og 7 nøyaktig samme
+// verdi — da blir boksene like og kartet ubrukelig. Verdiene under er MÅLT slik at alle par
+// skilles på lysstyrke (≥40) eller fargetone (≥45):
+//   5 Marked #26521A (69) · 8 FAG #0E7C86 (101) · 3 Drift #00A83C (124) · 7 Prosj #95D97A (196)
+// Endrer du ÉN av dem: mål avstanden til de tre andre på nytt, ellers kollapser skillet.
 const SP_SUB_COLOR = {
-    "8.50": "#7030A0", "2.90": "#7030A0", "2.91": "#7030A0",
-    "2.70": "#4472C4", "2.80": "#4472C4", "2.50": "#70AD47",
+    // Finans-familien under Admin — mørk blå (ikon-verifisert)
+    "2.70": "#243C6C", "2.71": "#243C6C", "2.80": "#243C6C",
+    // IT-familien — lilla. AI hører HIT, ikke til 8 FAG.
+    "2.90": "#7830A8", "2.91": "#7830A8", "8.50": "#7830A8", "8.51": "#7830A8",
+    // 2.50 KH arver 2 Administrasjon (lys blå) — sto feilaktig som grønn før.
 };
 const SP_TOP_COLOR = {
-    "0": "#8b93a1", "1": "#8b93a1", "2": "#0070C0", "3": "#8b93a1",
-    "4": "#ED7D31", "5": "#70AD47", "6": "#CC0000", "7": "#548235",
-    "8": "#FFC000", "9": "#FFC000",
+    "0": "#7A8593",   // Info — grå
+    "1": "#243C6C",   // Ledelse — mørk blå, SAMME som 2.70 (sto grå før)
+    "2": "#0078CC",   // Administrasjon — lys blå (inkl. 2.05 JUR + 2.20 HR)
+    "3": "#00A83C",   // Drift — knall grønn (sto grå før)
+    "4": "#E47830",   // Logistikk — oransje
+    "5": "#26521A",   // Marked — mørk kraftig grønn
+    "6": "#D80000",   // Salg — rød
+    "7": "#95D97A",   // Prosjekter — lysere grønn
+    "8": "#0E7C86",   // FAG — grønn/blå (teal). Sto GUL før.
+    "9": "#78D8D8",   // Privat — turkis (sto gul før)
 };
+// Hele AI-serien 8.50–8.99 er lilla som IT — ikke bare 8.50. Samme regel som
+// Meldingssenteret bruker (`_AI_SERIE`, fiq_gui_epost_data.py:73), så de to flatene
+// aldri viser ulik farge på samme område.
+const SP_AI_SERIE = /^8\.(5\d|[6-9]\d)$/;
 const SP_DARK_TEXT = ["#FFC000", "#E7E6E6"];
 
 function spColor(nr) {
-    const c = SP_SUB_COLOR[nr] || SP_TOP_COLOR[(nr || "").split(".")[0]] || "#6b7280";
+    // Rekkefølge: eksakt unntak → AI-serien 8.50–8.99 (lilla) → hovedområdets farge.
+    // Samme rekkefølge som Meldingssenteret (`_omraade_farge`, fiq_gui_epost_data.py:76),
+    // slik at et område ALDRI får ulik farge avhengig av hvilken flate du står i.
+    const c = SP_SUB_COLOR[nr]
+        || (SP_AI_SERIE.test(nr || "") ? "#7830A8" : false)
+        || SP_TOP_COLOR[(nr || "").split(".")[0]] || "#6b7280";
     return { color: c, dk: SP_DARK_TEXT.includes(c) };
 }
 
