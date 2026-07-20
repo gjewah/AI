@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Kommunikasjon",
-    "version": "19.0.1.6.0",
+    "version": "19.0.1.7.0",
     "summary": "FIQ Kommunikasjon – paraply-flaten for ALL kommunikasjon. "
                "E-post, WhatsApp, Teams og chat er KANALER inne i denne flaten.",
     "description": """
@@ -11,6 +11,7 @@ Gjermund-beslutning 17.07.2026: **flaten heter «Kommunikasjon» — ETT navn.**
 «Meldingssenteret og Kommunikasjonssenteret — det er det samme.»
 
 Denne modulen er PARAPLYEN:
+
 * Eier kanal-filteret (Alle · E-post · WhatsApp · Teams · chat).
 * Registrerer kanaler via et enkelt register, så nye kanaler kan komme til
   uten at paraplyen endres.
