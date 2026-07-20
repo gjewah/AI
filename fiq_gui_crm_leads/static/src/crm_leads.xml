@@ -1,16 +1,58 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
+    <!--
+      Salgsflaten (6 SALG) — pipeline-oversikt.
+
+      Tekstene står på ENGELSK i kilden og oversettes via i18n/nb_NO.po.
+      Aldri hardkod norsk i modulkilde: en engelsk bruker skal se engelsk.
+
+      🛑 Ingen `if`-setning i inline t-on-* — det kompilerer ikke, og da dør
+         HELE malen for alle brukere. Verken XML-validering eller en ren
+         syntakssjekk av JavaScript fanger det. Bruk metode eller ternary.
+    -->
     <t t-name="fiq_gui_crm_leads.Dashboard">
-        <div class="fiq_gui_crm_leads">
-            <div class="fiq_gui_crm_leads_top">
-                <span class="fiq_gui_crm_leads_mark">F</span>
-                <span class="fiq_gui_crm_leads_name" t-esc="flate"/>
+        <div class="fiq_gui_salg">
+
+            <div class="fiq_gui_salg_topp">
+                <span class="fiq_gui_salg_merke">6</span>
+                <span class="fiq_gui_salg_navn">Sales</span>
             </div>
-            <div class="fiq_gui_crm_leads_card">
-                <h3 t-esc="flate"/>
-                <p class="fiq_gui_crm_leads_soon">Kommer</p>
-            </div>
-            <div class="fiq_gui_crm_leads_foot">Drevet av <strong>FIQ</strong> · <t t-esc="flate"/></div>
+
+            <t t-if="state.laster">
+                <div class="fiq_gui_salg_laster">Loading…</div>
+            </t>
+
+            <t t-else="">
+                <div class="fiq_gui_salg_noekkeltall">
+                    <div class="fiq_gui_salg_tall">
+                        <span class="fiq_gui_salg_verdi" t-esc="apneAntall"/>
+                        <span class="fiq_gui_salg_merkelapp">Open opportunities</span>
+                    </div>
+                    <div class="fiq_gui_salg_tall">
+                        <span class="fiq_gui_salg_verdi" t-esc="formatKr(apenVerdi)"/>
+                        <span class="fiq_gui_salg_merkelapp">Expected revenue</span>
+                    </div>
+                </div>
+
+                <div class="fiq_gui_salg_stadier">
+                    <t t-foreach="state.stadier" t-as="stadium" t-key="stadium.id">
+                        <div class="fiq_gui_salg_rad"
+                             t-att-class="stadium.vunnet ? 'fiq_gui_salg_vunnet' : ''"
+                             t-on-click="() => this.apneStadium(stadium)">
+                            <div class="fiq_gui_salg_radtopp">
+                                <span class="fiq_gui_salg_stadienavn" t-esc="stadium.navn"/>
+                                <span class="fiq_gui_salg_antall" t-esc="stadium.antall"/>
+                            </div>
+                            <div class="fiq_gui_salg_spor">
+                                <div class="fiq_gui_salg_stolpe"
+                                     t-attf-style="width:{{ stolpeBredde(stadium) }}"/>
+                            </div>
+                            <div class="fiq_gui_salg_radbunn" t-esc="formatKr(stadium.verdi)"/>
+                        </div>
+                    </t>
+                </div>
+            </t>
+
         </div>
     </t>
 </templates>
