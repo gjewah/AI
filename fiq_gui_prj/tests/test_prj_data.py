@@ -342,8 +342,23 @@ class TestPrjData(TransactionCase):
         if not res["tilgjengelig"] or not res["spor"]:
             self.skipTest("fiq_gui_ai_kr ikke installert, eller ingen spor å teste mot")
 
-        # Mønsteret vi aldri vil se: «00.03», «01.02», «(V0.03)», «06.74»
-        okt_monster = re.compile(r"\b\(?V?\d{2}\.\d{2}\)?\b")
+        # Mønsteret vi aldri vil se: «(00.03)», «(V0.03)», «GUI Prosjekt 01.02»
+        #
+        # 🔴 FØRSTE UTGAVE VAR FOR GROV — fanget en DATO og feilet bygget:
+        #   «Modulen er et tomt «Kommer»-skall, urørt siden 09.07.2026.»
+        # `\d{2}\.\d{2}` treffer både «01.02» og «09.07». En test som sperrer
+        # enhver dato i en beskrivelse er ubrukelig — og verre: den ville tvunget
+        # neste økt til å fjerne den, og dermed mistet vernet helt.
+        #
+        # Nå kreves KONTEKST som faktisk peker på en økt:
+        #   · parentes rundt: «(00.03)» · «(V0.03)»
+        #   · eller et øktord foran: «økt 01.02», «GUI Prosjekt 06.74»
+        # En bar dato som «09.07.2026» slipper gjennom — den er ikke bokføring.
+        okt_monster = re.compile(
+            r"\(\s*V?\d{1,2}\.\d{2}\s*\)"
+            r"|(?:økt|okt|sesjon|GUI\s+\w+|AI\s+KR|PK)\s+V?\d{1,2}\.\d{2}(?!\.\d)",
+            re.IGNORECASE,
+        )
         for s in res["spor"]:
             for felt in ("navn", "beskrivelse", "kode"):
                 verdi = str(s.get(felt) or "")

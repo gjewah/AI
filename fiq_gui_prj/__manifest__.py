@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.18.1",
+    "version": "19.0.1.18.2",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
@@ -11,6 +11,17 @@ FIQ GUI Prosjekt
 KANON «Odoo-native først» (Gjermund 2026-07-16): KR er et LAG, ikke systemet.
 Testen: «Virker dette i native Odoo uten KR?» — feltene her er ekte Odoo-felt
 med Odoo-visning. Slås KR av, står de fortsatt.
+
+19.0.1.18.2 — TESTFIKS: oektnummer-vernet fanget en DATO:
+
+ * `test_ai_arbeid_lekker_aldri_oktnummer` feilet paa «urort siden 09.07.2026» —
+   moensteret to-siffer-punktum-to-siffer treffer baade «01.02» og «09.07».
+ * En test som sperrer enhver dato i en beskrivelse er ubrukelig, og verre: den
+   ville tvunget neste oekt til aa fjerne den, og dermed mistet vernet helt.
+ * Krever naa KONTEKST som faktisk peker paa en oekt: parentes rundt «(00.03)»,
+   «(V0.03)», eller et oektord foran «oekt 01.02», «GUI Prosjekt 06.74».
+   En bar dato slipper gjennom — den er ikke bokfoering.
+ * Verifisert mot 7 skal-fanges og 7 skal-slippe foer push.
 
 19.0.1.18.1 — HASTEFIKS: felte fiqas Staging (bygg 35155117):
 
