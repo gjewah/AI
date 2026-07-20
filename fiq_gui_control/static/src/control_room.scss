@@ -71,6 +71,30 @@
             &:hover { background: #262f37; color: #e8edf1; }
             &.on { background: #262f37; color: #fff; }
         }
+
+        // FLATENS EGNE PUNKTER — skal LESES som underordnet hovedmenyen, ikke som likestilt.
+        // Innrykk + tynnere strek + litt mindre tekst gjør hierarkiet synlig uten en eneste
+        // ekstra linje eller ramme. Samme klikkflate og samme hover som resten: kjernen eier
+        // oppførselen, så alle flater føles like (Gjermund 20.07).
+        .fiq_hm_subnav {
+            margin-left: 10px;
+            font-size: 13px;
+            .b { width: 2px; height: 13px; opacity: .75; }
+
+            // Tallet skyves helt til høyre — «hvor brenner det» leses i én kolonne nedover,
+            // ikke ved å lete i teksten. Vises kun når det er noe (0 er støy, ikke info).
+            .fiq_hm_subnav_n {
+                margin-left: auto;
+                background: #3a444e;
+                color: #e8edf1;
+                font-size: 11px;
+                font-weight: 600;
+                line-height: 1;
+                padding: 3px 7px;
+                border-radius: 9px;
+            }
+            &.on .fiq_hm_subnav_n { background: var(--fiq-accent); color: #fff; }
+        }
     }
 
     .fiq_hm_main { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto; padding-right: 2px; }

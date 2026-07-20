@@ -33,6 +33,13 @@ try {
         Component: { validate: (c) => c && c.prototype instanceof Component },
         color: { type: String, optional: true },
         sequence: { type: Number, optional: true },
+        // Flatens EGNE menypunkter — vises UNDER hovedmenyen (Gjermund 20.07.2026).
+        // Kjernen eier utseende og oppførsel; flaten leverer kun listen. Uten dette
+        // ville hver flate bygget sin egen meny, og vi fikk fem som ser ulike ut.
+        //   meny: [{ key: "pipeline", label: "Pipeline", badge: 5 }, …]
+        // `label` tåler tekst ELLER {en_US, nb_NO}. `badge` = det som HASTER, ikke totalen.
+        // Valgfritt: ingen `meny` = ingen undermeny, og flaten merker ingenting.
+        meny: { type: Array, optional: true },
         "*": true,
     });
 } catch (e) {

@@ -148,6 +148,24 @@
                         </div>
                     </t>
 
+                    <!-- FLATENS EGNE PUNKTER — folder seg ut UNDER hovedmenyen (Gjermund 20.07).
+                         Kjernen eier utseende og oppførsel; flaten leverer kun listen. Ellers får vi
+                         fem menyer som ser ulike ut — samme feil som de seks kollaps-løsningene.
+                         Ingen `meny` i registreringen = ingenting vises her. -->
+                    <t t-if="state.view === 'flate' and slotMeny.length">
+                        <div class="fiq_hm_glbl" t-esc="slotLabel"/>
+                        <t t-foreach="slotMeny" t-as="sm" t-key="sm.key">
+                            <div t-att-class="sm.active ? 'fiq_hm_nav fiq_hm_subnav on' : 'fiq_hm_nav fiq_hm_subnav'"
+                                 t-on-click="() =&gt; this.velgSlotMeny(sm.key)" t-att-title="sm.label">
+                                <span class="b"/>
+                                <t t-esc="sm.label"/>
+                                <!-- Tall som HASTER, ikke totalen — samme regel som samleboksene.
+                                     0 vises ikke: et nulltall er støy, ikke informasjon. -->
+                                <span t-if="sm.badge" class="fiq_hm_subnav_n" t-esc="sm.badge"/>
+                            </div>
+                        </t>
+                    </t>
+
                     <!-- Fagområder under: én rad per område (lang strek) + nedtrekk for underområder.
                          Treet leses fra Odoo prosjekt-hierarkiet (SSOT) — ingen hardkodet liste. -->
                     <div class="fiq_hm_glbl">Subject areas (SP)</div>
@@ -1115,8 +1133,12 @@
                              ikke merke forskjell på om de står i skallet eller her. Merk at
                              Kontrollrommet kaller feltet `companyId`, skallet `firm` — vi
                              oversetter her, slik at ingen flate-eier må vite om forskjellen. -->
+                        <!-- `menyValg` = punktet brukeren valgte i flatens egen undermeny.
+                             Kjernen HUSKER valget og sender det videre; FLATEN bestemmer hva det
+                             betyr. Vi tolker aldri innholdet i en annen økts flate. -->
                         <t t-component="slotComponent"
-                           t-props="{ firm: state.companyId, har000: state.har000, label: slotLabel }"/>
+                           t-props="{ firm: state.companyId, har000: state.har000, label: slotLabel,
+                                      menyValg: state.slotMenyValg }"/>
                     </div>
 
                     <div class="fiq_hm_foot">Powered by <img class="fiq_hm_footlogo" src="/fiq_gui_control/static/img/fiq_logo.png" alt="FIQ"/> <strong>FIQ</strong> · Control room</div>

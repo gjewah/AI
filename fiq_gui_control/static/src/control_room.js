@@ -171,6 +171,7 @@ export class FiqControlRoom extends Component {
             dashboards: [],       // Odoo native dashboards/analyses (only the ones that exist)
             fiqFlater: [],        // selvregistrerte FIQ-modul-flater (get_fiq_flater) – nye moduler uten kode-endring her
             slotKey: false,       // flaten som står i sloten nå (false = forsiden). Rammen står uansett.
+            slotMenyValg: false,  // valgt punkt i flatens EGEN undermeny (under hovedmenyen)
             har000: false,        // kryss-firma-innsyn (server-avgjort, fail-closed) — sendes til flater i sloten
             presence: [],         // «Til stede nå» – interne brukere + tilgjengelighets-status
             kal: { moter: [], aktiviteter: [], mnd: [] }, // Møter/aktiviteter-panelet (periode-styrt)
@@ -1795,6 +1796,10 @@ export class FiqControlRoom extends Component {
         // 1) Er flaten registrert som komponent? Bytt INNMAT — rammen står.
         const slot = this._slotKomponent(key);
         if (slot) {
+            // Bytter du flate, nullstilles undermeny-valget. Uten dette ville et punkt fra
+            // FORRIGE flate hengt igjen som aktivt — usynlig tilstand, samme felle som
+            // søkefilteret Gjermund beskrev: «du fjerner prosjektet, men det henger igjen».
+            if (this.state.slotKey !== key) { this.state.slotMenyValg = false; }
             this.state.slotKey = key;
             this.state.view = "flate";
             return;
@@ -1817,6 +1822,51 @@ export class FiqControlRoom extends Component {
         return e ? e.Component : null;
     }
 
+    // ── FLATENS EGNE MENYPUNKTER — under hovedmenyen, ikke ved siden av ────────────────
+    //
+    // Gjermund 20.07.2026: «kan øktenes menyer legge seg til under hovedmenyen?»
+    //
+    // JA — og KJERNEN eier det. Bygger hver flate sin egen meny, får vi fem menyer som ser
+    // ulike ut, oppfører seg ulikt, og som ikke kan foldes på tvers. Nøyaktig samme feil som
+    // de SEKS kollaps-implementasjonene og de TO fargekartene: én sak løst fem ganger, med
+    // fem ulike svar. Flaten leverer DATA; kjernen eier utseende og oppførsel.
+    //
+    // KONTRAKTEN — flaten legger `meny` i sin registrering (valgfritt):
+    //   registry.category("fiq_gui_flates").add("salg", {
+    //       key: "salg", label: "…", Component: MinFlate,
+    //       meny: [{ key: "pipeline", label: "Pipeline", badge: 5 },
+    //              { key: "tapt",     label: "Tapte",    badge: 0 }],
+    //   });
+    //
+    // `label` tåler tekst ELLER {en_US, nb_NO} — norsk før engelsk, samme som resten.
+    // `badge` er valgfritt: tall som HASTER, ikke totalen (samme regel som samleboksene).
+    //
+    // Ingen `meny` = ingen undermeny. Flater som ikke trenger det, merker ingenting.
+    get slotMeny() {
+        const e = this.state.slotKey ? this._slotKomponent(this.state.slotKey) : null;
+        const rå = (e && Array.isArray(e.meny)) ? e.meny : [];
+        return rå
+            .filter((m) => m && m.key)
+            .map((m) => ({
+                key: m.key,
+                label: this._flateTekst(m.label) || m.key,
+                badge: Number.isFinite(m.badge) ? m.badge : 0,
+                active: this.state.slotMenyValg === m.key,
+            }));
+    }
+
+    // Etikett som tåler både ren tekst og språk-oppslag. Norsk før engelsk (kanon 19.07).
+    _flateTekst(l) {
+        if (l && typeof l === "object") { return l[user.lang] || l.nb_NO || l.en_US || ""; }
+        return l || "";
+    }
+
+    // Klikk i flatens undermeny. Kjernen HUSKER valget og sender det som prop — flaten
+    // bestemmer selv hva det betyr. Vi tolker aldri innholdet i en annen økts flate.
+    velgSlotMeny(key) {
+        this.state.slotMenyValg = this.state.slotMenyValg === key ? false : key;
+    }
+
     // Navnet på flaten i sloten — til overskrift og «tilbake»-linja.
     get slotLabel() {
         const e = this.state.slotKey ? this._slotKomponent(this.state.slotKey) : null;
@@ -1831,6 +1881,7 @@ export class FiqControlRoom extends Component {
     // Lukk flaten og gå tilbake til forsiden. Rammen har stått hele tiden.
     lukkFlate() {
         this.state.slotKey = false;
+        this.state.slotMenyValg = false;
         this.state.view = "oversikt";
     }
 
