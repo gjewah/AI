@@ -310,3 +310,79 @@ class TestPrjData(TransactionCase):
                 firmaer.issubset(tillatte | {False}),
                 "WBS-treet viser oppgaver fra firmaer utenfor sesjonen: %s" % (firmaer - tillatte),
             )
+
+    # ---------- AI-ARBEID SOM PROSJEKT (Gjermund-direktiv 20.07) ----------
+
+    def test_ai_arbeid_taaler_at_ai_kr_mangler(self):
+        """Flaten skal ikke falle om `fiq_gui_ai_kr` ikke er installert.
+
+        En manglende nabomodul er ikke en feil i denne flaten. Uten dette ville
+        PRJ-flaten blitt avhengig av at AI KR alltid er der — og en flate som tar
+        ned en annen flate er nøyaktig det savepoint-arbeidet i KR skal hindre.
+        """
+        res = self.Data.get_ai_arbeid()
+        self.assertIn("tilgjengelig", res)
+        self.assertIn("spor", res)
+        self.assertIsInstance(res["spor"], list)
+        if not res["tilgjengelig"]:
+            self.assertEqual(res["spor"], [], "Utilgjengelig skal gi tom liste, ikke halve data")
+
+    def test_ai_arbeid_lekker_aldri_oktnummer(self):
+        """🔴 KJERNEN I DIREKTIVET: Gjermund skal ALDRI se «01.02» i denne flaten.
+
+        Ordrett 20.07: «pktsystemet til Claude kan dra et vist mørk plass… det har
+        kostet dager med ekstra arbide og over 100 timer.»
+
+        Øktnummeret er Claudes bokføring. Det flytter seg mens arbeidet står stille,
+        så en referanse skrevet i dag peker på en død økt i morgen. Denne testen
+        ville feilet om noen senere la øktnummer inn i visningen «bare som info».
+        """
+        import re
+        res = self.Data.get_ai_arbeid()
+        if not res["tilgjengelig"] or not res["spor"]:
+            self.skipTest("fiq_gui_ai_kr ikke installert, eller ingen spor å teste mot")
+
+        # Mønsteret vi aldri vil se: «00.03», «01.02», «(V0.03)», «06.74»
+        okt_monster = re.compile(r"\b\(?V?\d{2}\.\d{2}\)?\b")
+        for s in res["spor"]:
+            for felt in ("navn", "beskrivelse", "kode"):
+                verdi = str(s.get(felt) or "")
+                self.assertIsNone(
+                    okt_monster.search(verdi),
+                    "Øktnummer lekket inn i «%s» på sporet «%s»: %r. "
+                    "Gjermund skal se ARBEID, ikke Claudes bokføring."
+                    % (felt, s.get("navn"), verdi),
+                )
+            # `aktivitet` er et TALL (hvor mye som skjer) — aldri et øktnummer.
+            self.assertIsInstance(s["aktivitet"], int, s.get("navn"))
+
+    def test_ai_arbeid_sier_aerlig_hva_som_er_ukoblet(self):
+        """Et spor uten prosjekt skal vises ÆRLIG som ukoblet.
+
+        Alternativet — å skjule ukoblede spor — ville gitt et bilde som ser komplett
+        ut mens noe mangler. Samme prinsipp som «1 uten samtykke skjult» i presence.
+        AI KR kobler kun på eksakt navnetreff og oppretter ALDRI prosjekter (kanon),
+        så ukoblede spor er en normal og forventet tilstand.
+        """
+        res = self.Data.get_ai_arbeid()
+        if not res["tilgjengelig"]:
+            self.skipTest("fiq_gui_ai_kr ikke installert")
+
+        for s in res["spor"]:
+            self.assertEqual(
+                s["koblet"], bool(s["project_id"]),
+                "«%s»: «koblet» må speile om project_id faktisk finnes" % s.get("navn"),
+            )
+        self.assertEqual(
+            res["antall_koblet"], sum(1 for s in res["spor"] if s["koblet"]),
+            "Tellingen av koblede spor stemmer ikke med listen",
+        )
+
+    def test_ai_arbeid_respekterer_firma_scope(self):
+        """Firma-valget kan kun SNEVRE INN — aldri utvide. Samme regel som resten."""
+        res = self.Data.get_ai_arbeid(firma_id=999999)
+        self.assertIn("valgt_firma", res)
+        self.assertFalse(
+            res["valgt_firma"],
+            "Et firma sesjonen ikke har, skal falle tilbake til sesjonens scope — ikke aksepteres",
+        )

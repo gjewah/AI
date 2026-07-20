@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.16.1",
+    "version": "19.0.1.17.0",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
@@ -11,6 +11,28 @@ FIQ GUI Prosjekt
 KANON «Odoo-native først» (Gjermund 2026-07-16): KR er et LAG, ikke systemet.
 Testen: «Virker dette i native Odoo uten KR?» — feltene her er ekte Odoo-felt
 med Odoo-visning. Slås KR av, står de fortsatt.
+
+19.0.1.17.0 — AI-ARBEID SOM PROSJEKT, IKKE OEKTNUMMER (Gjermund-direktiv 20.07.2026):
+
+ * Ordrett: «Kan jeg ikke bruke prosjekter og saa kan claude gjoere hva det vil?» ·
+   «pktsystemet til Claude kan dra et vist moerk plass» · «det har kostet dager med
+   ekstra arbide og over 100 timer».
+ * PROBLEMET: oektnummeret («01.02») er Claudes bokfoering, men Gjermund tvinges til
+   aa forholde seg til det. Verre: nummeret FLYTTER SEG mens arbeidet staar stille —
+   en referanse skrevet i dag peker paa en doed oekt i morgen. Oektnummeret ER en id;
+   vi har bare ikke behandlet den som en.
+ * NY METODE `get_ai_arbeid()` — viser AI-sporene som ARBEID: «Kontrollrom», «Salg»,
+   «Kommunikasjon» med fremdrift. Hvilken oekt som utfoerer ser han ALDRI.
+ * ARBEIDSDELING (avtalt m/ AI KR 00.04, 20.07): de eier `fiq.ai.spor` + feltet
+   `project_id` paa den (deres 19.0.2.10.0); vi eier flaten som viser det.
+   Ingen ny datamodell — `project.project` overlever allerede at utfoereren byttes.
+ * TAALER at fiq_gui_ai_kr mangler: `env.get()` + AttributeError-fallback. En flate
+   skal aldri ta ned en annen flate.
+ * UKOBLEDE SPOR SIES AERLIG (`koblet: false`) — aa skjule dem ville gitt et bilde som
+   ser komplett ut mens noe mangler. Samme prinsipp som «1 uten samtykke skjult».
+ * 4 NYE TESTER, hvorav en sperrer regresjon: `test_ai_arbeid_lekker_aldri_oktnummer`
+   soeker etter to-siffer-punktum-to-siffer i alt som vises. Legger noen inn oektnummer
+   «bare som info» senere, feiler bygget.
 
 19.0.1.16.0 — SJEKKLISTER PÅ HVA SOM HELST + MALER (Gjermund 19.07.2026):
  * «både sjekkliste og steg for steg forklaringer skal være redigerbare og kunne

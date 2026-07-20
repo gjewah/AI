@@ -219,6 +219,80 @@ class FiqGuiPrjData(models.AbstractModel):
             "antall_noder": len(alle),
         }
 
+    # ---------- AI-arbeid som PROSJEKT (Gjermund-direktiv 2026-07-20) ----------
+
+    @api.model
+    def get_ai_arbeid(self, firma_id=None):
+        """AI-sporene vist som ARBEID — aldri som øktnummer.
+
+        🔴 GJERMUND-DIREKTIV 20.07.2026, ordrett:
+            «Kan jeg ikke bruke prosjekter og så kan claude gjøre hva det vil?»
+            «pktsystemet til Claude kan dra et vist mørk plass.»
+            «i da!!!!!!! det har kostet dager med ekstra arbide og over 100 timer»
+
+        Problemet: øktnummeret («01.02», «00.03») er CLAUDES bokføring, men Gjermund
+        tvinges til å forholde seg til det. Verre: nummeret FLYTTER SEG mens arbeidet
+        står stille — en referanse skrevet i dag peker på en død økt i morgen.
+        Øktnummeret ER en id ([[feedback-names-not-ids]]); vi har bare ikke behandlet
+        den som en.
+
+        Løsningen: han ser «Kontrollrom», «Salg», «Kommunikasjon» — navn på ARBEID,
+        med fremdrift og historikk. Hvilken Claude-økt som utfører er en teknisk
+        detalj han aldri møter.
+
+        Arbeidsdeling avtalt med AI KR (00.04) 20.07: de eier `fiq.ai.spor` og feltet
+        `project_id` på den; vi eier flaten som viser det. Ingen ny datamodell —
+        `project.project` overlever allerede at utføreren byttes, og det er nettopp
+        derfor det er riktig hjem.
+
+        🛑 KANON: prosjekter opprettes ALDRI maskinelt (wizard/regelmotor eier flyten).
+        Denne metoden LESER bare. Et spor uten prosjekt vises ærlig som ukoblet —
+        vi lager ikke et tomt prosjekt for å fylle et felt.
+        """
+        Spor = self.env.get("fiq.ai.spor")
+        if Spor is None:
+            # fiq_gui_ai_kr ikke installert — flaten skal ikke falle av det.
+            return {"spor": [], "tilgjengelig": False}
+
+        firmaer = self._tillatte_firmaer()
+        valgt = int(firma_id) if firma_id and int(firma_id) in firmaer else False
+
+        try:
+            rader = Spor.get_spor_som_prosjekt(company_id=valgt)
+        except AttributeError:
+            # Eldre fiq_gui_ai_kr (< 19.0.2.10.0) mangler metoden.
+            return {"spor": [], "tilgjengelig": False}
+
+        ut = []
+        for s in rader:
+            pid = s.get("project_id") or False
+            ut.append({
+                "id": s.get("id"),
+                # Navn på arbeidet — det Gjermund faktisk kjenner igjen.
+                "navn": s.get("prosjekt") or s.get("navn") or "",
+                "kode": s.get("kode") or "",
+                "versjon": s.get("versjon") or "",
+                "status": s.get("status") or "",
+                "modul": s.get("modul") or "",
+                "i_odoo": bool(s.get("i_odoo")),
+                "project_id": pid,
+                # Ukoblet spor sies ÆRLIG. Alternativet — å skjule det — ville gitt
+                # et bilde som ser komplett ut mens noe mangler.
+                "koblet": bool(pid),
+                "beskrivelse": s.get("beskrivelse") or "",
+                # 🛑 `aktive_okter` er med som TALL (hvor mye som skjer), aldri som
+                # øktnummer. Ingen «01.02» passerer dette laget.
+                "aktivitet": s.get("aktive_okter") or 0,
+            })
+
+        return {
+            "spor": ut,
+            "tilgjengelig": True,
+            "antall": len(ut),
+            "antall_koblet": sum(1 for s in ut if s["koblet"]),
+            "valgt_firma": valgt,
+        }
+
     # ---------- offentlig API for flaten ----------
 
     @api.model
