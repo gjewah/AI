@@ -1021,12 +1021,70 @@ class FiqControlRoomConfig(models.Model):
             # Savepointen ruller tilbake bare dette oppslaget. Meldt av AI KR (00.04) 19.07.2026.
             with self.env.cr.savepoint():
                 now = fields.Datetime.now()
-                evs = self.env["calendar.event"].sudo().search(
-                    [("start", "<=", now), ("stop", ">=", now)])
+                # ODOOS EGET «Vis som»-felt avgjør — ikke vår tolkning av «i møte».
+                # Gjermund 20.07.2026: «native odoo har møte alternativer som skal vises».
+                #
+                # `show_as` (calendar/models/calendar_event.py:156, Odoo 19) = 'free' | 'busy',
+                # default 'busy'. Setter brukeren et møte til «Ledig», sier hen: jeg er i møtet,
+                # men kan forstyrres. Uten dette filteret gjorde ETHVERT pågående møte deg
+                # utilgjengelig — også de du selv hadde merket som ledige.
+                #
+                # Hvorfor lese Odoos felt i stedet for å bygge vårt eget: valget virker da
+                # OVERALT — her, i Odoos ledig/opptatt-visning, og mot andre som booker møter
+                # med deg. Et eget FIQ-felt ville blitt en konkurrerende sannhet om samme sak.
+                Event = self.env["calendar.event"].sudo()
+                dom = [("start", "<=", now), ("stop", ">=", now)]
+                if "show_as" in Event._fields:
+                    dom.append(("show_as", "=", "busy"))
+                evs = Event.search(dom)
+                # Har du takket NEI til møtet, er du ikke i det.
+                # `calendar.attendee.state` = 'declined' (calendar_attendee.py:28, Odoo 19).
+                # Uten dette ble alle inviterte merket «i møte» — også de som avslo.
+                # Deltakeren har dessuten sin EGEN ledig/opptatt-markering (`availability`,
+                # calendar_attendee.py:45): arrangøren bestemmer ikke alene.
+                Att = self.env["calendar.attendee"].sudo()
+                har_att = "state" in Att._fields
                 for e in evs:
-                    in_meeting.update(e.partner_ids.ids)
+                    if not har_att:
+                        in_meeting.update(e.partner_ids.ids)
+                        continue
+                    for a in e.attendee_ids:
+                        if a.state == "declined":
+                            continue
+                        if "availability" in Att._fields and a.availability == "free":
+                            continue          # deltakeren har selv markert seg som ledig
+                        in_meeting.add(a.partner_id.id)
+                    if not e.attendee_ids:    # møte uten deltakerliste → som før
+                        in_meeting.update(e.partner_ids.ids)
         except Exception:
             pass
+
+        # Batch: hvem er FRAVÆRENDE i dag (godkjent fravær) → user_ids
+        #
+        # 🛑 SYKDOM VISES ALDRI — HARD REGEL (Gjermund 20.07.2026: «Meldinger som syk skal ikke
+        # vises, men fraværende skal»). Samme krav i godkjent spec §13: sykdom/diagnose/årsak
+        # eksponeres ALDRI som helseopplysning; kun et avledet kapasitetssignal.
+        #
+        # Derfor sendes KUN «fraværende i dag» videre — aldri fraværstype, aldri årsak, aldri
+        # hvor lenge. Kollegaen ser at du ikke er å få tak i. Hvorfor er ikke hens sak.
+        # Helseopplysninger er en særskilt kategori personopplysninger; en lekkasje her er
+        # ikke en skjønnhetsfeil, den er et brudd.
+        away_users = set()
+        try:
+            with self.env.cr.savepoint():
+                Leave = self.env["hr.leave"].sudo()
+                today = fields.Date.context_today(self)
+                lv = Leave.search([
+                    ("state", "=", "validate"),
+                    ("date_from", "<=", today), ("date_to", ">=", today),
+                ])
+                emp_ids = lv.mapped("employee_id").ids
+                if emp_ids:
+                    emps = self.env["hr.employee"].sudo().browse(emp_ids)
+                    away_users = set(x for x in emps.mapped("user_id").ids if x)
+        except Exception:
+            # hr_holidays er valgfri. Mangler den, er ingen markert fraværende — ikke en krasj.
+            away_users = set()
 
         # Batch: hvem har møtt på jobb (åpen hr.attendance, ingen check_out) → user_ids
         attendance_avail = False
@@ -1077,7 +1135,13 @@ class FiqControlRoomConfig(models.Model):
             # Fargelogikk for HELE kortet. OPPMØTE (innstemplet) er sterkeste signal =
             # «Til stede», UANSETT im_status (im_status er upålitelig uten sanntids-buss,
             # f.eks. på Staging). Deretter im_status som fallback.
-            if meeting:
+            if u.id in away_users:
+                # Fravær slår ALT annet: er du borte i dag, hjelper det ikke at nettleseren
+                # står åpen. Uten dette sto folk på ferie som «Til stede» fordi en fane var
+                # glemt oppe — og da lyver hele tavla.
+                # 🛑 Kun «Fraværende». Aldri type, aldri årsak, aldri hvor lenge.
+                farge, tekst = "red", _("Away")
+            elif meeting:
                 farge, tekst = "orange", _("In a meeting")
             elif moett:
                 farge, tekst = "green", _("Present")
