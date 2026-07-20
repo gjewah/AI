@@ -66,6 +66,25 @@ class FiqAiSpor(models.Model):
         ("godkjent", "Godkjent ferdig"),
     ], string="Status", default="bygges", index=True)
 
+    # ── KOBLING TIL ET EKTE ODOO-PROSJEKT ───────────────────────────────────────
+    # Gjermund 19.07.2026: «Kan jeg ikke bruke prosjekter og så kan claude gjøre hva det
+    # vil?» — han vil se AI-arbeid som PROSJEKTER, ikke som økter. «pktsystemet til Claude
+    # kan dra et vist mørk plass … det har kostet dager med ekstra arbeid og over 100 timer.»
+    #
+    # Sporet var den varige enheten, men lå usynlig for ham fordi ingenting knyttet det til
+    # noe han faktisk åpner. Denne ene koblingen lukker hullet: sporet får et hjem i
+    # prosjektlista, med fremdrift, oppgaver og historikk der han allerede jobber.
+    #
+    # 🛑 KANON STÅR: prosjekter opprettes ALDRI maskinelt (wizarden eier flyten). Feltet
+    # PEKER på et prosjekt som allerede finnes — det oppretter aldri noe.
+    project_id = fields.Many2one(
+        "project.project", string="Prosjekt", index=True, ondelete="set null",
+        help="Odoo-prosjektet dette sporet arbeider i. Sporet vises da som et prosjekt "
+             "med fremdrift og oppgaver — ikke som en økt med nummer.")
+    project_navn = fields.Char(string="Prosjekt (navn)", related="project_id.display_name",
+                               readonly=True,
+                               help="Navn, aldri ID — jf. husets navnekonvensjon.")
+
     okt_ids = fields.One2many("fiq.ai.okt", "spor_id", string="Økter i sporet")
     antall_okter = fields.Integer(compute="_compute_okter", store=True)
     aktive_okter = fields.Integer(compute="_compute_okter", store=True)
@@ -123,6 +142,61 @@ class FiqAiSpor(models.Model):
                 s.write({"versjon_hoved": 1, "versjon_lop": 0, "status": "i_odoo"})
                 bumpet.append(s.name)
         return bumpet
+
+    @api.model
+    def koble_til_prosjekter(self):
+        """Koble spor til EKSISTERENDE prosjekter — oppretter aldri noe.
+
+        Gjermund vil se AI-arbeid som prosjekter. Denne finner prosjektet som allerede
+        finnes og peker sporet dit. Kjøres av cron sammen med milepæl-sjekken.
+
+        🛑 OPPRETTER ALDRI et prosjekt. Kanon: prosjekter opprettes kun via wizarden
+        (Gjermund 17.07). Finnes det ikke noe å koble til, står sporet ukoblet — og det
+        er ærligere enn å lage et tomt prosjekt for å fylle et felt.
+        """
+        Project = self.env["project.project"].sudo()
+        koblet = []
+        for s in self.search([("project_id", "=", False)]):
+            treff = Project.browse()
+            # 1) Eksakt på sporets navn, 2) på koden. Aldri delvis-treff — «AI» ville
+            #    matchet halve prosjektlista.
+            for kandidat in (s.name, s.kode):
+                if not kandidat:
+                    continue
+                treff = Project.search([("name", "=ilike", kandidat)], limit=1)
+                if treff:
+                    break
+            if treff:
+                s.project_id = treff.id
+                koblet.append("%s -> %s" % (s.kode or s.name, treff.display_name))
+        return koblet
+
+    @api.model
+    def get_spor_som_prosjekt(self, company_id=False):
+        """Sporene sett som PROSJEKTER — det PRJ-flaten viser Gjermund.
+
+        Ingen øktnummer, ingen «01.02». Han skal se «Kontrollrom», «Salg»,
+        «Kommunikasjon» — navn på arbeid, ikke tekniske løpenumre.
+        Arbeidsdeling avtalt med GUI Prosjekt (V0.03) 20.07: jeg eier feltet på min
+        modell, de eier flaten som viser det.
+        """
+        dom = [("company_id", "=", int(company_id))] if company_id else []
+        out = []
+        for s in self.search(dom, order="kode"):
+            out.append({
+                "id": s.id,
+                "navn": s.name or "",
+                "kode": s.kode or "",
+                "versjon": s.versjon or "",
+                "status": s.status or "",
+                "modul": s.modul or "",
+                "i_odoo": bool(s.modul_installert),
+                "project_id": s.project_id.id or False,
+                "prosjekt": s.project_id.display_name if s.project_id else "",
+                "aktive_okter": s.aktive_okter,
+                "beskrivelse": s.beskrivelse or "",
+            })
+        return out
 
     @api.model
     def _finn_eller_lag(self, kode):

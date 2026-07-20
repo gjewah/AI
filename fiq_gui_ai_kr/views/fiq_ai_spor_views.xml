@@ -16,6 +16,7 @@
                 <field name="kode"/>
                 <field name="name"/>
                 <field name="modul" optional="show"/>
+                <field name="project_navn" string="Prosjekt" optional="show"/>
                 <field name="modul_installert" string="I Odoo" optional="show"/>
                 <field name="modul_versjon" string="Modulver." optional="show"/>
                 <field name="aktive_okter" string="Aktive"/>
@@ -49,6 +50,7 @@
                         <group>
                             <field name="kode" placeholder="AI KR"/>
                             <field name="modul" placeholder="fiq_gui_ai_kr"/>
+                            <field name="project_id"/>
                             <field name="modul_installert" string="Står i Odoo"/>
                             <field name="modul_versjon"/>
                         </group>
@@ -126,7 +128,8 @@
         <field name="name">AI Prosjektspor: sjekk milepæler</field>
         <field name="model_id" ref="model_fiq_ai_spor"/>
         <field name="state">code</field>
-        <field name="code">model.sjekk_milepaeler()</field>
+        <field name="code">model.sjekk_milepaeler()
+model.koble_til_prosjekter()</field>
         <field name="interval_number">1</field>
         <field name="interval_type">hours</field>
         <field name="active" eval="True"/>
