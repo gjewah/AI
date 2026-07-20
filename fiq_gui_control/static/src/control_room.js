@@ -38,7 +38,7 @@ const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj
 // ⚠️ MÅ FØLGE __manifest__.py sin "version" — ellers tror KR at fanen kjører gammel
 // kode og viser «A new version is installed»-banneret som ALDRI forsvinner, uansett
 // hvor mange ganger brukeren laster på nytt. Bump denne i SAMME commit som manifestet.
-const GUI_BUILD = "19.0.6.92.0";
+const GUI_BUILD = "19.0.6.93.0";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -1046,30 +1046,32 @@ export class FiqControlRoom extends Component {
         const myTasks = this.state.myTasks;
         try { openTasks = await this.orm.searchCount("project.task", [["user_ids", "in", [user.userId]]]); } catch (e) {}
 
-        // Communication view (email/messages on records) – filtered by period
-        let komm = [];
-        try { komm = await this.orm.call("fiq.gui.control.config", "get_kommunikasjon", [this.state.kommPeriod]); } catch (e) {}
-
-        // Salg (open opportunities, else quotations) for the category KPI – guarded
-        let salg = 0;
-        try { salg = await this.orm.searchCount("crm.lead", [["type", "=", "opportunity"], ["active", "=", true]]); }
-        catch (e) { try { salg = await this.orm.searchCount("sale.order", [["state", "in", ["draft", "sent"]]]); } catch (e2) {} }
-
-        // Finans: leverandørfakturaer til godkjenning (draft in_invoice) + forsinkede
-        // kundefakturaer (out_invoice, ikke betalt, forfalt). Guardet – account kan mangle.
+        // ⚡ Kommunikasjon · salg · finans hentes SAMTIDIG.
+        //
+        // Målt 19.07.2026 mot fiqas Staging: serveren bruker 184 ms på ALLE kallene til
+        // sammen (ingen enkeltmetode over 55 ms) — men de kjørte etter hverandre, og hvert
+        // kall betaler sin egen nettverksrunde. Brukeren ventet på summen av rundturer,
+        // ikke på serveren. Disse fire deler ingen data, så de kan gå parallelt.
+        //
+        // Promise.all avbryter ved første avvisning — derfor beholder hver gren sin egen
+        // catch og returnerer en tom verdi. En base uten `account` skal gi tomme
+        // finanstall, ikke en tom forside.
         const today0 = new Date().toISOString().slice(0, 10);
-        let finLev = [], finForsinket = [];
-        try {
-            finLev = await this._read("account.move",
+        const [komm, salg, finLev, finForsinket] = await Promise.all([
+            this.orm.call("fiq.gui.control.config", "get_kommunikasjon", [this.state.kommPeriod])
+                .catch(() => []),
+            this.orm.searchCount("crm.lead", [["type", "=", "opportunity"], ["active", "=", true]])
+                .catch(() => this.orm.searchCount("sale.order", [["state", "in", ["draft", "sent"]]])
+                    .catch(() => 0)),
+            this._read("account.move",
                 [["move_type", "=", "in_invoice"], ["state", "=", "draft"]],
-                ["name", "partner_id"], { limit: 25, order: "id desc" });
-        } catch (e) {}
-        try {
-            finForsinket = await this._read("account.move",
+                ["name", "partner_id"], { limit: 25, order: "id desc" }).catch(() => []),
+            this._read("account.move",
                 [["move_type", "=", "out_invoice"], ["state", "=", "posted"],
                  ["payment_state", "in", ["not_paid", "partial"]], ["invoice_date_due", "<", today0]],
-                ["name", "partner_id", "invoice_date_due"], { limit: 25, order: "invoice_date_due asc" });
-        } catch (e) {}
+                ["name", "partner_id", "invoice_date_due"],
+                { limit: 25, order: "invoice_date_due asc" }).catch(() => []),
+        ]);
         this.state.finansLines = [
             ...finForsinket.map((m) => ({ text: (m.name || _t("Invoice")) + " · " + (m.partner_id ? m.partner_id[1] : "") + " (" + _t("past due") + " " + (m.invoice_date_due || "") + ")", model: "account.move", res_id: m.id })),
             ...finLev.map((m) => ({ text: (m.name || _t("Vendor bill")) + " · " + (m.partner_id ? m.partner_id[1] : "") + " (" + _t("for approval") + ")", model: "account.move", res_id: m.id })),
@@ -1092,35 +1094,24 @@ export class FiqControlRoom extends Component {
             this.state.selectedKpi = red ? red.key : "komm";
         }
 
-        // Native dashboards/analyses (only the ones that actually exist in the DB)
-        let dashboards = [];
-        try { dashboards = await this.orm.call("fiq.gui.control.config", "get_dashboards", []); } catch (e) {}
-
-        // Selvregistrerte FIQ-flater: nye moduler melder seg selv inn i menyen, uten at
-        // denne fila endres. Feiler kallet, står menyen igjen med de faste punktene.
-        let fiqFlater = [];
-        try { fiqFlater = await this.orm.call("fiq.gui.control.config", "get_fiq_flater", []); } catch (e) {}
+        // ⚡ Andre parallelle bolk: dashbord · flater · presence · kalender · fagområder ·
+        // handlinger. Ingen av dem leser hverandres resultat, så de hentes samtidig.
+        // Kalenderen henger på fordi den bare fyller state selv (_loadKalender).
+        const [dashboards, fiqFlater, presence, raaAreas, actions] = await Promise.all([
+            this.orm.call("fiq.gui.control.config", "get_dashboards", []).catch(() => []),
+            this.orm.call("fiq.gui.control.config", "get_fiq_flater", []).catch(() => []),
+            this.orm.call("fiq.gui.control.config", "get_presence", []).catch(() => []),
+            this.orm.call("fiq.gui.control.config", "get_areas", []).catch(() => []),
+            this.orm.call("fiq.gui.control.config", "get_actions", []).catch(() => ({})),
+            this._loadKalender().catch(() => {}),
+        ]);
         this.state.fiqFlater = fiqFlater;
-
-        // «Til stede nå» – interne brukere + tilgjengelighets-status
-        let presence = [];
-        try { presence = await this.orm.call("fiq.gui.control.config", "get_presence", []); } catch (e) {}
-
-        // Møter/aktiviteter-panelet (periode- og person-styrt)
-        await this._loadKalender();
-
-        // Fagområde-treet fra prosjekt-hierarkiet (sidemeny + filter-chips) m/ kanoniske farger
-        try {
-            const raw = await this.orm.call("fiq.gui.control.config", "get_areas", []);
-            this.state.areas = (raw || []).map((a) => ({
-                ...a, ...spColor(a.nr),
-                subs: (a.subs || []).map((s) => ({ ...s, ...spColor(s.nr) })),
-            }));
-        } catch (e) { this.state.areas = []; }
-
-        // Hvilke Odoo-handlinger finnes faktisk (guardet – depends = web+project)
-        let actions = {};
-        try { actions = await this.orm.call("fiq.gui.control.config", "get_actions", []); } catch (e) {}
+        // Fagområde-treet får kanoniske farger her, ikke i kallet — spColor er ren
+        // klient-logikk og skal ikke holde nettverket åpent.
+        this.state.areas = (raaAreas || []).map((a) => ({
+            ...a, ...spColor(a.nr),
+            subs: (a.subs || []).map((s) => ({ ...s, ...spColor(s.nr) })),
+        }));
 
         this.state.myTasks = myTasks;
         this.state.komm = komm;
