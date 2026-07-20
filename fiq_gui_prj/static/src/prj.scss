@@ -1,15 +1,20 @@
-// FIQ Prosjektoversikt — WBS-tre med timer mot budsjett.
+// PRJ-flaten — Prosjektoversikt.
 //
-// Visuelt språk hentet fra fasit-mockupen (docs/mockups/0.00 IQ prosjektoversikt_utkast02.html,
-// V00.04) — samme token-sett, samme typografi, samme «X / Y»-mønster med stort mono-tall og
-// dempet nevner. Fargeaksen er batch 15 sin: blå = innenfor budsjett, RØD = over, grønn = ferdig.
+// Visuelt språk fra fasiten: docs/mockups/0.00 IQ prosjektoversikt_utkast03.html
+// (artifact 87871eef). Samme token-sett, samme mono-tall med tabular-nums, samme
+// «X / Y»-mønster med stort tall og dempet nevner.
 //
 // 🛑 SCSS-FELLE UNNGÅTT: `min(px, vw)` dreper HELE assets-bundelen i Odoo 19
-// («must be fixed for the ENTIRE DATABASE»). Ingen min()/max() med blandede enheter her.
-// clamp() med rene enheter er trygt og brukes bevisst.
+// («must be fixed for the ENTIRE DATABASE»). Ingen min()/max() med blandede
+// enheter her. clamp() med rene enheter er trygt.
+//
+// TO FARGEAKSER, bevisst adskilt:
+//   fiq_prj_t_*  = TID   (i rute / følg opp / kritisk / planlagt)   — batch 08b
+//   fiq_prj_b_*  = KOST  (innenfor / over / ferdig / ikke startet)  — batch 15
+// En oppgave kan være i rute på tid og samtidig sprenge budsjettet. Å slå dem
+// sammen ville skjult nettopp det.
 
 .fiq_gui_prj {
-    // Tokens fra fasit-mockupen. Prefikset så de ikke lekker ut i Odoos egen CSS.
     --fiq-ground: #EDF0F4;
     --fiq-surface: #FFFFFF;
     --fiq-surface-2: #F5F7FA;
@@ -19,17 +24,19 @@
     --fiq-line: #E0E5EC;
     --fiq-line-soft: #EBEEF2;
 
-    // Budsjett-aksen (batch 15)
-    --fiq-accent: #4C63D2;      // blå — innenfor budsjett
+    --fiq-accent: #4C63D2;
     --fiq-accent-soft: #E8ECFB;
-    --fiq-crit: #C7413B;        // rød — OVER budsjett
-    --fiq-crit-soft: #F8E3E1;
-    --fiq-good: #1E9E6A;        // grønn — ferdig
+    --fiq-good: #1E9E6A;
     --fiq-good-soft: #E1F2EA;
+    --fiq-warn: #B4791A;
+    --fiq-warn-soft: #F8EDD8;
+    --fiq-crit: #C7413B;
+    --fiq-crit-soft: #F8E3E1;
 
     --fiq-shadow: 0 8px 26px -18px rgba(20, 30, 50, .5);
     --fiq-mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
     --fiq-r: 12px;
+    --fiq-navn: 300px;
 
     padding: clamp(12px, 2vw, 22px);
     background: var(--fiq-ground);
@@ -39,7 +46,6 @@
     min-height: 100%;
     overflow: auto;
 
-    // Mørk modus — flaten arver Odoos tema der brukeren har valgt det.
     @media (prefers-color-scheme: dark) {
         --fiq-ground: #0D1218;
         --fiq-surface: #151C24;
@@ -51,110 +57,127 @@
         --fiq-line-soft: #1F2831;
         --fiq-accent: #7C8FE8;
         --fiq-accent-soft: #1B2338;
-        --fiq-crit: #EA6B63;
-        --fiq-crit-soft: #2E1614;
         --fiq-good: #3BC98C;
         --fiq-good-soft: #10241B;
+        --fiq-warn: #E3A845;
+        --fiq-warn-soft: #2C2411;
+        --fiq-crit: #EA6B63;
+        --fiq-crit-soft: #2E1614;
     }
 
-    // ---------- status → farge (én kilde, alt annet arver) ----------
-    .fiq_prj_innenfor { --fiq-bc: var(--fiq-accent); --fiq-bc-soft: var(--fiq-accent-soft); }
-    .fiq_prj_over     { --fiq-bc: var(--fiq-crit);   --fiq-bc-soft: var(--fiq-crit-soft); }
-    .fiq_prj_ferdig   { --fiq-bc: var(--fiq-good);   --fiq-bc-soft: var(--fiq-good-soft); }
-    .fiq_prj_plan     { --fiq-bc: var(--fiq-muted);  --fiq-bc-soft: var(--fiq-line-soft); }
+    // ---------- fargeakser ----------
+    .fiq_prj_t_rute { --fiq-c: var(--fiq-good); --fiq-cs: var(--fiq-good-soft); }
+    .fiq_prj_t_folg { --fiq-c: var(--fiq-warn); --fiq-cs: var(--fiq-warn-soft); }
+    .fiq_prj_t_krit { --fiq-c: var(--fiq-crit); --fiq-cs: var(--fiq-crit-soft); }
+    .fiq_prj_t_plan { --fiq-c: var(--fiq-muted); --fiq-cs: var(--fiq-line-soft); }
 
-    // ---------- firma-bokser (batch 15: «små bokser øverst») ----------
-    .fiq_prj_firmabokser {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 7px;
-        margin-bottom: 14px;
-    }
-
-    .fiq_prj_firmaboks {
-        display: flex;
-        flex-direction: column;
-        gap: 1px;
-        padding: 8px 13px;
-        border: 1px solid var(--fiq-line);
-        border-radius: 10px;
-        background: var(--fiq-surface);
-        color: var(--fiq-ink);
-        cursor: pointer;
-        text-align: left;
-        transition: border-color .12s, transform .12s;
-
-        &:hover { border-color: var(--fiq-accent); transform: translateY(-1px); }
-
-        &.fiq_prj_valgt {
-            background: var(--fiq-accent);
-            border-color: var(--fiq-accent);
-            color: #fff;
-
-            .fiq_prj_fb_sub { color: rgba(255, 255, 255, .75); }
-        }
-    }
-
-    .fiq_prj_fb_navn { font-weight: 650; font-size: 12.5px; }
-    .fiq_prj_fb_sub { font-size: 10px; color: var(--fiq-muted); font-family: var(--fiq-mono); }
+    .fiq_prj_b_innenfor { color: var(--fiq-accent); --fiq-bc: var(--fiq-accent); }
+    .fiq_prj_b_over     { color: var(--fiq-crit);   --fiq-bc: var(--fiq-crit); }
+    .fiq_prj_b_ferdig   { color: var(--fiq-good);   --fiq-bc: var(--fiq-good); }
+    .fiq_prj_b_plan     { color: var(--fiq-muted);  --fiq-bc: var(--fiq-muted); }
 
     // ---------- topp ----------
-    .fiq_gui_prj_top {
+    .fiq_prj_topp {
         display: flex;
         align-items: center;
-        gap: 10px;
-        margin-bottom: 14px;
+        gap: 11px;
+        margin-bottom: 13px;
+        flex-wrap: wrap;
     }
 
-    .fiq_gui_prj_mark {
+    .fiq_prj_merke {
         display: grid;
         place-items: center;
-        width: 28px;
-        height: 28px;
-        border-radius: 8px;
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
         background: var(--fiq-accent);
         color: #fff;
         font-weight: 800;
+        font-size: 16px;
         flex: none;
     }
 
-    .fiq_gui_prj_name { font-size: 18px; font-weight: 780; letter-spacing: -.02em; }
+    .fiq_prj_tittel {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+
+        h1 { margin: 0; font-size: 20px; font-weight: 780; letter-spacing: -.02em; }
+    }
 
     .fiq_prj_kicker {
         font-family: var(--fiq-mono);
-        font-size: 10.5px;
+        font-size: 10px;
+        letter-spacing: .1em;
+        color: var(--fiq-muted);
+    }
+
+    .fiq_prj_topp_hoyre {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .fiq_prj_lab {
+        font-family: var(--fiq-mono);
+        font-size: 10px;
         letter-spacing: .07em;
         text-transform: uppercase;
         color: var(--fiq-muted);
     }
 
-    .fiq_prj_info, .fiq_prj_feil {
-        padding: 18px;
+    .fiq_prj_velg {
+        padding: 6px 10px;
+        border: 1px solid var(--fiq-line);
+        border-radius: 8px;
+        background: var(--fiq-surface);
+        color: var(--fiq-ink);
+        font-size: 12.5px;
+    }
+
+    .fiq_prj_info, .fiq_prj_feil, .fiq_prj_avkortet {
+        padding: 16px 18px;
         border: 1px solid var(--fiq-line);
         border-radius: var(--fiq-r);
         background: var(--fiq-surface);
         color: var(--fiq-ink-soft);
+        margin-bottom: 11px;
     }
 
     .fiq_prj_feil { border-color: var(--fiq-crit); color: var(--fiq-crit); }
 
-    // ---------- nivå 1: prosjektkort ----------
-    .fiq_prj_kort {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-        gap: 11px;
+    .fiq_prj_avkortet {
+        border-color: var(--fiq-warn);
+        background: var(--fiq-warn-soft);
+        color: var(--fiq-warn);
+        font-size: 12px;
+        padding: 9px 14px;
     }
 
-    .fiq_prj_kort_en {
-        position: relative;
-        padding: 13px 15px 13px 17px;
+    // ---------- nøkkeltall ----------
+    .fiq_prj_kpi {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1px;
+        background: var(--fiq-line-soft);
         border: 1px solid var(--fiq-line);
         border-radius: var(--fiq-r);
-        background: var(--fiq-surface);
-        box-shadow: var(--fiq-shadow);
-        cursor: pointer;
         overflow: hidden;
-        transition: border-color .12s, transform .12s;
+        margin-bottom: 12px;
+        box-shadow: var(--fiq-shadow);
+    }
+
+    .fiq_prj_kpi_kort {
+        background: var(--fiq-surface);
+        padding: 12px 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        position: relative;
+        cursor: pointer;
+        transition: background .12s;
 
         // Farget venstrekant = status ved første øyekast
         &::before {
@@ -163,204 +186,99 @@
             left: 0;
             top: 0;
             bottom: 0;
-            width: 4px;
-            background: var(--fiq-bc);
+            width: 3px;
+            background: var(--fiq-c, var(--fiq-accent));
         }
 
-        &:hover { border-color: var(--fiq-bc); transform: translateY(-1px); }
+        &:hover { background: var(--fiq-surface-2); }
     }
 
-    .fiq_prj_kort_topp {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 5px;
-    }
-
-    .fiq_prj_nr {
+    .fiq_prj_kpi_lab {
         font-family: var(--fiq-mono);
-        font-size: 11px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: .05em;
         color: var(--fiq-muted);
     }
 
-    .fiq_prj_status_pille {
-        margin-left: auto;
-        font-family: var(--fiq-mono);
-        font-size: 9.5px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: .04em;
-        padding: 2px 8px;
-        border-radius: 100px;
-        background: var(--fiq-bc-soft);
-        color: var(--fiq-bc);
-        white-space: nowrap;
-    }
-
-    .fiq_prj_navn { font-weight: 660; font-size: 14px; }
-    .fiq_prj_kunde, .fiq_prj_firmanavn { font-size: 11.5px; color: var(--fiq-muted); }
-
-    .fiq_prj_timer {
-        display: flex;
-        align-items: baseline;
-        gap: 5px;
-        margin-top: 9px;
-    }
-
-    // «X / Y» — stort mono-tall, dempet nevner (mønster fra fasit)
-    .fiq_prj_stor {
-        font-family: var(--fiq-mono);
-        font-size: 22px;
-        font-weight: 750;
+    .fiq_prj_kpi_tall {
+        font-size: 24px;
+        font-weight: 780;
         letter-spacing: -.03em;
         font-variant-numeric: tabular-nums;
-        color: var(--fiq-bc);
+        color: var(--fiq-c, var(--fiq-ink));
+
+        small { font-size: 14px; color: var(--fiq-muted); font-weight: 600; }
     }
 
-    .fiq_prj_liten {
-        font-family: var(--fiq-mono);
-        font-size: 12px;
-        color: var(--fiq-muted);
-        font-variant-numeric: tabular-nums;
-    }
+    .fiq_prj_kpi_sub { font-size: 10.5px; color: var(--fiq-muted); }
 
-    .fiq_prj_stripe {
-        display: block;
-        height: 6px;
-        margin-top: 7px;
-        border-radius: 100px;
-        background: var(--fiq-line-soft);
-        overflow: hidden;
-    }
-
-    // 🔴 Stripa klippes på 100 % (width kan ikke vise 2159 %) — men TALLET ved siden av
-    // viser det ekte forbruket. Det er hele forskjellen fra V0.02, som kappet selve tallet
-    // og dermed skjulte et 22x overforbruk bak «100 % grønn».
-    .fiq_prj_fyll {
-        display: block;
-        height: 100%;
-        border-radius: 100px;
-        background: var(--fiq-bc);
-        transition: width .2s;
-    }
-
-    .fiq_prj_pst {
-        margin-top: 4px;
-        font-family: var(--fiq-mono);
-        font-size: 11px;
-        font-variant-numeric: tabular-nums;
-
-        span { color: var(--fiq-bc); font-weight: 700; }
-    }
-
-    .fiq_prj_kort_bunn {
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-        margin-top: 9px;
-        padding-top: 8px;
-        border-top: 1px solid var(--fiq-line-soft);
-        font-size: 11px;
-        color: var(--fiq-muted);
-    }
-
-    // ---------- nivå 2: drill-topp ----------
-    .fiq_prj_drill {
+    // ---------- kontrollinjer ----------
+    .fiq_prj_ctrl {
         display: flex;
         align-items: center;
-        gap: 11px;
-        margin-bottom: 12px;
+        gap: 7px;
         flex-wrap: wrap;
-
-        .fiq_prj_navn { font-size: 16px; }
+        padding: 9px 13px;
+        background: var(--fiq-surface);
+        border: 1px solid var(--fiq-line);
+        border-radius: 10px;
+        margin-bottom: 8px;
     }
 
-    .fiq_prj_tilbake, .fiq_prj_lenke {
+    .fiq_prj_ctrl2 { margin-bottom: 12px; }
+
+    .fiq_prj_skille { margin-left: 12px; }
+
+    .fiq_prj_vb, .fiq_prj_ub, .fiq_prj_nav {
         padding: 6px 12px;
         border: 1px solid var(--fiq-line);
         border-radius: 8px;
         background: var(--fiq-surface);
         color: var(--fiq-ink);
-        font-size: 12px;
+        font-size: 12.5px;
         font-weight: 600;
         cursor: pointer;
+        white-space: nowrap;
 
         &:hover { border-color: var(--fiq-accent); color: var(--fiq-accent); }
     }
 
-    .fiq_prj_lenke { margin-left: auto; }
-
-    // ---------- prosjektsum ----------
-    .fiq_prj_sum {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        flex-wrap: wrap;
-        padding: 14px 17px;
-        margin-bottom: 11px;
-        border: 1px solid var(--fiq-bc);
-        border-left: 4px solid var(--fiq-bc);
-        border-radius: var(--fiq-r);
-        background: var(--fiq-bc-soft);
+    .fiq_prj_vb.fiq_prj_paa {
+        background: var(--fiq-accent);
+        border-color: var(--fiq-accent);
+        color: #fff;
     }
 
-    .fiq_prj_sum_venstre { display: flex; flex-direction: column; gap: 2px; }
-
-    .fiq_prj_sum_merke {
-        font-family: var(--fiq-mono);
-        font-size: 10px;
-        letter-spacing: .07em;
-        text-transform: uppercase;
-        color: var(--fiq-ink-soft);
-    }
-
-    .fiq_prj_sum_tall {
-        font-family: var(--fiq-mono);
-        font-size: 26px;
-        font-weight: 780;
-        letter-spacing: -.03em;
-        font-variant-numeric: tabular-nums;
-        color: var(--fiq-bc);
-    }
-
-    .fiq_prj_sum_hoyre {
+    .fiq_prj_tid {
         margin-left: auto;
         display: flex;
-        align-items: center;
-        gap: 10px;
+        gap: 5px;
     }
 
-    .fiq_prj_sum_pst {
-        font-family: var(--fiq-mono);
-        font-size: 20px;
-        font-weight: 780;
-        font-variant-numeric: tabular-nums;
-        color: var(--fiq-bc);
-    }
+    .fiq_prj_idag { font-family: var(--fiq-mono); font-size: 11.5px; }
 
-    // ---------- fargeforklaring ----------
-    .fiq_prj_forklaring {
+    .fiq_prj_tegn {
+        margin-left: auto;
         display: flex;
-        flex-wrap: wrap;
-        gap: 14px;
-        margin-bottom: 10px;
-        padding: 0 3px;
+        gap: 12px;
         font-size: 11px;
         color: var(--fiq-muted);
+        flex-wrap: wrap;
 
-        span { display: inline-flex; align-items: center; gap: 5px; }
+        span { display: inline-flex; align-items: center; gap: 4px; }
     }
 
     .fiq_prj_prikk {
         width: 9px;
         height: 9px;
         border-radius: 3px;
-        background: var(--fiq-bc);
+        background: var(--fiq-c, var(--fiq-muted));
         flex: none;
     }
 
-    // ---------- WBS-treet ----------
-    .fiq_prj_tre {
+    // ---------- kort ----------
+    .fiq_prj_kort {
         border: 1px solid var(--fiq-line);
         border-radius: var(--fiq-r);
         background: var(--fiq-surface);
@@ -368,53 +286,156 @@
         overflow: hidden;
     }
 
-    .fiq_prj_tre_hode, .fiq_prj_node {
-        display: grid;
-        grid-template-columns: minmax(220px, 1fr) 108px 168px 118px;
+    .fiq_prj_kh {
+        display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 9px 14px;
+        gap: 9px;
+        padding: 10px 15px;
+        border-bottom: 1px solid var(--fiq-line-soft);
+        background: var(--fiq-surface-2);
+        font-family: var(--fiq-mono);
+        font-size: 11px;
+        letter-spacing: .06em;
+        color: var(--fiq-ink-soft);
     }
 
-    .fiq_prj_tre_hode {
+    .fiq_prj_kc { margin-left: auto; color: var(--fiq-muted); font-size: 10.5px; }
+
+    // ---------- Gantt-rutenett ----------
+    .fiq_prj_grid {
+        display: grid;
+        grid-template-columns: var(--fiq-navn) 1fr;
+        align-items: stretch;
+        border-bottom: 1px solid var(--fiq-line-soft);
+    }
+
+    .fiq_prj_hode {
         background: var(--fiq-surface-2);
         border-bottom: 1px solid var(--fiq-line);
-        font-family: var(--fiq-mono);
-        font-size: 10px;
-        letter-spacing: .06em;
-        text-transform: uppercase;
-        color: var(--fiq-muted);
-    }
 
-    .fiq_prj_node {
-        border-bottom: 1px solid var(--fiq-line-soft);
-        position: relative;
-
-        &:last-child { border-bottom: 0; }
-        &:hover { background: var(--fiq-surface-2); }
-
-        // Statusmarkør helt til venstre — smal, men nok til å lese treet i én scanning
-        &::before {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 3px;
-            background: var(--fiq-bc);
+        .fiq_prj_navnkol {
+            font-family: var(--fiq-mono);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--fiq-muted);
         }
+
+        .fiq_prj_spor { display: flex; }
     }
 
-    // Innrykk per nivå. --fiq-dybde settes inline av malen, så treet tåler
-    // vilkårlig mange nivåer (Blokk → Fase → Leilighet → Aktivitet = 4, men ikke låst).
-    .fiq_prj_n_navn {
+    .fiq_prj_navnkol {
         display: flex;
         align-items: center;
         gap: 6px;
+        padding: 8px 13px;
         min-width: 0;
-        padding-left: calc(var(--fiq-dybde, 0) * 17px);
+        border-right: 1px solid var(--fiq-line-soft);
     }
 
+    .fiq_prj_innrykk { padding-left: 30px; }
+
+    .fiq_prj_kol {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 2px;
+        border-left: 1px solid var(--fiq-line-soft);
+        font-size: 11px;
+        font-weight: 600;
+
+        small { font-size: 9.5px; color: var(--fiq-muted); font-weight: 400; }
+
+        &.fiq_prj_naa {
+            background: var(--fiq-accent-soft);
+            color: var(--fiq-accent);
+        }
+    }
+
+    .fiq_prj_spor {
+        position: relative;
+        min-height: 38px;
+        // Kolonnelinjer som bakgrunn — ingen DOM-elementer per kolonne.
+        background-image: repeating-linear-gradient(
+            to right,
+            transparent,
+            transparent calc(14.2857% - 1px),
+            var(--fiq-line-soft) calc(14.2857% - 1px),
+            var(--fiq-line-soft) 14.2857%
+        );
+    }
+
+    .fiq_prj_naa_strek {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--fiq-accent);
+        opacity: .55;
+        z-index: 1;
+    }
+
+    .fiq_prj_grad {
+        background: var(--fiq-surface-2);
+        font-weight: 660;
+    }
+
+    .fiq_prj_rad:hover { background: var(--fiq-surface-2); }
+
+    // ---------- Gantt-søyle ----------
+    .fiq_prj_soyle {
+        position: absolute;
+        top: 7px;
+        height: 24px;
+        border-radius: 7px;
+        border: 1.5px solid var(--fiq-c, var(--fiq-accent));
+        background: var(--fiq-cs, var(--fiq-accent-soft));
+        display: flex;
+        align-items: center;
+        padding: 0 8px;
+        overflow: hidden;
+        cursor: pointer;
+        z-index: 2;
+
+        &:hover { filter: brightness(.97); }
+    }
+
+    .fiq_prj_fyll {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        background: var(--fiq-c, var(--fiq-accent));
+        opacity: .32;
+    }
+
+    .fiq_prj_slab {
+        position: relative;
+        z-index: 1;
+        font-family: var(--fiq-mono);
+        font-size: 10px;
+        font-weight: 750;
+        color: var(--fiq-c, var(--fiq-accent));
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    // Frist-diamant
+    .fiq_prj_frist {
+        position: absolute;
+        top: 13px;
+        width: 11px;
+        height: 11px;
+        margin-left: -5px;
+        background: var(--fiq-crit);
+        transform: rotate(45deg);
+        border-radius: 2px;
+        z-index: 3;
+    }
+
+    // ---------- felles rad-elementer ----------
     .fiq_prj_pil {
         width: 18px;
         height: 18px;
@@ -432,20 +453,14 @@
         &:hover { color: var(--fiq-ink); }
     }
 
-    .fiq_prj_pil_tom { width: 18px; flex: none; }
-
-    .fiq_prj_hake { color: var(--fiq-good); font-weight: 700; flex: none; }
-
-    .fiq_prj_wbs {
-        font-family: var(--fiq-mono);
-        font-size: 11px;
-        color: var(--fiq-muted);
-        flex: none;
-        font-variant-numeric: tabular-nums;
+    .fiq_prj_gnavn {
+        font-weight: 660;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    .fiq_prj_n_tekst {
-        font-weight: 600;
+    .fiq_prj_onavn {
         cursor: pointer;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -454,69 +469,200 @@
         &:hover { color: var(--fiq-accent); text-decoration: underline; }
     }
 
-    .fiq_prj_ferdig_tekst { color: var(--fiq-muted); font-weight: 500; }
-
-    .fiq_prj_barnetall {
+    .fiq_prj_nr {
         font-family: var(--fiq-mono);
-        font-size: 10px;
-        padding: 1px 6px;
+        font-size: 10.5px;
+        color: var(--fiq-muted);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .fiq_prj_dempet { opacity: .75; }
+
+    .fiq_prj_prio { color: var(--fiq-ink-soft); flex: none; font-size: 11px; }
+    .fiq_prj_ai { flex: none; font-size: 12px; }
+
+    .fiq_prj_tall {
+        font-family: var(--fiq-mono);
+        font-size: 10.5px;
+        padding: 1px 7px;
         border-radius: 100px;
         background: var(--fiq-line-soft);
         color: var(--fiq-muted);
         flex: none;
+        font-variant-numeric: tabular-nums;
     }
 
-    .fiq_prj_n_timer {
+    .fiq_prj_timer {
+        margin-left: auto;
         font-family: var(--fiq-mono);
-        font-size: 12.5px;
+        font-size: 11.5px;
         font-weight: 700;
         font-variant-numeric: tabular-nums;
-        color: var(--fiq-bc);
         white-space: nowrap;
+        flex: none;
     }
 
-    .fiq_prj_n_bar {
+    .fiq_prj_pille {
+        font-family: var(--fiq-mono);
+        font-size: 9.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        padding: 2px 8px;
+        border-radius: 100px;
+        background: var(--fiq-cs, var(--fiq-line-soft));
+        color: var(--fiq-c, var(--fiq-muted));
+        white-space: nowrap;
+        flex: none;
+    }
+
+    // ---------- Liste ----------
+    .fiq_prj_lgrad {
         display: flex;
         align-items: center;
         gap: 7px;
-        min-width: 0;
+        padding: 9px 14px;
+        background: var(--fiq-surface-2);
+        border-bottom: 1px solid var(--fiq-line-soft);
+        position: relative;
 
-        .fiq_prj_stripe { flex: 1; margin-top: 0; min-width: 40px; }
+        &::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--fiq-c, var(--fiq-muted));
+        }
     }
 
-    .fiq_prj_n_pst {
+    .fiq_prj_li {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 9px 14px 9px 30px;
+        border-bottom: 1px solid var(--fiq-line-soft);
+        cursor: pointer;
+        position: relative;
+
+        &::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--fiq-c, var(--fiq-muted));
+        }
+
+        &:hover { background: var(--fiq-surface-2); }
+        &:last-child { border-bottom: 0; }
+    }
+
+    .fiq_prj_li_midt {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .fiq_prj_frist_txt {
         font-family: var(--fiq-mono);
         font-size: 11px;
+        color: var(--fiq-ink-soft);
+        white-space: nowrap;
+        flex: none;
+    }
+
+    .fiq_prj_pst {
+        font-family: var(--fiq-mono);
+        font-size: 11.5px;
         font-weight: 700;
         font-variant-numeric: tabular-nums;
-        color: var(--fiq-bc);
-        white-space: nowrap;
-        flex: none;
-    }
-
-    // Overforbruk sies med ord, ikke bare farge — «+205,9 t over» er handlingsbart
-    // på en måte «rød stripe» aldri blir.
-    .fiq_prj_over_tekst {
-        font-family: var(--fiq-mono);
-        font-size: 10px;
-        font-weight: 700;
-        padding: 1px 6px;
-        border-radius: 100px;
-        background: var(--fiq-crit-soft);
-        color: var(--fiq-crit);
-        white-space: nowrap;
-        flex: none;
-    }
-
-    .fiq_prj_n_ans {
-        font-size: 11.5px;
         color: var(--fiq-ink-soft);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        flex: none;
     }
 
-    .fiq_gui_prj_foot {
+    // ---------- Kanban ----------
+    .fiq_prj_kgrid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        gap: 10px;
+        padding: 12px 14px;
+    }
+
+    .fiq_prj_kkort {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        padding: 11px 13px 11px 15px;
+        border: 1px solid var(--fiq-line);
+        border-radius: 10px;
+        background: var(--fiq-surface);
+        cursor: pointer;
+        overflow: hidden;
+        transition: border-color .12s, transform .12s;
+
+        &::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--fiq-c, var(--fiq-muted));
+        }
+
+        &:hover { border-color: var(--fiq-c, var(--fiq-accent)); transform: translateY(-1px); }
+    }
+
+    .fiq_prj_kk_topp {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 2px;
+
+        .fiq_prj_pille { margin-left: auto; }
+    }
+
+    .fiq_prj_kk_bunn {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 6px;
+        padding-top: 7px;
+        border-top: 1px solid var(--fiq-line-soft);
+        font-family: var(--fiq-mono);
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+        color: var(--fiq-muted);
+    }
+
+    .fiq_prj_stripe {
+        display: block;
+        height: 6px;
+        margin-top: 7px;
+        border-radius: 100px;
+        background: var(--fiq-line-soft);
+        overflow: hidden;
+
+        // 🔴 Bredden klippes på 100 % — men TALLET ved siden av gjør det ALDRI.
+        // Det var hele feilen i 1.14.0: 215,9 t mot budsjett 10 ble «100 % grønn».
+        .fiq_prj_fyll {
+            position: static;
+            display: block;
+            height: 100%;
+            opacity: 1;
+            background: var(--fiq-bc, var(--fiq-accent));
+            border-radius: 100px;
+        }
+    }
+
+    .fiq_prj_fot {
         margin-top: 14px;
         font-size: 11px;
         color: var(--fiq-muted);
@@ -524,20 +670,18 @@
     }
 
     // ---------- mobil ----------
-    // Batch 15 nevner mobil-befaring som eget lag; her sikrer vi i det minste at
-    // WBS-treet er lesbart på telefon i stedet for å sprenge ut i horisontal scroll.
-    @media (max-width: 720px) {
-        .fiq_prj_tre_hode { display: none; }
+    @media (max-width: 860px) {
+        --fiq-navn: 190px;
 
-        .fiq_prj_node {
-            grid-template-columns: 1fr auto;
+        .fiq_prj_tegn { margin-left: 0; }
+        .fiq_prj_tid { margin-left: 0; }
+
+        .fiq_prj_li {
+            flex-wrap: wrap;
             row-gap: 4px;
-            padding: 11px 13px;
         }
 
-        .fiq_prj_n_navn { grid-column: 1 / -1; }
-        .fiq_prj_n_bar { grid-column: 1 / -1; }
-        .fiq_prj_n_ans { grid-column: 2; text-align: right; }
+        .fiq_prj_li_midt { flex-basis: 100%; }
     }
 
     @media (prefers-reduced-motion: reduce) {

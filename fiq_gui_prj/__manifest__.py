@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.17.0",
+    "version": "19.0.1.18.1",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
@@ -11,6 +11,50 @@ FIQ GUI Prosjekt
 KANON «Odoo-native først» (Gjermund 2026-07-16): KR er et LAG, ikke systemet.
 Testen: «Virker dette i native Odoo uten KR?» — feltene her er ekte Odoo-felt
 med Odoo-visning. Slås KR av, står de fortsatt.
+
+19.0.1.18.1 — HASTEFIKS: felte fiqas Staging (bygg 35155117):
+
+ * ParseError i industry_fsm/report/project_report_views.xml:73 —
+   «Field fiq_wbs_number does not exist in model report.project.task.user.fsm».
+   Registeret falt paa modul 508 av 648. CRITICAL: Failed to initialize database.
+ * ROTAARSAK: soekevisningen arvet project.view_task_search_form_base. Odoo kopierer
+   arch-en nedover, og kjeden ender i en Enterprise-RAPPORTMODELL:
+   _base -> view_task_search_form_project_fsm_base -> industry_fsm.project_task_view_
+   search_fsm_base -> report_project_task_user_fsm_view_search (report.project.task.user.fsm).
+   Verifisert i basen: feltet finnes paa project.task (1 rad), ikke paa rapporten (0).
+ * FIKS: arver `project.view_task_search_form` i stedet. Verifisert i kilden at den er
+   paa project.task, kun brukes som search_view_id, og IKKE arves videre av noen.
+ * De to andre arvene (liste + skjema) er kontrollert i samme runde: alle arvinger av
+   view_task_form2 er paa project.task, og liste-visningen arves ikke av noen. Trygge.
+ * NY FEILKLASSE: et felt lagt i en DELT Odoo-visning arves av modeller du ikke
+   kjenner. Modulen kan vaere feilfri isolert og likevel rive ned hele basen.
+   Fanges IKKE av testflagget paa egen modul — krever full lasting av alle 648 moduler.
+
+19.0.1.18.0 — FLATEN BYGGET: 3 VISNINGER x 2 AKSER (fasit utkast03):
+
+ * Fasit: docs/mockups/0.00 IQ prosjektoversikt_utkast03.html (artifact 87871eef),
+   kartlagt ved aa AAPNE den i nettleser og KLIKKE alle 122 kontroller.
+   Full kravspek: docs/0.00 IQ prj_flate_kravspek_KOMPLETT.md
+ * TRE VISNINGER: Gantt · Liste · Kanban — alle tegner SAMME datasett, saa klienten
+   bytter visning uten ny spoerring (som fasitens renderGantt/renderListe/renderKanban).
+ * TO AKSER: Uke (7 kolonner) · Maaned (6 kolonner a 4 uker). Maaned bytter ALDRI
+   visningstype. Tidsnav ‹ › + «I dag» flytter EEN kolonne.
+ * FEM NOEKKELTALL, alle klikkbare: I rute · Foelg opp · Kritisk · Frister denne uka ·
+   Gjort av AI. Klikk driller til Liste gruppert paa status — tall som ikke kan
+   klikkes er en blindvei.
+ * GRUPPERING: prosjekt · rolle · ansvarlig · status · firma. Rollup per gruppe:
+   verste status vinner, ellers drukner een kritisk oppgave i et prosjekt som ser
+   fint ut paa toppnivaa.
+ * KOLLAPS PAA TO NIVAAER med bevisst ulik logikk: «Slaa sammen alle»/«Utvid alle»
+   (eksplisitte) + veksling per gruppe (viser tilstanden der du staar). Nøkles paa
+   ID, aldri navn.
+ * TO FARGEAKSER holdt adskilt: TID (i rute/foelg opp/kritisk) og KOST (innenfor/
+   over/ferdig). En oppgave kan vaere i rute paa tid og samtidig sprenge budsjettet.
+ * Nytt datalag `get_oppgaver_over_tid()` — firma-scope FOERST, henter kun oppgaver
+   som beroerer tidsvinduet, sier aerlig fra naar listen er avkortet.
+ * FELLER VERIFISERT FRAVAERENDE: ingen min(px,vw) i SCSS · ingen && i t-if · ingen
+   if() i inline t-on · ingen dobbel bindestrek i XML-kommentar · alle 20 t-on-
+   handlere finnes som metoder i JS (maskinelt kryssjekket).
 
 19.0.1.17.0 — AI-ARBEID SOM PROSJEKT, IKKE OEKTNUMMER (Gjermund-direktiv 20.07.2026):
 

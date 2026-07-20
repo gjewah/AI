@@ -219,6 +219,188 @@ class FiqGuiPrjData(models.AbstractModel):
             "antall_noder": len(alle),
         }
 
+    # ---------- FLATEN: oppgaver over tid (fasit utkast03) ----------
+
+    def _iso_uke(self, d):
+        """(år, ukenummer) for en dato — ISO, som resten av huset."""
+        iso = d.isocalendar()
+        return (iso[0], iso[1])
+
+    def _tid_status(self, task, ferdig, i_dag):
+        """Status på TIDSAKSEN — ikke budsjett-aksen.
+
+        Fasiten (utkast03) viser fire: i rute · følg opp · kritisk · planlagt.
+        Dette er en ANNEN akse enn `budsjett_status` (blå/rød/grønn på timer).
+        Å blande dem var nettopp feilen i batch 08b vs batch 15 — frist og kost
+        er to spørsmål, og en oppgave kan være i rute på tid mens den sprenger
+        budsjettet.
+        """
+        if ferdig:
+            return "rute"
+        frist = task.date_deadline
+        if not frist:
+            return "plan" if not task.planned_date_begin else "rute"
+        if frist < i_dag:
+            return "krit"
+        # Innenfor sju dager = «følg opp». Fasitens «Frister denne uka».
+        if (frist - i_dag).days <= 7:
+            return "folg"
+        return "rute"
+
+    @api.model
+    def get_oppgaver_over_tid(self, firma_id=None, fra_uke=None, antall=7,
+                              oppløsning="uke", grupper="prosjekt", grense=400):
+        """Alle oppgaver med tidsplassering — grunnlaget for Gantt/Liste/Kanban.
+
+        Fasit: `docs/mockups/0.00 IQ prosjektoversikt_utkast03.html` (artifact 87871eef),
+        kartlagt ved å klikke alle 122 kontroller. Se
+        `docs/0.00 IQ prj_flate_kravspek_KOMPLETT.md`.
+
+        TRE VISNINGER × TO AKSER deler ETT datasett — det er hele poenget. Gantt,
+        Liste og Kanban er ulike tegninger av de samme radene, akkurat som i fasiten
+        (`renderGantt` / `renderListe` / `renderKanban` leser samme TASKS-array).
+        Klienten bytter visning uten ny spørring.
+
+        `oppløsning`:
+          «uke»  → `antall` uker fra `fra_uke` (fasit: 7 kolonner)
+          «mnd»  → `antall` måneder à 4 uker (fasit: 6 kolonner, ett steg = 4 uker)
+
+        🛑 Firma-scope FØRST — før gruppering, før visning. Klienten kan kun snevre inn.
+        """
+        from datetime import date, timedelta
+
+        i_dag = fields.Date.context_today(self)
+
+        # --- tidsvindu ---
+        if fra_uke:
+            try:
+                aar, uke = [int(x) for x in str(fra_uke).split("-")]
+                start = date.fromisocalendar(aar, uke, 1)
+            except (ValueError, TypeError):
+                start = i_dag - timedelta(days=i_dag.weekday())
+        else:
+            # Default: uka vi står i, slik «I dag» i fasiten lander.
+            start = i_dag - timedelta(days=i_dag.weekday())
+
+        antall = max(1, min(int(antall or 7), 26))
+        uker_per_kol = 4 if oppløsning == "mnd" else 1
+        slutt = start + timedelta(weeks=antall * uker_per_kol)
+
+        # --- kolonner (tidsaksen flaten tegner) ---
+        kolonner = []
+        for i in range(antall):
+            k_start = start + timedelta(weeks=i * uker_per_kol)
+            k_slutt = k_start + timedelta(weeks=uker_per_kol) - timedelta(days=1)
+            aar, uke = self._iso_uke(k_start)
+            if oppløsning == "mnd":
+                _, sluttuke = self._iso_uke(k_slutt)
+                etikett = k_start.strftime("%b")
+                under = "uke %d–%d · %d" % (uke, sluttuke, aar)
+            else:
+                etikett = "Uke %d" % uke
+                under = str(aar)
+            kolonner.append({
+                "etikett": etikett,
+                "under": under,
+                "fra": fields.Date.to_string(k_start),
+                "til": fields.Date.to_string(k_slutt),
+                "er_naa": k_start <= i_dag <= k_slutt,
+            })
+
+        # --- oppgavene ---
+        # Bare oppgaver som BERØRER vinduet. Uten dette henter vi hele historikken
+        # og lar klienten kaste 95 % — samme feil som å laste alle 150 prosjekter
+        # for å vise fem.
+        domene = self._firma_domene(firma_id) + [
+            ("project_id", "!=", False),
+            "|", "|",
+            ("planned_date_begin", "<=", slutt),
+            ("date_deadline", ">=", start),
+            ("date_deadline", "=", False),
+        ]
+        oppgaver = self.env["project.task"].search(
+            domene, limit=int(grense), order="project_id, fiq_wbs_number, sequence, id"
+        )
+
+        rader = []
+        for t in oppgaver:
+            ferdig = bool(t.stage_id.fold) or t.state in ("1_done", "1_canceled")
+            fort = t.effective_hours if "effective_hours" in t._fields else 0.0
+            budsjett = t.allocated_hours or 0.0
+
+            b = t.planned_date_begin.date() if t.planned_date_begin else None
+            e = t.date_deadline or (b if b else None)
+
+            rader.append({
+                "id": t.id,
+                "navn": t.display_name,
+                # Tre tall side om side — fasitens «01.01 · T0412 · 2026-00084».
+                "wbs": t.fiq_wbs_number or "",
+                "oppgavenr": t.code or "",
+                "prosjektnr": t.project_id.sequence_code or "",
+                "prosjekt": t.project_id.display_name or "",
+                "prosjekt_id": t.project_id.id,
+                "firma": t.company_id.display_name or "",
+                "firma_id": t.company_id.id,
+                "ansvarlig": ", ".join(t.user_ids.mapped("name")),
+                # 🤖 uten mennesker / 👤 med — samme merking som AI KTRL-kontrakten.
+                "er_ai": not bool(t.user_ids),
+                "stadium": t.stage_id.display_name or "",
+                "ferdig": ferdig,
+                "fra": fields.Date.to_string(b) if b else False,
+                "til": fields.Date.to_string(e) if e else False,
+                "frist": fields.Date.to_string(t.date_deadline) if t.date_deadline else False,
+                # Odoos `priority` er BINÆR (0/1) — verifisert i core. Fasiten viser
+                # tre nivåer (▴▪▾). Vi leser det som finnes og lar flaten vise to
+                # inntil et eget felt evt. besluttes (spørsmål til AI PK 19.07).
+                "prioritet": "h" if t.priority == "1" else "m",
+                "fremdrift": round(min(100.0, t.progress or 0.0), 1),
+                "forte_timer": round(fort, 1),
+                "budsjett_timer": round(budsjett, 1),
+                "forbruk_prosent": self._forbruk_prosent(fort, budsjett),
+                "budsjett_status": self._budsjett_status(fort, budsjett, ferdig),
+                "tid_status": self._tid_status(t, ferdig, i_dag),
+                "antall_sjekklister": len(t.fiq_sjekkliste_ids),
+                "sjekkliste_fremdrift": round(t.fiq_sjekkliste_fremdrift or 0.0, 1),
+            })
+
+        # --- KPI (fasitens fem kort, alle klikkbare) ---
+        i_rute = sum(1 for r in rader if r["tid_status"] == "rute" and not r["ferdig"])
+        folg = sum(1 for r in rader if r["tid_status"] == "folg")
+        krit = sum(1 for r in rader if r["tid_status"] == "krit")
+        denne_uka = start + timedelta(days=6)
+        frister = sum(
+            1 for r in rader
+            if r["frist"] and start <= fields.Date.from_string(r["frist"]) <= denne_uka
+        )
+        ai_gjort = sum(1 for r in rader if r["er_ai"] and r["ferdig"])
+        ai_totalt = sum(1 for r in rader if r["er_ai"])
+
+        return {
+            "kolonner": kolonner,
+            "oppgaver": rader,
+            "opplosning": oppløsning,
+            "grupper": grupper,
+            "fra_uke": "%d-%d" % self._iso_uke(start),
+            "i_dag": fields.Date.to_string(i_dag),
+            "kpi": {
+                "i_rute": i_rute,
+                "folg_opp": folg,
+                "kritisk": krit,
+                "frister_uka": frister,
+                "ai_gjort": ai_gjort,
+                "ai_totalt": ai_totalt,
+            },
+            "firmaer": [
+                {"id": c.id, "navn": c.display_name}
+                for c in self.env["res.company"].browse(self._tillatte_firmaer())
+            ],
+            "valgt_firma": int(firma_id) if firma_id else False,
+            "antall": len(rader),
+            # Ærlig når vi har kappet: brukeren skal vite at han ser et utsnitt.
+            "avkortet": len(rader) >= int(grense),
+        }
+
     # ---------- AI-arbeid som PROSJEKT (Gjermund-direktiv 2026-07-20) ----------
 
     @api.model

@@ -5,24 +5,31 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
 
-// FIQ Prosjektoversikt — WBS-tre med timer mot budsjett.
+// FIQ Prosjektoversikt — PRJ-flaten.
 //
-// 🔴 OMSKREVET V0.03 (2026-07-19). Forrige versjon var en LISTEVISNING: tabell over
-// prosjekter -> tabell over oppgaver. Gjermund: «du har kun knapt gjenskapt listevisning
-// fra Odoo NATIVE!!!» Odoo HAR allerede prosjekter i liste — den flaten ga null ny verdi.
+// FASIT: docs/mockups/0.00 IQ prosjektoversikt_utkast03.html (artifact 87871eef),
+// kartlagt ved å ÅPNE den i nettleser og KLIKKE alle 122 kontroller. Full kravspek:
+// docs/0.00 IQ prj_flate_kravspek_KOMPLETT.md
 //
-// Kravspek batch 15 (docs/0.00 IQ kontrollrom_flate_spec.md, linje 195-206) ber om:
-//   · WBS-tre som driller: Blokk -> Fase -> Leilighet -> Aktivitet, foldbart per nivå
-//   · Per node: effektive timer / budsjett + fremdriftsbar
-//   · Fargekoding på BUDSJETT-status: blå = innenfor · RØD = over budsjett · grønn = ferdig
-//   · Firma-velger som små bokser øverst (049 SDVg konsern + 050/051/052/054)
+// 🔴 HISTORIKK — hvorfor denne er skrevet om to ganger:
+//   V0.02 leverte en LISTEVISNING. Gjermund: «du har kun knapt gjenskapt listevisning
+//   fra Odoo NATIVE!!!» Odoo har allerede prosjekter i liste — ingen ny verdi.
+//   V0.03 (jeg) leverte deretter et WBS-tre som dekket ETT av tolv elementer.
+//   Begge hadde LEST specene. Å lese er ikke å se.
 //
-// KANON «Odoo-native først»: flaten er et LAG. Alt den viser finnes i Odoos egne visninger;
-// slås flaten av, står dataene uendret. Den oppretter ingenting og eier ingen forretningslogikk.
+// STRUKTUREN fasiten krever:
+//   3 VISNINGER (Gantt · Liste · Kanban) × 2 AKSER (Uke 7 kol · Måned 6 kol à 4 uker)
+//   Alle tre tegner SAMME datasett — klienten bytter visning uten ny spørring, slik
+//   fasitens renderGantt/renderListe/renderKanban leser samme TASKS-array.
 //
-// Firma-valget sendes til serveren som en INNSNEVRING. Serveren avgjør hva som er lov
-// (env.companies + record rules) — klienten kan aldri utvide sitt eget innsyn.
+// KANON «Odoo-native først»: flaten er et LAG. Alt den viser finnes i Odoos egne
+// visninger; slås flaten av, står dataene uendret. Den oppretter ingenting.
 const DATA = "fiq.gui.prj.data";
+
+// Tidsstatus → farge. EGEN akse fra budsjett-status (blå/rød/grønn på timer).
+// Å blande dem var forvirringen mellom batch 08b (frist) og batch 15 (kost):
+// en oppgave kan være i rute på tid og samtidig sprenge budsjettet.
+const TID_TEKST = { rute: "I rute", folg: "Følg opp", krit: "Kritisk", plan: "Planlagt" };
 
 export class FiqGuiPrj extends Component {
     static template = "fiq_gui_prj.Dashboard";
@@ -31,19 +38,29 @@ export class FiqGuiPrj extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+
         this.state = useState({
             laster: true,
             feil: false,
-            prosjekter: [],
-            firmaer: [],
+            // visning × oppløsning — fasitens to akser
+            visning: "gantt",       // gantt | liste | kanban
+            opplosning: "uke",      // uke | mnd
+            grupper: "prosjekt",    // prosjekt | rolle | ansvarlig | status | firma
+            fraUke: null,
             valgtFirma: false,
-            // Drill: null = prosjektvalg, ellers WBS-treet for valgt prosjekt.
-            apentProsjekt: null,
-            tre: null,
-            lasterTre: false,
-            // Foldede noder, nøklet på node-ID (ikke navn — leilighetsnavn som «H0101»
-            // gjentas på tvers av blokker og ville kollidert).
+            // data
+            kolonner: [],
+            oppgaver: [],
+            kpi: {},
+            firmaer: [],
+            iDag: null,
+            avkortet: false,
+            // Foldede grupper. Nøklet på gruppe-ID, ALDRI navn — «H0101» og
+            // «Innboks» gjentas på tvers, og navn-nøkling folder urelaterte
+            // grupper sammen. (Kanonisert for alle flater 19.07.)
             foldet: {},
+            // AI-arbeid som prosjekt (Gjermund-direktiv 20.07)
+            aiArbeid: null,
         });
 
         onWillStart(async () => {
@@ -54,132 +71,240 @@ export class FiqGuiPrj extends Component {
     async last() {
         this.state.laster = true;
         try {
-            const res = await this.orm.call(DATA, "get_prosjektoversikt", [], {
+            const res = await this.orm.call(DATA, "get_oppgaver_over_tid", [], {
                 firma_id: this.state.valgtFirma || null,
+                fra_uke: this.state.fraUke,
+                antall: this.state.opplosning === "mnd" ? 6 : 7,
+                oppløsning: this.state.opplosning,
+                grupper: this.state.grupper,
             });
-            this.state.prosjekter = res.prosjekter || [];
+            this.state.kolonner = res.kolonner || [];
+            this.state.oppgaver = res.oppgaver || [];
+            this.state.kpi = res.kpi || {};
             this.state.firmaer = res.firmaer || [];
+            this.state.iDag = res.i_dag;
+            this.state.fraUke = res.fra_uke;
+            this.state.avkortet = !!res.avkortet;
             this.state.feil = false;
         } catch (e) {
-            // Ærlig tom flate framfor gale tall: si fra, ikke vis 0 som om det var sannheten.
-            this.state.prosjekter = [];
-            this.state.feil = _t("Could not load projects.");
+            // Ærlig tom flate framfor gale tall.
+            this.state.oppgaver = [];
+            this.state.feil = _t("Could not load tasks.");
         }
         this.state.laster = false;
     }
 
-    async velgFirma(firmaId) {
-        this.state.valgtFirma = firmaId;
-        this.state.apentProsjekt = null;
-        this.state.tre = null;
+    // ---------- kontroller ----------
+
+    async settVisning(v) { this.state.visning = v; }
+
+    async settOpplosning(o) {
+        if (this.state.opplosning === o) { return; }
+        this.state.opplosning = o;
         await this.last();
     }
 
-    async apneProsjekt(p) {
-        this.state.apentProsjekt = p;
-        this.state.lasterTre = true;
-        this.state.tre = null;
-        this.state.foldet = {};
-        try {
-            const res = await this.orm.call(DATA, "get_wbs_tre", [], {
-                prosjekt_id: p.id,
-                firma_id: this.state.valgtFirma || null,
-            });
-            this.state.tre = res;
-        } catch (e) {
-            this.state.tre = null;
-            this.state.feil = _t("Could not load the work breakdown.");
-        }
-        this.state.lasterTre = false;
+    async settGruppering(ev) {
+        this.state.grupper = ev.target.value;
     }
 
-    tilbake() {
-        this.state.apentProsjekt = null;
-        this.state.tre = null;
-        this.state.foldet = {};
+    async velgFirma(ev) {
+        const v = ev.target.value;
+        this.state.valgtFirma = v ? parseInt(v, 10) : false;
+        await this.last();
     }
 
-    fold(nodeId) {
-        this.state.foldet[nodeId] = !this.state.foldet[nodeId];
+    // Tidsnavigasjon: ett steg = ÉN kolonne. I månedsmodus er det fire uker,
+    // ikke én måned — fasitens kolonner er 4-ukers bolker, ikke kalendermåneder.
+    async flyttTid(retning) {
+        const [aar, uke] = (this.state.fraUke || "").split("-").map(Number);
+        if (!aar || !uke) { return; }
+        const steg = this.state.opplosning === "mnd" ? 4 : 1;
+        let nyUke = uke + retning * steg;
+        let nyAar = aar;
+        while (nyUke < 1) { nyAar -= 1; nyUke += 52; }
+        while (nyUke > 52) { nyAar += 1; nyUke -= 52; }
+        this.state.fraUke = `${nyAar}-${nyUke}`;
+        await this.last();
     }
 
-    erFoldet(nodeId) {
-        return !!this.state.foldet[nodeId];
+    async tilIDag() {
+        this.state.fraUke = null;
+        await this.last();
     }
 
-    // Flat ut treet til render-rader med dybde. OWL-maler kan ikke rekursere over
-    // seg selv uten en egen underkomponent; å flate ut her gir én enkel t-foreach
-    // og lar oss hoppe over foldede undertrær uten å bygge DOM vi straks skjuler.
-    get rader() {
-        const ut = [];
-        const gaa = (noder, dybde) => {
-            for (const n of noder) {
-                ut.push({ node: n, dybde: dybde, harBarn: n.barn.length > 0 });
-                if (n.barn.length && !this.erFoldet(n.id)) {
-                    gaa(n.barn, dybde + 1);
-                }
+    // ---------- kollaps: TO nivåer med bevisst ulik logikk ----------
+    // «Slå sammen alle» / «Utvid alle» = EKSPLISITTE, alltid samme resultat.
+    // ⊟/⊞ per gruppe = VEKSLENDE, viser tilstanden der du står.
+    // 🛑 Forskjellen er tilsiktet (00.03) — ikke «rydd» den til én mekanisme.
+
+    foldAlle() {
+        const f = {};
+        for (const g of this.grupper) { f[g.nokkel] = true; }
+        this.state.foldet = f;
+    }
+
+    utvidAlle() { this.state.foldet = {}; }
+
+    vekslGruppe(nokkel) {
+        this.state.foldet[nokkel] = !this.state.foldet[nokkel];
+    }
+
+    erFoldet(nokkel) { return !!this.state.foldet[nokkel]; }
+
+    // ---------- gruppering ----------
+
+    get grupper() {
+        const felt = this.state.grupper;
+        const kart = new Map();
+
+        for (const o of this.state.oppgaver) {
+            let nokkel, etikett;
+            if (felt === "prosjekt") {
+                nokkel = `p${o.prosjekt_id}`;
+                etikett = o.prosjekt;
+            } else if (felt === "ansvarlig") {
+                nokkel = `a${o.ansvarlig || "_ai"}`;
+                etikett = o.ansvarlig || _t("AI (no assignee)");
+            } else if (felt === "status") {
+                nokkel = `s${o.tid_status}`;
+                etikett = TID_TEKST[o.tid_status] || o.tid_status;
+            } else if (felt === "firma") {
+                nokkel = `f${o.firma_id}`;
+                etikett = o.firma;
+            } else {
+                // «rolle» — fasitens eier/PL/PK/AI-ansvarlig. Rollemodellen er ikke
+                // bygget ennå (fiq.project.role), så vi grupperer ærlig på det vi HAR:
+                // AI-utført mot menneske-utført. Bedre enn en tom akse som lyver.
+                nokkel = o.er_ai ? "r_ai" : "r_menneske";
+                etikett = o.er_ai ? _t("AI") : _t("People");
             }
-        };
-        if (this.state.tre) {
-            gaa(this.state.tre.noder, 0);
+            if (!kart.has(nokkel)) {
+                kart.set(nokkel, { nokkel, etikett, oppgaver: [] });
+            }
+            kart.get(nokkel).oppgaver.push(o);
         }
-        return ut;
+
+        // Rollup per gruppe: verste status vinner. Ellers drukner én kritisk
+        // oppgave i et prosjekt som ser fint ut på toppnivå.
+        const ord = { krit: 3, folg: 2, rute: 1, plan: 0 };
+        return [...kart.values()].map((g) => {
+            let verst = "plan";
+            let fort = 0, budsjett = 0, ferdige = 0;
+            for (const o of g.oppgaver) {
+                if (ord[o.tid_status] > ord[verst]) { verst = o.tid_status; }
+                fort += o.forte_timer;
+                budsjett += o.budsjett_timer;
+                if (o.ferdig) { ferdige += 1; }
+            }
+            return {
+                ...g,
+                antall: g.oppgaver.length,
+                ferdige,
+                tid_status: verst,
+                forte_timer: Math.round(fort * 10) / 10,
+                budsjett_timer: Math.round(budsjett * 10) / 10,
+                budsjett_status: budsjett > 0 && fort > budsjett ? "over"
+                    : ferdige === g.oppgaver.length ? "ferdig"
+                    : budsjett > 0 || fort > 0 ? "innenfor" : "plan",
+            };
+        });
+    }
+
+    // ---------- Gantt-geometri ----------
+
+    // Søylens plassering i prosent av tidsvinduet. Klippes i endene så en oppgave
+    // som starter før vinduet fortsatt VISES — den skal ikke forsvinne bare fordi
+    // brukeren har bladd fram.
+    soyle(o) {
+        const k = this.state.kolonner;
+        if (!k.length || !o.fra) { return null; }
+        const start = new Date(k[0].fra).getTime();
+        const slutt = new Date(k[k.length - 1].til).getTime();
+        const spenn = slutt - start;
+        if (spenn <= 0) { return null; }
+
+        const f = new Date(o.fra).getTime();
+        const t = o.til ? new Date(o.til).getTime() : f;
+        if (t < start || f > slutt) { return null; }
+
+        const v = Math.max(0, ((f - start) / spenn) * 100);
+        const h = Math.min(100, ((t - start) / spenn) * 100);
+        return { venstre: v, bredde: Math.max(1.5, h - v) };
+    }
+
+    fristPunkt(o) {
+        const k = this.state.kolonner;
+        if (!k.length || !o.frist) { return null; }
+        const start = new Date(k[0].fra).getTime();
+        const slutt = new Date(k[k.length - 1].til).getTime();
+        const spenn = slutt - start;
+        if (spenn <= 0) { return null; }
+        const d = new Date(o.frist).getTime();
+        if (d < start || d > slutt) { return null; }
+        return ((d - start) / spenn) * 100;
+    }
+
+    get iDagStrek() {
+        const k = this.state.kolonner;
+        if (!k.length || !this.state.iDag) { return null; }
+        const start = new Date(k[0].fra).getTime();
+        const slutt = new Date(k[k.length - 1].til).getTime();
+        const spenn = slutt - start;
+        if (spenn <= 0) { return null; }
+        const d = new Date(this.state.iDag).getTime();
+        if (d < start || d > slutt) { return null; }
+        return ((d - start) / spenn) * 100;
     }
 
     // ---------- visning ----------
 
-    // Timer med norsk desimaltegn. 7.5 -> «7,5». Heltall vises uten desimal.
     timer(t) {
         const n = Math.round((t || 0) * 10) / 10;
         return (Number.isInteger(n) ? String(n) : n.toFixed(1)).replace(".", ",");
     }
 
-    // Bredden på fremdriftsbaren klippes på 100 — men TALLET gjør det aldri.
-    // Det er hele poenget: stripa er full, tallet sier 2159 %, fargen er rød.
-    barBredde(pst) {
-        return Math.min(100, Math.max(0, pst || 0));
+    tidKlasse(s) { return "fiq_prj_t_" + (s || "plan"); }
+    budsjettKlasse(s) { return "fiq_prj_b_" + (s || "plan"); }
+    tidTekst(s) { return TID_TEKST[s] || s; }
+
+    prioSymbol(p) { return p === "h" ? "▴" : p === "l" ? "▾" : "▪"; }
+
+    // Bredden klippes på 100 — men TALLET gjør det aldri. Det var hele feilen i
+    // 1.14.0: 215,9 timer mot budsjett 10 ble vist som «100 % grønn» og skjulte
+    // et 22× overforbruk.
+    barBredde(pst) { return Math.min(100, Math.max(0, pst || 0)); }
+
+    // ---------- native-først: alltid en vei ut til Odoo ----------
+
+    apneOppgave(id) {
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "project.task",
+            res_id: id,
+            views: [[false, "form"]],
+            target: "current",
+        });
     }
 
-    statusKlasse(status) {
-        return "fiq_prj_" + (status || "plan");
-    }
-
-    statusTekst(status) {
-        const t = {
-            over: _t("Over budget"),
-            innenfor: _t("Within budget"),
-            ferdig: _t("Done"),
-            plan: _t("Not started"),
-        };
-        return t[status] || t.plan;
-    }
-
-    // Hvor mye over budsjett, i timer. Vises kun når det ER et overforbruk.
-    overforbruk(node) {
-        return Math.max(0, (node.forte_timer || 0) - (node.budsjett_timer || 0));
-    }
-
-    // Native-først: «Åpne i Odoo» tar brukeren til Odoos EGEN visning.
-    // KR skal aldri være eneste dør inn til dataene.
-    apneIOdoo(prosjektId) {
+    apneProsjekt(id) {
         this.action.doAction({
             type: "ir.actions.act_window",
             res_model: "project.task",
             name: _t("Tasks"),
             views: [[false, "list"], [false, "form"]],
-            domain: [["project_id", "=", prosjektId]],
+            domain: [["project_id", "=", id]],
             target: "current",
         });
     }
 
-    apneOppgave(oppgaveId) {
-        this.action.doAction({
-            type: "ir.actions.act_window",
-            res_model: "project.task",
-            res_id: oppgaveId,
-            views: [[false, "form"]],
-            target: "current",
-        });
+    // KPI-drill: fasitens fem kort er ALLE klikkbare og lander i Liste gruppert
+    // på status. Tall som ikke kan klikkes er en blindvei.
+    drillKpi(hva) {
+        this.state.visning = "liste";
+        this.state.grupper = "status";
+        this.state.foldet = {};
+        if (hva === "ai") { this.state.grupper = "rolle"; }
     }
 }
 

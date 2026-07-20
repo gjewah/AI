@@ -1,222 +1,283 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <!--
-      Prosjektoversikt — WBS-tre med timer mot budsjett (kravspek batch 15).
+      PRJ-flaten — Prosjektoversikt.
 
-      🔴 OMSKREVET V0.03: forrige mal var to <table>-er (prosjektliste -> oppgaveliste).
-      Det er en listevisning Odoo allerede har native. Nå: foldbart WBS-tre,
-      Blokk -> Fase -> Leilighet -> Aktivitet, med timer/budsjett og rød/blå/grønn per node.
+      FASIT: docs/mockups/0.00 IQ prosjektoversikt_utkast03.html (artifact 87871eef).
+      Kartlagt ved å KLIKKE alle 122 kontroller — se
+      docs/0.00 IQ prj_flate_kravspek_KOMPLETT.md
 
-      Odoo 19-feller unngått her:
+      Odoo 19-feller unngått her (verifisert mot core, ikke hukommelse):
       · `and`/`or` i t-if, aldri `&&` (575 treff i core mot 42)
-      · aldri if()-setning i inline t-on-* — kompilerer ikke og dreper HELE malen stille.
-        Bruk ternary eller kall en metode.
+      · aldri if()-setning i inline t-on-* — kompilerer ikke og dreper HELE malen stille
+      · ingen dobbel bindestrek inne i XML-kommentarer (ugyldig XML — fanget 19.07)
     -->
     <t t-name="fiq_gui_prj.Dashboard">
         <div class="fiq_gui_prj">
 
-            <!-- Firma-velger som SMÅ BOKSER øverst (batch 15 / firma-velger-seksjonen):
-                 049 SDVg = konsern-total, så 050/051/052/054 som egne bokser. -->
-            <div class="fiq_prj_firmabokser" t-if="state.firmaer.length > 1">
-                <button class="fiq_prj_firmaboks"
-                        t-att-class="{ 'fiq_prj_valgt': !state.valgtFirma }"
-                        t-on-click="() => this.velgFirma(false)">
-                    <span class="fiq_prj_fb_navn">Alle firmaer</span>
-                    <span class="fiq_prj_fb_sub">konsern-total</span>
-                </button>
-                <button t-foreach="state.firmaer" t-as="f" t-key="f.id"
-                        class="fiq_prj_firmaboks"
-                        t-att-class="{ 'fiq_prj_valgt': f.id === state.valgtFirma }"
-                        t-on-click="() => this.velgFirma(f.id)">
-                    <span class="fiq_prj_fb_navn" t-esc="f.navn"/>
-                </button>
-            </div>
-
-            <div class="fiq_gui_prj_top">
-                <span class="fiq_gui_prj_mark">F</span>
-                <span class="fiq_gui_prj_name">Prosjektoversikt</span>
-                <span class="fiq_prj_kicker" t-if="!state.apentProsjekt">
-                    timer mot budsjett
-                </span>
+            <!-- ═══ TOPP: firma-velger + tittel ═══ -->
+            <div class="fiq_prj_topp">
+                <span class="fiq_prj_merke">P</span>
+                <div class="fiq_prj_tittel">
+                    <span class="fiq_prj_kicker">FIQ KONTROLLROM · PROSJEKT</span>
+                    <h1>Prosjektoversikt</h1>
+                </div>
+                <div class="fiq_prj_topp_hoyre">
+                    <label class="fiq_prj_lab">Firma</label>
+                    <select class="fiq_prj_velg" t-on-change="velgFirma">
+                        <option value="">Alle firmaer</option>
+                        <option t-foreach="state.firmaer" t-as="f" t-key="f.id"
+                                t-att-value="f.id"
+                                t-att-selected="f.id === state.valgtFirma ? 'selected' : undefined"
+                                t-esc="f.navn"/>
+                    </select>
+                </div>
             </div>
 
             <div t-if="state.laster" class="fiq_prj_info">Laster …</div>
+            <div t-elif="state.feil" class="fiq_prj_feil"><t t-esc="state.feil"/></div>
 
-            <div t-elif="state.feil" class="fiq_prj_feil">
-                <t t-esc="state.feil"/>
-            </div>
-
-            <!-- ══ NIVÅ 1 — velg prosjekt ══ -->
-            <div t-elif="!state.apentProsjekt">
-                <div t-if="!state.prosjekter.length" class="fiq_prj_info">
-                    Ingen prosjekter å vise.
+            <t t-else="">
+                <!-- ═══ NØKKELTALL — alle fem klikkbare (fasit) ═══ -->
+                <div class="fiq_prj_kpi">
+                    <div class="fiq_prj_kpi_kort fiq_prj_t_rute" t-on-click="() => this.drillKpi('rute')">
+                        <span class="fiq_prj_kpi_lab">I rute</span>
+                        <span class="fiq_prj_kpi_tall"><t t-esc="state.kpi.i_rute"/></span>
+                        <span class="fiq_prj_kpi_sub">oppgaver</span>
+                    </div>
+                    <div class="fiq_prj_kpi_kort fiq_prj_t_folg" t-on-click="() => this.drillKpi('folg')">
+                        <span class="fiq_prj_kpi_lab">Følg opp</span>
+                        <span class="fiq_prj_kpi_tall"><t t-esc="state.kpi.folg_opp"/></span>
+                        <span class="fiq_prj_kpi_sub">frist nær</span>
+                    </div>
+                    <div class="fiq_prj_kpi_kort fiq_prj_t_krit" t-on-click="() => this.drillKpi('krit')">
+                        <span class="fiq_prj_kpi_lab">Kritisk</span>
+                        <span class="fiq_prj_kpi_tall"><t t-esc="state.kpi.kritisk"/></span>
+                        <span class="fiq_prj_kpi_sub">frist passert</span>
+                    </div>
+                    <div class="fiq_prj_kpi_kort" t-on-click="() => this.drillKpi('frister')">
+                        <span class="fiq_prj_kpi_lab">Frister denne uka</span>
+                        <span class="fiq_prj_kpi_tall"><t t-esc="state.kpi.frister_uka"/></span>
+                        <span class="fiq_prj_kpi_sub">◆ i Gantt</span>
+                    </div>
+                    <div class="fiq_prj_kpi_kort" t-on-click="() => this.drillKpi('ai')">
+                        <span class="fiq_prj_kpi_lab">Gjort av AI</span>
+                        <span class="fiq_prj_kpi_tall">
+                            <t t-esc="state.kpi.ai_gjort"/><small>/<t t-esc="state.kpi.ai_totalt"/></small>
+                        </span>
+                        <span class="fiq_prj_kpi_sub">🤖 klikkbar</span>
+                    </div>
                 </div>
+
+                <!-- ═══ VISNING × OPPLØSNING ═══ -->
+                <div class="fiq_prj_ctrl">
+                    <span class="fiq_prj_lab">Visning</span>
+                    <button class="fiq_prj_vb" t-att-class="{ 'fiq_prj_paa': state.visning === 'gantt' }"
+                            t-on-click="() => this.settVisning('gantt')">📊 Gantt</button>
+                    <button class="fiq_prj_vb" t-att-class="{ 'fiq_prj_paa': state.visning === 'liste' }"
+                            t-on-click="() => this.settVisning('liste')">☰ Liste</button>
+                    <button class="fiq_prj_vb" t-att-class="{ 'fiq_prj_paa': state.visning === 'kanban' }"
+                            t-on-click="() => this.settVisning('kanban')">🗂 Kanban</button>
+
+                    <span class="fiq_prj_lab fiq_prj_skille">Oppløsning</span>
+                    <button class="fiq_prj_vb" t-att-class="{ 'fiq_prj_paa': state.opplosning === 'uke' }"
+                            t-on-click="() => this.settOpplosning('uke')">📅 Uke</button>
+                    <button class="fiq_prj_vb" t-att-class="{ 'fiq_prj_paa': state.opplosning === 'mnd' }"
+                            t-on-click="() => this.settOpplosning('mnd')">🗓 Måned</button>
+
+                    <div class="fiq_prj_tid">
+                        <button class="fiq_prj_nav" t-on-click="() => this.flyttTid(-1)">‹</button>
+                        <button class="fiq_prj_nav fiq_prj_idag" t-on-click="tilIDag">I dag</button>
+                        <button class="fiq_prj_nav" t-on-click="() => this.flyttTid(1)">›</button>
+                    </div>
+                </div>
+
+                <div class="fiq_prj_ctrl fiq_prj_ctrl2">
+                    <span class="fiq_prj_lab">Grupper etter</span>
+                    <select class="fiq_prj_velg" t-on-change="settGruppering">
+                        <option value="prosjekt" t-att-selected="state.grupper === 'prosjekt' ? 'selected' : undefined">Prosjekt</option>
+                        <option value="rolle" t-att-selected="state.grupper === 'rolle' ? 'selected' : undefined">Rolle</option>
+                        <option value="ansvarlig" t-att-selected="state.grupper === 'ansvarlig' ? 'selected' : undefined">Ansvarlig</option>
+                        <option value="status" t-att-selected="state.grupper === 'status' ? 'selected' : undefined">Status</option>
+                        <option value="firma" t-att-selected="state.grupper === 'firma' ? 'selected' : undefined">Firma</option>
+                    </select>
+                    <button class="fiq_prj_ub" t-on-click="foldAlle">⊟ Slå sammen alle</button>
+                    <button class="fiq_prj_ub" t-on-click="utvidAlle">⊞ Utvid alle</button>
+
+                    <div class="fiq_prj_tegn">
+                        <span><i class="fiq_prj_prikk fiq_prj_t_rute"/> i rute</span>
+                        <span><i class="fiq_prj_prikk fiq_prj_t_folg"/> følg opp</span>
+                        <span><i class="fiq_prj_prikk fiq_prj_t_krit"/> kritisk</span>
+                        <span>◆ frist</span>
+                    </div>
+                </div>
+
+                <div t-if="state.avkortet" class="fiq_prj_avkortet">
+                    Viser de første <t t-esc="state.oppgaver.length"/> oppgavene — snevre inn på firma
+                    eller tidsrom for å se alt.
+                </div>
+
+                <div t-if="!state.oppgaver.length" class="fiq_prj_info">
+                    Ingen oppgaver i dette tidsrommet.
+                </div>
+
+                <!-- ═══ GANTT ═══ -->
+                <div t-elif="state.visning === 'gantt'" class="fiq_prj_kort">
+                    <div class="fiq_prj_kh">
+                        <span>⊟ GANTT</span>
+                        <span class="fiq_prj_kc"><t t-esc="state.oppgaver.length"/> oppgaver</span>
+                    </div>
+
+                    <div class="fiq_prj_grid fiq_prj_hode">
+                        <div class="fiq_prj_navnkol">Prosjekt / oppgave</div>
+                        <div class="fiq_prj_spor">
+                            <div t-foreach="state.kolonner" t-as="k" t-key="k_index"
+                                 class="fiq_prj_kol" t-att-class="{ 'fiq_prj_naa': k.er_naa }">
+                                <span t-esc="k.etikett"/><small t-esc="k.under"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <t t-foreach="grupper" t-as="g" t-key="g.nokkel">
+                        <div class="fiq_prj_grid fiq_prj_grad" t-att-class="tidKlasse(g.tid_status)">
+                            <div class="fiq_prj_navnkol">
+                                <button class="fiq_prj_pil" t-att-class="{ 'fiq_prj_lukket': erFoldet(g.nokkel) }"
+                                        t-on-click.stop="() => this.vekslGruppe(g.nokkel)">▾</button>
+                                <span class="fiq_prj_gnavn" t-esc="g.etikett"/>
+                                <span class="fiq_prj_tall"><t t-esc="g.ferdige"/>/<t t-esc="g.antall"/></span>
+                                <span class="fiq_prj_timer" t-att-class="budsjettKlasse(g.budsjett_status)"
+                                      t-if="g.budsjett_timer">
+                                    <t t-esc="timer(g.forte_timer)"/> / <t t-esc="timer(g.budsjett_timer)"/> t
+                                </span>
+                            </div>
+                            <div class="fiq_prj_spor">
+                                <div class="fiq_prj_naa_strek" t-if="iDagStrek !== null"
+                                     t-att-style="'left:' + iDagStrek + '%'"/>
+                            </div>
+                        </div>
+
+                        <t t-if="!erFoldet(g.nokkel)">
+                            <div t-foreach="g.oppgaver" t-as="o" t-key="o.id"
+                                 class="fiq_prj_grid fiq_prj_rad" t-att-class="tidKlasse(o.tid_status)">
+                                <div class="fiq_prj_navnkol fiq_prj_innrykk">
+                                    <span class="fiq_prj_prio" t-esc="prioSymbol(o.prioritet)"/>
+                                    <span class="fiq_prj_ai" t-esc="o.er_ai ? '🤖' : '👤'"/>
+                                    <span class="fiq_prj_onavn" t-on-click.stop="() => this.apneOppgave(o.id)"
+                                          t-esc="o.navn"/>
+                                    <span class="fiq_prj_nr">
+                                        <t t-esc="o.wbs"/> · <t t-esc="o.oppgavenr"/> · <t t-esc="o.prosjektnr"/>
+                                    </span>
+                                </div>
+                                <div class="fiq_prj_spor">
+                                    <div class="fiq_prj_naa_strek" t-if="iDagStrek !== null"
+                                         t-att-style="'left:' + iDagStrek + '%'"/>
+                                    <t t-set="s" t-value="soyle(o)"/>
+                                    <div t-if="s" class="fiq_prj_soyle" t-att-class="tidKlasse(o.tid_status)"
+                                         t-att-style="'left:' + s.venstre + '%;width:' + s.bredde + '%'"
+                                         t-on-click.stop="() => this.apneOppgave(o.id)">
+                                        <span class="fiq_prj_fyll"
+                                              t-att-style="'width:' + barBredde(o.fremdrift) + '%'"/>
+                                        <span class="fiq_prj_slab"><t t-esc="o.fremdrift"/> %</span>
+                                    </div>
+                                    <t t-set="fp" t-value="fristPunkt(o)"/>
+                                    <div t-if="fp !== null" class="fiq_prj_frist"
+                                         t-att-style="'left:' + fp + '%'" title="Frist"/>
+                                </div>
+                            </div>
+                        </t>
+                    </t>
+                </div>
+
+                <!-- ═══ LISTE ═══ -->
+                <div t-elif="state.visning === 'liste'" class="fiq_prj_kort">
+                    <div class="fiq_prj_kh">
+                        <span>☰ LISTE</span>
+                        <span class="fiq_prj_kc"><t t-esc="state.oppgaver.length"/> oppgaver</span>
+                    </div>
+
+                    <t t-foreach="grupper" t-as="g" t-key="g.nokkel">
+                        <div class="fiq_prj_lgrad" t-att-class="tidKlasse(g.tid_status)">
+                            <button class="fiq_prj_pil" t-att-class="{ 'fiq_prj_lukket': erFoldet(g.nokkel) }"
+                                    t-on-click.stop="() => this.vekslGruppe(g.nokkel)">▾</button>
+                            <span class="fiq_prj_gnavn" t-esc="g.etikett"/>
+                            <span class="fiq_prj_tall"><t t-esc="g.ferdige"/>/<t t-esc="g.antall"/></span>
+                        </div>
+
+                        <t t-if="!erFoldet(g.nokkel)">
+                            <div t-foreach="g.oppgaver" t-as="o" t-key="o.id"
+                                 class="fiq_prj_li" t-att-class="tidKlasse(o.tid_status)"
+                                 t-on-click="() => this.apneOppgave(o.id)">
+                                <span class="fiq_prj_prio" t-esc="prioSymbol(o.prioritet)"/>
+                                <span class="fiq_prj_ai" t-esc="o.er_ai ? '🤖' : '👤'"/>
+                                <div class="fiq_prj_li_midt">
+                                    <span class="fiq_prj_onavn" t-esc="o.navn"/>
+                                    <span class="fiq_prj_nr">
+                                        <t t-esc="o.wbs"/> · <t t-esc="o.oppgavenr"/> · <t t-esc="o.prosjekt"/>
+                                    </span>
+                                </div>
+                                <span class="fiq_prj_frist_txt" t-if="o.frist">◆ <t t-esc="o.frist"/></span>
+                                <span class="fiq_prj_frist_txt fiq_prj_dempet" t-else="">ingen frist</span>
+                                <span class="fiq_prj_timer" t-att-class="budsjettKlasse(o.budsjett_status)"
+                                      t-if="o.budsjett_timer">
+                                    <t t-esc="timer(o.forte_timer)"/>/<t t-esc="timer(o.budsjett_timer)"/> t
+                                </span>
+                                <span class="fiq_prj_pst"><t t-esc="o.fremdrift"/> %</span>
+                                <span class="fiq_prj_pille" t-att-class="tidKlasse(o.tid_status)"
+                                      t-esc="tidTekst(o.tid_status)"/>
+                            </div>
+                        </t>
+                    </t>
+                </div>
+
+                <!-- ═══ KANBAN ═══ -->
                 <div t-else="" class="fiq_prj_kort">
-                    <div t-foreach="state.prosjekter" t-as="p" t-key="p.id"
-                         class="fiq_prj_kort_en"
-                         t-att-class="statusKlasse(p.budsjett_status)"
-                         t-on-click="() => this.apneProsjekt(p)">
-
-                        <div class="fiq_prj_kort_topp">
-                            <span class="fiq_prj_nr" t-esc="p.nummer"/>
-                            <span class="fiq_prj_status_pille"
-                                  t-att-class="statusKlasse(p.budsjett_status)"
-                                  t-esc="statusTekst(p.budsjett_status)"/>
-                        </div>
-
-                        <div class="fiq_prj_navn" t-esc="p.navn"/>
-                        <div class="fiq_prj_kunde" t-if="p.kunde" t-esc="p.kunde"/>
-                        <div class="fiq_prj_firmanavn" t-if="!state.valgtFirma" t-esc="p.firma"/>
-
-                        <!-- Timer / budsjett — «X / Y» med stort tall og dempet nevner -->
-                        <div class="fiq_prj_timer">
-                            <span class="fiq_prj_stor"><t t-esc="timer(p.forte_timer)"/></span>
-                            <span class="fiq_prj_liten" t-if="p.budsjett_timer">
-                                / <t t-esc="timer(p.budsjett_timer)"/> t
-                            </span>
-                            <span class="fiq_prj_liten" t-else="">t ført · uten budsjett</span>
-                        </div>
-
-                        <!-- Stripa klippes på 100 %; tallet ved siden av gjør det ALDRI -->
-                        <div class="fiq_prj_stripe" t-if="p.budsjett_timer">
-                            <div class="fiq_prj_fyll"
-                                 t-att-class="statusKlasse(p.budsjett_status)"
-                                 t-att-style="'width:' + barBredde(p.forbruk_prosent) + '%'"/>
-                        </div>
-                        <div class="fiq_prj_pst" t-if="p.budsjett_timer">
-                            <span t-att-class="statusKlasse(p.budsjett_status)">
-                                <t t-esc="p.forbruk_prosent"/> % av budsjett
-                            </span>
-                        </div>
-
-                        <div class="fiq_prj_kort_bunn">
-                            <span><t t-esc="p.antall_ferdige"/> / <t t-esc="p.antall_oppgaver"/> oppgaver</span>
-                            <span t-if="p.frist">frist <t t-esc="p.frist"/></span>
-                        </div>
+                    <div class="fiq_prj_kh">
+                        <span>🗂 KANBAN</span>
+                        <span class="fiq_prj_kc"><t t-esc="state.oppgaver.length"/> oppgaver</span>
                     </div>
+
+                    <t t-foreach="grupper" t-as="g" t-key="g.nokkel">
+                        <div class="fiq_prj_lgrad" t-att-class="tidKlasse(g.tid_status)">
+                            <button class="fiq_prj_pil" t-att-class="{ 'fiq_prj_lukket': erFoldet(g.nokkel) }"
+                                    t-on-click.stop="() => this.vekslGruppe(g.nokkel)">▾</button>
+                            <span class="fiq_prj_gnavn" t-esc="g.etikett"/>
+                            <span class="fiq_prj_tall"><t t-esc="g.antall"/></span>
+                        </div>
+
+                        <div t-if="!erFoldet(g.nokkel)" class="fiq_prj_kgrid">
+                            <div t-foreach="g.oppgaver" t-as="o" t-key="o.id"
+                                 class="fiq_prj_kkort" t-att-class="tidKlasse(o.tid_status)"
+                                 t-on-click="() => this.apneOppgave(o.id)">
+                                <div class="fiq_prj_kk_topp">
+                                    <span class="fiq_prj_prio" t-esc="prioSymbol(o.prioritet)"/>
+                                    <span class="fiq_prj_ai" t-esc="o.er_ai ? '🤖' : '👤'"/>
+                                    <span class="fiq_prj_pille" t-att-class="tidKlasse(o.tid_status)"
+                                          t-esc="tidTekst(o.tid_status)"/>
+                                </div>
+                                <div class="fiq_prj_onavn" t-esc="o.navn"/>
+                                <div class="fiq_prj_nr">
+                                    <t t-esc="o.wbs"/> · <t t-esc="o.oppgavenr"/>
+                                </div>
+                                <div class="fiq_prj_nr fiq_prj_dempet" t-esc="o.prosjekt"/>
+                                <div class="fiq_prj_stripe" t-if="o.budsjett_timer">
+                                    <span class="fiq_prj_fyll" t-att-class="budsjettKlasse(o.budsjett_status)"
+                                          t-att-style="'width:' + barBredde(o.forbruk_prosent) + '%'"/>
+                                </div>
+                                <div class="fiq_prj_kk_bunn">
+                                    <span t-if="o.budsjett_timer" t-att-class="budsjettKlasse(o.budsjett_status)">
+                                        <t t-esc="timer(o.forte_timer)"/>/<t t-esc="timer(o.budsjett_timer)"/> t
+                                    </span>
+                                    <span t-if="o.frist">◆ <t t-esc="o.frist"/></span>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
                 </div>
+            </t>
+
+            <div class="fiq_prj_fot">
+                Drevet av <strong>FIQ</strong> · Prosjektoversikt · alt finnes også i Odoos egne visninger
             </div>
-
-            <!-- ══ NIVÅ 2 — WBS-treet for valgt prosjekt ══ -->
-            <div t-else="">
-                <div class="fiq_prj_drill">
-                    <button class="fiq_prj_tilbake" t-on-click="tilbake">‹ Alle prosjekter</button>
-                    <span class="fiq_prj_navn" t-esc="state.apentProsjekt.navn"/>
-                    <button class="fiq_prj_lenke"
-                            t-on-click="() => this.apneIOdoo(state.apentProsjekt.id)">
-                        Åpne i Odoo
-                    </button>
-                </div>
-
-                <div t-if="state.lasterTre" class="fiq_prj_info">Laster arbeidsnedbrytning …</div>
-
-                <t t-elif="state.tre">
-                    <!-- Prosjektsummen øverst: totalen som treet ruller opp til -->
-                    <div class="fiq_prj_sum"
-                         t-att-class="statusKlasse(state.tre.prosjekt.budsjett_status)">
-                        <div class="fiq_prj_sum_venstre">
-                            <span class="fiq_prj_sum_merke">Timer mot budsjett</span>
-                            <span class="fiq_prj_sum_tall">
-                                <t t-esc="timer(state.tre.prosjekt.forte_timer)"/>
-                                <span class="fiq_prj_liten" t-if="state.tre.prosjekt.budsjett_timer">
-                                    / <t t-esc="timer(state.tre.prosjekt.budsjett_timer)"/> t
-                                </span>
-                                <span class="fiq_prj_liten" t-else="">t ført · budsjett ikke satt</span>
-                            </span>
-                        </div>
-                        <div class="fiq_prj_sum_hoyre" t-if="state.tre.prosjekt.budsjett_timer">
-                            <span class="fiq_prj_sum_pst"
-                                  t-att-class="statusKlasse(state.tre.prosjekt.budsjett_status)">
-                                <t t-esc="state.tre.prosjekt.forbruk_prosent"/> %
-                            </span>
-                            <span class="fiq_prj_status_pille"
-                                  t-att-class="statusKlasse(state.tre.prosjekt.budsjett_status)"
-                                  t-esc="statusTekst(state.tre.prosjekt.budsjett_status)"/>
-                        </div>
-                    </div>
-
-                    <!-- Fargeforklaring — brukeren skal aldri måtte gjette hva rødt betyr -->
-                    <div class="fiq_prj_forklaring">
-                        <span><i class="fiq_prj_prikk fiq_prj_innenfor"/> innenfor budsjett</span>
-                        <span><i class="fiq_prj_prikk fiq_prj_over"/> over budsjett</span>
-                        <span><i class="fiq_prj_prikk fiq_prj_ferdig"/> ferdig</span>
-                        <span><i class="fiq_prj_prikk fiq_prj_plan"/> ikke startet</span>
-                    </div>
-
-                    <div t-if="!state.tre.noder.length" class="fiq_prj_info">
-                        Ingen oppgaver i dette prosjektet ennå.
-                    </div>
-
-                    <div t-else="" class="fiq_prj_tre">
-                        <div class="fiq_prj_tre_hode">
-                            <span class="fiq_prj_th_navn">Arbeidsnedbrytning</span>
-                            <span class="fiq_prj_th_timer">Timer / budsjett</span>
-                            <span class="fiq_prj_th_bar">Forbruk</span>
-                            <span class="fiq_prj_th_ans">Ansvarlig</span>
-                        </div>
-
-                        <div t-foreach="rader" t-as="r" t-key="r.node.id"
-                             class="fiq_prj_node"
-                             t-att-class="statusKlasse(r.node.budsjett_status)"
-                             t-att-style="'--fiq-dybde:' + r.dybde">
-
-                            <!-- Navn + fold-pil. Innrykket styres av dybde-variabelen i SCSS,
-                                 så det skalerer til vilkårlig mange nivåer. -->
-                            <span class="fiq_prj_n_navn">
-                                <button class="fiq_prj_pil" t-if="r.harBarn"
-                                        t-att-class="{ 'fiq_prj_lukket': erFoldet(r.node.id) }"
-                                        t-on-click.stop="() => this.fold(r.node.id)">▾</button>
-                                <span class="fiq_prj_pil_tom" t-else=""/>
-
-                                <span class="fiq_prj_hake" t-if="r.node.ferdig">✓</span>
-                                <span class="fiq_prj_wbs" t-esc="r.node.wbs"/>
-                                <span class="fiq_prj_n_tekst"
-                                      t-att-class="{ 'fiq_prj_ferdig_tekst': r.node.ferdig }"
-                                      t-on-click.stop="() => this.apneOppgave(r.node.id)"
-                                      t-esc="r.node.navn"/>
-                                <span class="fiq_prj_barnetall" t-if="r.harBarn">
-                                    <t t-esc="r.node.barn.length"/>
-                                </span>
-                            </span>
-
-                            <!-- Effektive timer / budsjett -->
-                            <span class="fiq_prj_n_timer">
-                                <t t-esc="timer(r.node.forte_timer)"/>
-                                <span class="fiq_prj_liten" t-if="r.node.budsjett_timer">
-                                    / <t t-esc="timer(r.node.budsjett_timer)"/>
-                                </span>
-                                <span class="fiq_prj_liten" t-else="">/ —</span>
-                            </span>
-
-                            <!-- Fremdriftsbar + ekte prosent. Ved overforbruk sier vi
-                                 rett ut hvor mange timer over — ikke bare en farge. -->
-                            <span class="fiq_prj_n_bar">
-                                <span class="fiq_prj_stripe" t-if="r.node.budsjett_timer">
-                                    <span class="fiq_prj_fyll"
-                                          t-att-class="statusKlasse(r.node.budsjett_status)"
-                                          t-att-style="'width:' + barBredde(r.node.forbruk_prosent) + '%'"/>
-                                </span>
-                                <span class="fiq_prj_n_pst"
-                                      t-att-class="statusKlasse(r.node.budsjett_status)"
-                                      t-if="r.node.budsjett_timer">
-                                    <t t-esc="r.node.forbruk_prosent"/> %
-                                </span>
-                                <span class="fiq_prj_over_tekst" t-if="r.node.budsjett_status === 'over'">
-                                    +<t t-esc="timer(overforbruk(r.node))"/> t over
-                                </span>
-                            </span>
-
-                            <span class="fiq_prj_n_ans">
-                                <!-- 🤖 uten mennesker, 👤 med — samme merking som AI KTRL -->
-                                <span t-if="r.node.er_ai" title="AI">🤖</span>
-                                <t t-else="" t-esc="r.node.ansvarlige"/>
-                            </span>
-                        </div>
-                    </div>
-                </t>
-            </div>
-
-            <div class="fiq_gui_prj_foot">Drevet av <strong>FIQ</strong> · Prosjektoversikt</div>
         </div>
     </t>
 </templates>
