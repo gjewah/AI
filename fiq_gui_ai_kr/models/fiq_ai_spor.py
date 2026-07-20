@@ -33,6 +33,27 @@ class FiqAiSpor(models.Model):
     _description = "AI Prosjektspor (den varige enheten — økter er arbeidsperioder i den)"
     _order = "kode, id"
 
+    # Koden til oppsamlingssporet for økter som ikke har meldt tilhørighet.
+    # Egen konstant, ikke en streng strødd rundt i koden — den slås opp flere steder.
+    HJEMLOS_KODE = "UTEN SPOR"
+
+    # ── SPOR-DRIFT: kodene må normaliseres, ellers flytter kaoset seg ──────────
+    # Uten dette blir «KR» / «kr» / «GUI KR» / «Kontrollrom» FIRE spor for samme
+    # arbeid — og da har vi flyttet øktkaoset til sporene i stedet for å fjerne
+    # det. Meldt av KR-kjernen 20.07.2026; verifisert i koden før den ble rettet.
+    KODE_ALIAS = {
+        "KR": "KR", "GUIKR": "KR", "KONTROLLROM": "KR", "GUIKONTROLLROM": "KR",
+        "AIKR": "AI KR", "AIKONTROLLROM": "AI KR", "AIRMM": "AI KR",
+        "PRJ": "PRJ", "PROSJEKT": "PRJ", "GUIPRJ": "PRJ", "PROSJEKTOVERSIKT": "PRJ",
+        "KOMM": "KOMM", "KOMMUNIKASJON": "KOMM", "MELDINGSSENTER": "KOMM",
+        "MELDINGSSENTERET": "KOMM", "EPOST": "KOMM",
+        "REL": "REL", "RELASJONER": "REL", "RELASJON": "REL",
+        "FIN": "FIN", "FINANS": "FIN", "RGS": "FIN", "REGNSKAP": "FIN",
+        "ROLLER": "ROLLER", "ROLLE": "ROLLER", "AIROLLE": "ROLLER",
+        "CRM": "CRM", "SALG": "CRM", "SA": "CRM",
+        "IQ": "IQ", "AIPK": "IQ", "PK": "IQ",
+    }
+
     name = fields.Char(string="Spor", required=True, index=True,
                        help="F.eks. «AI Kontrollrom», «Prosjekt», «Kommunikasjon».")
     kode = fields.Char(string="Kode", index=True,
@@ -199,19 +220,58 @@ class FiqAiSpor(models.Model):
         return out
 
     @api.model
+    def normaliser_kode(self, kode):
+        """Gjør en fritekst-kode til den kanoniske sporkoden.
+
+        «gui kr» · «Kontrollrom» · «KR» → alle blir «KR». Slår først opp i
+        aliaslista (bokstaver og tall alene, store bokstaver), og faller ellers
+        tilbake på ren opprydding — aldri på gjetting.
+        """
+        raw = (kode or "").strip()
+        if not raw:
+            return ""
+        noekkel = "".join(c for c in raw.upper() if c.isalnum())
+        if noekkel in self.KODE_ALIAS:
+            return self.KODE_ALIAS[noekkel]
+        return " ".join(raw.upper().split())
+
+    @api.model
     def _finn_eller_lag(self, kode):
         """Slå opp et spor på kode — opprett det hvis det ikke finnes.
 
         Uten dette faller en økt utenfor bare fordi ingen har opprettet sporet på
         forhånd. Da mister vi nettopp den oversikten sporene finnes for å gi.
+
+        Koden normaliseres FØRST, så samme arbeid alltid havner i samme spor.
         """
-        kode = (kode or "").strip()
+        kode = self.normaliser_kode(kode)
         if not kode:
             return self.browse()
         spor = self.search([("kode", "=ilike", kode)], limit=1)
         if spor:
             return spor
         return self.create({"name": kode, "kode": kode, "status": "bygges"})
+
+    @api.model
+    def hjemlost_spor(self):
+        """Sporet hjemløse økter havner i — synlig, ikke skjult.
+
+        Gjermund 20.07.2026 valgte MYKT krav: en økt uten spor skal ikke avvises
+        (det ville stoppet arbeid), men den skal heller ikke forsvinne i stillhet.
+        Den havner her, og flaten lyser rødt til noen rydder.
+
+        Det var nettopp usynligheten som lot tre CRM-moduler stå eierløse i 11 dager.
+        """
+        spor = self.search([("kode", "=", self.HJEMLOS_KODE)], limit=1)
+        if spor:
+            return spor
+        return self.create({
+            "name": "Uten spor",
+            "kode": self.HJEMLOS_KODE,
+            "status": "planlagt",
+            "beskrivelse": "Økter som ikke har meldt hvilket spor de hører til. "
+                           "Skal alltid være tom — hver økt her mangler eier.",
+        })
 
     def neste_okt_navn(self):
         """Navnet neste økt i sporet skal ha — «0.00 8.50 AI KR (01.02)».

@@ -321,7 +321,8 @@ class FiqGuiAiKrData(models.AbstractModel):
         if company_id:
             dom.append(("company_id", "=", int(company_id)))
         out = []
-        for s in self.env["fiq.ai.spor"].search(dom, order="kode"):
+        Spor = self.env["fiq.ai.spor"]
+        for s in Spor.search(dom, order="kode"):
             out.append({
                 "id": s.id,
                 "kode": s.kode or "",
@@ -336,6 +337,11 @@ class FiqGuiAiKrData(models.AbstractModel):
                 "beskrivelse": s.beskrivelse or "",
                 # UTEN EIER: ingen aktive oekter og status planlagt = hullet skal SYNES.
                 "uten_eier": bool(s.status == "planlagt" and not s.aktive_okter),
+                # HJEMLOEST: oppsamlingssporet for oekter som aldri meldte tilhoerighet.
+                # Skal alltid vaere TOMT. Er det ikke det, mangler noen en eier — og da
+                # skal flaten lyse roedt, ikke tie. (Gjermund 20.07: mykt krav, valg 2.)
+                "hjemlost": bool(s.kode == Spor.HJEMLOS_KODE),
+                "krever_opprydding": bool(s.kode == Spor.HJEMLOS_KODE and s.antall_okter),
             })
         return out
 

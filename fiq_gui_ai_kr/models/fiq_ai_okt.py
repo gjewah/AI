@@ -92,8 +92,17 @@ class FiqAiOkt(models.Model):
         # Spor-tilhørighet: økta melder hvilket spor den hører til, og hvilke andre
         # den skriver i. Sporet opprettes hvis det ikke finnes — da slipper vi at en
         # økt faller utenfor bare fordi ingen har opprettet sporet på forhånd.
+        # 🔴 MYKT KRAV (Gjermund 20.07.2026, valg 2): ingen økt er hjemløs i stillhet.
+        # Melder økta ikke spor — og har den ikke fått ett fra før — havner den i
+        # «Uten spor», som lyser rødt i flaten. Vi avviser den IKKE (det ville stoppet
+        # arbeid midt i), men den forsvinner heller ikke. Bakgrunn: øktnummer-kaoset
+        # kostet Gjermund over 100 timer, og tre CRM-moduler sto eierløse i 11 dager
+        # nettopp fordi hjemløshet var usynlig.
+        Spor = self.env["fiq.ai.spor"]
         if spor_kode:
-            vals["spor_id"] = self.env["fiq.ai.spor"]._finn_eller_lag(spor_kode).id
+            vals["spor_id"] = Spor._finn_eller_lag(spor_kode).id
+        elif not (rec and rec.spor_id):
+            vals["spor_id"] = Spor.hjemlost_spor().id
         if gjestespor_koder:
             Spor = self.env["fiq.ai.spor"]
             ids = [Spor._finn_eller_lag(k).id for k in gjestespor_koder if k]
