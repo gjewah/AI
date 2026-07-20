@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.16.0",
+    "version": "19.0.1.16.1",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
@@ -35,15 +35,15 @@ med Odoo-visning. Slås KR av, står de fortsatt.
    (SQL, ikke ORM — computen går motsatt vei). Idempotent.
 
 19.0.1.15.0 — WBS-TRE MED TIMER MOT BUDSJETT (kravspek batch 15):
- 🔴 TO FEIL RETTET FRA 1.14.0:
- 1. FLATEN VAR EN LISTEVISNING. Tabell over prosjekter -> tabell over oppgaver.
-    Gjermund: «du har kun knapt gjenskapt listevisning fra Odoo NATIVE!!!»
-    Odoo HAR allerede prosjekter i liste — den flaten ga ingen ny verdi.
- 2. FREMDRIFT BLE KAPPET PÅ 100 %. `min(100.0, (ført/est)*100)` viste 215,9 timer
-    mot budsjett 10 som «100 % grønn» — et skjult 22x overforbruk. Å skjule nettopp
-    det varselet den som styrer økonomien må se, er ikke en visningsfeil.
-    Testen `test_fremdrift_er_alltid_mellom_0_og_100` SEMENTERTE feilen; den er
-    erstattet av tester som ville FEILET kappingen.
+
+ * TO FEIL RETTET FRA 1.14.0. (1) FLATEN VAR EN LISTEVISNING: tabell over prosjekter
+   -> tabell over oppgaver. Gjermund: «du har kun knapt gjenskapt listevisning fra
+   Odoo NATIVE!!!» Odoo HAR allerede prosjekter i liste — flaten ga ingen ny verdi.
+ * (2) FREMDRIFT BLE KAPPET PÅ 100 %. `min(100.0, (ført/est)*100)` viste 215,9 timer
+   mot budsjett 10 som «100 % grønn» — et skjult 22x overforbruk. Å skjule nettopp
+   det varselet den som styrer økonomien må se, er ikke en visningsfeil.
+   Testen `test_fremdrift_er_alltid_mellom_0_og_100` SEMENTERTE feilen; den er
+   erstattet av tester som ville FEILET kappingen.
  * NÅ: foldbart WBS-tre Blokk -> Fase -> Leilighet -> Aktivitet, bygget rekursivt
    fra Odoos EGET project.task-hierarki (parent_id). Ingen ny struktur oppfunnet.
  * Per node: effektive timer / budsjett + fremdriftsbar. Rollup nedenfra —
