@@ -525,8 +525,16 @@
                             <t t-if="state.presence.length">
                                 <div class="fiq_hm_presence">
                                     <t t-foreach="state.presence" t-as="pr" t-key="pr.id">
-                                        <div t-att-class="'fiq_hm_chip_p fiq_hm_chip_click fiq_hm_pres_' + (pr.farge || 'grey') + ((state.selPerson and state.selPerson.id === pr.id) ? ' valgt' : '')"
+                                        <div t-att-class="'fiq_hm_chip_p fiq_hm_chip_click fiq_hm_pres_' + (pr.farge || 'grey') + ((state.selPerson and state.selPerson.id === pr.id) ? ' valgt' : '') + (pr.merknad ? ' harmerk' : '')"
                                              t-att-title="pr.tekst + tr(' — click to show alerts/meetings/activities for ') + pr.navn" t-on-click="() =&gt; this.selectPerson(pr)">
+                                            <!-- MERKNAD-BANNER over navnet. Eget lag: statusen under er UENDRET
+                                                 (farge, tilgjengelighet). Dette er en opplysning, ikke en sperre —
+                                                 du er fortsatt nåbar i lunsjen. -->
+                                            <div t-if="pr.merknad" class="fiq_hm_merk">
+                                                <span t-esc="pr.merknad"/>
+                                                <span t-if="pr.merknad_til" class="fiq_hm_merk_t" t-esc="tr('back ') + pr.merknad_til"/>
+                                                <span t-if="pr.er_meg" class="fiq_hm_merk_x" t-on-click.stop="() =&gt; this.fjernMerknad()" t-att-title="tr('Remove note')">✕</span>
+                                            </div>
                                             <span class="fiq_hm_avatar">
                                                 <span class="fiq_hm_ini" t-esc="pr.initialer"/>
                                                 <img t-if="pr.has_photo" class="fiq_hm_photo" t-att-src="'/web/image/res.users/' + pr.id + '/avatar_128'" t-att-alt="pr.navn" t-on-error="(ev) =&gt; ev.target.style.display = 'none'"/>
@@ -537,6 +545,13 @@
                                                 <span class="fiq_hm_pstat" t-esc="pr.tekst"/>
                                             </span>
                                             <span t-if="state.selPerson and state.selPerson.id === pr.id" class="fiq_hm_pvalgt" title="Selected person">✓</span>
+                                            <!-- Kun MITT eget kort: sett merknad. Ingen kan merke en kollega. -->
+                                            <button t-if="pr.er_meg and !pr.merknad" class="fiq_hm_pchat"
+                                                    t-on-click.stop="() =&gt; this.settLunsj()"
+                                                    t-att-title="tr('Lunch — back in 40 min')">🍽</button>
+                                            <button t-if="pr.er_meg" class="fiq_hm_pchat"
+                                                    t-on-click.stop="() =&gt; this.settFritekst()"
+                                                    t-att-title="tr('Note: where you are')">✎</button>
                                             <button class="fiq_hm_pchat" t-on-click.stop="() =&gt; this.openColleagueChat(pr)" t-att-title="tr('Chat with ') + pr.navn">💬</button>
                                         </div>
                                     </t>

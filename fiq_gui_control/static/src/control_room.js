@@ -1885,6 +1885,53 @@ export class FiqControlRoom extends Component {
         this.state.view = "oversikt";
     }
 
+    // ── MERKNAD PÅ EGET KORT: «Lunsj» + fritekst (Gjermund 20.07.2026) ────────────────
+    //
+    // 🛑 Merknaden endrer IKKE status og IKKE farge. Gjermund: «de aller fleste må være
+    // tilgjengelig i lunsjen for henvendelser og telefoner … jeg ønsker bare at det er
+    // anmerket, og at det er mulig å vise hensyn.» En kollega kan velge å vente ti
+    // minutter — men skal fortsatt kunne ringe. Anmerkning, aldri sperre.
+    //
+    // 🛑 Rører ALDRI arbeidstidskalenderen. Odoo deler dagen i to arbeidsøkter (bygget for
+    // land der lunsj er en lang, fast pause). I Norge er den kort og tas når det passer —
+    // arbeidstiden løper videre. Dette er kun en melding til kollegene.
+    async _lagreMerknad(tekst, minutter, slutt) {
+        try {
+            await this.orm.call("fiq.gui.control.config", "sett_min_merknad", [], {
+                tekst: tekst || false,
+                minutter: minutter || false,
+                slutt: slutt || false,
+            });
+            // Hent oppmøtelista på nytt så banneret vises umiddelbart — uten dette måtte
+            // brukeren oppdatere siden for å se sin egen merknad, og da ser det ut som
+            // knappen ikke virket.
+            this.state.presence = await this.orm.call(
+                "fiq.gui.control.config", "get_presence", []);
+        } catch (e) {
+            this.notification.add(this._errMsg(e), { type: "danger" });
+        }
+    }
+
+    // Lunsj = fritekst med ferdig tekst + 40 min (Gjermunds tall). ÉN mekanisme, to knapper.
+    settLunsj() {
+        this._lagreMerknad(_t("Lunch"), 40, false);
+    }
+
+    // Fritekst: «på befaring», «hos tannlegen», «henter i barnehagen».
+    // Tidspunkt er VALGFRITT — tomt betyr «står til jeg fjerner den selv».
+    settFritekst() {
+        const tekst = window.prompt(_t("Note (e.g. «On site», «At the dentist»):"), "");
+        if (tekst === null) { return; }              // avbrutt
+        if (!tekst.trim()) { this.fjernMerknad(); return; }
+        const tid = window.prompt(_t("Back at (HH:MM) — leave empty for no end time:"), "");
+        if (tid === null) { return; }
+        this._lagreMerknad(tekst.trim(), false, tid.trim() || false);
+    }
+
+    fjernMerknad() {
+        this._lagreMerknad(false, false, false);
+    }
+
     // «Legg til knapp» (tilpass) – ennå ikke bygget
     addButton() {
         this._underUtvikling();

@@ -498,6 +498,29 @@
     // Grått er bevisst NØYTRALT — det skal ikke rope, for det melder ingen hendelse.
     .fiq_hm_pres_grey   { border-width: 1px; border-left-width: 5px; border-color: #94a3b8; background: #f1f5f9;
         .fiq_hm_pnavn { color: #334155; } .fiq_hm_pstat { color: #64748b; } }
+    // ── MERKNAD-BANNER over navnet (Gjermund 20.07: «kan det bare være et banner») ──────
+    // Eget lag over kortet. Statusen under er UENDRET — farge og tilgjengelighet røres ikke.
+    // Nøytral grå med vilje: dette er en OPPLYSNING, ikke et varsel. Roper den, leses den
+    // som «ikke forstyrr» — og det er nettopp det den IKKE betyr.
+    // 🛑 `position: relative` MÅ settes her: kortet har det IKKE fra før (kun `.fiq_hm_avatar`
+    // inni har det). Uten dette ville banneret festet seg til nærmeste plasserte forelder
+    // lenger ut — altså havnet et helt annet sted på siden. Verifisert i koden, ikke antatt.
+    .fiq_hm_chip_p.harmerk { position: relative; padding-top: 20px; }
+
+    .fiq_hm_merk {
+        position: absolute; top: 0; left: 0; right: 0;
+        display: flex; align-items: center; gap: 6px;
+        padding: 2px 8px;
+        background: #e2e8f0; color: #334155;
+        font-size: 10px; font-weight: 600; line-height: 1.4;
+        border-radius: 9px 9px 0 0;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+
+        .fiq_hm_merk_t { color: #64748b; font-weight: 500; }   // tilbake-tid, dempet
+        .fiq_hm_merk_x { margin-left: auto; cursor: pointer; opacity: .55; padding: 0 2px;
+            &:hover { opacity: 1; } }
+    }
+
     .fiq_hm_chip_click { cursor: pointer; transition: border-color .12s, background .12s;
         &:hover { border-color: var(--fiq-accent); background: rgba(56,180,74,.06); } }
 
@@ -838,6 +861,10 @@
         .fiq_hm_pnavn { color: #fee2e2; } .fiq_hm_pstat { color: #f87171; font-weight: 600; } }
     .fiq_hm_pres_grey   { background: #262b33; border-color: #64748b;
         .fiq_hm_pnavn { color: #e2e8f0; } .fiq_hm_pstat { color: #94a3b8; } }
+    // Merknad-banneret: dempet også her. Lys grå på mørk flate ville ropt høyere enn
+    // statusen selv — og merknaden er den minst viktige opplysningen på kortet.
+    .fiq_hm_merk { background: #39414b; color: #cbd5e1;
+        .fiq_hm_merk_t { color: #94a3b8; } }
     .fiq_hm_ini { color: #22303c; }
     .fiq_hm_toplbl { color: #aab3c2; }
     .fiq_hm_ai_send { background: var(--fiq-accent); color: #fff !important; border-color: var(--fiq-accent); }

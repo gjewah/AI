@@ -2,7 +2,8 @@
 import json
 import logging
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta
+import pytz
 from odoo.tools import html2plaintext
 from odoo import models, fields, api, _
 from odoo.exceptions import AccessError
@@ -1212,10 +1213,36 @@ class FiqControlRoomConfig(models.Model):
             if isinstance(avatar, bytes):
                 avatar = avatar.decode()
 
+            # MERKNAD — banner OVER navnet (Gjermund 20.07: «kan det bare være et banner
+            # over navnet»). Egen linje, eget lag: den konkurrerer ALDRI med statusen om
+            # samme plass. Statusen sier om du er nåbar; merknaden sier hvor du er.
+            # 🛑 Merknaden endrer HVERKEN status ELLER farge — du er fortsatt tilgjengelig.
+            # Er den ikke satt, finnes ikke banneret, og kortet ser ut nøyaktig som før.
+            merknad, merknad_til = "", ""
+            try:
+                with self.env.cr.savepoint():
+                    if "out_of_office_message" in u._fields and u.out_of_office_message:
+                        # Feltet er HTML i Odoo; kortet skal ha ren tekst.
+                        merknad = (html2plaintext(u.out_of_office_message) or "").strip()[:60]
+                    if merknad and "out_of_office_to" in u._fields and u.out_of_office_to:
+                        # Utløpt merknad skal IKKE vises — et banner som lyver er verre enn
+                        # ingen banner. Odoo rydder ikke feltet selv (kun `is_out_of_office`
+                        # beregnes), så vi filtrerer her.
+                        if u.out_of_office_to < fields.Datetime.now():
+                            merknad = ""
+                        else:
+                            merknad_til = fields.Datetime.context_timestamp(
+                                u, u.out_of_office_to).strftime("%H:%M")
+            except Exception:
+                merknad, merknad_til = "", ""
+
             out.append({
                 "id": u.id,
                 "partner_id": u.partner_id.id,
                 "navn": name,
+                "merknad": merknad,
+                "merknad_til": merknad_til,
+                "er_meg": u.id == self.env.uid,
                 "initialer": initialer,
                 "status": im,        # bakoverkomp (dot)
                 "farge": farge,      # green | orange | red – farger HELE kortet
@@ -1650,6 +1677,91 @@ class FiqControlRoomConfig(models.Model):
             if self.env.ref(xmlid, raise_if_not_found=False):
                 out.append({"xmlid": xmlid, "label": _(label)})
         return out
+
+    # ── MERKNAD PÅ EGET OPPMØTEKORT: «Lunsj» + fritekst (Gjermund 20.07.2026) ──────────
+    #
+    # Gjermunds bestilling, presisert i tre runder — presiseringene ER kravet:
+    # 1. «Lunsj er ikke et møte, og er i norske forhold ikke et fast tidspunkt.»
+    #    🛑 Odoo deler dagen i to arbeidsøkter med et hull imellom — bygget for land der
+    #    lunsj er en lang, fast pause. I Norge er den kort og tas når det passer.
+    #    👉 Vi rører derfor ALDRI arbeidstidskalenderen (`resource.calendar`). Merknaden er
+    #    en OPPLYSNING, ikke en pause som trekkes fra.
+    # 2. «De aller fleste må være tilgjengelig i lunsjen for henvendelser og telefoner.»
+    #    👉 Merknaden endrer IKKE status og IKKE farge. Du står fortsatt tilgjengelig.
+    #    Dette er ikke «Ikke forstyrr» — det er noe helt annet, og må ikke blandes.
+    # 3. «Jeg ønsker bare at det er anmerket, og at det er mulig å vise hensyn.»
+    #    👉 En kollega kan velge å vente ti minutter hvis saken ikke haster — men skal
+    #    fortsatt kunne ringe hvis den gjør det. Anmerkning, aldri sperre.
+    #
+    # ⭐ ODOOS EGNE FELT — ikke et parallelt FIQ-felt (mail/models/res_users.py:39-41):
+    #   `out_of_office_from` (datetime) · `out_of_office_to` (datetime) · `out_of_office_message` (html)
+    # Odoo utløper det SELV når «til» passeres (`_compute_is_out_of_office`, :97) — vi trenger
+    # ingen bakgrunnsjobb for at lunsjen skal gå ut av seg selv.
+    #
+    # Lunsj = fritekst med ferdig utfylt tekst og 40 min som forslag (Gjermunds tall).
+    # ÉN mekanisme, to knapper — ikke to systemer som må holdes i synk.
+    @api.model
+    def sett_min_merknad(self, tekst=False, minutter=False, slutt=False):
+        """Sett merknaden på MITT eget oppmøtekort. Tom tekst = fjern merknaden.
+
+        `minutter` gir tilbake-tid fra nå (lunsj: 40). `slutt` gir et eksakt tidspunkt
+        («HH:MM» eller ISO) og vinner over `minutter` — brukeren kan overstyre forslaget.
+        🛑 KUN egen bruker. Ingen kan sette merknad på en kollega.
+        """
+        bruker = self.env.user
+        felt = bruker._fields
+
+        # Fjern merknaden: brukeren er tilbake.
+        if not tekst:
+            vals = {}
+            for f in ("out_of_office_from", "out_of_office_to", "out_of_office_message"):
+                if f in felt:
+                    vals[f] = False
+            if vals:
+                bruker.sudo().write(vals)   # sudo: skriver KUN på seg selv, felt over
+            return {"tekst": "", "til": ""}
+
+        if "out_of_office_message" not in felt:
+            # Odoos felt mangler (mail ikke installert) — si det ærlig, ikke feil stille.
+            return {"feil": "mangler_felt"}
+
+        naa = fields.Datetime.now()
+        til = False
+        if slutt:
+            try:
+                s = str(slutt).strip()
+                if len(s) == 5 and ":" in s:            # «HH:MM» → i dag, brukerens tidssone
+                    t = datetime.strptime(s, "%H:%M").time()
+                    lokal = fields.Datetime.context_timestamp(bruker, naa)
+                    kandidat = lokal.replace(hour=t.hour, minute=t.minute,
+                                             second=0, microsecond=0)
+                    # Er klokkeslettet passert i dag, mente brukeren i morgen.
+                    if kandidat <= lokal:
+                        kandidat += timedelta(days=1)
+                    til = kandidat.astimezone(pytz.UTC).replace(tzinfo=None)
+                else:
+                    til = fields.Datetime.to_datetime(s)
+            except Exception:
+                til = False                              # ugyldig tid → fall til `minutter`
+        if not til and minutter:
+            try:
+                til = naa + timedelta(minutes=int(minutter))
+            except (ValueError, TypeError):
+                til = False
+
+        vals = {"out_of_office_message": tekst}
+        if "out_of_office_from" in felt:
+            vals["out_of_office_from"] = naa
+        if "out_of_office_to" in felt:
+            # Uten «til» blir merknaden stående til brukeren fjerner den selv. Odoo
+            # tillater det (:100), men da lyver kortet hvis noen glemmer det. Derfor
+            # er en tilbake-tid alltid foreslått i grensesnittet.
+            vals["out_of_office_to"] = til or False
+        bruker.sudo().write(vals)
+        return {
+            "tekst": tekst,
+            "til": fields.Datetime.context_timestamp(bruker, til).strftime("%H:%M") if til else "",
+        }
 
     @api.model
     def _action_set_home_all(self):
