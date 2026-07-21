@@ -22,14 +22,37 @@ const FLATE_CATEGORY = "fiq_gui_flates";
 // grensesnittet blir blankt — med helt ren serverlogg. Det skjedde 18.07 (fiq_gui_rgs vs
 // demo-flaten). Vernet mot DET ligger i demo_flates.js (viker for ekte flater) + at hver
 // modul eier sin egen nøkkel. Ingen server-side test fanger den klassen feil.
-// Selve oppsettet er innkapslet: addValidation validerer ALLE alt registrerte oppføringer
-// med én gang (core/registry.js:202) og kaster hvis én er feil. Uten denne vakten ville en
-// annen modul med feil form tatt ned HELE skallet ved lasting — altså nøyaktig den
-// feilklassen valideringen skal verne mot. Vi vil ha en tydelig advarsel, ikke blank skjerm.
+// 🔴 RETTET 21.07.2026 — VAKTEN VAR SELV EN ENKELTFEILKILDE. AI PK fanget det.
+//
+// Kommentaren under hevdet at try/catch her hindrer blank skjerm. Det var FEIL, og
+// Relasjoner betalte for det: hele grensesnittet ble blankt fordi ÉN flate sendte
+// `label` som språk-objekt.
+//
+// MEKANIKKEN, verifisert i Odoos kilde (`web/static/src/core/registry.js`):
+//   :197-204  addValidation() validerer alt som ALLEREDE er registrert  → min try/catch dekker DENNE
+//   :100-101  add() validerer HVER NYE oppføring, og kaster i KALLERENS modul  ← dekkes IKKE
+//
+// Flatene registrerer seg ETTER at skallet er lastet. Feilen kastes derfor inne i
+// `@fiq_gui_relations/relations` under modul-lasting — der finnes ingen try/catch, og
+// OWL avbryter hele modulgrafen. Serverloggen er HELT REN.
+//
+// 👉 En vakt som KASTER i stedet for å ISOLERE beskytter ingen; den flytter bare
+// nedetiden fra én flate til alle. Derfor er kontrakten nå så vid at den kun avviser
+// det som faktisk er uleselig — og etiketten godtar begge former.
+// (AI PKs feilklasse 10: «én modul feller alle».)
 try {
     registry.category(FLATE_CATEGORY).addValidation({
         key: { type: String },
-        label: { type: String },
+        // 🔴 UTVIDET 21.07.2026 — denne linja felte HELE grensesnittet.
+        // Relasjoner sendte {en_US, nb_NO} i god tro, fordi kommentaren tre linjer under
+        // sa at «label tåler tekst ELLER {en_US, nb_NO}». Den kommentaren gjaldt MENY-
+        // punktenes label, ikke flatens egen — men de sto i SAMME fil, med SAMME feltnavn.
+        // Det er en dokumentasjonsfelle jeg lagde, ikke slurv fra dem.
+        // 👉 Nå gjelder ÉN regel for begge: tekst eller språk-oppslag. Ingen tvil igjen.
+        label: {
+            validate: (l) => typeof l === "string"
+                || (!!l && typeof l === "object" && !Array.isArray(l)),
+        },
         Component: { validate: (c) => c && c.prototype instanceof Component },
         color: { type: String, optional: true },
         sequence: { type: Number, optional: true },
@@ -126,7 +149,19 @@ export class FiqGuiShell extends Component {
         return registry
             .category(FLATE_CATEGORY)
             .getAll()
+            // Etiketten kan være tekst ELLER {en_US, nb_NO} (kontrakten ble utvidet 21.07).
+            // 🛑 MÅ oversettes HER: malen skriver `label` rått til skjermen (:31, :61), så et
+            // rått objekt ville vist «[object Object]» i menyen. Norsk før engelsk — samme
+            // rekkefølge som Kontrollrommet (kanon 19.07: norsk er fasit).
+            .map((f) => ({ ...f, label: this._tekst(f.label) }))
             .sort((a, b) => (a.sequence || 50) - (b.sequence || 50));
+    }
+
+    _tekst(l) {
+        if (l && typeof l === "object") {
+            return l[user.lang] || l.nb_NO || l.en_US || "";
+        }
+        return l || "";
     }
 
     get currentFlate() {

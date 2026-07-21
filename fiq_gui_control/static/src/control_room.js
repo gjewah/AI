@@ -68,7 +68,7 @@ const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj
 // ⚠️ MÅ FØLGE __manifest__.py sin "version" — ellers tror KR at fanen kjører gammel
 // kode og viser «A new version is installed»-banneret som ALDRI forsvinner, uansett
 // hvor mange ganger brukeren laster på nytt. Bump denne i SAMME commit som manifestet.
-const GUI_BUILD = "19.0.7.0.1";
+const GUI_BUILD = "19.0.7.0.2";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -1838,7 +1838,11 @@ export class FiqControlRoom extends Component {
     //              { key: "tapt",     label: "Tapte",    badge: 0 }],
     //   });
     //
-    // `label` tåler tekst ELLER {en_US, nb_NO} — norsk før engelsk, samme som resten.
+    // MENY-PUNKTENES `label` tåler tekst ELLER {en_US, nb_NO} — norsk før engelsk.
+    // 📌 Gjelder også FLATENS egen `label` fra 21.07 (kontrakten i shell.js ble utvidet).
+    //    Før var de to ulike: skjemaet krevde String, denne kommentaren sa «begge former».
+    //    Relasjoner leste kommentaren, sendte objekt, og HELE grensesnittet ble blankt.
+    //    Ett feltnavn, to kontrakter, samme fil = dokumentasjonsfelle. Nå: ÉN regel.
     // `badge` er valgfritt: tall som HASTER, ikke totalen (samme regel som samleboksene).
     //
     // Ingen `meny` = ingen undermeny. Flater som ikke trenger det, merker ingenting.
