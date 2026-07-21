@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.18.3",
+    "version": "19.0.1.18.4",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
@@ -11,6 +11,17 @@ FIQ GUI Prosjekt
 KANON «Odoo-native først» (Gjermund 2026-07-16): KR er et LAG, ikke systemet.
 Testen: «Virker dette i native Odoo uten KR?» — feltene her er ekte Odoo-felt
 med Odoo-visning. Slås KR av, står de fortsatt.
+
+19.0.1.18.4 — FIKS AV EGEN FIKS: NameError i get_oppgaver:
+
+ * 1.18.3 rettet Datetime/Date-blandingen med et globalt soek-og-erstatt. Det traff
+   ogsaa `get_oppgaver`, der variabelen `frist_d` ikke finnes:
+     NameError: name 'frist_d' is not defined  (linje 591)
+   To eldre tester gikk fra groenn til ERROR.
+ * Fanget av testkjoering FOER melding — 0 failed, 2 error(s) av 43.
+ * LAERDOM: soek-og-erstatt paa tvers av funksjoner er ikke trygt naar erstatningen
+   viser til en lokal variabel. Rettet med eksplisitt `frist_dato` i den funksjonen,
+   og verifisert maskinelt (AST) at ingen funksjon bruker en udefinert frist-variabel.
 
 19.0.1.18.3 — HASTEFIKS: Datetime/Date-blanding felte flaten (feilklasse 8):
 

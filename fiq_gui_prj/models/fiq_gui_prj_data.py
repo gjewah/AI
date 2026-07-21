@@ -578,6 +578,8 @@ class FiqGuiPrjData(models.AbstractModel):
             fort = t.effective_hours if "effective_hours" in t._fields else 0.0
             budsjett = t.allocated_hours or 0.0
             ferdig = bool(t.stage_id.fold)
+            # `date_deadline` er Datetime i Odoo 19 — konverter FØR bruk.
+            frist_dato = t.date_deadline.date() if t.date_deadline else None
             rader.append({
                 "id": t.id,
                 "navn": t.display_name,
@@ -588,7 +590,7 @@ class FiqGuiPrjData(models.AbstractModel):
                 "er_ai": not bool(t.user_ids),
                 "stadium": t.stage_id.display_name or "",
                 "ferdig": ferdig,
-                "frist": fields.Date.to_string(frist_d) if frist_d else False,
+                "frist": fields.Date.to_string(frist_dato) if frist_dato else False,
                 "prioritet": t.priority,
                 "budsjett_timer": round(budsjett, 1),
                 "forte_timer": round(fort, 1),
