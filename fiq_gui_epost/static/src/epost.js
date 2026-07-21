@@ -36,6 +36,7 @@ export class FiqMeldingssenter extends Component {
             trad: { status: "", notater: [] }, nyNotat: "",  // arbeidsstatus + interne notater
             person: false, personOpen: false,                // person-visning (klikk «Til stede»)
             vedlegg: [], vedleggMsg: "",                      // vedlegg → element (Loym)
+            redigerer: false, nyttNavn: "", fv: false,        // dokumentnavn · PDF · forhåndsvisning
             hoder: false, visHoder: false,                    // nøyaktige Fra/Til/Kopi-felter
             // Paring/tildeling — MANUELL vei når AI-forslaget ikke treffer (Gjermund 18.07.2026:
             // feltene sto som tomme skall uten funksjon). Ett åpent søkefelt om gangen.
@@ -150,6 +151,44 @@ export class FiqMeldingssenter extends Component {
     }
 
     // Vedlegg → lagre på elementet meldingen gjelder (Loym-modellen)
+    // ---- Dokumentnavn · PDF · forhåndsvisning (Gjermund 19.07.2026) ------------------
+
+    startNavn(a) { this.state.redigerer = a.id; this.state.nyttNavn = a.navn || ""; }
+    avbrytNavn() { this.state.redigerer = false; this.state.nyttNavn = ""; }
+
+    /** Lagre nytt filnavn. Uendret navn → ingen serverkall. */
+    async lagreNavn(a) {
+        if (this.state.redigerer !== a.id) return;      // blur etter Escape
+        const nytt = (this.state.nyttNavn || "").trim();
+        this.avbrytNavn();
+        if (!nytt || nytt === a.navn) return;
+        const r = await this.orm.call(DATA, "gi_nytt_navn", [a.id, nytt]);
+        if (r) {
+            a.navn = r.navn;                            // vis med én gang
+            this.state.vedleggMsg = "Navn endret til " + r.navn;
+        } else {
+            this.state.vedleggMsg = "Kunne ikke endre navnet — mangler du skrivetilgang?";
+        }
+    }
+
+    /** Konvertér til PDF. Originalen beholdes — konvertering er ikke erstatning. */
+    async tilPdf(a) {
+        this.state.vedleggMsg = "Konverterer …";
+        const r = await this.orm.call(DATA, "til_pdf", [a.id]);
+        if (r && r.ok) {
+            this.state.vedleggMsg = r.alt ? (a.navn + " " + r.alt)
+                                          : ("PDF laget: " + r.navn);
+            this.state.vedlegg = await this.orm.call(DATA, "get_vedlegg", [this.state.valgt.id]);
+        } else {
+            this.state.vedleggMsg = (r && r.feil) || "Konvertering feilet.";
+        }
+    }
+
+    async visVedlegg(a) {
+        this.state.fv = await this.orm.call(DATA, "forhandsvis", [a.id]);
+    }
+    lukkVedlegg() { this.state.fv = false; }
+
     async lagrePaaElement(model, resId, navn) {
         if (!this.state.valgt) return;
         const n = await this.orm.call(DATA, "lagre_paa_element", [this.state.valgt.id, model, resId]);

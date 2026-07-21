@@ -231,6 +231,34 @@
   .attitem .fic{font-size:16px;flex:none}
   .attitem .fn{font-weight:640;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .attitem .fkb{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--muted);flex:none}
+  // Dokumentnavn · PDF · forhåndsvisning. Navnet redigeres på stedet — klikk, skriv, Enter.
+  .attitem .fn{cursor:text;border-bottom:1px dashed transparent}
+  .attitem .fn:hover{border-bottom-color:var(--muted)}
+  .attitem .fnedit{flex:1;min-width:120px;border:1.5px solid var(--accent);background:var(--surface);
+                   color:var(--ink);border-radius:6px;padding:4px 8px;font-size:12.5px;font-weight:640}
+  .attitem .fbtn{flex:none;border:1px solid var(--line);background:var(--surface-2);color:var(--ink-soft);
+                 border-radius:6px;padding:3px 8px;font-size:10.5px;font-weight:700;font-family:var(--mono)}
+  .attitem .fbtn:hover{border-color:var(--accent);color:var(--accent)}
+
+  // Forhåndsvisning: modal inne i flaten. Ingen min()/max() med blandede enheter —
+  // width + max-width hver for seg (husets beviste SCSS-fiks).
+  .fvmodal{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:24px}
+  .fvbg{position:absolute;inset:0;background:rgba(10,15,22,.55);backdrop-filter:blur(2px)}
+  .fvcard{position:relative;width:980px;max-width:94vw;height:80vh;background:var(--surface);
+          border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);
+          display:flex;flex-direction:column;overflow:hidden}
+  .fvhead{display:flex;align-items:center;gap:11px;padding:11px 15px;border-bottom:1px solid var(--line-soft);
+          background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
+  .fvhead .fvn{font-weight:730;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fvhead .fvkb{font-family:var(--mono);font-size:10px;color:var(--muted);flex:none}
+  .fvbtn{margin-left:auto;border:1px solid var(--line);background:var(--surface);color:var(--accent);
+         border-radius:8px;padding:5px 11px;font-size:11.5px;font-weight:700;text-decoration:none;flex:none}
+  .fvbtn:hover{border-color:var(--accent)}
+  .fvx{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;
+       width:28px;height:28px;font-size:15px;line-height:1;flex:none}
+  .fvramme{flex:1;width:100%;border:none;background:#fff}
+  .fvtom{flex:1;display:grid;place-items:center;text-align:center;padding:30px;
+         font-size:12.5px;color:var(--muted);line-height:1.6}
   .saverow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px}
   .saverow .lab{font-size:11px;color:var(--muted)}
   .savebtn{display:inline-flex;align-items:center;gap:7px;border:1px solid color-mix(in srgb,var(--gronn) 45%,var(--line));background:color-mix(in srgb,var(--gronn) 10%,var(--surface));color:var(--ink);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:640}

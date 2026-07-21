@@ -333,10 +333,23 @@
                                 <!-- Vedlegg → lagre på element (Loym) -->
                                 <div class="card vedlegg" t-if="state.vedlegg.length">
                                     <div class="ch"><span class="icn">📎</span>Vedlegg → lagre på element (Loym)</div>
+                                    <!-- Dokumentnavn · PDF · forhåndsvisning (Gjermund 19.07.2026).
+                                         Navnet er redigerbart direkte i lista: klikk, skriv, Enter.
+                                         Escape angrer. Filendelsen beholdes automatisk. -->
                                     <div class="attitem" t-foreach="state.vedlegg" t-as="a" t-key="a.id">
                                         <span class="fic">📄</span>
-                                        <span class="fn" t-esc="a.navn"/>
+                                        <input t-if="state.redigerer === a.id" class="fnedit"
+                                               t-att-value="state.nyttNavn"
+                                               t-on-input="(ev) => this.state.nyttNavn = ev.target.value"
+                                               t-on-keydown="(ev) => ev.key === 'Enter' ? this.lagreNavn(a) : (ev.key === 'Escape' ? this.avbrytNavn() : null)"
+                                               t-on-blur="() => this.lagreNavn(a)"/>
+                                        <span t-else="" class="fn" t-on-click="() => this.startNavn(a)"
+                                              title="Klikk for å endre navn" t-esc="a.navn"/>
                                         <span class="fkb" t-esc="a.kb + ' kB'"/>
+                                        <button class="fbtn" t-on-click="() => this.visVedlegg(a)"
+                                                title="Forhåndsvis">👁</button>
+                                        <button class="fbtn" t-on-click="() => this.tilPdf(a)"
+                                                title="Konvertér til PDF (originalen beholdes)">PDF</button>
                                     </div>
                                     <div class="saverow" t-if="state.kandidater.prosjekt.length || state.kandidater.oppgave.length">
                                         <span class="lab">Lagre på:</span>
@@ -350,6 +363,28 @@
                                         </button>
                                     </div>
                                     <div class="savemsg" t-if="state.vedleggMsg" t-esc="state.vedleggMsg"/>
+                                </div>
+
+                                <!-- FORHÅNDSVISNING: vises inne i flaten, ikke som nedlasting.
+                                     Vi henter en URL, ikke selve fila — store vedlegg skal ikke
+                                     gjennom en RPC-runde bare for å vises. -->
+                                <div class="fvmodal" t-if="state.fv">
+                                    <div class="fvbg" t-on-click="lukkVedlegg"/>
+                                    <div class="fvcard">
+                                        <div class="fvhead">
+                                            <span class="fvn" t-esc="state.fv.navn"/>
+                                            <span class="fvkb" t-esc="state.fv.kb + ' kB'"/>
+                                            <a class="fvbtn" t-att-href="state.fv.last_ned">Last ned</a>
+                                            <button class="fvx" t-on-click="lukkVedlegg">×</button>
+                                        </div>
+                                        <iframe t-if="state.fv.kan_vises" class="fvramme"
+                                                t-att-src="state.fv.url" title="Forhåndsvisning"/>
+                                        <div t-else="" class="fvtom">
+                                            Denne filtypen kan ikke vises i nettleseren
+                                            (<t t-esc="state.fv.mimetype || 'ukjent type'"/>).
+                                            Last den ned, eller konvertér til PDF.
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <!-- Paring / tildeling (eksisterende backend) -->

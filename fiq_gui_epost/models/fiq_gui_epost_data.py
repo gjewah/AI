@@ -15,8 +15,14 @@
 # Taksonomi-splitt (0–8) og paring kommer i senere steg (fiq_komm_match).
 
 import json
+import os
 import re
 from datetime import date, datetime, timedelta
+
+# Import-stier verifisert mot Odoo 19s egen kilde, ikke hukommelsen:
+# `markupsafe.escape` brukes av odoo/tools/translate.py:33 og er det samme som
+# `odoo.tools.misc.html_escape` (misc.py:1305). Vi tar den direkte fra markupsafe.
+from markupsafe import escape
 
 from odoo import api, fields, models
 
@@ -1049,6 +1055,97 @@ class FiqMeldingssenterData(models.AbstractModel):
             attachment_ids=m.attachment_ids.ids,
             message_type="comment", subtype_xmlid="mail.mt_note")
         return len(m.attachment_ids)
+
+    # ---- Dokumentnavn · PDF · forhåndsvisning (Gjermund 19.07.2026) -----------------
+    # «fint om det er mulig å endre dokumentnavnet og konvertere til PDF og kunne
+    #  forhåndsvise det»
+
+    @api.model
+    def gi_nytt_navn(self, attachment_id, nytt_navn):
+        """Endre navn på et vedlegg. Filendelsen beholdes automatisk hvis brukeren
+        utelater den — ellers mister fila si tilknytning til programmet som åpner den.
+        Kjøres som brukeren: har hun ikke skrivetilgang, får hun nei."""
+        a = self.env["ir.attachment"].browse(int(attachment_id)).exists()
+        if not a:
+            return False
+        nytt = (nytt_navn or "").strip()
+        if not nytt:
+            return False
+        gammel_ext = os.path.splitext(a.name or "")[1]
+        if gammel_ext and not os.path.splitext(nytt)[1]:
+            nytt += gammel_ext
+        try:
+            a.check_access("write")
+        except Exception:
+            return False
+        a.write({"name": nytt})
+        return {"id": a.id, "navn": a.name}
+
+    @api.model
+    def til_pdf(self, attachment_id):
+        """Konvertér et vedlegg til PDF og lagre det som NYTT vedlegg ved siden av.
+
+        Originalen røres ALDRI — konvertering er ikke en erstatning ([[fiq-vokter]]:
+        mist-aldri-innhold). Er fila allerede PDF, returneres den som den er.
+
+        v1 dekker HTML/tekst via Odoos egen wkhtmltopdf (verifisert på serveren:
+        `/opt/odoo.sh/odoosh/bin/wkhtmltopdf`, og `_run_wkhtmltopdf(bodies=[...])`
+        i `ir_actions_report.py:514`). Office-formater krever LibreOffice på verten —
+        det finnes ikke her, og vi later ikke som noe annet.
+        """
+        a = self.env["ir.attachment"].browse(int(attachment_id)).exists()
+        if not a:
+            return {"ok": False, "feil": "Vedlegget finnes ikke."}
+        if (a.mimetype or "").endswith("pdf"):
+            return {"ok": True, "id": a.id, "navn": a.name, "alt": "var allerede PDF"}
+
+        raa = a.raw or b""
+        mime = (a.mimetype or "").lower()
+        if mime.startswith("text/") or "html" in mime:
+            try:
+                tekst = raa.decode("utf-8", errors="replace")
+            except Exception:
+                return {"ok": False, "feil": "Kunne ikke lese filinnholdet."}
+            if "html" not in mime:
+                # Ren tekst → minimal HTML. `escape` hindrer at innhold tolkes som markup.
+                tekst = "<pre style='white-space:pre-wrap;font-family:monospace'>%s</pre>" % escape(tekst)
+            try:
+                pdf = self.env["ir.actions.report"]._run_wkhtmltopdf([tekst])
+            except Exception as e:
+                return {"ok": False, "feil": "PDF-motoren feilet: %s" % e}
+        else:
+            return {"ok": False,
+                    "feil": "Kan ikke konvertere %s ennå. Støtter tekst og HTML; "
+                            "Office-filer krever LibreOffice på serveren." % (a.mimetype or "ukjent type")}
+
+        navn = os.path.splitext(a.name or "vedlegg")[0] + ".pdf"
+        ny = self.env["ir.attachment"].create({
+            "name": navn,
+            "raw": pdf,
+            "mimetype": "application/pdf",
+            "res_model": a.res_model,
+            "res_id": a.res_id,
+        })
+        return {"ok": True, "id": ny.id, "navn": ny.name,
+                "kb": int(round((ny.file_size or 0) / 1024.0))}
+
+    @api.model
+    def forhandsvis(self, attachment_id):
+        """Data til forhåndsvisning. Vi sender en URL, ikke filinnholdet — store
+        vedlegg skal ikke gjennom en RPC-runde bare for å vises.
+        `kan_vises` sier om nettleseren klarer den uten nedlasting."""
+        a = self.env["ir.attachment"].browse(int(attachment_id)).exists()
+        if not a:
+            return False
+        mime = (a.mimetype or "").lower()
+        return {
+            "id": a.id, "navn": a.name or "", "mimetype": a.mimetype or "",
+            "kb": int(round((a.file_size or 0) / 1024.0)),
+            "url": "/web/content/%s?download=false" % a.id,
+            "last_ned": "/web/content/%s?download=true" % a.id,
+            "kan_vises": bool(mime.endswith("pdf") or mime.startswith("image/")
+                              or mime.startswith("text/") or "html" in mime),
+        }
 
     @api.model
     def kjor_regler(self, firm=False, period="uke", limit=500):
