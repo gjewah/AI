@@ -31,6 +31,23 @@ class TestFiqGuiRelation(TransactionCase):
         cls.type_employee = cls.env.ref("fiq_gui_relations.type_employee")
         cls.type_partner = cls.env.ref("fiq_gui_relations.type_partner")
 
+    def _foreign_company(self):
+        """A company the test user is NOT a member of.
+
+        Deliberately not created here. res.company.create() pulls in every enterprise
+        module that extends it, and on a real database one of them rejects the write:
+        "Company Project Folders cannot be linked to another company" (documents). The
+        test would then fail on a constraint that has nothing to do with relations.
+
+        An existing company answers the actual question - is a relation outside the
+        user's scope counted rather than silently dropped - without depending on which
+        modules happen to be installed. Falls back to creating one only on a bare
+        database where no second company exists.
+        """
+        other = self.env["res.company"].search(
+            [("id", "not in", self.env.user.company_ids.ids)], limit=1)
+        return other or self.env["res.company"].create({"name": "Relations Test Co"})
+
     # ---- the core case: one person, several companies -----------------------------
 
     def test_one_person_many_companies(self):
@@ -237,7 +254,7 @@ class TestFiqGuiRelation(TransactionCase):
         """The key honesty guarantee: a relation the user may not see is COUNTED, not
         silently dropped. Half a graph looks complete, so the omission must be reported.
         """
-        other = self.env["res.company"].create({"name": "Foreign Co"})
+        other = self._foreign_company()
         self.Relation.create({
             "partner_a_id": self.person.id,
             "partner_b_id": self.company_a.id,
@@ -256,7 +273,7 @@ class TestFiqGuiRelation(TransactionCase):
     def test_graf_client_company_cannot_widen_scope(self):
         """A company id from the client can only narrow. Asking for a company the user
         has no access to must not reveal it."""
-        other = self.env["res.company"].create({"name": "Foreign Co 2"})
+        other = self._foreign_company()
         self.Relation.create({
             "partner_a_id": self.person.id,
             "partner_b_id": self.company_a.id,
