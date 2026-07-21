@@ -39,6 +39,16 @@ export class FiqGuiPrj extends Component {
         this.orm = useService("orm");
         this.action = useService("action");
 
+        // Skallet sender `{firm, har000, label}` (shell.xml:71). `firm` er en ekte
+        // res.company-ID, brukbar rett i domener.
+        //
+        // 🔑 Uten dette ville firmavelgeren i KR-rammen vært død for min flate: brukeren
+        // bytter firma øverst, og innholdet står uendret. Det er verre enn ingen velger —
+        // han tror han ser 051 SDVp mens han ser alt.
+        // 🛑 Verdien SNEVRER kun INN. Serveren avgjør hva som er lov (`env.companies` +
+        // record rules); klienten kan aldri utvide sitt eget innsyn.
+        const fraSkallet = this.props && this.props.firm ? parseInt(this.props.firm, 10) : false;
+
         this.state = useState({
             laster: true,
             feil: false,
@@ -47,7 +57,7 @@ export class FiqGuiPrj extends Component {
             opplosning: "uke",      // uke | mnd
             grupper: "prosjekt",    // prosjekt | rolle | ansvarlig | status | firma
             fraUke: null,
-            valgtFirma: false,
+            valgtFirma: fraSkallet,
             // data
             kolonner: [],
             oppgaver: [],
@@ -309,3 +319,37 @@ export class FiqGuiPrj extends Component {
 }
 
 registry.category("actions").add("fiq_gui_prj_dashboard", FiqGuiPrj);
+
+// ---------- registrering i KR-skallet ----------
+//
+// Slot-fiksen (KR 6.95) gjør at `runAction()` bytter INNMAT i stedet for hele siden.
+// Rammen — meny, firmavelger, «Til stede nå» — blir stående. Flaten bygges ÉN gang
+// og virker både i KR og frittstående, fordi sloten sender samme props-form som
+// skallet (`{firm, har000, label}`, jf. shell.xml:71).
+//
+// 🛑 KONTRAKTEN (fiq_gui_shell/static/src/shell.js:44-58) — verifisert i kilden før
+// registrering, ikke antatt:
+//   key       String
+//   label     tekst ELLER språk-objekt {en_US, nb_NO}
+//   Component må arve fra owl Component
+//   color     String, valgfri
+//   sequence  Number, valgfri
+//
+// Jeg bruker REN TEKST i `label`. Begge former er lovlige nå, men det var nettopp
+// dette feltet som felte hele grensesnittet 21.07: skjemaet krevde tekst mens en
+// kommentar i samme fil sa «begge former», og Relasjoner fulgte kommentaren i god tro.
+// Kontrakten er rettet, men jeg velger den formen som aldri har feilet.
+//
+// ⚠️ `add()` kaster i KALLERENS modul (registry.js:100-101), ikke i skallet. En
+// ugyldig oppføring her ville altså tatt ned MIN modul under lasting — og med den
+// hele modulgrafen. Derfor er dette siste linje i fila: alt annet er ferdig definert.
+registry.category("fiq_gui_flates").add("prj", {
+    key: "prj",
+    label: "Prosjekt",
+    color: "#4C63D2",
+    // Sequence 40 = etter AI KR (30), før tidslinje (45). Samme tall som i
+    // data/fiq_gui_prj_flate.xml — de to må stemme overens, ellers står flaten ett
+    // sted i menyen og et annet i skallet.
+    sequence: 40,
+    Component: FiqGuiPrj,
+});

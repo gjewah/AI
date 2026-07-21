@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.18.5",
+    "version": "19.0.1.19.0",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
@@ -11,6 +11,27 @@ FIQ GUI Prosjekt
 KANON «Odoo-native først» (Gjermund 2026-07-16): KR er et LAG, ikke systemet.
 Testen: «Virker dette i native Odoo uten KR?» — feltene her er ekte Odoo-felt
 med Odoo-visning. Slås KR av, står de fortsatt.
+
+19.0.1.19.0 — REGISTRERT I KR-SKALLET (flaten kan endelig aapnes):
+
+ * `registry.category("fiq_gui_flates").add("prj", {...})` — slot-fiksen (KR 6.95) gjoer
+   at runAction() bytter INNMAT, ikke hele siden. Rammen (meny, firmavelger, «Til stede
+   naa») blir staaende. Flaten bygges EEN gang og virker baade i KR og frittstaaende.
+ * KONTRAKTEN verifisert i kilden (fiq_gui_shell/static/src/shell.js:44-58) FOER
+   registrering: key/label/Component paakrevd, color/sequence valgfrie.
+ * `label` som REN TEKST. Begge former er lovlige naa, men det var nettopp dette feltet
+   som felte hele grensesnittet 21.07 — skjemaet krevde tekst mens en kommentar i samme
+   fil sa «begge former». Jeg velger formen som aldri har feilet.
+ * ⚠️ `add()` kaster i KALLERENS modul (registry.js:100-101), ikke i skallet. En ugyldig
+   oppfoering ville tatt ned MIN modul under lasting — og med den hele modulgrafen.
+   Derfor staar registreringen sist i fila, etter at alt annet er definert.
+ * 🔑 FIRMA FRA SKALLET TAS NAA I BRUK: sloten sender {firm, har000, label}, og `firm` er
+   en ekte res.company-ID. Uten dette ville firmavelgeren i rammen vaert DOED for min
+   flate — brukeren bytter firma oeverst og innholdet staar uendret. Verre enn ingen
+   velger: han tror han ser 051 SDVp mens han ser alt.
+   Verdien SNEVRER kun INN; serveren avgjoer hva som er lov.
+ * sequence 40 i BAADE data/fiq_gui_prj_flate.xml og JS-registreringen — ellers staar
+   flaten ett sted i menyen og et annet i skallet.
 
 19.0.1.18.5 — DOMENEGRENSER: frist sent paa dagen forsvant STILLE:
 
