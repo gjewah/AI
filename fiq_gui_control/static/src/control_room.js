@@ -68,7 +68,7 @@ const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj
 // ⚠️ MÅ FØLGE __manifest__.py sin "version" — ellers tror KR at fanen kjører gammel
 // kode og viser «A new version is installed»-banneret som ALDRI forsvinner, uansett
 // hvor mange ganger brukeren laster på nytt. Bump denne i SAMME commit som manifestet.
-const GUI_BUILD = "19.0.7.0.2";
+const GUI_BUILD = "19.0.7.1.0";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -172,6 +172,13 @@ export class FiqControlRoom extends Component {
             fiqFlater: [],        // selvregistrerte FIQ-modul-flater (get_fiq_flater) – nye moduler uten kode-endring her
             slotKey: false,       // flaten som står i sloten nå (false = forsiden). Rammen står uansett.
             slotMenyValg: false,  // valgt punkt i flatens EGEN undermeny (under hovedmenyen)
+            // ── VENSTREMENYENS GRUNNSTRUKTUR (utkast 15, godkjent av Gjermund 20.07.2026) ──
+            // Tre foldbare hovedpunkter: 0 INNBOKS · KR-MENYER · FAGOMRÅDER.
+            // TREKKSPILL: åpner du én gruppe, lukkes forrige — MEN «0 INNBOKS» er unntatt.
+            // Gjermunds begrunnelse: innboksen er stedet du tømmer FRA, så den skal kunne
+            // stå åpen mens du jobber i et fagområde.
+            // Default: Innboks åpen (den du tømmer fra) + Fagområder åpen (hovednavigasjonen).
+            grpAapen: this._lastGrp(),
             har000: false,        // kryss-firma-innsyn (server-avgjort, fail-closed) — sendes til flater i sloten
             presence: [],         // «Til stede nå» – interne brukere + tilgjengelighets-status
             kal: { moter: [], aktiviteter: [], mnd: [] }, // Møter/aktiviteter-panelet (periode-styrt)
@@ -1880,6 +1887,65 @@ export class FiqControlRoom extends Component {
         const l = e.label;
         if (l && typeof l === "object") { return l[user.lang] || l.nb_NO || l.en_US || this.state.slotKey; }
         return l || this.state.slotKey;
+    }
+
+    // ── VENSTREMENYENS TRE GRUPPER (utkast 15, godkjent 20.07.2026) ───────────────────
+    //
+    // TREKKSPILL: åpner du én gruppe, lukkes forrige — slik at menyen aldri blir en lang
+    // rulleliste. 🛑 UNNTAK: «0 INNBOKS». Gjermund: den skal kunne stå åpen mens du jobber
+    // i et fagområde, fordi det er stedet du tømmer FRA.
+    //
+    // 🔑 Foldetilstanden lagres per bruker (localStorage), ikke i minnet: menyen skal se
+    // lik ut når du kommer tilbake i morgen. Uten det ville hver sidelasting nullstilt
+    // valget ditt — og da lærer man seg aldri hvor ting er.
+    toggleGrp(key) {
+        const aapen = this.state.grpAapen[key];
+        if (!aapen && key !== "innboks") {
+            // Lukk de ANDRE trekkspill-gruppene. Innboks røres aldri av dette.
+            for (const k of Object.keys(this.state.grpAapen)) {
+                if (k !== "innboks" && k !== key) { this.state.grpAapen[k] = false; }
+            }
+        }
+        this.state.grpAapen[key] = !aapen;
+        try {
+            localStorage.setItem("fiq_hm_grp", JSON.stringify(this.state.grpAapen));
+        } catch (e) { /* privat modus — valget gjelder da kun denne økta */ }
+    }
+
+    _lastGrp() {
+        try {
+            const r = JSON.parse(localStorage.getItem("fiq_hm_grp") || "null");
+            if (r && typeof r === "object") {
+                return { innboks: !!r.innboks, rom: !!r.rom, fag: !!r.fag };
+            }
+        } catch (e) { /* ugyldig lagret verdi — bruk standard */ }
+        return { innboks: true, rom: false, fag: true };
+    }
+
+    // 0 INNBOKS — fire kilder, nummerert som i utkastet. Tallene er det som HASTER,
+    // ikke totalen (samme regel som samleboksene): et tall du ikke kan handle på er støy.
+    get innboksKilder() {
+        // 🛑 Tallene leses fra data som FAKTISK finnes — verifisert i koden, ikke antatt.
+        // Første utkast leste `komm.epost_ny` o.l.: `state.komm` er en LISTE, ikke et objekt,
+        // og de feltene finnes ikke. Det ville gitt fire nuller — en meny som ser rolig ut
+        // fordi den ikke måler noe. Verre enn ingen tall.
+        const komm = this.state.komm || [];
+        const mottatt = komm.filter((k) => k.direction === "mottatt");
+        return [
+            { nr: "0.1", key: "epost", label: _t("E-mail"),
+              n: mottatt.filter((k) => k.ktype === "epost" || k.kind === "E-post").length },
+            { nr: "0.2", key: "ai", label: _t("AI messages"),
+              n: mottatt.filter((k) => k.ktype === "ai").length },
+            { nr: "0.3", key: "oppgaver", label: _t("Tasks"),
+              n: (this.state.cp && this.state.cp.krever ? this.state.cp.krever.length : 0) },
+            { nr: "0.4", key: "aktiviteter", label: _t("Activities"),
+              n: (this.state.kal && this.state.kal.aktiviteter ? this.state.kal.aktiviteter.length : 0) },
+        ];
+    }
+
+    // Sum for gruppeoverskriften — «0 INNBOKS · 9». Ser du hvor det brenner uten å åpne.
+    get innboksSum() {
+        return this.innboksKilder.reduce((s, x) => s + (x.n || 0), 0);
     }
 
     // Lukk flaten og gå tilbake til forsiden. Rammen har stått hele tiden.

@@ -138,14 +138,47 @@
             <div class="fiq_hm_wrap">
                 <!-- Mørk sidemeny -->
                 <aside class="fiq_hm_side">
-                    <!-- STYRING øverst (primær-nav) — rendres fra brukerens rekkefølge (📌 i Innstillinger) -->
-                    <div class="fiq_hm_glbl">Governance</div>
-                    <t t-foreach="navItems" t-as="ni" t-key="ni.key">
-                        <div t-att-class="ni.active ? 'fiq_hm_nav on' : 'fiq_hm_nav'" t-on-click="() =&gt; this.navDo(ni.key)" t-att-title="ni.title">
-                            <img t-if="ni.icon" class="fiq_hm_navico" t-att-src="ni.icon"/>
-                            <span t-else="" class="b"/>
-                            <t t-esc="ni.label"/>
-                        </div>
+                    <!-- ═══ GRUNNSTRUKTUR: TRE FOLDBARE HOVEDPUNKTER ═══════════════════════
+                         Utkast 15, godkjent av Gjermund 20.07.2026:
+                           0 INNBOKS · KR-MENYER · FAGOMRÅDER
+                         TREKKSPILL: åpner du én, lukkes forrige. 🛑 UNNTAK: 0 INNBOKS kan stå
+                         åpen mens du jobber — det er stedet du tømmer FRA.
+                         Antall bak overskriften: se hvor det brenner uten å åpne. -->
+
+                    <!-- ── 0 INNBOKS — øverst, alltid. Samme ord som i OneDrive og Dokumenter. -->
+                    <div t-att-class="state.grpAapen.innboks ? 'fiq_hm_grp on' : 'fiq_hm_grp'"
+                         t-on-click="() =&gt; this.toggleGrp('innboks')">
+                        <span class="fiq_hm_grp_car" t-esc="state.grpAapen.innboks ? '▾' : '▸'"/>
+                        <span>0 <t t-esc="tr('INBOX')"/></span>
+                        <span t-if="innboksSum" class="fiq_hm_grp_n" t-esc="innboksSum"/>
+                    </div>
+                    <t t-if="state.grpAapen.innboks">
+                        <t t-foreach="innboksKilder" t-as="ik" t-key="ik.key">
+                            <div class="fiq_hm_nav fiq_hm_subnav" t-on-click="() =&gt; this.navDo(ik.key)"
+                                 t-att-title="ik.nr + ' ' + ik.label">
+                                <span class="b"/>
+                                <span class="fiq_hm_nr" t-esc="ik.nr"/>
+                                <t t-esc="ik.label"/>
+                                <span t-if="ik.n" class="fiq_hm_subnav_n" t-esc="ik.n"/>
+                            </div>
+                        </t>
+                    </t>
+
+                    <!-- ── KR-MENYER — rommene. Rendres fra brukerens egen rekkefølge (📌). -->
+                    <div t-att-class="state.grpAapen.rom ? 'fiq_hm_grp on' : 'fiq_hm_grp'"
+                         t-on-click="() =&gt; this.toggleGrp('rom')">
+                        <span class="fiq_hm_grp_car" t-esc="state.grpAapen.rom ? '▾' : '▸'"/>
+                        <span t-esc="tr('KR MENUS')"/>
+                    </div>
+                    <t t-if="state.grpAapen.rom">
+                        <t t-foreach="navItems" t-as="ni" t-key="ni.key">
+                            <div t-att-class="ni.active ? 'fiq_hm_nav fiq_hm_subnav on' : 'fiq_hm_nav fiq_hm_subnav'"
+                                 t-on-click="() =&gt; this.navDo(ni.key)" t-att-title="ni.title">
+                                <img t-if="ni.icon" class="fiq_hm_navico" t-att-src="ni.icon"/>
+                                <span t-else="" class="b"/>
+                                <t t-esc="ni.label"/>
+                            </div>
+                        </t>
                     </t>
 
                     <!-- FLATENS EGNE PUNKTER — folder seg ut UNDER hovedmenyen (Gjermund 20.07).
@@ -168,8 +201,15 @@
 
                     <!-- Fagområder under: én rad per område (lang strek) + nedtrekk for underområder.
                          Treet leses fra Odoo prosjekt-hierarkiet (SSOT) — ingen hardkodet liste. -->
-                    <div class="fiq_hm_glbl">Subject areas (SP)</div>
-                    <div class="fiq_hm_alist">
+                    <!-- ── FAGOMRÅDER — tredje gruppe. Treet leses fra prosjekthierarkiet (SSOT),
+                         fast stigende sortering. Aldri alfabetisk, aldri «mest brukt øverst»:
+                         muskelminnet er halve gjenfinnbarheten (Gjermund, spec 20.07). -->
+                    <div t-att-class="state.grpAapen.fag ? 'fiq_hm_grp on' : 'fiq_hm_grp'"
+                         t-on-click="() =&gt; this.toggleGrp('fag')">
+                        <span class="fiq_hm_grp_car" t-esc="state.grpAapen.fag ? '▾' : '▸'"/>
+                        <span t-esc="tr('SUBJECT AREAS')"/>
+                    </div>
+                    <div t-att-class="state.grpAapen.fag ? 'fiq_hm_alist' : 'fiq_hm_alist fiq_hm_skjult'">
                         <!-- t-key = post-id (unik) — prosjektNUMMER kan duplisere (to «0.90»-maler) -->
                         <t t-foreach="sideAreas" t-as="a" t-key="a.id || a.nr">
                             <!-- Kompakt SP-flis (glossy MedBib-ikon, lesbar innstøpt tekst) + nedtrekk for underområder -->

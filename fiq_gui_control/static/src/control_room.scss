@@ -72,6 +72,41 @@
             &.on { background: #262f37; color: #fff; }
         }
 
+        // ── GRUNNSTRUKTURENS TRE HOVEDPUNKTER (utkast 15, godkjent 20.07) ──────────────
+        // 0 INNBOKS · KR-MENYER · FAGOMRÅDER. Klikkbare overskrifter, ikke etiketter —
+        // derfor peker markøren og de har hover, i motsetning til den gamle «Styring».
+        .fiq_hm_grp {
+            display: flex; align-items: center; gap: 8px;
+            padding: 9px 9px; margin-top: 10px; border-radius: 8px;
+            cursor: pointer; user-select: none;
+            font-size: 11.5px; font-weight: 700; letter-spacing: .07em;
+            color: #8b95a1; text-transform: uppercase;
+            &:hover { background: #262f37; color: #c9d2da; }
+            &.on { color: #e8edf1; }
+
+            .fiq_hm_grp_car { font-size: 9px; opacity: .8; width: 9px; }
+
+            // Antall bak overskriften — «se hvor det brenner uten å åpne» (spec 2.1).
+            // Vises KUN når det er noe: et nulltall er støy, ikke informasjon.
+            .fiq_hm_grp_n {
+                margin-left: auto; background: var(--fiq-accent); color: #fff;
+                font-size: 10.5px; font-weight: 700; line-height: 1;
+                padding: 3px 7px; border-radius: 9px; letter-spacing: 0;
+            }
+        }
+        .fiq_hm_grp:first-child { margin-top: 0; }
+
+        // Kildenummeret i Innboks (0.1, 0.2 …) — dempet, så navnet leses først.
+        // Nummeret er der for gjenfinning, ikke for å konkurrere med teksten.
+        .fiq_hm_nr {
+            font-size: 10px; opacity: .6; margin-right: 5px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        // Foldet gruppe: skjules helt. `display:none` og ikke bare høyde, så tomme
+        // beholdere ikke etterlater luft i menyen.
+        .fiq_hm_skjult { display: none; }
+
         // FLATENS EGNE PUNKTER — skal LESES som underordnet hovedmenyen, ikke som likestilt.
         // Innrykk + tynnere strek + litt mindre tekst gjør hierarkiet synlig uten en eneste
         // ekstra linje eller ramme. Samme klikkflate og samme hover som resten: kjernen eier
