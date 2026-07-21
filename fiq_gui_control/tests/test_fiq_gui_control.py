@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase, new_test_user
+from odoo.modules.module import get_manifest
 
 
 # Runs after ALL modules are loaded, not during fiq_gui_control's own install.
@@ -102,3 +103,42 @@ class TestFiqControlRoom(TransactionCase):
         self.Config._action_set_home_all()
         u.invalidate_recordset(["action_id"])
         self.assertEqual(u.action_id.id, self.action.id)
+
+    def test_gui_build_matcher_manifest(self):
+        """GUI_BUILD i control_room.js MÅ være lik "version" i manifestet.
+
+        🔴 GJERMUND FANGET DETTE 20.07.2026 — og han hadde meldt samme feil TRE ganger før:
+        «det røde båndet kommer når det er noe feil med push på GIT eller noen av modulene
+        har meldt til feil bygg».
+
+        Han har rett. Banneret «A new version is installed» er IKKE en beskjed om at
+        nettleseren har gammel cache — det er en EKTE feilmelding om at leveransen er
+        inkonsistent. Jeg feiltolket det som et cache-problem og ba ham laste på nytt.
+
+        MEKANIKKEN: `control_room.js` sammenligner den hardkodede GUI_BUILD mot installert
+        modulversjon (`get_my_config` → `version_installed`). Er de ulike, vises banneret —
+        og det forsvinner ALDRI, uansett hvor mange ganger man laster siden på nytt.
+
+        HVORFOR DET SKJEDDE: manifestet ble bumpet fem ganger på én dag (6.94 → 7.0.0) mens
+        GUI_BUILD sto igjen på 6.93. Kommentaren over konstanten advarer eksplisitt mot
+        nøyaktig dette — den ble ikke lest.
+
+        Denne testen gjør at det ikke kan gjenta seg: glemmer noen å bumpe GUI_BUILD,
+        feiler testen FØR push i stedet for at Gjermund oppdager et rødt banner i Odoo.
+        """
+        import re
+        # Odoo 19: `tools.file_path` — `get_module_resource` finnes IKKE lenger.
+        # Verifisert i kilden (odoo/tools/misc.py:196) før bruk, ikke antatt fra hukommelsen.
+        from odoo.tools import file_path
+        sti = file_path("fiq_gui_control/static/src/control_room.js")
+        with open(sti, "r", encoding="utf-8") as f:
+            js = f.read()
+        m = re.search(r'const\s+GUI_BUILD\s*=\s*"([^"]+)"', js)
+        self.assertTrue(m, "GUI_BUILD mangler i control_room.js")
+        manifest = get_manifest("fiq_gui_control").get("version", "")
+        self.assertEqual(
+            m.group(1), manifest,
+            "GUI_BUILD (%s) != manifest (%s). Bump BEGGE i SAMME commit — ellers viser "
+            "Kontrollrommet «A new version is installed»-banneret som aldri forsvinner, "
+            "og Gjermund ser en leveranse som ser ødelagt ut." % (m.group(1), manifest),
+        )
