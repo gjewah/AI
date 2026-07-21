@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.18.2",
+    "version": "19.0.1.18.3",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
@@ -11,6 +11,29 @@ FIQ GUI Prosjekt
 KANON «Odoo-native først» (Gjermund 2026-07-16): KR er et LAG, ikke systemet.
 Testen: «Virker dette i native Odoo uten KR?» — feltene her er ekte Odoo-felt
 med Odoo-visning. Slås KR av, står de fortsatt.
+
+19.0.1.18.3 — HASTEFIKS: Datetime/Date-blanding felte flaten (feilklasse 8):
+
+ * fiqas Staging 21.07 kl. 22:58, etter rebuild fra Production:
+     TypeError: can't compare datetime.datetime to datetime.date
+     fiq_gui_prj_data.py:243  ->  if frist < i_dag
+   get_oppgaver_over_tid ga 500 -> flaten fikk ingen data -> BLANK SKJERM.
+ * ROTAARSAK: `date_deadline` og `planned_date_begin` er **Datetime** i Odoo 19
+   (verifisert i kilden: project/models/project_task.py:183 + project_enterprise/
+   models/project_task.py:26, og i ir_model_fields = «datetime»), mens
+   `fields.Date.context_today()` gir en **Date**. Sammenligningen er ulovlig.
+ * RETTET FIRE STEDER, ikke bare de to som krasjet: `_tid_status` (sammenligning +
+   differanse), `e` i radbyggingen (blandet Datetime og Date i samme rad), og to
+   `Date.to_string`-kall som fikk Datetime inn.
+ * 🔑 HVORFOR 42 GROENNE TESTER IKKE FANGET DET: koden returnerte paa «if not frist»
+   naar ingen oppgave hadde frist. Paa tynn base ble sammenligningen ALDRI naadd.
+   Etter rebuild fra Production fantes ekte frister — og foerste kall smalt.
+ * NY TEST `test_oppgaver_over_tid_taaler_oppgave_MED_frist` OPPRETTER oppgaver med
+   frist (passert / om 3 dager / om 60), saa kodeveien tvinges gjennom uansett
+   hvordan basen ser ut. Sjekker ogsaa at statusen blir riktig (krit/folg/rute) og
+   at frist returneres som ren dato uten klokkeslett.
+ * LAERDOM: en test som bare LESER eksisterende data kan ikke bevise fravaer av
+   data-betingede krasj. Den maa opprette tilstanden den skal verne mot.
 
 19.0.1.18.2 — TESTFIKS: oektnummer-vernet fanget en DATO:
 

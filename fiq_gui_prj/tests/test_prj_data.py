@@ -10,6 +10,7 @@ ingenting. Derfor tester vi mot forholdene som faktisk finnes i basen: maler bla
 inn blant prosjekter, og prosjekter uten timeestimat.
 """
 
+from odoo import fields
 from odoo.tests import TransactionCase, tagged
 
 
@@ -401,3 +402,68 @@ class TestPrjData(TransactionCase):
             res["valgt_firma"],
             "Et firma sesjonen ikke har, skal falle tilbake til sesjonens scope — ikke aksepteres",
         )
+
+    # ---------- DATA-BETINGET KRASJ (feilklasse 8) ----------
+
+    def test_oppgaver_over_tid_taaler_oppgave_MED_frist(self):
+        """🔴 REGRESJON: krasjet fiqas Staging 21.07 kl. 22:58 — blank skjerm.
+
+            TypeError: can't compare datetime.datetime to datetime.date
+            fiq_gui_prj_data.py:243  →  if frist < i_dag
+
+        `date_deadline` er **Datetime** i Odoo 19 (verifisert i kilden:
+        project/models/project_task.py:183, og i `ir_model_fields` = «datetime»),
+        mens `i_dag` er en **Date**. Sammenligningen er ulovlig i Python.
+
+        🔑 HVORFOR DEN GLAPP GJENNOM 42 GRØNNE TESTER:
+        koden returnerte på «if not frist» når ingen oppgave hadde frist satt. På en
+        tynn base ble sammenligningen ALDRI nådd. Etter rebuild fra Production fantes
+        ekte frister — og første kall smalt. Testen var grønn fordi den aldri kom dit.
+
+        Denne testen OPPRETTER en oppgave med frist, så kodeveien tvinges gjennom
+        uansett hvordan basen ser ut. En test som bare leser eksisterende data kan
+        ikke bevise fravær av data-betingede krasj.
+        """
+        from datetime import timedelta
+        prosjekt = self.Project.search(self._prosjekt_domene_for_test(), limit=1)
+        if not prosjekt:
+            self.skipTest("Ingen prosjekter å teste mot")
+
+        i_dag = fields.Date.context_today(self.Data)
+        oppgaver = self.env["project.task"].create([
+            {"name": "TEST frist passert", "project_id": prosjekt.id,
+             "date_deadline": fields.Datetime.to_datetime(i_dag - timedelta(days=3))},
+            {"name": "TEST frist om 3 dager", "project_id": prosjekt.id,
+             "date_deadline": fields.Datetime.to_datetime(i_dag + timedelta(days=3))},
+            {"name": "TEST frist langt fram", "project_id": prosjekt.id,
+             "date_deadline": fields.Datetime.to_datetime(i_dag + timedelta(days=60))},
+        ])
+
+        # Selve kallet — dette er det som ga 500 og blank skjerm.
+        res = self.Data.get_oppgaver_over_tid(antall=7)
+
+        self.assertIn("oppgaver", res)
+        self.assertIn("kpi", res)
+
+        # Statusen må også være RIKTIG, ikke bare fri for krasj.
+        per_id = {r["id"]: r for r in res["oppgaver"]}
+        forventet = ["krit", "folg", "rute"]
+        for opg, vent in zip(oppgaver, forventet):
+            r = per_id.get(opg.id)
+            if r:
+                self.assertEqual(
+                    r["tid_status"], vent,
+                    "«%s» fikk status «%s», forventet «%s»" % (opg.name, r["tid_status"], vent),
+                )
+                # Frist skal være en ren datostreng, ikke et tidsstempel.
+                self.assertRegex(
+                    str(r["frist"]), r"^\d{4}-\d{2}-\d{2}$",
+                    "Frist skal være dato uten klokkeslett, fikk %r" % r["frist"],
+                )
+
+    def _prosjekt_domene_for_test(self):
+        """Prosjekt vi trygt kan henge testoppgaver på."""
+        d = [("company_id", "in", self.env.companies.ids or [self.env.company.id])]
+        if "is_template" in self.Project._fields:
+            d += [("is_template", "=", False)]
+        return d

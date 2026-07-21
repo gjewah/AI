@@ -139,7 +139,7 @@ class FiqGuiPrjData(models.AbstractModel):
             "er_ai": not bool(task.user_ids),
             "stadium": task.stage_id.display_name or "",
             "ferdig": ferdig,
-            "frist": fields.Date.to_string(task.date_deadline) if task.date_deadline else False,
+            "frist": fields.Date.to_string(task.date_deadline.date()) if task.date_deadline else False,
             "forte_timer": round(fort, 1),
             "budsjett_timer": round(budsjett, 1),
             "egne_timer": round(egen_fort, 1),
@@ -237,9 +237,22 @@ class FiqGuiPrjData(models.AbstractModel):
         """
         if ferdig:
             return "rute"
+
+        # 🔴 KRASJET fiqas Staging 21.07 kl. 22:58 (feilklasse 8: data-betinget krasj).
+        # `date_deadline` er **Datetime** i Odoo 19 (verifisert i kilden:
+        # project/models/project_task.py:183, og i ir_model_fields = «datetime»),
+        # mens `i_dag` er en **Date**. `datetime < date` gir TypeError.
+        # Hele get_oppgaver_over_tid kastet 500 → flaten fikk ingen data → blank skjerm.
+        #
+        # Hvorfor testene var grønne: uten frister på oppgavene returnerte metoden på
+        # linja over («if not frist»), og sammenligningen ble aldri nådd. Etter rebuild
+        # fra Production fantes ekte frister — og første kall smalt.
+        # 👉 Test alltid mot en oppgave som FAKTISK har frist satt.
         frist = task.date_deadline
         if not frist:
             return "plan" if not task.planned_date_begin else "rute"
+        frist = frist.date()  # Datetime -> Date, samme type som i_dag
+
         if frist < i_dag:
             return "krit"
         # Innenfor sju dager = «følg opp». Fasitens «Frister denne uka».
@@ -328,8 +341,12 @@ class FiqGuiPrjData(models.AbstractModel):
             fort = t.effective_hours if "effective_hours" in t._fields else 0.0
             budsjett = t.allocated_hours or 0.0
 
+            # 🔴 BEGGE er Datetime i Odoo 19 — konverter til Date FØR bruk.
+            # `b` gjorde det allerede; `e` gjorde det ikke, og blandet dermed
+            # Datetime og Date i samme rad. Klienten regner på disse som datoer.
             b = t.planned_date_begin.date() if t.planned_date_begin else None
-            e = t.date_deadline or (b if b else None)
+            frist_d = t.date_deadline.date() if t.date_deadline else None
+            e = frist_d or b
 
             rader.append({
                 "id": t.id,
@@ -349,7 +366,7 @@ class FiqGuiPrjData(models.AbstractModel):
                 "ferdig": ferdig,
                 "fra": fields.Date.to_string(b) if b else False,
                 "til": fields.Date.to_string(e) if e else False,
-                "frist": fields.Date.to_string(t.date_deadline) if t.date_deadline else False,
+                "frist": fields.Date.to_string(t.date_deadline.date()) if t.date_deadline else False,
                 # Odoos `priority` er BINÆR (0/1) — verifisert i core. Fasiten viser
                 # tre nivåer (▴▪▾). Vi leser det som finnes og lar flaten vise to
                 # inntil et eget felt evt. besluttes (spørsmål til AI PK 19.07).
@@ -571,7 +588,7 @@ class FiqGuiPrjData(models.AbstractModel):
                 "er_ai": not bool(t.user_ids),
                 "stadium": t.stage_id.display_name or "",
                 "ferdig": ferdig,
-                "frist": fields.Date.to_string(t.date_deadline) if t.date_deadline else False,
+                "frist": fields.Date.to_string(frist_d) if frist_d else False,
                 "prioritet": t.priority,
                 "budsjett_timer": round(budsjett, 1),
                 "forte_timer": round(fort, 1),
