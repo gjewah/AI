@@ -40,17 +40,49 @@ class FiqGuiSalgData(models.AbstractModel):
 
     @api.model
     def _apen_domene(self, selv):
-        """Åpne salgsmuligheter for gjeldende firma.
+        """Salgsmuligheter i AKTIVE stadier for gjeldende firma.
 
         `type = opportunity` skiller muligheter fra rå leads: en lead er et
         navn på en lapp, en mulighet er noe som faktisk står i pipelinen.
-        Vunne stadier lukes ut — se modulens toppkommentar.
+
+        🛑 «TAPT» ER IKKE ALLTID ARKIVERT — dette felte første utgave.
+        Odoo markerer vunnet med `is_won`, men har INGEN tilsvarende `is_lost`
+        på stadiet: et tapt salg forventes arkivert (`active = False`).
+        Målt på fiqas 20.07.2026 stemmer ikke det: stadiet «9.99 Tapt» har
+        25 AKTIVE saker, og `is_won` er ikke satt på det. Uten filteret under
+        telles derfor hver eneste tapte sak som åpen pipeline.
+
+        Konsekvensen var synlig: boksen meldte «26 av 28 haster», der én sak
+        var 925 dager over frist. Teknisk riktig, praktisk verdiløst — en boks
+        som roper hver dag blir bakgrunnsstøy, og da har flaten sluttet å
+        informere. Gjermund valgte 20.07: tell kun aktive stadier.
+
+        Løsningen leser stadienavnet framfor å hardkode en id: stadie-id-ene
+        er ulike i hvert firma, mens nummereringen (`9.99`) er FIQ-konvensjon
+        på tvers ([[fiq-metadata-taxonomy]]). `is_won` fanger vunnet uansett
+        hva stadiet heter — begge trengs.
         """
         return [
             ("type", "=", "opportunity"),
             ("stage_id.is_won", "=", False),
+            ("stage_id", "not in", selv._avsluttede_stadier(selv).ids),
             ("company_id", "in", (False, selv.env.company.id)),
         ]
+
+    @api.model
+    def _avsluttede_stadier(self, selv):
+        """Stadier som betyr «ferdig», uansett om saken er arkivert.
+
+        Vunnet fanges av `is_won`. Tapt har ingen tilsvarende markør i Odoo,
+        så det leses av nummerprefikset: FIQ-pipelinene bruker `9.99` for tapt
+        i alle firmaer (verifisert på fiqas: «9.99 Lost» / «9.99 Tapt»).
+
+        Navnet leses uten språk-context med vilje: prefikset `9.99` er likt i
+        alle språklinjer, mens ordet etter er oversatt. Vi matcher på tallet.
+        """
+        return selv.env["crm.stage"].search([
+            "|", ("is_won", "=", True), ("name", "=like", "9.99%"),
+        ])
 
     @api.model
     def get_kr_boks(self, company_id=False):
@@ -110,10 +142,15 @@ class FiqGuiSalgData(models.AbstractModel):
         setter opp sine egne (fiqas kjører ti, fra «000 Inbox» til «4.00 Won»),
         og en hardkodet modell ville vist feil kolonner hos alle andre.
 
-        Tapte muligheter er arkivert og faller derfor ut av seg selv.
+        Hele pipelinen vises — også vunnet og tapt. Her er de på sin plass:
+        man skal SE at 25 saker er tapt, det er nyttig. Forskjellen mot
+        samleboksen er at boksen skal si «hva må jeg gjøre NÅ», mens
+        pipelinen viser «hvor står alt». Derfor merkes avsluttede stadier
+        (`avsluttet`), så flaten kan dempe dem framfor å skjule dem.
         """
         selv = self.with_company(company_id) if company_id else self
         Lead = selv.env["crm.lead"]
+        avsluttede = selv._avsluttede_stadier(selv).ids
 
         # _read_group gjør jobben i databasen. Å hente alle leads og telle dem
         # i Python ville gitt samme svar og skalert dårlig.
@@ -140,6 +177,9 @@ class FiqGuiSalgData(models.AbstractModel):
                 "id": stadium.id,
                 "navn": stadium.display_name,
                 "vunnet": bool(stadium.is_won),
+                # Avsluttet = vunnet ELLER tapt. Flaten demper disse: de er
+                # historikk, ikke arbeid som venter.
+                "avsluttet": stadium.id in avsluttede,
                 "antall": antall,
                 "verdi": sum_kr,
             })

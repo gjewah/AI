@@ -59,8 +59,8 @@ class TestFiqGuiSalg(TransactionCase):
         merket = [s["id"] for s in stadier if s["vunnet"]]
         self.assertEqual(sorted(merket), sorted(vunne_i_basen))
 
-    def test_kr_boks_teller_kun_apne(self):
-        """Samleboksen teller åpne muligheter — aldri vunne.
+    def test_kr_boks_teller_kun_aktive_stadier(self):
+        """Samleboksen teller KUN aktive stadier — verken vunnet eller tapt.
 
         Dette er kontrakten mot Kontrollrommet: `totalt` er «åpen pipeline»,
         ikke «alle salgsmuligheter som finnes».
@@ -68,11 +68,63 @@ class TestFiqGuiSalg(TransactionCase):
         boks = self.Data.get_kr_boks()
         if boks is None:
             self.skipTest("Ingen åpne salgsmuligheter i denne basen.")
-        apne = self.Lead.search_count([
+        avsluttede = self.Data._avsluttede_stadier(self.Data).ids
+        aktive = self.Lead.search_count([
             ("type", "=", "opportunity"),
             ("stage_id.is_won", "=", False),
+            ("stage_id", "not in", avsluttede),
         ])
-        self.assertEqual(boks["totalt"], apne)
+        self.assertEqual(boks["totalt"], aktive)
+
+    def test_tapte_teller_ikke_som_apen_pipeline(self):
+        """En TAPT sak skal aldri telle som åpen pipeline.
+
+        REGRESJONSTEST — dette var en ekte feil i første utgave (20.07.2026).
+        Odoo har `is_won` på stadiet, men INGEN `is_lost`: et tapt salg
+        forventes arkivert. På fiqas er det ikke gjort — stadiet «9.99 Tapt»
+        hadde 25 AKTIVE saker. Boksen meldte derfor «26 av 28 haster», med én
+        sak 925 dager over frist. Teknisk riktig, praktisk verdiløst.
+
+        Testen lager en fersk tapt sak som IKKE er arkivert — nøyaktig
+        tilstanden som lurte oss — og krever at den holdes utenfor.
+        """
+        tapt_stadium = self.env["crm.stage"].search(
+            [("name", "=like", "9.99%")], limit=1,
+        )
+        if not tapt_stadium:
+            self.skipTest("Basen har ikke et 9.99-stadium for tapt.")
+
+        for_boks = self.Data.get_kr_boks()
+        for_antall = for_boks["totalt"] if for_boks else 0
+
+        self.Lead.create({
+            "name": "Regresjonstest tapt sak",
+            "type": "opportunity",
+            "stage_id": tapt_stadium.id,
+            "active": True,          # ikke arkivert — det er hele poenget
+            "expected_revenue": 999999.0,
+        })
+
+        etter_boks = self.Data.get_kr_boks()
+        etter_antall = etter_boks["totalt"] if etter_boks else 0
+        self.assertEqual(
+            etter_antall, for_antall,
+            "En tapt sak som ikke er arkivert skal ikke øke åpen pipeline.",
+        )
+
+    def test_avsluttede_stadier_er_merket_i_pipelinen(self):
+        """Både vunnet og tapt merkes `avsluttet`, så flaten kan dempe dem.
+
+        Pipelinen SKJULER dem ikke — man skal se at 25 saker er tapt. Men de
+        skal ikke konkurrere visuelt med arbeid som venter.
+        """
+        stadier = self.Data.get_pipeline()
+        avsluttede = self.Data._avsluttede_stadier(self.Data).ids
+        for stadium in stadier:
+            self.assertEqual(
+                stadium["avsluttet"], stadium["id"] in avsluttede,
+                "Stadiet «%s» er feilmerket." % stadium["navn"],
+            )
 
     def test_kr_boks_har_kontraktens_form(self):
         """Boksen må ha nøyaktig de nøklene Kontrollrommet leser.

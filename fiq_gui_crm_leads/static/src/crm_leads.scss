@@ -52,9 +52,10 @@
         padding: 8px 10px; border-radius: 8px; cursor: pointer;
         &:hover { background: #f7f8fa; }
     }
-    // Vunnet dempes: det er allerede i havn og skal ikke konkurrere med det
-    // som fortsatt trenger oppmerksomhet.
-    .fiq_gui_salg_vunnet { opacity: .55; }
+    // Avsluttet (vunnet ELLER tapt) dempes: det er historikk og skal ikke
+    // konkurrere med det som fortsatt trenger oppmerksomhet. Radene blir
+    // stående — man skal kunne SE at 25 saker er tapt — men de roper ikke.
+    .fiq_gui_salg_avsluttet { opacity: .55; }
 
     .fiq_gui_salg_radtopp {
         display: flex; justify-content: space-between; align-items: baseline;

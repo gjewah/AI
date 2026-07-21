@@ -37,7 +37,7 @@
                 <div class="fiq_gui_salg_stadier">
                     <t t-foreach="state.stadier" t-as="stadium" t-key="stadium.id">
                         <div class="fiq_gui_salg_rad"
-                             t-att-class="stadium.vunnet ? 'fiq_gui_salg_vunnet' : ''"
+                             t-att-class="stadium.avsluttet ? 'fiq_gui_salg_avsluttet' : ''"
                              t-on-click="() => this.apneStadium(stadium)">
                             <div class="fiq_gui_salg_radtopp">
                                 <span class="fiq_gui_salg_stadienavn" t-esc="stadium.navn"/>

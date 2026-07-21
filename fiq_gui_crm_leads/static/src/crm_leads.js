@@ -32,17 +32,22 @@ export class FiqGuiCrmLeads extends Component {
         });
     }
 
-    // Åpen pipeline = alt som verken er vunnet eller arkivert bort.
+    // Åpen pipeline = kun AKTIVE stadier. Vunnet og tapt holdes utenfor.
+    //
+    // 🛑 Det holder ikke å filtrere på `vunnet`: tapte saker er ikke
+    //    nødvendigvis arkivert (fiqas har 25 aktive i «9.99 Tapt»), og Odoo
+    //    har ingen `is_lost` på stadiet. Serveren avgjør hva som er avsluttet
+    //    og sender `avsluttet` — flaten gjentar ikke den vurderingen selv.
+    get aktiveStadier() {
+        return this.state.stadier.filter((s) => !s.avsluttet);
+    }
+
     get apneAntall() {
-        return this.state.stadier
-            .filter((s) => !s.vunnet)
-            .reduce((sum, s) => sum + s.antall, 0);
+        return this.aktiveStadier.reduce((sum, s) => sum + s.antall, 0);
     }
 
     get apenVerdi() {
-        return this.state.stadier
-            .filter((s) => !s.vunnet)
-            .reduce((sum, s) => sum + s.verdi, 0);
+        return this.aktiveStadier.reduce((sum, s) => sum + s.verdi, 0);
     }
 
     // Beløp uten desimaler: en pipeline leses i størrelsesorden, ikke i kroner
@@ -51,10 +56,12 @@ export class FiqGuiCrmLeads extends Component {
         return Math.round(verdi || 0).toLocaleString();
     }
 
-    // Bredden på stolpen. Relativ til største stadium, ikke til totalen —
-    // ellers blir alle stolpene like tynne så snart ett stadium dominerer.
+    // Bredden på stolpen. Relativ til største AKTIVE stadium — ikke til
+    // totalen, og ikke til vunnet/tapt. På fiqas ligger 25 saker i «Tapt»
+    // mot 1–2 i de aktive: målte vi mot dem, ble hele den levende pipelinen
+    // en tynn strek, og flaten ville sett tom ut mens det faktisk var arbeid.
     stolpeBredde(stadium) {
-        const storst = Math.max(...this.state.stadier.map((s) => s.antall), 1);
+        const storst = Math.max(...this.aktiveStadier.map((s) => s.antall), 1);
         return `${Math.round((stadium.antall / storst) * 100)}%`;
     }
 

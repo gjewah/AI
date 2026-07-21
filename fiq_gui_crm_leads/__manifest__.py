@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Salgsmuligheter",
-    "version": "19.0.1.3.0",
+    "version": "19.0.1.4.0",
     "summary": "AI GUI Salg (6 SALG) — visningen av AI Salg-Rådgiveren: pipeline per "
                "stadium med antall og forventet omsetning, lest fra crm.lead.",
     "description": """
@@ -21,8 +21,9 @@ Innhold (UTKAST 01 — pipeline-oversikt)
 
 Harde regler innebygd i flaten
 
- * Åpen pipeline = verken vunnet eller tapt. Vunne stadier lukes ut eksplisitt,
-   ellers pyntes tallet med hver handel firmaet har vunnet.
+ * Åpen pipeline = kun AKTIVE stadier. Vunnet fanges av is_won; tapt har ingen
+   tilsvarende markør i Odoo og leses av nummerprefikset 9.99. Uten begge
+   telles hver tapt sak som åpen pipeline.
  * Firma hentes fra sesjonen, aldri som parameter fra klienten (tenant-isolasjon).
  * Rådgiver, ikke beslutter — ingen automatiske salgshandlinger.
  * Kun eget firmas salg. Kunde-opplysninger holdes i crm.lead.
