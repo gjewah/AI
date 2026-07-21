@@ -109,7 +109,14 @@ export class FiqGuiRelations extends Component {
 
 registry.category("fiq_gui_flates").add("relasjoner", {
     key: "relasjoner",
-    label: { en_US: "Relations", nb_NO: "Relasjoner" },
+    // Plain string, and Norwegian. The shell validates this field as
+    // {type: String} (fiq_gui_shell/static/src/shell.js:32), and addValidation checks
+    // EVERY registered entry at once - so a dict here does not just break this surface,
+    // it stops the module loader and blanks the whole interface, with a clean server log.
+    // The {en_US, nb_NO} form is valid for MENU labels in the control room, which is a
+    // different contract on an identically named field. Norwegian per house standard;
+    // the other surfaces read "Finans", "Regnskap", "Salg".
+    label: "Relasjoner",
     // Area 2 Administration. Taken from brand/fiq_fargekart_omrader.md, not chosen here:
     // the same area drifting to a different colour per surface was a real defect (KR v6.97).
     color: "#0078CC",
