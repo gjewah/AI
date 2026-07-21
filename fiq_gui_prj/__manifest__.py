@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.18.4",
+    "version": "19.0.1.18.5",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
@@ -11,6 +11,28 @@ FIQ GUI Prosjekt
 KANON «Odoo-native først» (Gjermund 2026-07-16): KR er et LAG, ikke systemet.
 Testen: «Virker dette i native Odoo uten KR?» — feltene her er ekte Odoo-felt
 med Odoo-visning. Slås KR av, står de fortsatt.
+
+19.0.1.18.5 — DOMENEGRENSER: frist sent paa dagen forsvant STILLE:
+
+ * Meldt av KR 22.07. `planned_date_begin` og `date_deadline` er Datetime i Odoo 19,
+   men domenet fikk rene `date`-objekter. Odoo tolker dem som MIDNATT.
+ * Maalt i basen 22.07:
+     <= date(2026,7,21)               -> 463
+     <= datetime(2026-07-21 00:00:00) -> 463   (identisk = midnatt)
+     <= datetime(2026-07-21 23:59:59) -> 463
+   I dag er tallene like fordi ALLE frister staar paa midnatt (0 med klokkeslett).
+   Foerste gang noen setter frist kl. 15:00, forsvinner den ut av siste kolonne —
+   uten feilmelding, uten at noen merker det.
+ * FIKS: `datetime.combine(start, min.time())` og `datetime.combine(slutt, max.time())`.
+   Merk max.time() paa slutten — min.time() ville kuttet siste dag ved midnatt.
+ * Samme klasse som Kommunikasjons fredags-frister som forsvant fra ukesplanen
+   (fiq_gui_epost_data.py, _ukesplan_for_partner). Tredje gang i huset.
+ * NY TEST `test_frist_sent_paa_dagen_forsvinner_ikke` oppretter en oppgave med frist
+   kl. 15:00 paa siste dag i vinduet og krever at den er med.
+
+ 📌 MERK: TypeError-krasjet KR viste til var allerede rettet i 1.18.4. Loggen var fra
+ 22:58, fiksen kom 23:15. Metoden kjoerer naa: 400 oppgaver, begge akser. Men KR pekte
+ paa en ekte risiko i domenet som staar igjen — den rettes her.
 
 19.0.1.18.4 — FIKS AV EGEN FIKS: NameError i get_oppgaver:
 

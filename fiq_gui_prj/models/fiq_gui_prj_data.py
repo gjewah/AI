@@ -280,7 +280,7 @@ class FiqGuiPrjData(models.AbstractModel):
 
         🛑 Firma-scope FØRST — før gruppering, før visning. Klienten kan kun snevre inn.
         """
-        from datetime import date, timedelta
+        from datetime import date, datetime, timedelta
 
         i_dag = fields.Date.context_today(self)
 
@@ -324,11 +324,29 @@ class FiqGuiPrjData(models.AbstractModel):
         # Bare oppgaver som BERØRER vinduet. Uten dette henter vi hele historikken
         # og lar klienten kaste 95 % — samme feil som å laste alle 150 prosjekter
         # for å vise fem.
+        # 🔴 GRENSENE MÅ VÆRE DATETIME — `planned_date_begin` og `date_deadline` er
+        # Datetime i Odoo 19 (verifisert i ir_model_fields, se
+        # brain/odoo19_dato_felttyper_FAKTA.md).
+        #
+        # Et rent `date`-objekt tolkes som MIDNATT. Verifisert mot basen 22.07:
+        #     <= date(2026,7,21)                 → 463
+        #     <= datetime(2026,7,21, 00:00:00)   → 463   ← identisk, altså midnatt
+        #     <= datetime(2026,7,21, 23:59:59)   → 463
+        # I dag er tallene like fordi ALLE frister i basen står på midnatt (0 oppgaver
+        # har klokkeslett). Men første gang noen setter frist kl. 15:00, forsvinner den
+        # STILLE ut av siste kolonne — uten feilmelding, uten at noen merker det.
+        #
+        # Samme klasse som Kommunikasjons fredags-frister som forsvant fra ukesplanen
+        # (`fiq_gui_epost_data.py`, `_ukesplan_for_partner`). Tredje gang i huset.
+        # Meldt av KR 22.07 før det rakk å bli et ekte tap her.
+        start_dt = datetime.combine(start, datetime.min.time())
+        slutt_dt = datetime.combine(slutt, datetime.max.time())
+
         domene = self._firma_domene(firma_id) + [
             ("project_id", "!=", False),
             "|", "|",
-            ("planned_date_begin", "<=", slutt),
-            ("date_deadline", ">=", start),
+            ("planned_date_begin", "<=", slutt_dt),
+            ("date_deadline", ">=", start_dt),
             ("date_deadline", "=", False),
         ]
         oppgaver = self.env["project.task"].search(

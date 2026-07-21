@@ -461,6 +461,47 @@ class TestPrjData(TransactionCase):
                     "Frist skal være dato uten klokkeslett, fikk %r" % r["frist"],
                 )
 
+    def test_frist_sent_paa_dagen_forsvinner_ikke(self):
+        """🔴 REGRESJON: en frist kl. 15:00 skal ikke falle ut av siste kolonne.
+
+        `date_deadline` er Datetime. Sender vi et rent `date`-objekt inn i domenet,
+        tolker Odoo det som MIDNATT — og alt senere den dagen forsvinner STILLE.
+        Ingen feilmelding, ingen tom liste. Bare en oppgave som ikke er der.
+
+        Verifisert mot basen 22.07: `<= date(...)` gir samme treff som
+        `<= datetime(..., 00:00:00)`. I dag er alle frister på midnatt, så feilen er
+        usynlig. Første gang noen setter klokkeslett, biter den.
+
+        Samme klasse som Kommunikasjons fredags-frister som forsvant fra ukesplanen.
+        Meldt av KR 22.07 før det rakk å bli et ekte tap her.
+        """
+        from datetime import timedelta
+        prosjekt = self.Project.search(self._prosjekt_domene_for_test(), limit=1)
+        if not prosjekt:
+            self.skipTest("Ingen prosjekter å teste mot")
+
+        i_dag = fields.Date.context_today(self.Data)
+        # Siste dag i et 7-ukers vindu som starter denne uka
+        start = i_dag - timedelta(days=i_dag.weekday())
+        siste_dag = start + timedelta(weeks=7) - timedelta(days=1)
+
+        sen = self.env["project.task"].create({
+            "name": "TEST frist kl 15 siste dag",
+            "project_id": prosjekt.id,
+            # 15:00 samme dag — ville falt utenfor med midnatt-grense
+            "date_deadline": fields.Datetime.to_datetime(
+                "%s 15:00:00" % fields.Date.to_string(siste_dag)
+            ),
+        })
+
+        res = self.Data.get_oppgaver_over_tid(antall=7)
+        ider = {r["id"] for r in res["oppgaver"]}
+        self.assertIn(
+            sen.id, ider,
+            "Oppgave med frist kl. 15:00 på siste dag i vinduet forsvant. "
+            "Domenegrensen kutter trolig ved midnatt — bruk datetime.max.time().",
+        )
+
     def _prosjekt_domene_for_test(self):
         """Prosjekt vi trygt kan henge testoppgaver på."""
         d = [("company_id", "in", self.env.companies.ids or [self.env.company.id])]
