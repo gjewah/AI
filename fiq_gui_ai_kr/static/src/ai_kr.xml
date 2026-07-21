@@ -15,6 +15,7 @@
                     <div class="tabs">
                         <button t-att-class="state.view==='oppgaver'?'on':''" t-on-click="() => this.settFane('oppgaver')">Oppgaver</button>
                         <button t-att-class="state.view==='spor'?'on':''" t-on-click="() => this.settFane('spor')">Prosjektspor</button>
+                        <button t-att-class="state.view==='konkl'?'on':''" t-on-click="() => this.settFane('konkl')">AI-konklusjoner</button>
                         <button t-att-class="state.view==='okter'?'on':''" t-on-click="() => this.settFane('okter')">Øktregister</button>
                         <button t-att-class="state.view==='org'?'on':''" t-on-click="() => this.settFane('org')">Org-kart</button>
                     </div>
@@ -139,6 +140,74 @@
                                 <t t-else=""> · ikke i Odoo</t>
                             </div>
                             <div class="spbesk" t-if="s.beskrivelse" t-esc="s.beskrivelse"/>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI-KONKLUSJONER — det Gjermund skal kunne LESE og STOPPE.
+                     Gjermund 20.07: «en logg på oppgavene som gjenspeiler AI sine
+                     konklusjoner … som jeg kan lese og spørre om eller be om
+                     korrigering av når de er feil». -->
+                <div t-if="state.view==='konkl'">
+                    <div class="kpuls">
+                        <div t-att-class="'kpk' + (state.kpuls.bestridt ? ' krit' : '')">
+                            <div class="kpt" t-esc="state.kpuls.bestridt or 0"/>
+                            <div class="kpm">stoppet av deg</div>
+                        </div>
+                        <div class="kpk">
+                            <div class="kpt" t-esc="state.kpuls.usikre or 0"/>
+                            <div class="kpm">antatt / uverifisert</div>
+                        </div>
+                        <div t-att-class="'kpk' + (state.kpuls.uten_grunnlag ? ' krit' : '')">
+                            <div class="kpt" t-esc="state.kpuls.uten_grunnlag or 0"/>
+                            <div class="kpm">uten grunnlag</div>
+                        </div>
+                        <div class="kpk">
+                            <div class="kpt" t-esc="state.kpuls.kanon or 0"/>
+                            <div class="kpm">kanon</div>
+                        </div>
+                    </div>
+
+                    <div class="filtre">
+                        <label>
+                            <input type="checkbox" t-att-checked="state.vis_alle_k"
+                                   t-on-change="() => this.vekslAlleK()"/>
+                            Vis også de verifiserte
+                        </label>
+                    </div>
+
+                    <div t-if="!state.konkl.length" class="empty">
+                        Ingen konklusjoner logget ennå. Øktene fyller denne selv når de
+                        lander noe du skal kunne se — eller stoppe.
+                    </div>
+
+                    <div t-foreach="state.konkl" t-as="k" t-key="k.id"
+                         t-att-class="'kkort ' + this.kklasse(k)">
+                        <div class="ktekst" t-esc="k.konklusjon"/>
+                        <div t-if="k.grunnlag" class="kgrunn" t-esc="k.grunnlag"/>
+
+                        <div t-if="k.bestridt" class="kbestridelse">
+                            <b>🛑 Du har stoppet denne.</b>
+                            <span t-if="k.bestridelse"><br/><t t-esc="k.bestridelse"/></span>
+                            <span t-else=""><br/>Ingen begrunnelse gitt — arbeidet er stoppet uansett.</span>
+                        </div>
+
+                        <div class="kmeta">
+                            <span t-if="k.er_kanon" class="kmerke m_kanon">KANON</span>
+                            <span t-att-class="'kmerke m_' + (k.uten_grunnlag ? 'umerket' : k.sikkerhet)"
+                                  t-esc="k.uten_grunnlag ? 'UTEN GRUNNLAG' : k.sikkerhet"/>
+                            <span t-if="k.spor" t-esc="k.spor"/>
+                            <span t-if="k.oppgave" t-esc="k.oppgave"/>
+                            <span t-if="k.skrevet" t-esc="k.skrevet"/>
+                            <span t-if="k.kilde" t-esc="k.kilde"/>
+                        </div>
+
+                        <div class="kknapp">
+                            <button t-if="!k.bestridt" class="stopp" t-att-disabled="k._jobber"
+                                    t-on-click="() => this.bestrid(k)">Feil — stopp arbeidet</button>
+                            <button t-on-click="() => this.spor(k)">Spør om</button>
+                            <button t-if="k.task_id"
+                                    t-on-click="() => this.aapne({id: k.task_id})">Åpne oppgaven</button>
                         </div>
                     </div>
                 </div>

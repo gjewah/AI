@@ -22,6 +22,9 @@ export class FiqAiKontrollrom extends Component {
             okter: [], org: { roller: [], installert: false },
             bokser: [],   // samlebokser fra hver flate — «hva haster hvor»
             spor: [],     // prosjektsporene — den VARIGE enheten (Gjermund 19.07)
+            // Konklusjons-loggen: det Gjermund skal kunne lese OG stoppe (20.07).
+            // `vis_alle_k` av som default = kanon + antatt/uverifisert, hans avgrensning.
+            konkl: [], kpuls: {}, vis_alle_k: false,
         });
         onWillStart(async () => {
             // Boksene FØRST: de er Pulse-laget (kravspek: «Pulse-først, RPC-SLA <500 ms»).
@@ -120,6 +123,61 @@ export class FiqAiKontrollrom extends Component {
         if (v === "org" && !this.state.org.roller.length) {
             this.state.org = await this.orm.call(DATA, "get_org", []);
         }
+        if (v === "konkl" && !this.state.konkl.length) {
+            await this.lastKonklusjoner();
+        }
+    }
+
+    // ── KONKLUSJONS-LOGGEN ──────────────────────────────────────────────────
+    async lastKonklusjoner() {
+        const [liste, puls] = await Promise.all([
+            this.orm.call(DATA, "get_konklusjoner", [], { vis_alle: this.state.vis_alle_k }),
+            this.orm.call(DATA, "get_konklusjon_puls", []),
+        ]);
+        this.state.konkl = liste;
+        this.state.kpuls = puls;
+    }
+
+    async vekslAlleK() {
+        this.state.vis_alle_k = !this.state.vis_alle_k;
+        await this.lastKonklusjoner();
+    }
+
+    /** 🛑 NØDBREMSEN. Stopper UTEN begrunnelse — det er hele poenget.
+     *
+     *  Gjermund 21.07: «av og til må jeg bruke ordet feil for å få stoppet økter
+     *  som har glemt regelen om kunstpause og starter å bygge på feil konklusjon».
+     *  Derfor spør vi om begrunnelse, men lar tomt svar gå gjennom. Krevde vi tekst,
+     *  ville stoppen ventet på at han rekker å formulere seg — mens økta bygger videre.
+     *  Trykker han Avbryt (null), skjer ingenting; tom streng = stopp uten forklaring.
+     */
+    async bestrid(k) {
+        const svar = window.prompt(
+            `STOPP arbeidet på:\n\n«${k.konklusjon}»\n\n` +
+            `Skriv hvorfor det er feil — eller la stå tomt for å stoppe med én gang.`,
+            "");
+        if (svar === null) return;          // avbrutt — ikke stopp noe
+        k._jobber = true;
+        try {
+            const r = await this.orm.call(DATA, "bestrid_konklusjon", [k.id, svar || false]);
+            if (r && r.ok) await this.lastKonklusjoner();
+        } finally {
+            k._jobber = false;
+        }
+    }
+
+    async spor(k) {
+        const tekst = window.prompt(`Spør om:\n\n«${k.konklusjon}»`, "");
+        if (!tekst) return;                 // tomt spørsmål gir ingen mening
+        await this.orm.call(DATA, "spor_om_konklusjon", [k.id, tekst]);
+        await this.lastKonklusjoner();
+    }
+
+    /** Fargeaksen: hvor trygg er konklusjonen — og er den stoppet? */
+    kklasse(k) {
+        if (k.bestridt) return "k_bestridt";
+        if (k.uten_grunnlag) return "k_umerket";
+        return "k_" + (k.sikkerhet || "umerket");
     }
 
     async veksle(felt) {

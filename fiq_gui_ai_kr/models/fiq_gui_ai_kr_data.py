@@ -512,3 +512,91 @@ class FiqGuiAiKrData(models.AbstractModel):
             "kan_svare": True,            # front-end åpner komposer på message_id (svar/svar alle)
             "aapne": {"model": "project.task", "id": t.id},
         }
+
+    # ════════════════════════════════════════════════════════════════════════
+    # KONKLUSJONS-LOGGEN — det Gjermund skal kunne lese OG STOPPE
+    # ════════════════════════════════════════════════════════════════════════
+    @api.model
+    def get_konklusjoner(self, company_id=False, vis_alle=False, grense=100):
+        """Konklusjonene Gjermund skal se — IKKE alle 25 483 linjene.
+
+        Gjermunds avgrensning 20.07: «kanon + alt som er antatt eller uverifisert».
+        Verifiserte smaadetaljer ingen bygger paa blir i md-filene med lenke.
+        «Alt» ville gitt stoey; «kun kanon» ville skjult de smaa avgjoerelsene som
+        viste seg aa vaere feil — `spor_kode=False` var ALDRI kanon.
+
+        `vis_alle=True` naar han vil se ogsaa de verifiserte.
+        """
+        K = self.env["fiq.ai.konklusjon"]
+        dom = []
+        if company_id:
+            dom.append(("company_id", "=", int(company_id)))
+        if not vis_alle:
+            # kanon ELLER usikker ELLER umerket ELLER bestridt (bestridte skjules aldri)
+            dom += ["|", "|", "|",
+                    ("er_kanon", "=", True),
+                    ("sikkerhet", "in", ["antatt", "uverifisert"]),
+                    ("uten_grunnlag", "=", True),
+                    ("status", "=", "bestridt")]
+
+        ut = []
+        for k in K.search(dom, limit=int(grense)):
+            ut.append({
+                "id": k.id,
+                "konklusjon": k.name or "",
+                "grunnlag": k.grunnlag or "",
+                "sikkerhet": k.sikkerhet or "",
+                "sikkerhet_tekst": dict(K.SIKKERHET).get(k.sikkerhet, "Ikke merket"),
+                "er_kanon": k.er_kanon,
+                "uten_grunnlag": k.uten_grunnlag,
+                "status": k.status,
+                "bestridt": k.status == "bestridt",
+                "bestridelse": k.bestridelse or "",
+                "spor": (k.spor_id.kode or k.spor_id.name) if k.spor_id else "",
+                "okt": k.okt_id.name if k.okt_id else "",
+                "task_id": k.task_id.id or False,
+                "oppgave": k.task_id.display_name if k.task_id else "",
+                "kilde": k.kilde or "",
+                "skrevet": k.skrevet.strftime("%d.%m %H:%M") if k.skrevet else "",
+            })
+        return ut
+
+    @api.model
+    def get_konklusjon_puls(self, company_id=False):
+        """Tallene oeverst: hvor mye krever Gjermund, hvor mye gaar av seg selv."""
+        K = self.env["fiq.ai.konklusjon"]
+        dom = [("company_id", "=", int(company_id))] if company_id else []
+        return {
+            "bestridt": K.search_count(dom + [("status", "=", "bestridt")]),
+            "uten_grunnlag": K.search_count(dom + [("uten_grunnlag", "=", True)]),
+            "usikre": K.search_count(dom + [("sikkerhet", "in", ["antatt", "uverifisert"]),
+                                            ("status", "!=", "bestridt")]),
+            "kanon": K.search_count(dom + [("er_kanon", "=", True)]),
+            "totalt": K.search_count(dom),
+        }
+
+    @api.model
+    def bestrid_konklusjon(self, konklusjon_id, begrunnelse=False):
+        """🛑 NOEDBREMSEN. Virker UTEN begrunnelse — det er hele poenget.
+
+        Gjermund 21.07: «av og til maa jeg bruke ordet feil for aa faa stoppet oekter
+        som har glemt regelen om kunstpause og starter aa bygge paa feil konklusjon».
+        Krevde vi en begrunnelse, ville stoppen ventet paa at han rekker aa formulere
+        seg — mens oekta bygger videre. Begrunnelsen kan komme etterpaa.
+        """
+        k = self.env["fiq.ai.konklusjon"].browse(int(konklusjon_id)).exists()
+        if not k:
+            return {"ok": False, "feil": "Konklusjonen finnes ikke."}
+        k.check_access("write")          # aldri stoppe noe i et firma du ikke ser
+        k.bestrid(begrunnelse)
+        return {"ok": True, "status": k.status}
+
+    @api.model
+    def spor_om_konklusjon(self, konklusjon_id, tekst):
+        """Spoer uten aa stoppe — mellomtingen mellom «la staa» og noedbremsen."""
+        k = self.env["fiq.ai.konklusjon"].browse(int(konklusjon_id)).exists()
+        if not k:
+            return {"ok": False, "feil": "Konklusjonen finnes ikke."}
+        k.check_access("write")
+        k.sporsmaal(tekst)
+        return {"ok": True}

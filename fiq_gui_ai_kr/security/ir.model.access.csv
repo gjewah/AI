@@ -5,3 +5,5 @@ access_fiq_ai_spor_user,fiq.ai.spor bruker,model_fiq_ai_spor,base.group_user,1,0
 access_fiq_ai_spor_system,fiq.ai.spor system,model_fiq_ai_spor,base.group_system,1,1,1,1
 access_fiq_ai_melding_user,fiq.ai.melding bruker,model_fiq_ai_melding,base.group_user,1,1,1,0
 access_fiq_ai_melding_system,fiq.ai.melding system,model_fiq_ai_melding,base.group_system,1,1,1,1
+access_fiq_ai_konklusjon_user,fiq.ai.konklusjon bruker,model_fiq_ai_konklusjon,base.group_user,1,1,0,0
+access_fiq_ai_konklusjon_system,fiq.ai.konklusjon system,model_fiq_ai_konklusjon,base.group_system,1,1,1,1
