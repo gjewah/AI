@@ -342,12 +342,28 @@ class FiqGuiPrjData(models.AbstractModel):
         start_dt = datetime.combine(start, datetime.min.time())
         slutt_dt = datetime.combine(slutt, datetime.max.time())
 
+        # 🔴 MÅLT 22.07: av 400 returnerte oppgaver kunne bare 21 TEGNES.
+        # 379 hadde verken `planned_date_begin` eller `date_deadline` — de kom med
+        # fordi det gamle domenet hadde `("date_deadline", "=", False)` som eget
+        # OR-ledd, altså «ta med alt uten frist».
+        #
+        # Konsekvensen i flaten: 379 rader uten søyle. Gantt-en så nesten tom ut,
+        # og KPI-ene summerte til 21 av 400 — resten falt i «plan» uten å bety noe.
+        # En tidslinje som viser rader uten tid er ikke en tidslinje.
+        #
+        # NÅ: en oppgave må ha MINST ÉN dato for å høre hjemme på tidsaksen, og
+        # den datoen må berøre vinduet:
+        #   · start i vinduet (planned_date_begin <= slutt), ELLER
+        #   · frist i vinduet (date_deadline >= start)
+        # Udaterte oppgaver finnes fortsatt i Liste og Kanban via get_prosjektoversikt
+        # og get_wbs_tre — de er ikke borte, de hører bare ikke hjemme i en Gantt.
         domene = self._firma_domene(firma_id) + [
             ("project_id", "!=", False),
-            "|", "|",
-            ("planned_date_begin", "<=", slutt_dt),
-            ("date_deadline", ">=", start_dt),
-            ("date_deadline", "=", False),
+            "|",
+            "&", ("planned_date_begin", "!=", False),
+                 ("planned_date_begin", "<=", slutt_dt),
+            "&", ("date_deadline", "!=", False),
+                 ("date_deadline", ">=", start_dt),
         ]
         oppgaver = self.env["project.task"].search(
             domene, limit=int(grense), order="project_id, fiq_wbs_number, sequence, id"

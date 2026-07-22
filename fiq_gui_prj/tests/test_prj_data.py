@@ -502,6 +502,32 @@ class TestPrjData(TransactionCase):
             "Domenegrensen kutter trolig ved midnatt — bruk datetime.max.time().",
         )
 
+    def test_gantt_returnerer_bare_TEGNBARE_oppgaver(self):
+        """🔴 MÅLT 22.07: 379 av 400 oppgaver kunne ikke tegnes.
+
+        Det gamle domenet hadde `("date_deadline", "=", False)` som eget OR-ledd —
+        altså «ta med alt uten frist». Resultatet var 379 rader uten søyle: Gantt-en
+        så nesten tom ut, og KPI-ene summerte til 21 av 400.
+
+        🔑 Feilen var USYNLIG i alle tidligere tester. Metoden svarte 200, returnerte
+        400 rader, ingen exception. Den var «grønn» på hvert eneste mål vi hadde —
+        og likevel ubrukelig, fordi 95 % av radene ikke kunne tegnes.
+
+        En tidslinje som viser rader uten tid er ikke en tidslinje.
+        """
+        res = self.Data.get_oppgaver_over_tid(antall=7)
+        if not res["oppgaver"]:
+            self.skipTest("Ingen daterte oppgaver i vinduet")
+
+        udaterte = [o for o in res["oppgaver"] if not o["fra"] and not o["frist"]]
+        self.assertFalse(
+            udaterte,
+            "%d av %d oppgaver mangler BÅDE start og frist og kan ikke tegnes. "
+            "Første: «%s». Udaterte oppgaver hører hjemme i Liste/Kanban, ikke i Gantt."
+            % (len(udaterte), len(res["oppgaver"]),
+               udaterte[0]["navn"] if udaterte else ""),
+        )
+
     def _prosjekt_domene_for_test(self):
         """Prosjekt vi trygt kan henge testoppgaver på."""
         d = [("company_id", "in", self.env.companies.ids or [self.env.company.id])]

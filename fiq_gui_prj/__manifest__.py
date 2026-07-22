@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.19.0",
+    "version": "19.0.1.19.1",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
@@ -11,6 +11,19 @@ FIQ GUI Prosjekt
 KANON «Odoo-native først» (Gjermund 2026-07-16): KR er et LAG, ikke systemet.
 Testen: «Virker dette i native Odoo uten KR?» — feltene her er ekte Odoo-felt
 med Odoo-visning. Slås KR av, står de fortsatt.
+
+19.0.1.19.1 — GANTT VISTE 379 RADER UTEN SOEYLE:
+
+ * Maalt paa fiqas Staging 22.07: av 400 returnerte oppgaver kunne bare 21 TEGNES.
+   379 hadde verken planned_date_begin eller date_deadline.
+ * ROTAARSAK: domenet hadde `("date_deadline", "=", False)` som eget OR-ledd —
+   «ta med alt uten frist». Gantt-en saa nesten tom ut, og KPI-ene summerte til
+   21 av 400 (resten falt i «plan» uten aa bety noe).
+ * 🔑 FEILEN VAR USYNLIG I ALLE TIDLIGERE TESTER: metoden svarte 200, returnerte
+   400 rader, ingen exception. Groenn paa hvert maal vi hadde — og likevel ubrukelig.
+ * NAA: oppgaven maa ha MINST EEN dato, og den maa beroere vinduet. Udaterte
+   oppgaver finnes fortsatt i Liste/Kanban via get_prosjektoversikt og get_wbs_tre.
+ * NY TEST `test_gantt_returnerer_bare_TEGNBARE_oppgaver`.
 
 19.0.1.19.0 — REGISTRERT I KR-SKALLET (flaten kan endelig aapnes):
 
