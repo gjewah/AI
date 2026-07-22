@@ -53,8 +53,30 @@ class TestFiqGuiSalg(TransactionCase):
         # det ALDRI, fordi `crm_name` ikke var lastet da. Gjermund forutså det:
         # «-u test vil avsløre noen av disse». Derfor: gi hver sak en kunde, og
         # la Odoo eie navnet.
+        # Uttrykket crm_name bygger navnet fra er IKKE satt på en tom
+        # Dev-base (målt: ir_config_parameter «crm_name%» ga 0 rader). Da
+        # returnerer uttrykket ingenting, navnet blir tomt, og INSERT feiler
+        # på NOT NULL. På fiqas ER parameteren satt, så feilen finnes ikke
+        # der — samme kode, ulik konfigurasjon. Testen setter den selv i
+        # stedet for å anta at basen har den.
+        #
+        # Syntaksen er en F-STRENG med variabelen `r` (verifisert i kilden:
+        # base_mixin_expression_value/models/expression_value_mixin.py:39
+        # → safe_eval(f"f{repr(expression)}", {"r": record})). Altså
+        # «{r.felt}», ikke «object.felt» — sistnevnte ville gitt tom streng.
+        #
+        # 🛑 MÅ settes FØR leadene opprettes: crm_name.create() beregner
+        # navnet umiddelbart etter super().create().
+        cls.env["ir.config_parameter"].sudo().set_param(
+            "crm_name.crm_lead_name_expression",
+            "{r.partner_id.short_name}",
+        )
+
+        # Kunden må ha `short_name`: crm_name leser nettopp det feltet
+        # (partner_short_name = related partner_id.short_name).
         cls.testkunde = cls.env["res.partner"].create({
             "name": "Testkunde Salgsflate",
+            "short_name": "TESTSALG",
             "is_company": True,
         })
 
