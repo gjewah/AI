@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Regnskap",
-    "version": "19.0.1.14.0",
+    "version": "19.0.1.15.0",
     "summary": "AI GUI Regnskap (2.80) — visningen av AI Regnskap-Rådgiveren: likviditet, "
                "cashflow, kritiske datoer og tidlig korrigering.",
     "description": """
