@@ -132,7 +132,43 @@ class FiqAiGodkjenning(models.Model):
         if valg == "alltid" and self.noekkel:
             self._lagre_staaende()
         self._varsle(gyldige[valg], forbehold)
+        self._flytt_oppgaven(valg)
         return True
+
+    # Svar → oppgaven flytter seg. Fasit 72aae7c9: «Svarer han → oppgaven flyttes
+    # til I Arbeid, svaret havner i loggen.» Gjermund: «må flyttes fra et stadie til
+    # neste eller blir jo listen helt statisk.»
+    #
+    # Et svar som ikke flytter noe, er et svar som forsvinner: spørsmålet blir
+    # stående i køen og han svarer på det samme igjen i morgen.
+    SVAR_TIL_STADIUM = {
+        "godkjent": "arbeid",
+        "ja_men": "arbeid",       # forbeholdet står i chatteren, arbeidet fortsetter
+        "alltid": "arbeid",
+        "jeg_gjor": "arbeid",
+        "senere": "ko",           # tilbake i køen — ikke glemt, bare ikke nå
+        "nei": "ko",
+        "dropp": "ko",
+    }
+
+    def _flytt_oppgaven(self, valg):
+        """Flytt oppgaven svaret gjelder. Feiler den, skal svaret STÅ.
+
+        Svaret er det viktigste — flyttingen er en bekvemmelighet. Kaster
+        stadiebyttet (manglende rettighet, slettet stadium), skal ikke Gjermunds
+        svar rulles tilbake sammen med det.
+        """
+        self.ensure_one()
+        if not self.task_id:
+            return
+        kode = self.SVAR_TIL_STADIUM.get(valg)
+        if not kode:
+            return
+        try:
+            with self.env.cr.savepoint():
+                self.env["fiq.ai.stadie"].flytt_til(self.task_id.id, kode)
+        except Exception:
+            pass
 
     def _lagre_staaende(self):
         """«Alltid» → stående regel. Neste spørsmål med samme nøkkel svares selv.

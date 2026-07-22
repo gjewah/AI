@@ -691,3 +691,134 @@ class FiqGuiAiKrData(models.AbstractModel):
         if m < 1440:
             return "%d t" % (m // 60)
         return "%d d" % (m // 1440)
+
+    # ════════════════════════════════════════════════════════════════════════
+    # STYRINGSFLATEN — fase 1. Fasit: artifact 72aae7c9, bygget av AI PK sammen
+    # med Gjermund gjennom ~30 iterasjoner. Alt der er hans bestilling.
+    #
+    # Gjermund 22.07: «naa har vi lagt ned saa mye arbeid paa denne at den boer
+    # bli en Alternativ Visning for FIQ GUI KR ... innlemmes i menyen ASAP.»
+    #
+    # 🛑 INGEN NY HOVEDMODELL. Maalt paa DEV 35275074: project.task har alle
+    # feltene (name, description, user_ids, date_assign, date_deadline,
+    # company_id, stage_id, priority), 26 stadier finnes, 333 chatter-meldinger
+    # ligger paa oppgaver. Kanon: «Odoo uten KR skal virke.»
+    # ════════════════════════════════════════════════════════════════════════
+    @api.model
+    def get_styring(self, company_id=False, spor_id=False, skjul_ferdig=False):
+        """Alt styringsflaten trenger i ETT kall — spor, stadier, oppgaver, spoersmaal.
+
+        Ett kall framfor fire: flaten skal aapne raskt, og fire sekvensielle
+        server-kall var nettopp det KR-ytelsesmaalingen 19.07 fant som problemet.
+        """
+        return {
+            "stadier": self.env["fiq.ai.stadie"].stadie_liste(),
+            "spor": self.get_spor(company_id=company_id),
+            "oppgaver": self.get_styring_oppgaver(
+                company_id=company_id, spor_id=spor_id, skjul_ferdig=skjul_ferdig),
+            "sporsmaal": self.get_godkjenninger(company_id=company_id),
+        }
+
+    @api.model
+    def get_styring_oppgaver(self, company_id=False, spor_id=False,
+                             skjul_ferdig=False, grense=300):
+        """Oppgavene med stadium, firma og kommentartall.
+
+        Kjoeres som BRUKEREN — ikke sudo. Han skal se det han har innsyn i, og
+        ingenting mer. Firma-scoping er tenant-isolasjon i praksis, ikke pynt.
+        """
+        Task = self.env["project.task"]
+        Spor = self.env["fiq.ai.spor"]
+
+        dom = []
+        if company_id:
+            dom.append(("company_id", "=", int(company_id)))
+        if spor_id:
+            s = Spor.browse(int(spor_id)).exists()
+            if s and s.project_id:
+                dom.append(("project_id", "=", s.project_id.id))
+        if skjul_ferdig:
+            dom.append(("stage_id.fiq_ai_kode", "!=", "ferdig"))
+
+        # Sporet per prosjekt — slaas opp EN gang, ikke per oppgave.
+        spor_per_prosjekt = {}
+        for s in Spor.search([("project_id", "!=", False)]):
+            spor_per_prosjekt[s.project_id.id] = s.kode or s.name
+
+        felt = Task._fields
+        ut = []
+        for t in Task.search(dom, limit=int(grense), order="date_deadline asc, id desc"):
+            ut.append({
+                "id": t.id,
+                "nr": (t.code if "code" in felt else "") or "",
+                "navn": t.name or "",
+                "beskrivelse": t.description or "",
+                # user_ids tom = AI. Samme konvensjon som Prosjekt (00.03) bruker —
+                # avklart med dem 22.07 saa vi ikke viser ulike tall for samme sak.
+                "eier": ", ".join(t.user_ids.mapped("name")) if t.user_ids else "AI",
+                "er_ai": not bool(t.user_ids),
+                "stadium": t.stage_id.fiq_ai_kode or "",
+                "stadium_navn": t.stage_id.name or "",
+                "start": t.date_assign.strftime("%d.%m") if t.date_assign else "",
+                "frist": t.date_deadline.strftime("%d.%m") if t.date_deadline else "",
+                # Firma STYRER hvor arbeidet lagres — AI PK: «tenant-isolasjon i
+                # brukerflaten». Derfor med fra dag EN, ikke fase 2.
+                "firma": t.company_id.display_name if t.company_id else "",
+                "firma_id": t.company_id.id or False,
+                "spor": spor_per_prosjekt.get(t.project_id.id, ""),
+                "prosjekt": t.project_id.display_name if t.project_id else "",
+                "kommentarer": len(t.message_ids.filtered(
+                    lambda m: m.message_type in ("comment", "notification") and m.body)),
+            })
+        return ut
+
+    @api.model
+    def get_kommentarlogg(self, task_id, grense=50):
+        """Kommentarloggen — Odoos egen chatter, ikke en kopi.
+
+        Fasiten: «nye legger seg til med dato/klokkeslett + stadium, gamle blir
+        staaende». Chatteren gjoer nettopp det, og gir oss vedlegg og varsling
+        gratis. En egen kommentartabell ville gitt to sannheter.
+        """
+        t = self.env["project.task"].browse(int(task_id)).exists()
+        if not t:
+            return {"finnes": False}
+        ut = []
+        for m in t.message_ids.filtered(lambda m: m.body)[:int(grense)]:
+            ut.append({
+                "id": m.id,
+                "fra": m.author_id.display_name if m.author_id else "System",
+                "naar": m.date.strftime("%d.%m.%Y %H:%M") if m.date else "",
+                "tekst": m.body or "",
+                "bilder": [
+                    {"id": a.id, "navn": a.name,
+                     "url": "/web/image/%d" % a.id}
+                    for a in m.attachment_ids if (a.mimetype or "").startswith("image/")
+                ],
+            })
+        return {"finnes": True, "navn": t.name or "",
+                "stadium": t.stage_id.fiq_ai_kode or "", "logg": ut}
+
+    @api.model
+    def skriv_kommentar(self, task_id, tekst):
+        """Ny kommentar i chatteren. Stadiet foelger med saa loggen viser HVOR
+        oppgaven sto da kommentaren ble skrevet."""
+        t = self.env["project.task"].browse(int(task_id)).exists()
+        if not t:
+            return {"ok": False, "feil": "Oppgaven finnes ikke."}
+        if not (tekst or "").strip():
+            return {"ok": False, "feil": "Tom kommentar."}
+        t.check_access("write")
+        merke = " <i>(%s)</i>" % t.stage_id.name if t.stage_id else ""
+        t.message_post(body=(tekst or "").strip() + merke)
+        return {"ok": True}
+
+    @api.model
+    def flytt_stadium(self, task_id, kode):
+        """Klikk paa en stadie-pille flytter oppgaven."""
+        return self.env["fiq.ai.stadie"].flytt_til(task_id, kode)
+
+    @api.model
+    def sikre_stadier(self):
+        """Opprett de fem stadiene hvis de mangler. Idempotent."""
+        return self.env["fiq.ai.stadie"].sikre_stadier()
