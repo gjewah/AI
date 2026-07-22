@@ -475,6 +475,22 @@ class FiqMeldingssenterData(models.AbstractModel):
                     tverr[h].add(r["id"])
             if not hits and not area:
                 tverr["uavklart"].add(r["id"])
+
+        # MENNESKET OVERSTYRER MASKINEN (Gjermund 19.07: «hvordan endrer jeg på denne
+        # statusen på en e-post?»). Nøkkelordene gjetter; har noen bestemt selv, gjelder
+        # DET — og meldingen fjernes fra gruppene maskinen tildelte den, ellers ville den
+        # ligget to steder samtidig.
+        ids = [r["id"] for r in rows]
+        if ids:
+            for st in self.env["fiq.meldingssenter.state"].search(
+                    [("message_id", "in", ids), ("tverr_kode", "!=", False)]):
+                mid = st.message_id.id
+                for kode in tverr:
+                    tverr[kode].discard(mid)
+                if st.tverr_kode in tverr:
+                    tverr[st.tverr_kode].add(mid)
+                # «ingen» = mennesket sier eksplisitt at ingen gruppe passer. Da skal den
+                # heller ikke havne i «Uavklart» — det ville vært å gjette på nytt.
         return tverr, omr
 
     @api.model
@@ -787,6 +803,45 @@ class FiqMeldingssenterData(models.AbstractModel):
         return True
 
     @api.model
+    def get_tverr_valg(self):
+        """Gruppene brukeren kan velge mellom + «la maskinen bestemme»."""
+        ut = [{"kode": "", "navn": "Automatisk (nøkkelord)"}]
+        ut += [{"kode": k, "navn": n} for k, n, _ in _TVERRGAENDE]
+        ut.append({"kode": "ingen", "navn": "Ingen gruppe"})
+        return ut
+
+    @api.model
+    def sett_tverr(self, message_id, kode):
+        """Overstyr hvilken tverrgående gruppe en melding hører til.
+
+        Gjermund 19.07: *«hvordan endrer jeg på denne statusen på en e-post?»* — svaret
+        var at det kunne han ikke. Gruppene kom kun fra nøkkelord i emnet, så en hastesak
+        uten ordet «haster» ble liggende i «Uavklart», og et nyhetsbrev som skrev «viktig»
+        havnet i «Viktig». Maskinen gjettet, mennesket kunne ikke rette.
+
+        `kode`: tom streng = tilbake til automatikk · «ingen» = ingen gruppe passer ·
+        ellers en gyldig gruppekode. Ugyldig kode avvises — vi lagrer aldri noe vi ikke
+        kan vise igjen.
+        """
+        kode = (kode or "").strip()
+        if kode and kode != "ingen" and kode not in _TVERR_CODES:
+            return False
+        S = self.env["fiq.meldingssenter.state"]
+        rec = S.search([("message_id", "=", int(message_id))], limit=1)
+        vals = {
+            "tverr_kode": kode or False,
+            "tverr_av": self.env.user.id if kode else False,
+            "tverr_dato": fields.Datetime.now() if kode else False,
+        }
+        if rec:
+            rec.write(vals)
+        else:
+            vals.update({"message_id": int(message_id),
+                         "company_id": self._melding_firma(message_id)})
+            S.create(vals)
+        return {"kode": kode, "av": self.env.user.name if kode else ""}
+
+    @api.model
     def add_note(self, message_id, body):
         """Legg til et internt notat (team-only, usynlig for avsender) på en melding."""
         body = (body or "").strip()
@@ -806,6 +861,10 @@ class FiqMeldingssenterData(models.AbstractModel):
         notes = self.env["fiq.meldingssenter.note"].search([("message_id", "=", mid)])
         return {
             "status": S.status if S else "",
+            # Overstyrt gruppe: tom betyr at maskinen fortsatt bestemmer. `tverr_av`
+            # vises så det er tydelig at et MENNESKE har valgt, ikke et nøkkelord.
+            "tverr_kode": (S.tverr_kode or "") if S else "",
+            "tverr_av": (S.tverr_av.name or "") if (S and S.tverr_av) else "",
             "notater": [{
                 "navn": n.user_id.name or "",
                 "body": n.body or "",

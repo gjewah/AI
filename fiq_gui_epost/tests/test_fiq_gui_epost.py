@@ -136,6 +136,32 @@ class TestEpost(TransactionCase):
         m = self.env["mail.message"].create({"subject": "TEST", "message_type": "email"})
         self.assertFalse(self.Data.par_melding(m.id, "res.partner", self.env.user.partner_id.id))
 
+    # ---- Overstyring av tverrgående gruppe ----------------------------------------
+
+    def test_tverr_valg_har_automatikk_og_ingen(self):
+        """Brukeren må kunne velge BÅDE «la maskinen bestemme» og «ingen gruppe» —
+        ellers er overstyringen en enveisdør."""
+        koder = [v["kode"] for v in self.Data.get_tverr_valg()]
+        self.assertIn("", koder, "må kunne gå tilbake til automatikk")
+        self.assertIn("ingen", koder)
+        self.assertIn("haster", koder)
+
+    def test_sett_tverr_avviser_ugyldig_kode(self):
+        """Vi lagrer aldri noe vi ikke kan vise igjen."""
+        m = self.env["mail.message"].create({"subject": "TEST", "message_type": "email"})
+        self.assertFalse(self.Data.sett_tverr(m.id, "finnes_ikke"))
+
+    def test_sett_tverr_lagres_og_kan_angres(self):
+        """Overstyringen lagres med hvem og når, og tom verdi gir automatikk tilbake."""
+        m = self.env["mail.message"].create({"subject": "TEST", "message_type": "email"})
+        r = self.Data.sett_tverr(m.id, "haster")
+        self.assertEqual(r["kode"], "haster")
+        self.assertEqual(self.Data.get_thread(m.id)["tverr_kode"], "haster")
+        self.assertTrue(self.Data.get_thread(m.id)["tverr_av"], "hvem som valgte skal vises")
+        self.Data.sett_tverr(m.id, "")
+        self.assertEqual(self.Data.get_thread(m.id)["tverr_kode"], "",
+                         "tom verdi skal gi automatikken tilbake")
+
     # ---- Dokumentnavn · PDF -------------------------------------------------------
 
     def test_nytt_navn_beholder_filendelsen(self):

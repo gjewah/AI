@@ -34,6 +34,7 @@ export class FiqMeldingssenter extends Component {
             trekollaps: this._lesKollaps("trekollaps"),   // mappetreet: {kode: true} = foldet
             ctxTab: "rel",                                   // person-kontekst: rel | hist | week
             trad: { status: "", notater: [] }, nyNotat: "",  // arbeidsstatus + interne notater
+            tverrValg: [],                    // gruppene mennesket kan overstyre til
             person: false, personOpen: false,                // person-visning (klikk «Til stede»)
             vedlegg: [], vedleggMsg: "",                      // vedlegg → element (Loym)
             redigerer: false, nyttNavn: "", fv: false,        // dokumentnavn · PDF · forhåndsvisning
@@ -51,6 +52,7 @@ export class FiqMeldingssenter extends Component {
             const cfg = await this.orm.call(DATA, "get_my_config", []);
             Object.assign(this.state, cfg, { loading: false });
             await this.lastBokser();
+            this.state.tverrValg = await this.orm.call(DATA, "get_tverr_valg", []);
             // Lander på OVERSIKTEN (forsiden) — ikke i innboksen. E-post er et underpunkt du går inn i.
             //
             // UNNTAK: kom vi hit fra en fargeboks i Kommunikasjon (paraplyen sender `fiq_boks`
@@ -261,6 +263,18 @@ export class FiqMeldingssenter extends Component {
         this.state.valgt.status_navn = this.STATUS_NAVN[status] || "";
     }
     onStatusChange(ev) { this.setStatus(ev.target.value); }
+
+    /** Overstyr tverrgående gruppe. Boksene lastes på nytt — flyttes meldingen fra
+     *  «Uavklart» til «Haster», må begge tellerne endre seg med én gang. */
+    async onTverrChange(ev) {
+        if (!this.state.valgt) return;
+        const r = await this.orm.call(DATA, "sett_tverr", [this.state.valgt.id, ev.target.value]);
+        if (r === false) return;                       // ugyldig kode — backend avviste
+        this.state.trad.tverr_kode = r.kode;
+        this.state.trad.tverr_av = r.av;
+        await this.lastBokser();
+        if (this.state.aktivBoks) await this.lastMeldinger();
+    }
 
     // Internt notat (team-only)
     onNotatInput(ev) { this.state.nyNotat = ev.target.value; }

@@ -305,6 +305,21 @@
                                         <option value="pagar" t-att-selected="state.trad.status==='pagar'">Pågår</option>
                                         <option value="ferdig" t-att-selected="state.trad.status==='ferdig'">Ferdig</option>
                                     </select>
+
+                                    <!-- Overstyr gruppe (Gjermund 19.07: «hvordan endrer jeg på
+                                         denne statusen på en e-post?»). Gruppene kommer fra
+                                         nøkkelord i emnet; her kan mennesket rette når maskinen
+                                         bommer. Tomt valg = tilbake til automatikk. -->
+                                    <span class="sl">Gruppe</span>
+                                    <select class="statussel" t-on-change="onTverrChange">
+                                        <option t-foreach="state.tverrValg" t-as="v" t-key="v.kode"
+                                                t-att-value="v.kode"
+                                                t-att-selected="state.trad.tverr_kode === v.kode"
+                                                t-esc="v.navn"/>
+                                    </select>
+                                    <span class="tverrav" t-if="state.trad.tverr_av">
+                                        satt av <t t-esc="state.trad.tverr_av"/>
+                                    </span>
                                 </div>
 
                                 <!-- AI-sammendrag (vises når backend gir det) -->
