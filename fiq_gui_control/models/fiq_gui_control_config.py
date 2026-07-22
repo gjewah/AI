@@ -505,7 +505,19 @@ class FiqControlRoomConfig(models.Model):
 
         out = []
         try:
-            roots = P.search([("parent_id", "=", False), ("active", "=", True)])
+            # FIRMA-SCOPE: menyen skal speile firmaet du står i, ikke alle firmaer.
+            # Uten dette ga fiqas 17 toppnivå-treff der bare «012 FIQ (MP)» er en ekte
+            # firma-rot — resten er maler og gamle strukturer. Menyen ble en samlepost.
+            #
+            # `company_id = False` tas MED: generiske/delte områder hører til alle firmaer.
+            # Å utelate dem ville skjult fellesstrukturen i en flerfirma-base.
+            #
+            # 🛑 Dette SNEVRER INN det brukeren allerede har tilgang til — det åpner ingenting.
+            # Odoos egne tilgangsregler gjelder uansett; dette er en visning, ikke en sperre.
+            rot_dom = [("parent_id", "=", False), ("active", "=", True)]
+            if "company_id" in P._fields:
+                rot_dom.append(("company_id", "in", [self.env.company.id, False]))
+            roots = P.search(rot_dom)
             for a in P.search([("parent_id", "in", roots.ids), ("active", "=", True)]):
                 nr, name = parse(a.name)
                 if not nr:
@@ -934,7 +946,11 @@ class FiqControlRoomConfig(models.Model):
                 sl = fields.Datetime.context_timestamp(e, e.stop) if e.stop else None
                 out["moter"].append({
                     "id": e.id, "name": e.name or "",
-                    "dato": st.strftime("%d.%m") if st else "",
+                    # ÅRSTALL MED: «%d.%m» alene lyver så snart lista spenner over et
+                    # årsskifte — «03.01» kan være i år eller for fjorten måneder siden.
+                    # Samme felle Gjermund fant i Meldingssenteret. Kort år (%y) holder
+                    # bredden nede uten å miste informasjonen.
+                    "dato": st.strftime("%d.%m.%y") if st else "",
                     "tid": st.strftime("%H:%M") if st else "",
                     "slutt": sl.strftime("%H:%M") if sl else "",
                 })

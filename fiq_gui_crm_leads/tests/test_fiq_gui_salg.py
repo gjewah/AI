@@ -23,6 +23,38 @@ class TestFiqGuiSalg(TransactionCase):
         cls.Data = cls.env["fiq.gui.salg.data"]
         cls.Lead = cls.env["crm.lead"]
 
+        # Testene OPPRETTER sin egen tilstand — de leser ikke basens.
+        #
+        # Development bygger TOM base med Odoos demodata; Staging har ekte
+        # FIQ-data. Uten egen tilstand oppfører testene seg ulikt de to
+        # stedene, og en test som «hopper over» ser ut som en test som
+        # passerte. Her lages et minimalt, komplett pipeline-bilde: ett
+        # aktivt stadium, ett vunnet, ett tapt — det er alt koden skiller på.
+        Stadium = cls.env["crm.stage"]
+        cls.aktivt_stadium = Stadium.create({
+            "name": "02.01 Testaktiv", "sequence": 900,
+        })
+        cls.vunnet_stadium = Stadium.create({
+            "name": "4.00 Testvunnet", "sequence": 901, "is_won": True,
+        })
+
+        i_dag = fields.Date.context_today(cls.Data)
+        # Én sak over frist i et aktivt stadium = én sak som skal HASTE.
+        cls.forfalt_sak = cls.Lead.create({
+            "name": "Testsak over frist",
+            "type": "opportunity",
+            "stage_id": cls.aktivt_stadium.id,
+            "date_deadline": fields.Date.subtract(i_dag, days=10),
+            "expected_revenue": 50000.0,
+        })
+        # Én vunnet sak: skal ALDRI telle som åpen pipeline.
+        cls.vunnet_sak = cls.Lead.create({
+            "name": "Testsak vunnet",
+            "type": "opportunity",
+            "stage_id": cls.vunnet_stadium.id,
+            "expected_revenue": 80000.0,
+        })
+
     def test_pipeline_har_alle_stadier(self):
         """Pipelinen viser hvert stadium i basen — også de tomme.
 
@@ -87,12 +119,23 @@ class TestFiqGuiSalg(TransactionCase):
 
         Testen lager en fersk tapt sak som IKKE er arkivert — nøyaktig
         tilstanden som lurte oss — og krever at den holdes utenfor.
+
+        🛑 TESTEN OPPRETTER STADIET SELV — den leter det ikke opp.
+        Første utgave søkte etter et eksisterende «9.99»-stadium og kalte
+        `skipTest` om det manglet. Det ville gjort testen VERDILØS på
+        Development, som bygger tom base med Odoos demodata (stadiene heter
+        New/Qualified/Proposition/Won — ingen 9.99). Testen ville hoppet over
+        seg selv, og et grønt bygg ville sett ut som bevis for at tapt-filteret
+        virker uten å ha prøvd det. Nøyaktig familien «det som ble målt, var
+        ikke det som kjørte» ([[00_FERDIG]] port 6: testen må OPPRETTE
+        tilstanden den verner mot, ikke bare lese den).
         """
-        tapt_stadium = self.env["crm.stage"].search(
-            [("name", "=like", "9.99%")], limit=1,
-        )
-        if not tapt_stadium:
-            self.skipTest("Basen har ikke et 9.99-stadium for tapt.")
+        tapt_stadium = self.env["crm.stage"].create({
+            "name": "9.99 Testtapt",
+            "sequence": 999,
+            # is_won bevisst usatt: det er nettopp poenget. Odoo har ingen
+            # `is_lost`, så koden må kjenne igjen tapt på nummerprefikset.
+        })
 
         for_boks = self.Data.get_kr_boks()
         for_antall = for_boks["totalt"] if for_boks else 0
