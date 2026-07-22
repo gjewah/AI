@@ -11,6 +11,7 @@
    Dette holdt tre KR-tester røde uten at noen visste det.
 """
 
+from odoo import fields
 from odoo.tests import TransactionCase, tagged
 
 
@@ -97,9 +98,11 @@ class TestFiqGuiSalg(TransactionCase):
         Dette er kontrakten mot Kontrollrommet: `totalt` er «åpen pipeline»,
         ikke «alle salgsmuligheter som finnes».
         """
+        # setUpClass har opprettet minst én aktiv sak, så boksen SKAL finnes.
+        # Ingen skipTest her: en test som hopper over seg selv ser ut som en
+        # test som passerte.
         boks = self.Data.get_kr_boks()
-        if boks is None:
-            self.skipTest("Ingen åpne salgsmuligheter i denne basen.")
+        self.assertIsNotNone(boks, "Med en aktiv sak skal boksen finnes.")
         avsluttede = self.Data._avsluttede_stadier(self.Data).ids
         aktive = self.Lead.search_count([
             ("type", "=", "opportunity"),
@@ -177,13 +180,19 @@ class TestFiqGuiSalg(TransactionCase):
         bare en boks som aldri vises.
         """
         boks = self.Data.get_kr_boks()
-        if boks is None:
-            self.skipTest("Ingen åpne salgsmuligheter i denne basen.")
+        self.assertIsNotNone(boks, "Med en aktiv sak skal boksen finnes.")
         for noekkel in ("haster", "i_dag", "totalt", "linjer"):
             self.assertIn(noekkel, boks)
         for linje in boks["linjer"]:
             self.assertIn("tekst", linje)
             self.assertIn("res_id", linje)
+
+        # Den forfalte testsaken fra setUpClass SKAL være med i haster-tallet.
+        # Uten denne sjekken kunne boksen returnert riktig FORM med gale TALL.
+        self.assertGreaterEqual(
+            boks["haster"], 1,
+            "En sak 10 dager over frist i et aktivt stadium skal haste.",
+        )
 
     def test_kr_boks_gir_ingenting_naar_pipelinen_er_tom(self):
         """Tom pipeline gir INGEN boks — ikke en boks med 0.

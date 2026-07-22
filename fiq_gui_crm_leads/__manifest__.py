@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Salgsmuligheter",
-    "version": "19.0.1.4.0",
+    "version": "19.0.1.4.1",
     "summary": "AI GUI Salg (6 SALG) — visningen av AI Salg-Rådgiveren: pipeline per "
                "stadium med antall og forventet omsetning, lest fra crm.lead.",
     "description": """
