@@ -79,7 +79,26 @@
                         </button>
                     </div>
 
-                    <div t-if="!state.oppg.groups.length" class="empty">Ingen prosjekter matcher filtrene.</div>
+                    <!-- 🔴 En tom liste må si HVORFOR den er tom. Gjermund så «Ingen
+                         prosjekter matcher filtrene» og kunne ikke vite om det var
+                         feil, manglende data eller feil filter. Samme prinsipp som
+                         Relasjoner: aldri vis en halv graf som hel. -->
+                    <div t-if="!state.oppg.groups.length" class="empty">
+                        <div t-if="!state.oppg.root">
+                            <b>Fant ingen AI-prosjekter i denne basen.</b><br/>
+                            AI KR samler økter under et rot-prosjekt. Det er ikke satt her.<br/>
+                            <span class="hint">Opprett et prosjekt for AI-økter, eller sett
+                            systemparameteren <code>fiq_gui_ai_kr.okter_project_id</code>.</span>
+                        </div>
+                        <div t-elif="state.skjul_ferdig or state.skjul_kansellert or state.kun_kunde">
+                            <b>Ingen oppgaver igjen etter filtrene.</b><br/>
+                            Rot-prosjektet «<t t-esc="state.oppg.root"/>» finnes, men alt er
+                            filtrert bort. Slå av et filter over for å se mer.
+                        </div>
+                        <div t-else="">
+                            <b>Rot-prosjektet «<t t-esc="state.oppg.root"/>» har ingen oppgaver ennå.</b>
+                        </div>
+                    </div>
                     <div t-foreach="state.oppg.groups" t-as="g" t-key="g.id" class="grp">
                         <div class="ghead">
                             <span class="gno" t-esc="g.no"/><span class="gnm" t-esc="g.name"/>

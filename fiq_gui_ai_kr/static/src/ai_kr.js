@@ -27,11 +27,13 @@ export class FiqAiKontrollrom extends Component {
             konkl: [], kpuls: {}, vis_alle_k: false,
         });
         onWillStart(async () => {
-            // Skallets undermeny kan alt ha et valg når flaten åpnes (KR 7.1.0) —
-            // f.eks. når brukeren klikker «AI-konklusjoner» direkte i menyen. Uten
-            // dette ville flaten alltid åpnet på Oppgaver og ignorert klikket.
-            if (this.props && this.props.menyValg) {
-                this.state.view = this.props.menyValg;
+            // Åpne rett på en bestemt fane når kallet ber om det (`context.menyValg`
+            // eller props fra en dyplenke). AI KR eier sin egen ramme og meny, så
+            // dette kommer IKKE fra skallet — det er for at et menypunkt eller en
+            // lenke skal kunne peke rett på f.eks. AI-konklusjoner.
+            const start = this.props?.menyValg || this.props?.action?.context?.menyValg;
+            if (start) {
+                this.state.view = start;
             }
             // Boksene FØRST: de er Pulse-laget (kravspek: «Pulse-først, RPC-SLA <500 ms»).
             // De svarer på «hva nå?» — oppgavelista er detaljen under.
@@ -215,40 +217,22 @@ export class FiqAiKontrollrom extends Component {
 
 registry.category("actions").add("fiq_ai_kr_dashboard", FiqAiKontrollrom);
 
-// ══ SKALL-REGISTRERING — flaten åpner INNI Kontrollrommet, ikke i stedet for det ══
+// ══ AI KR ER ET EGET KONTROLLROM — IKKE EN FLATE INNI ET ANNET ══════════════
 //
-// Uten denne falt `runAction()` tilbake til `doAction` → HELE siden ble byttet ut.
-// Rammen forsvant: meny, firmavelger, «Til stede nå», tidslinje. Brukeren havnet i en
-// annen app og måtte navigere seg tilbake. Meldt av `fiq_gui_control` 22.07.2026.
+// 🔴 RETTET 22.07.2026 (Gjermund, etter å ha sett flaten i nettleser — port 7):
+// «feil ramme. den skal bruke AI KR sin ramme.»
 //
-// ⚠️ TO ULIKE MEKANISMER — bland dem aldri (kanonisert av AI PK 18.07):
-//   `ir.config_parameter` (data/*.xml) → server-side → gir flaten en DØR i KR-menyen
-//   `registry("fiq_gui_flates")` (her) → nettleser-side → gjør flaten til INNMAT i skallet
-// Vi trenger BEGGE. Parameteren beholdes — KR bruker den til meny og samlebokser.
+// 2.13.0 registrerte flaten i `fiq_gui_flates`. Det gjorde den til INNMAT i
+// Kontrollrommets skall: Gjermund så KRs meny, KRs «Til stede nå», KRs firmavelger
+// og knappen «Tilbake til Kontrollrommet» — mens AI KR bare var innholdet inni.
+// AI KR har SIN EGEN ramme (`.top` + `.brand` i ai_kr.xml). Den ble aldri vist.
 //
-// 🔑 Nøkkelen `ai_kr` er verifisert ledig (tatt: finans · regnskap · salg · relasjoner
-// · prj). En `DuplicatedKeyError` gir blank skjerm for HELE grensesnittet, med helt ren
-// serverlogg — samme feilklasse som demo-kollisjonen 18.07.
-registry.category("fiq_gui_flates").add("ai_kr", {
-    key: "ai_kr",
-    // Dict-formen er trygg fra skall 1.6.0 (utvidet 21.07 etter at den gamle
-    // streng-bare-kontrakten felte hele grensesnittet for Relasjoner). Modulen eier
-    // sitt eget navn — bedre enn at kjernen oversetter alles ord.
-    label: { en_US: "AI Control room", nb_NO: "AI Kontrollrom" },
-    // Kanonisk: 8.50–8.99 = hele AI-serien = lilla, fordi AI følger IT-familien
-    // (2.90/2.91), ikke 8 FAG. `brand/fiq_fargekart_omrader.md`, Gjermund 18.07.
-    color: "#7830A8",
-    sequence: 10,
-    Component: FiqAiKontrollrom,
-    // Undermenyen kjernen tegner (KR 7.1.0). Kjernen eier utseendet med vilje: bygde
-    // fem flater hver sin meny, fikk vi fem som ser ulike ut og ikke kan foldes på
-    // tvers — samme feil som de seks kollaps-løsningene og de to fargekartene.
-    // Valget kommer tilbake som `menyValg`, og vi avgjør selv hva det betyr.
-    meny: [
-        { key: "oppgaver", label: { nb_NO: "Oppgaver", en_US: "Tasks" } },
-        { key: "spor", label: { nb_NO: "Prosjektspor", en_US: "Tracks" } },
-        { key: "konkl", label: { nb_NO: "AI-konklusjoner", en_US: "AI conclusions" } },
-        { key: "okter", label: { nb_NO: "Øktregister", en_US: "Sessions" } },
-        { key: "org", label: { nb_NO: "Org-kart", en_US: "Org chart" } },
-    ],
-});
+// 🔑 HVORFOR REGISTRERINGEN LIKEVEL SÅ RIKTIG UT: `fiq_gui_control` meldte at
+// flaten «kaster brukeren ut av rammen», og skall-registrering ER riktig svar —
+// for en FLATE. AI KR er ikke en flate; det er et sidestilt kontrollrom.
+// Riktig løsning på deres observasjon var aldri å underordne AI KR skallet.
+//
+// ⚠️ MEKANISMEN SOM BEHOLDES: `ir.config_parameter` i data/ gir AI KR en DØR i
+// KR-menyen, og `ir.actions.client` åpner den med sin EGEN ramme. Det er de to
+// mekanismene som skal virke sammen her — ikke skall-registreringen.
+// (Kanonisert skille, AI PK 18.07: KR-MENY ≠ SKALL. Blandes de, forsvinner rammen.)
