@@ -66,9 +66,13 @@
         &.sperret { background: #fbfbfc; }
     }
 
-    // Stor hake — byggeplass/hanske
+    // Stor hake — byggeplass/hanske.
+    // 🔴 44px er MINSTEMÅL for touch (Apple HIG + Material). 34px var for lite:
+    // en snekker med hansker bommer, og bommer han på haken treffer han raden
+    // under — altså kvitterer han feil punkt uten å merke det.
+    // Fasiten (utkast03) har store trykkflater nettopp derfor.
     .fiq_sjl_hake {
-        flex: 0 0 auto; width: 34px; height: 34px; border-radius: 9px;
+        flex: 0 0 auto; width: 44px; height: 44px; border-radius: 10px;
         border: 2px solid var(--fiq-bd); background: #fff; color: var(--fiq-accent);
         font-size: 18px; font-weight: 800; cursor: pointer; line-height: 1;
         display: flex; align-items: center; justify-content: center;
@@ -96,6 +100,8 @@
         display: inline-flex; align-items: center; gap: 5px;
         border: 1px solid var(--fiq-bd); background: #fff; color: var(--fiq-side);
         border-radius: 9px; padding: 8px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+        // Samme 44px-minstemål som haken — «last opp foto» trykkes ute, med hansker.
+        min-height: 44px;
         &.levert { background: #f2faf3; border-color: #cdeccf; color: var(--fiq-accent-mrk); }
     }
     .fiq_sjl_up.levert .fiq_sjl_upbtn { background: #f2faf3; border-color: #cdeccf; color: var(--fiq-accent-mrk); }
@@ -134,7 +140,7 @@
     .fiq_sjl {
         .fiq_sjl_rad { flex-wrap: wrap; }
         .fiq_sjl_handl { width: 100%; margin-top: 8px; }
-        .fiq_sjl_upbtn { padding: 11px 14px; font-size: 13.5px; }
-        .fiq_sjl_hake { width: 40px; height: 40px; }
+        .fiq_sjl_upbtn { padding: 13px 16px; font-size: 13.5px; min-height: 48px; }
+        .fiq_sjl_hake { width: 52px; height: 52px; }  // ekstra stor på mobil
     }
 }

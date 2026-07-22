@@ -1,11 +1,18 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.23.0",
+    "version": "19.0.1.24.0",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
-    "description": """19.0.1.23.0 - SJEKKLISTA KOBLET INN I FLATEN (AI KRs sidemannskontroll):
+    "description": """19.0.1.24.0 - TOUCH-MAAL PAA MOBILFLATEN (44px minstemaal):
+
+* AI KR meldte at mobilflate for arbeider manglet helt. MAALT: den FINNES (sjekkliste_flate, deres arbeid) med bygg/kvitter-modus, portal-default og store trykkflater. Det som manglet var STOERRELSEN.
+* Haken var 34px (40px paa mobil). 44px er minstemaal for touch (Apple HIG + Material). En snekker med hansker bommer paa 34px - og bommer han, treffer han raden UNDER og kvitterer feil punkt uten aa merke det.
+* Haken: 34 -> 44px, mobil 40 -> 52px. Opplastingsknapp: min-height 44px, mobil 48px.
+* Rort AI KRs fil (sjekkliste_flate.scss) - kun stoerrelser, ingen logikk. Meldt dem.
+
+19.0.1.23.0 - SJEKKLISTA KOBLET INN I FLATEN (AI KRs sidemannskontroll):
 
 * AI KR maalte 22.07: 0 treff paa sjekkliste i prj.xml OG prj.js. Datalaget (get_sjekklister, 1.21.0) var bygget og MELDT som levert - men aldri koblet paa. Gjermund kunne ikke naa den.
 * Noeyaktig samme klasse som resten av uka: bygget riktig, aldri koblet paa. Jeg har kritisert andre for dette og gjorde det selv.
