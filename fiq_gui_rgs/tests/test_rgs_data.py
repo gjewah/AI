@@ -182,3 +182,16 @@ class TestRgsData(TransactionCase):
         """
         d = self.Data.hent_grunnbilde()
         self.assertEqual(d["antall_firmaer"], len(self.env.user.company_ids))
+
+    # ---------- MIDLERTIDIG BEVIS-TEST — SKAL FEILE ----------
+
+    def test_BEVIS_at_testene_faktisk_kjorer(self):
+        """🛑 MIDLERTIDIG. Skal FEILE. Fjernes umiddelbart etter.
+
+        Salgssporet 22.07: meldte 8 grønne, la inn en bevisst feilende test som
+        kontroll — og den feilet IKKE. Odoo lastet fra arbeidsmappa uansett flagg,
+        så de 8 grønne målte forrige versjon.
+        «En test som ikke KAN feile, beviser ingenting.»
+        Denne verifiserer at MIN kjøring faktisk plukker opp MIN kode.
+        """
+        self.assertEqual(1, 2, "BEVIS-TEST: hvis du ser denne, kjører testene mot ny kode")
