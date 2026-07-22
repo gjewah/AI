@@ -132,7 +132,7 @@ class FiqGuiPrjData(models.AbstractModel):
             "id": task.id,
             "navn": task.display_name,
             # Oppgavenummer (code) er STABILT; WBS er dynamisk. Aldri bland dem.
-            "oppgavenr": task.code or "",
+            "oppgavenr": (task.code or "") if "code" in task._fields else "",
             "wbs": task.fiq_wbs_number or "",
             "ansvarlige": ", ".join(task.user_ids.mapped("name")),
             # 🤖 uten mennesker / 👤 med — samme merking som AI KTRL-kontrakten.
@@ -250,7 +250,9 @@ class FiqGuiPrjData(models.AbstractModel):
         # 👉 Test alltid mot en oppgave som FAKTISK har frist satt.
         frist = task.date_deadline
         if not frist:
-            return "plan" if not task.planned_date_begin else "rute"
+            har_start = ("planned_date_begin" in task._fields
+                         and task.planned_date_begin)
+            return "rute" if har_start else "plan"
         frist = frist.date()  # Datetime -> Date, samme type som i_dag
 
         if frist < i_dag:
@@ -357,15 +359,31 @@ class FiqGuiPrjData(models.AbstractModel):
         #   · frist i vinduet (date_deadline >= start)
         # Udaterte oppgaver finnes fortsatt i Liste og Kanban via get_prosjektoversikt
         # og get_wbs_tre — de er ikke borte, de hører bare ikke hjemme i en Gantt.
-        domene = self._firma_domene(firma_id) + [
-            ("project_id", "!=", False),
-            "|",
-            "&", ("planned_date_begin", "!=", False),
-                 ("planned_date_begin", "<=", slutt_dt),
+        # 🔴 `planned_date_begin` kommer fra `project_enterprise` og finnes IKKE alltid.
+        # Fanget på Dev 22.07 — der er modulen uninstalled, og domenet kastet
+        # `KeyError: 'planned_date_begin'` inne i Odoos domene-parser.
+        #
+        # Staging viste det aldri, fordi Enterprise er installert der. Det er hele
+        # grunnen til at Dev-leddet finnes: en modul som er «grønn» mot en rik base
+        # kan være ubrukelig på en mager. KANON «Odoo-native først» sier at flaten
+        # skal virke uten tilleggsmoduler — ikke bare uten KR.
+        Task = self.env["project.task"]
+        har_start = "planned_date_begin" in Task._fields
+
+        dato_ledd = [
             "&", ("date_deadline", "!=", False),
                  ("date_deadline", ">=", start_dt),
         ]
-        oppgaver = self.env["project.task"].search(
+        if har_start:
+            dato_ledd = ["|",
+                "&", ("planned_date_begin", "!=", False),
+                     ("planned_date_begin", "<=", slutt_dt),
+            ] + dato_ledd
+
+        domene = self._firma_domene(firma_id) + [("project_id", "!=", False)] + dato_ledd
+
+        # `fiq_wbs_number` er vårt eget felt og finnes alltid; `sequence` og `id` er native.
+        oppgaver = Task.search(
             domene, limit=int(grense), order="project_id, fiq_wbs_number, sequence, id"
         )
 
@@ -378,7 +396,8 @@ class FiqGuiPrjData(models.AbstractModel):
             # 🔴 BEGGE er Datetime i Odoo 19 — konverter til Date FØR bruk.
             # `b` gjorde det allerede; `e` gjorde det ikke, og blandet dermed
             # Datetime og Date i samme rad. Klienten regner på disse som datoer.
-            b = t.planned_date_begin.date() if t.planned_date_begin else None
+            pdb = t.planned_date_begin if "planned_date_begin" in t._fields else False
+            b = pdb.date() if pdb else None
             frist_d = t.date_deadline.date() if t.date_deadline else None
             e = frist_d or b
 
@@ -387,7 +406,7 @@ class FiqGuiPrjData(models.AbstractModel):
                 "navn": t.display_name,
                 # Tre tall side om side — fasitens «01.01 · T0412 · 2026-00084».
                 "wbs": t.fiq_wbs_number or "",
-                "oppgavenr": t.code or "",
+                "oppgavenr": (t.code or "") if "code" in t._fields else "",
                 "prosjektnr": t.project_id.sequence_code or "",
                 "prosjekt": t.project_id.display_name or "",
                 "prosjekt_id": t.project_id.id,
@@ -618,7 +637,7 @@ class FiqGuiPrjData(models.AbstractModel):
                 "id": t.id,
                 "navn": t.display_name,
                 # Oppgavenummer (code) er STABILT; WBS er dynamisk. Aldri bland dem.
-                "oppgavenr": t.code or "",
+                "oppgavenr": (t.code or "") if "code" in t._fields else "",
                 "wbs": t.fiq_wbs_number or "",
                 "ansvarlige": ", ".join(t.user_ids.mapped("name")),
                 "er_ai": not bool(t.user_ids),

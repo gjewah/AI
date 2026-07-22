@@ -1,11 +1,21 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.19.2",
+    "version": "19.0.1.20.0",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
-    "description": """
+    "description": """19.0.1.20.0 - TAALER AT VALGFRIE NABOMODULER MANGLER (fanget paa DEV):
+
+* Foerste kjoering paa DEV_AI_FIQ_01 ga 2 feil som Staging ALDRI viste:
+* KeyError planned_date_begin i domenet - feltet kommer fra project_enterprise, som er uninstalled paa Dev.
+* AttributeError code i test_wbs - feltet kommer fra project_sequence_number, ogsaa uninstalled.
+* Staging har begge installert, saa feilene var usynlige der. Det er hele grunnen til at Dev-leddet finnes: en modul som er groenn mot en RIK base kan vaere ubrukelig paa en mager.
+* KANON Odoo-native foerst betyr ogsaa uten TILLEGGSMODULER, ikke bare uten KR.
+* FIKS: felt-sjekk foer bruk (planned_date_begin, code). Domenet bygges dynamisk - uten Enterprise faller start-leddet bort, frist-leddet staar.
+* Testen hopper over i stedet for aa feile naar en valgfri nabomodul mangler.
+
+
 FIQ GUI Prosjekt
 ===================
 KANON «Odoo-native først» (Gjermund 2026-07-16): KR er et LAG, ikke systemet.

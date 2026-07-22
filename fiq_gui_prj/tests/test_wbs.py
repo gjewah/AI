@@ -172,7 +172,15 @@ class TestFiqWbs(TransactionCase):
         self.assertFalse(loes.fiq_wbs_number)
 
     def test_stabile_nummer_roeres_ikke_av_wbs(self):
-        """WBS skal ALDRI endre oppgavenr. (code) — de er to ulike ting."""
+        """WBS skal ALDRI endre oppgavenr. (code) — de er to ulike ting.
+
+        🔴 `code` kommer fra `project_sequence_number` (FIQ/loym), ikke fra Odoo.
+        På Dev 22.07 var modulen uninstalled, og testen kastet AttributeError.
+        Den skal hoppe over, ikke feile: fraværet av en valgfri nabomodul er ikke
+        en feil i vår modul.
+        """
+        if "code" not in self.Task._fields:
+            self.skipTest("project_sequence_number ikke installert — `code` finnes ikke")
         t = self._task("T")
         code_for = t.code
         t.sequence = 999
