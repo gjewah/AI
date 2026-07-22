@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ AI KR – AI Kontrollrom",
-    "version": "19.0.2.12.0",
+    "version": "19.0.2.13.0",
     "summary": "FIQ AI Kontrollrom (AI KR) – operatør-cockpit: oversikt over alle AI-økter "
                "(Claude Code + Cowork), AI-organisasjonskart, redigerbare roller/skills, "
                "ressursbruk og ROI. Snippet-basert (firma → rolle → person).",
@@ -38,7 +38,10 @@ som flate i det delte skallet (Vei C).
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
     "license": "OPL-1",
-    "depends": ["fiq_gui_control", "fiq_gui_comm", "web", "project", "mail"],
+    # 🛑 `fiq_gui_shell` er IKKE valgfri: skall-registreringen i ai_kr.js kjører mot
+    # registryet skallet eier. Uten avhengigheten er lasterekkefølgen udefinert — det
+    # var rotårsaken til blank skjerm 18.07.2026 (meldt av fiq_gui_control 22.07).
+    "depends": ["fiq_gui_control", "fiq_gui_shell", "fiq_gui_comm", "web", "project", "mail"],
     "data": [
         "security/ir.model.access.csv",
         "views/ai_kr_action.xml",
