@@ -45,4 +45,21 @@
         </field>
     </record>
 
+
+    <!-- Search-only fields exposed in the contact search view. Without this the
+         fields exist but nothing can reach them: a filter nobody can find is the
+         same as no filter. Bare <group> - expand= does not exist in Odoo 19. -->
+    <record id="view_res_partner_filter_fiq_relations" model="ir.ui.view">
+        <field name="name">res.partner.search.fiq.relations</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <field name="fiq_search_relation_type_id"/>
+                <field name="fiq_search_relation_partner_id"/>
+                <field name="fiq_search_relation_date"/>
+            </xpath>
+        </field>
+    </record>
+
 </odoo>

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
 
@@ -247,6 +247,66 @@ class TestFiqGuiRelation(TransactionCase):
         })
         self.assertEqual(self.person.fiq_relation_count, 1)
         self.assertEqual(self.company_a.fiq_relation_count, 2)
+
+    # ---- searching contacts BY their relations --------------------------------------
+
+    def test_search_by_relation_type_finds_both_sides(self):
+        """Searching by type must find the employee AND the employer.
+
+        Only searching partner_a_id would return half the answer - the stored direction
+        is a property of the row, not of the question.
+        """
+        self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+        })
+        Partner = self.env["res.partner"]
+        found = Partner.search([
+            ("fiq_search_relation_type_id", "=", self.type_employee.id)])
+        self.assertIn(self.person, found)
+        self.assertIn(self.company_a, found)
+        self.assertNotIn(self.person_b, found)
+
+    def test_search_by_partner_excludes_the_target(self):
+        """"Who has a relation with Alpha AS" must not return Alpha AS itself, even
+        though it appears in every one of those rows."""
+        self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+        })
+        found = self.env["res.partner"].search([
+            ("fiq_search_relation_partner_id", "=", self.company_a.id)])
+        self.assertIn(self.person, found)
+        self.assertNotIn(self.company_a, found)
+
+    def test_search_by_date_respects_the_window(self):
+        self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+            "date_start": "2020-01-01",
+            "date_end": "2021-01-01",
+        })
+        Partner = self.env["res.partner"]
+        self.assertIn(self.person, Partner.search([
+            ("fiq_search_relation_date", "=", "2020-06-01")]))
+        self.assertNotIn(self.person, Partner.search([
+            ("fiq_search_relation_date", "=", "2022-06-01")]))
+
+    def test_search_by_date_rejects_unsupported_operator(self):
+        """A filter that silently ignores its own operator is worse than one that
+        refuses: the user would trust a result that answered a different question."""
+        with self.assertRaises(UserError):
+            self.env["res.partner"].search([
+                ("fiq_search_relation_date", ">", "2020-01-01")])
+
+    def test_search_fields_hold_nothing(self):
+        """Search-only fields must never appear to carry data - they exist to filter."""
+        self.assertFalse(self.person.fiq_search_relation_type_id)
+        self.assertFalse(self.person.fiq_search_relation_partner_id)
+        self.assertFalse(self.person.fiq_search_relation_date)
 
     # ---- the surface payload -------------------------------------------------------
 
