@@ -213,6 +213,37 @@ export class FiqAiKontrollrom extends Component {
     }
 
     tilbakeKR() { this.action.doAction("fiq_gui_control.action_fiq_gui_control"); }
+
+    // ══ BROEN TIL PROSJEKTOVERSIKT ══════════════════════════════════════════
+    // Kontrakt avtalt med «GUI Prosjekt (00.03)» 22.07.2026 og bygget av dem i
+    // fiq_gui_prj 19.0.1.22.0 (6ca1712, 48 tester grønne).
+    //
+    // 🔑 DERES PRESISERING SOM JEG TOK FEIL PÅ: «måned» er IKKE en visning.
+    // Visning = gantt|liste|kanban · Oppløsning = uke|mnd. Jeg hadde ført opp
+    // «Uke» og «Måned» som visninger ved siden av Gantt — det ville sendt en
+    // ukjent verdi og landet på default.
+    //
+    // Verdiene VALIDERES hos dem: ukjent verdi → default, aldri tom flate.
+    // `task_id` MARKERER raden, filtrerer den ikke — filtrering ville fjernet
+    // konteksten brukeren kom for å se.
+    //
+    // 🛑 Vi bygger IKKE tidsvisninger her. De finnes ferdig i fiq_gui_prj
+    // (get_oppgaver_over_tid: 7 uker / 6 måneder, Gantt+Liste+Kanban på ETT
+    // datasett). Å gjenskape dem ville gitt to sannheter om samme oppgaver.
+    aapnePrj(ctx = {}) {
+        this.action.doAction("fiq_gui_prj.action_fiq_gui_prj", {
+            additionalContext: { fra: "ai_kr", ...ctx },
+        });
+    }
+
+    /** Åpne oppgaven i Odoos egen form. Denne er MIN — Prosjekt rører den ikke. */
+    aapneOdoo(taskId) {
+        if (!taskId) return;
+        this.action.doAction({
+            type: "ir.actions.act_window", res_model: "project.task",
+            res_id: taskId, views: [[false, "form"]], target: "current",
+        });
+    }
 }
 
 registry.category("actions").add("fiq_ai_kr_dashboard", FiqAiKontrollrom);

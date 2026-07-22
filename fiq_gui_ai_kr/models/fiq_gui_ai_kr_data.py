@@ -600,3 +600,94 @@ class FiqGuiAiKrData(models.AbstractModel):
         k.check_access("write")
         k.sporsmaal(tekst)
         return {"ok": True}
+
+    # ════════════════════════════════════════════════════════════════════════
+    # GODKJENNINGSKOEEN — det som fjerner klikkingen fra Gjermunds hverdag
+    # Gjermund 22.07: «Jeg rekker knapt gjoere annet enn aa trykke ALLOW hvert
+    # tredje til hvert femte sekund.» Fasit: artifact 13184ec2.
+    # ════════════════════════════════════════════════════════════════════════
+    @api.model
+    def get_godkjenninger(self, company_id=False, vis_besvarte=False, grense=50):
+        """Koeen Gjermund svarer i. Ubesvart oeverst, deretter det som haster."""
+        G = self.env["fiq.ai.godkjenning"]
+        dom = []
+        if company_id:
+            dom.append(("company_id", "=", int(company_id)))
+        if not vis_besvarte:
+            dom.append(("svar", "=", False))
+
+        # To knapperader — fasiten har begge. Samme koe, ulike ord.
+        KNAPPER = {
+            "godkjenning": [
+                {"valg": "godkjent", "tekst": "🟢 Godkjent", "farge": "g"},
+                {"valg": "ja_men", "tekst": "🟠 Ja, men…", "farge": "o", "krever_tekst": True},
+                {"valg": "nei", "tekst": "🔴 Nei", "farge": "r"},
+                {"valg": "alltid", "tekst": "🟢⭐ Alltid", "farge": "s"},
+            ],
+            "oppgave": [
+                {"valg": "jeg_gjor", "tekst": "🟢 Jeg gjør det", "farge": "g"},
+                {"valg": "senere", "tekst": "🟠 Senere", "farge": "o"},
+                {"valg": "dropp", "tekst": "🔴 Dropp", "farge": "r"},
+            ],
+        }
+        MERKE = {"ai": "🤖 AI-økt", "menneske": "👤 Menneske-gate", "klokke": "👤 Klokke-oppgave"}
+
+        ut = []
+        for g in G.search(dom, limit=int(grense)):
+            ut.append({
+                "id": g.id,
+                "sporsmaal": g.name or "",
+                "detalj": g.detalj or "",
+                "kilde": g.kilde,
+                "kilde_tekst": MERKE.get(g.kilde, ""),
+                "haster": g.haster,
+                "svar": g.svar or "",
+                "forbehold": g.forbehold or "",
+                "besvart": bool(g.svar),
+                "knapper": KNAPPER.get(g.art, KNAPPER["godkjenning"]),
+                "spor": (g.spor_id.kode or g.spor_id.name) if g.spor_id else "",
+                "okt": g.okt_id.name if g.okt_id else "",
+                "task_id": g.task_id.id or False,
+                # 🔑 «Alltid» er bare aerlig hvis den faktisk kan huske noe.
+                # Uten noekkel ville knappen lovet mer enn den holder.
+                "kan_alltid": bool(g.noekkel),
+                "firma": g.company_id.display_name if g.company_id else "",
+                "alder": self._alder(g.opprettet) if g.opprettet else "",
+            })
+        return ut
+
+    @api.model
+    def svar_godkjenning(self, godkjenning_id, valg, forbehold=False):
+        """Gjermund trykker en knapp. «Alltid» lagres som staaende regel."""
+        g = self.env["fiq.ai.godkjenning"].browse(int(godkjenning_id)).exists()
+        if not g:
+            return {"ok": False, "feil": "Spørsmålet finnes ikke."}
+        g.check_access("write")     # aldri svare i et firma du ikke ser
+        g.svar_paa(valg, forbehold)
+        return {"ok": True, "svar": g.svar}
+
+    @api.model
+    def get_staaende_regler(self, company_id=False):
+        """«Alltid»-svarene, saa Gjermund kan se og trekke tilbake.
+
+        En staaende regel han ikke finner igjen, er en regel han ikke kontrollerer.
+        """
+        return self.env["fiq.ai.godkjenning"].staaende_regler(company_id)
+
+    @api.model
+    def trekk_tilbake_regel(self, noekkel, company_id=False):
+        return {"ok": self.env["fiq.ai.godkjenning"].trekk_tilbake(noekkel, company_id)}
+
+    def _alder(self, naar):
+        """«12 min» · «3 t» · «2 d» — menneskelig, ikke tidsstempel."""
+        if not naar:
+            return ""
+        d = fields.Datetime.now() - naar
+        m = int(d.total_seconds() // 60)
+        if m < 1:
+            return "nå"
+        if m < 60:
+            return "%d min" % m
+        if m < 1440:
+            return "%d t" % (m // 60)
+        return "%d d" % (m // 1440)
