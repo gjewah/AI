@@ -31,10 +31,24 @@
                 <!-- Hilsen -->
                 <span class="fiq_hm_hilsen"><t t-esc="hilsen"/> 👋 — Control room · Manager</span>
 
-                <!-- Firma-velger: knappene er firma-LOGOER (Vídir = vidir_v.png; ellers monogram-fallback) -->
+                <!-- ═══ ÉN FIRMAVELGER — i RAMMEN (spec 2.3, godkjent 20.07) ════════════════
+                     Gjermunds begrunnelse: «firma/kunde gjelder HELE flaten, derfor i rammen
+                     sammen med hilsen, Full/Enkel og Oppdater.» Avdeling er et FILTER og hører
+                     i innholdet — firma bestemmer HVOR du er, avdeling snevrer inn HVA du ser.
+
+                     🔴 Var TO velgere: her (logoer) + en boks-rad over fanene. Samme valg, to
+                     steder, to utseender. Den nederste er fjernet — men konsern-knappen den
+                     hadde er FLYTTET HIT, ikke slettet. Uten den forsvant konsern-total.
+                     Samme klasse som de to fargekartene: én sannhet, to steder. -->
                 <div class="fiq_hm_firmavelger" t-if="state.companies.length">
+                    <!-- Konsern-total først: ser på tvers av alle firmaer brukeren har tilgang
+                         til. Vises kun ved flere enn ett — ellers er den meningsløs. -->
+                    <button t-if="state.companies.length &gt; 1"
+                            t-att-class="isAllCompanies ? 'fiq_hm_firma on' : 'fiq_hm_firma'"
+                            t-on-click="() =&gt; this.setCompanyAll()"
+                            t-att-title="tr('All companies')">🏢</button>
                     <t t-foreach="state.companies" t-as="c" t-key="c.id">
-                        <button t-att-class="c.id === state.companyId ? 'fiq_hm_firma on' : 'fiq_hm_firma'"
+                        <button t-att-class="(!isAllCompanies and c.id === state.companyId) ? 'fiq_hm_firma on' : 'fiq_hm_firma'"
                                 t-att-title="c.name" t-on-click="() => this.setCompany(c.id)" t-esc="c.name"/>
                     </t>
                 </div>
@@ -231,15 +245,13 @@
                 </aside>
 
                 <section class="fiq_hm_main">
-                    <!-- 🏢 Firma-velger: SMÅ BOKSER over fanene — konsern-total først, så hvert firma
-                         (generisk/multi-company: viser brukerens firmaer; på SDV-basen = 049→054) -->
-                    <div t-if="state.companies.length &gt; 1" class="fiq_hm_cobox_row">
-                        <button t-att-class="isAllCompanies ? 'fiq_hm_cobox on' : 'fiq_hm_cobox'" t-on-click="() =&gt; this.setCompanyAll()" t-att-title="tr('Group total — all companies')">Σ <t t-esc="tr('Group')"/></button>
-                        <t t-foreach="state.companies" t-as="cb" t-key="cb.id">
-                            <button t-att-class="(!isAllCompanies and cb.id === state.companyId) ? 'fiq_hm_cobox on' : 'fiq_hm_cobox'"
-                                    t-on-click="() =&gt; this.setCompany(cb.id)" t-att-title="cb.name" t-esc="cb.name"/>
-                        </t>
-                    </div>
+                    <!-- 🔴 FIRMA-VELGER FJERNET HERFRA 22.07 — den sto i RAMMEN også (linje ~37).
+                         To velgere for samme valg, med ulikt utseende: den ene som logo-knapper,
+                         den andre som bokser. Klikket du den ene, endret den andre seg — uten at
+                         det var åpenbart at de var samme kontroll.
+                         Spec 2.3: «firma gjelder HELE flaten, derfor i rammen.»
+                         🔑 Konsern-knappen (Σ Konsern) er FLYTTET opp, ikke slettet — den fantes
+                         kun her, og uten flyttingen ville konsern-total forsvunnet stille. -->
                     <!-- Filter-stripe: Dag/Uke/Måned/Alle + søk (nå i innholdskolonnen) -->
                     <div class="fiq_hm_filter">
                         <div class="fiq_hm_pseg">
