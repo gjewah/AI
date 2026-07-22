@@ -39,10 +39,29 @@ class TestFiqGuiSalg(TransactionCase):
             "name": "4.00 Testvunnet", "sequence": 901, "is_won": True,
         })
 
+        # 🛑 SALGSMULIGHETER MÅ HA KUNDE — `name` er BEREGNET, ikke fritekst.
+        #
+        # FIQ-modulen `crm_name` overstyrer `crm.lead.name` med et uttrykk fra
+        # `ir.config_parameter` (`crm_name.crm_lead_name_expression`), som
+        # normalt gir kundens kortnavn. Setter man `name` direkte, blir det
+        # overskrevet — og finnes ingen kunde, returnerer uttrykket `False`.
+        # Da feiler `crm_name`s egen linje `lead.name.startswith("NewId")`
+        # med «'bool' object has no attribute 'startswith'», og HELE testklassen
+        # ryker i setUpClass før en eneste test kjører.
+        #
+        # Funnet 22.07.2026 med `-u --test-tags`. Ren installasjon (`-i`) traff
+        # det ALDRI, fordi `crm_name` ikke var lastet da. Gjermund forutså det:
+        # «-u test vil avsløre noen av disse». Derfor: gi hver sak en kunde, og
+        # la Odoo eie navnet.
+        cls.testkunde = cls.env["res.partner"].create({
+            "name": "Testkunde Salgsflate",
+            "is_company": True,
+        })
+
         i_dag = fields.Date.context_today(cls.Data)
         # Én sak over frist i et aktivt stadium = én sak som skal HASTE.
         cls.forfalt_sak = cls.Lead.create({
-            "name": "Testsak over frist",
+            "partner_id": cls.testkunde.id,
             "type": "opportunity",
             "stage_id": cls.aktivt_stadium.id,
             "date_deadline": fields.Date.subtract(i_dag, days=10),
@@ -50,7 +69,7 @@ class TestFiqGuiSalg(TransactionCase):
         })
         # Én vunnet sak: skal ALDRI telle som åpen pipeline.
         cls.vunnet_sak = cls.Lead.create({
-            "name": "Testsak vunnet",
+            "partner_id": cls.testkunde.id,
             "type": "opportunity",
             "stage_id": cls.vunnet_stadium.id,
             "expected_revenue": 80000.0,
@@ -144,7 +163,8 @@ class TestFiqGuiSalg(TransactionCase):
         for_antall = for_boks["totalt"] if for_boks else 0
 
         self.Lead.create({
-            "name": "Regresjonstest tapt sak",
+            # Kunde, ikke navn: `crm_name` beregner navnet. Se setUpClass.
+            "partner_id": self.testkunde.id,
             "type": "opportunity",
             "stage_id": tapt_stadium.id,
             "active": True,          # ikke arkivert — det er hele poenget
