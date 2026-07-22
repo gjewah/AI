@@ -113,6 +113,77 @@ class FiqGuiRgsData(models.AbstractModel):
         }
 
     @api.model
+    def hent_cashflow(self, uker=12):
+        """Framskrivning: når kommer pengene inn, og når går de ut?
+
+        Gjermunds spec: «cashflow-bilde + mulige kritiske likviditetsdatoer
+        (når blir det tight?)».
+
+        🛑 DETTE ER EN FRAMSKRIVNING, IKKE BOKFØRTE TALL. Den bygger på FAKTA
+        (bokførte, ubetalte bilag med forfallsdato), men sier noe om FRAMTIDA —
+        og framtida er en antagelse. Flaten merker den som framskrivning.
+
+        🛑 UFULLSTENDIG, OG DET SKAL STÅ: lønnskjøring, arbeidsgiveravgift,
+        feriepenger og pensjon er IKKE med. Ingen AI-rolle eier lønn ennå, og
+        et gjettet lønnstall i en likviditetsprognose er verre enn ingen prognose.
+        `mangler` i returverdien forteller flaten hva som ikke er tatt høyde for.
+        Fjernes ALDRI uten at tallene faktisk er koblet.
+        """
+        i_dag = fields.Date.context_today(self)
+        alle = self.INN_TYPER + self.UT_TYPER
+
+        bilag = self.env["account.move"].search_read(
+            self._basis_domene(alle) + [("invoice_date_due", "!=", False)],
+            ["invoice_date_due", "amount_residual", "move_type"],
+            order="invoice_date_due asc",
+        )
+
+        # Forfalt = alt som skulle vært betalt før i dag. Det er utgangspunktet,
+        # ikke en framtidig hendelse — derfor egen post, ikke en uke i kurven.
+        forfalt_inn = sum(b["amount_residual"] for b in bilag
+                          if b["invoice_date_due"] < i_dag and b["move_type"] in self.INN_TYPER)
+        forfalt_ut = sum(b["amount_residual"] for b in bilag
+                         if b["invoice_date_due"] < i_dag and b["move_type"] in self.UT_TYPER)
+
+        punkter = []
+        saldo = forfalt_inn - forfalt_ut
+        laveste = {"saldo": saldo, "uke": 0, "dato": fields.Date.to_string(i_dag)}
+
+        for u in range(uker):
+            fra = fields.Date.add(i_dag, days=7 * u)
+            til = fields.Date.add(i_dag, days=7 * (u + 1))
+            inn = sum(b["amount_residual"] for b in bilag
+                      if fra <= b["invoice_date_due"] < til and b["move_type"] in self.INN_TYPER)
+            ut = sum(b["amount_residual"] for b in bilag
+                     if fra <= b["invoice_date_due"] < til and b["move_type"] in self.UT_TYPER)
+            saldo += inn - ut
+            punkter.append({
+                "uke": u,
+                "fra": fields.Date.to_string(fra),
+                "inn": inn,
+                "ut": ut,
+                "saldo": saldo,
+                # Kritisk = saldoen går under null. Det er «når blir det tight».
+                "kritisk": saldo < 0,
+            })
+            if saldo < laveste["saldo"]:
+                laveste = {"saldo": saldo, "uke": u, "dato": fields.Date.to_string(fra)}
+
+        return {
+            "punkter": punkter,
+            "forfalt_inn": forfalt_inn,
+            "forfalt_ut": forfalt_ut,
+            "start_saldo": forfalt_inn - forfalt_ut,
+            "laveste": laveste,
+            "kritiske_uker": [p for p in punkter if p["kritisk"]],
+            # Ærlighet i selve datasettet, ikke bare i visningen.
+            "mangler": [
+                "Lønnskjøringer", "Arbeidsgiveravgift", "Feriepenger", "Pensjon",
+            ],
+            "grunnlag": "Bokførte, ubetalte bilag med forfallsdato",
+        }
+
+    @api.model
     def apne_botte(self, key):
         """Åpner Odoos EGEN fakturaliste, filtrert på bøtta brukeren klikket.
 

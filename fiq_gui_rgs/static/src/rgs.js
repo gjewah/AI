@@ -28,17 +28,19 @@ export class FiqGuiRgs extends Component {
         this.orm = useService("orm");
         this.action = useService("action");
         this.forpliktelser = FORPLIKTELSER;
-        this.state = useState({ laster: true, data: null, kritiske: [], feil: null });
+        this.state = useState({ laster: true, data: null, kritiske: [], cashflow: null, feil: null });
 
         onWillStart(async () => {
             try {
                 // company_id sendes ALDRI med — serveren tar den fra sesjonen.
-                const [data, kritiske] = await Promise.all([
+                const [data, kritiske, cashflow] = await Promise.all([
                     this.orm.call("fiq.gui.rgs.data", "hent_grunnbilde", []),
                     this.orm.call("fiq.gui.rgs.data", "hent_kritiske_poster", []),
+                    this.orm.call("fiq.gui.rgs.data", "hent_cashflow", []),
                 ]);
                 this.state.data = data;
                 this.state.kritiske = kritiske;
+                this.state.cashflow = cashflow;
             } catch (e) {
                 // Feil skjules ALDRI bak et tomt tall — et blankt felt ville sett ut
                 // som «null kroner utestående», og det er en farlig løgn i regnskap.
@@ -47,6 +49,18 @@ export class FiqGuiRgs extends Component {
                 this.state.laster = false;
             }
         });
+    }
+
+    /** Søylehøyde i prosent, skalert mot største absoluttverdi i kurven.
+     *  Skalering skjer i klienten fordi det er ren visning — tallene selv
+     *  røres aldri her. */
+    soyle(saldo) {
+        const c = this.state.cashflow;
+        if (!c || !c.punkter.length) {
+            return 0;
+        }
+        const topp = Math.max(...c.punkter.map((p) => Math.abs(p.saldo)), 1);
+        return Math.min(100, Math.round((Math.abs(saldo) / topp) * 100));
     }
 
     /** Klikk på en bøtte → Odoos egen fakturaliste, filtrert på den bøtta.

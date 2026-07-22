@@ -85,15 +85,67 @@
                 </table>
             </section>
 
-            <!-- 3. CASHFLOW — ikke koblet, og det SKAL stå tydelig -->
-            <section class="fiqr-kort">
+            <!-- 3. CASHFLOW — ekte framskrivning, ærlig om det som mangler -->
+            <section class="fiqr-kort" t-if="state.cashflow">
                 <div class="fiqr-korthode">
                     <h3>Cashflow og kritiske datoer</h3>
-                    <span class="fiqr-scenario-merke">IKKE KOBLET</span>
+                    <span class="fiqr-scenario-merke">FRAMSKRIVNING — ikke bokførte tall</span>
                 </div>
-                <p class="fiqr-hjelp">Når blir det tight? Framskrivning av likviditeten.</p>
-                <div class="fiqr-tom">
-                    Framskrivningen krever forpliktelsene under — uten dem ville kurven løyet.
+                <p class="fiqr-hjelp">
+                    Når blir det tight? 12 uker framover, basert på
+                    <t t-esc="state.cashflow.grunnlag.toLowerCase()"/>.
+                </p>
+
+                <!-- Mangelen står FØR kurven, ikke som en fotnote under. -->
+                <div class="fiqr-mangler">
+                    <b>Kurven er ufullstendig.</b> Den tar ikke høyde for:
+                    <t t-esc="state.cashflow.mangler.join(' · ')"/>.
+                    Ingen AI-rolle eier lønn ennå — tallene gjettes ikke.
+                </div>
+
+                <div class="fiqr-start">
+                    Utgangspunkt i dag:
+                    <b t-att-class="state.cashflow.start_saldo >= 0 ? 'fiqr-positiv' : 'fiqr-negativ'">
+                        <t t-esc="format(state.cashflow.start_saldo)"/> <t t-esc="valuta"/>
+                    </b>
+                    <span class="fiqr-hjelp">
+                        (forfalt inn <t t-esc="format(state.cashflow.forfalt_inn)"/>
+                        − forfalt ut <t t-esc="format(state.cashflow.forfalt_ut)"/>)
+                    </span>
+                </div>
+
+                <div class="fiqr-kurve">
+                    <div t-foreach="state.cashflow.punkter" t-as="p" t-key="p.uke"
+                         class="fiqr-uke"
+                         t-att-title="'Uke fra ' + p.fra + ': inn ' + format(p.inn) + ', ut ' + format(p.ut) + ' → saldo ' + format(p.saldo)">
+                        <div class="fiqr-stolpe-boks">
+                            <div class="fiqr-stolpe"
+                                 t-att-class="{
+                                    'fiqr-stolpe-neg': p.saldo &lt; 0,
+                                    'fiqr-stolpe-lav': p.uke === state.cashflow.laveste.uke
+                                 }"
+                                 t-attf-style="height: {{ soyle(p.saldo) }}%"/>
+                        </div>
+                        <div class="fiqr-uke-nr">u<t t-esc="p.uke + 1"/></div>
+                    </div>
+                </div>
+
+                <div class="fiqr-laveste">
+                    <t t-if="state.cashflow.kritiske_uker.length">
+                        <span class="fiqr-negativ">
+                            <b>Kritisk:</b> saldoen går under null i
+                            <t t-esc="state.cashflow.kritiske_uker.length"/> uke(r).
+                            Laveste punkt <t t-esc="state.cashflow.laveste.dato"/>:
+                            <b><t t-esc="format(state.cashflow.laveste.saldo)"/> <t t-esc="valuta"/></b>
+                        </span>
+                    </t>
+                    <t t-else="">
+                        <span class="fiqr-positiv">
+                            Ingen uke går under null. Laveste punkt
+                            <t t-esc="state.cashflow.laveste.dato"/>:
+                            <b><t t-esc="format(state.cashflow.laveste.saldo)"/> <t t-esc="valuta"/></b>
+                        </span>
+                    </t>
                 </div>
             </section>
 

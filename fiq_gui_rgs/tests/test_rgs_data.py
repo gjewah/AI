@@ -142,6 +142,57 @@ class TestRgsData(TransactionCase):
         self.assertIsInstance(b["totalt"], int)
         self.assertGreaterEqual(b["totalt"], 0)
 
+    # ---------- CASHFLOW-FRAMSKRIVNING ----------
+
+    def test_cashflow_har_ukepunkter_og_aerlig_mangelliste(self):
+        """Kurven må ALLTID oppgi hva den ikke tar høyde for.
+
+        🛑 `mangler` er ikke pynt: uten lønn/avgift/feriepenger/pensjon er kurven
+        ufullstendig, og en ufullstendig likviditetskurve som ser komplett ut er
+        farligere enn ingen kurve. Fjernes listen, skal denne testen stoppe det.
+        """
+        c = self.Data.hent_cashflow(uker=12)
+        self.assertEqual(len(c["punkter"]), 12)
+        self.assertIn("Lønnskjøringer", c["mangler"])
+        self.assertIn("Feriepenger", c["mangler"])
+        self.assertTrue(c["grunnlag"], "Kurven må oppgi hva den bygger på")
+
+    def test_cashflow_saldo_akkumulerer(self):
+        """Saldoen skal bygge på forrige uke — ikke vise ukens netto isolert.
+
+        En kurve der hver uke starter på null svarer ikke på «når blir det tight».
+        """
+        self._faktura(3, belop=10000.0)    # inn uke 1
+        self._faktura(10, belop=5000.0)    # inn uke 2
+        c = self.Data.hent_cashflow(uker=4)
+        self.assertGreaterEqual(
+            c["punkter"][1]["saldo"], c["punkter"][0]["saldo"],
+            "Saldo skal akkumulere: uke 2 må inkludere uke 1",
+        )
+
+    def test_cashflow_finner_laveste_punkt(self):
+        """«Når blir det tight» = laveste punkt i kurven, ikke siste."""
+        self._faktura(5, belop=2000.0, type_="in_invoice")   # ut → drar saldo ned
+        c = self.Data.hent_cashflow(uker=8)
+        saldoer = [p["saldo"] for p in c["punkter"]]
+        self.assertEqual(c["laveste"]["saldo"], min(saldoer + [c["start_saldo"]]))
+        self.assertTrue(c["laveste"]["dato"])
+
+    def test_cashflow_taaler_tom_base(self):
+        """Uten ett eneste ubetalt bilag skal kurven svare, ikke krasje."""
+        c = self.Data.hent_cashflow(uker=4)
+        self.assertEqual(len(c["punkter"]), 4)
+        self.assertIsInstance(c["start_saldo"], float)
+
+    def test_cashflow_kun_eget_firma(self):
+        """🛑 Framskrivning bygger på samme domene — tenant-grensen må holde."""
+        self._faktura(7, belop=4000.0)
+        c = self.Data.hent_cashflow(uker=4)
+        # Summen kan aldri overstige firmaets eget utestående.
+        eget = self.Data.hent_grunnbilde()["botter"][4]["verdi"]
+        total_i_kurven = sum(abs(p["inn"]) + abs(p["ut"]) for p in c["punkter"])
+        self.assertLessEqual(round(total_i_kurven, 2), round(abs(eget), 2) + 0.01)
+
     # ---------- KLIKK: TALL → LISTE ----------
 
     def test_apne_botte_gir_gyldig_handling(self):
