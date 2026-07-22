@@ -688,3 +688,22 @@
         * { transition: none !important; }
     }
 }
+
+// «AI KR ›»-merket per oppgaverad — broen tilbake til AI KR.
+// Fasiten (utkast03) har det på hver AI-utført rad. Diskret: dette er en vei
+// videre, ikke en handling som skal konkurrere med selve oppgavenavnet.
+.fiq_gui_prj .fiq_prj_aikr {
+    font-family: var(--fiq-mono);
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border: 1px solid var(--fiq-line);
+    border-radius: 100px;
+    background: var(--fiq-surface-2);
+    color: var(--fiq-muted);
+    cursor: pointer;
+    flex: none;
+    white-space: nowrap;
+
+    &:hover { border-color: var(--fiq-accent); color: var(--fiq-accent); }
+}

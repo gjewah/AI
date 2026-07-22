@@ -49,12 +49,33 @@ export class FiqGuiPrj extends Component {
         // record rules); klienten kan aldri utvide sitt eget innsyn.
         const fraSkallet = this.props && this.props.firm ? parseInt(this.props.firm, 10) : false;
 
+        // ---------- context fra AI KR (avtalt m/ AI KR 22.07) ----------
+        // AI KRs lesepanel har fem knapper som peker hit: «Åpne i Prosjektoversikt»,
+        // Gantt, Uke, Måned, «Oppgave i Odoo». De kaller:
+        //   doAction("fiq_gui_prj.action_fiq_gui_prj",
+        //            {context: {aktiv_visning: "gantt"|"liste"|"kanban",
+        //                       opplosning: "uke"|"mnd", task_id: N, fra: "ai_kr"}})
+        //
+        // 🛑 Vi VALIDERER verdiene i stedet for å stole på dem. En ukjent visning
+        // ville ellers gitt en tom flate uten feilmelding — brukeren ville sett en
+        // hvit rute og ikke visst hvorfor. Ugyldig verdi faller til default.
+        const ctx = (this.props && this.props.action && this.props.action.context) || {};
+        const lovligVisning = ["gantt", "liste", "kanban"];
+        const lovligOppl = ["uke", "mnd"];
+        const ønsketVisning = lovligVisning.includes(ctx.aktiv_visning) ? ctx.aktiv_visning : "gantt";
+        const ønsketOppl = lovligOppl.includes(ctx.opplosning) ? ctx.opplosning : "uke";
+        // `task_id` brukes til å markere og rulle til riktig rad — ikke til å filtrere.
+        // Filtrerer vi, mister brukeren konteksten han kom for å se.
+        this.fraAiKr = ctx.fra === "ai_kr";
+        this.markerOppgave = parseInt(ctx.task_id, 10) || false;
+
         this.state = useState({
             laster: true,
             feil: false,
             // visning × oppløsning — fasitens to akser
-            visning: "gantt",       // gantt | liste | kanban
-            opplosning: "uke",      // uke | mnd
+            // Fra AI KRs context om den er satt, ellers default.
+            visning: ønsketVisning,
+            opplosning: ønsketOppl,
             grupper: "prosjekt",    // prosjekt | rolle | ansvarlig | status | firma
             fraUke: null,
             valgtFirma: fraSkallet,
@@ -286,6 +307,21 @@ export class FiqGuiPrj extends Component {
     barBredde(pst) { return Math.min(100, Math.max(0, pst || 0)); }
 
     // ---------- native-først: alltid en vei ut til Odoo ----------
+
+    // ---------- broen til AI KR (avtalt 22.07) ----------
+    // Fasiten krever at broen går BEGGE veier: hver oppgaverad har et «AI KR ›»-merke,
+    // og KPI «Gjort av AI» er klikkbar. Konteksten FØLGER MED — brukeren skal lande på
+    // samme oppgave, ikke på en forside han må navigere seg tilbake fra.
+    // AI KRs kontrakt (deres 2.14.0): {menyValg: "oppgaver"|"spor"|"konkl", task_id: N}
+    apneAiKr(taskId, menyValg) {
+        this.action.doAction("fiq_gui_ai_kr.action_fiq_ai_kr", {
+            additionalContext: {
+                menyValg: menyValg || "oppgaver",
+                task_id: taskId || false,
+                fra: "prj",
+            },
+        });
+    }
 
     apneOppgave(id) {
         this.action.doAction({

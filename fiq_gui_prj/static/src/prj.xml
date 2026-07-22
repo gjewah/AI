@@ -60,7 +60,7 @@
                         <span class="fiq_prj_kpi_tall"><t t-esc="state.kpi.frister_uka"/></span>
                         <span class="fiq_prj_kpi_sub">◆ i Gantt</span>
                     </div>
-                    <div class="fiq_prj_kpi_kort" t-on-click="() => this.drillKpi('ai')">
+                    <div class="fiq_prj_kpi_kort" t-on-click="() => this.apneAiKr(false, 'oppgaver')">
                         <span class="fiq_prj_kpi_lab">Gjort av AI</span>
                         <span class="fiq_prj_kpi_tall">
                             <t t-esc="state.kpi.ai_gjort"/><small>/<t t-esc="state.kpi.ai_totalt"/></small>
@@ -162,6 +162,9 @@
                                 <div class="fiq_prj_navnkol fiq_prj_innrykk">
                                     <span class="fiq_prj_prio" t-esc="prioSymbol(o.prioritet)"/>
                                     <span class="fiq_prj_ai" t-esc="o.er_ai ? '🤖' : '👤'"/>
+                                    <button class="fiq_prj_aikr" t-if="o.er_ai"
+                                            title="Åpne samme oppgave i AI KR"
+                                            t-on-click.stop="() => this.apneAiKr(o.id, 'oppgaver')">AI KR ›</button>
                                     <span class="fiq_prj_onavn" t-on-click.stop="() => this.apneOppgave(o.id)"
                                           t-esc="o.navn"/>
                                     <span class="fiq_prj_nr">
@@ -209,6 +212,9 @@
                                  t-on-click="() => this.apneOppgave(o.id)">
                                 <span class="fiq_prj_prio" t-esc="prioSymbol(o.prioritet)"/>
                                 <span class="fiq_prj_ai" t-esc="o.er_ai ? '🤖' : '👤'"/>
+                                    <button class="fiq_prj_aikr" t-if="o.er_ai"
+                                            title="Åpne samme oppgave i AI KR"
+                                            t-on-click.stop="() => this.apneAiKr(o.id, 'oppgaver')">AI KR ›</button>
                                 <div class="fiq_prj_li_midt">
                                     <span class="fiq_prj_onavn" t-esc="o.navn"/>
                                     <span class="fiq_prj_nr">
@@ -251,6 +257,9 @@
                                 <div class="fiq_prj_kk_topp">
                                     <span class="fiq_prj_prio" t-esc="prioSymbol(o.prioritet)"/>
                                     <span class="fiq_prj_ai" t-esc="o.er_ai ? '🤖' : '👤'"/>
+                                    <button class="fiq_prj_aikr" t-if="o.er_ai"
+                                            title="Åpne samme oppgave i AI KR"
+                                            t-on-click.stop="() => this.apneAiKr(o.id, 'oppgaver')">AI KR ›</button>
                                     <span class="fiq_prj_pille" t-att-class="tidKlasse(o.tid_status)"
                                           t-esc="tidTekst(o.tid_status)"/>
                                 </div>

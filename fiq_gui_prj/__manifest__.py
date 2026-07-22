@@ -1,11 +1,18 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.21.0",
+    "version": "19.0.1.22.0",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
-    "description": """19.0.1.21.0 - SJEKKLISTE-PANELET KOBLET PAA MOTOREN:
+    "description": """19.0.1.22.0 - BROEN TIL AI KR GAAR NAA BEGGE VEIER:
+
+* Avtalt med AI KR 22.07. Flaten LESER naa context: aktiv_visning (gantt/liste/kanban), opplosning (uke/mnd), task_id, fra. AI KRs fem knapper lander riktig sted.
+* Verdiene VALIDERES mot lovlige lister. En ukjent visning ville gitt tom flate uten feilmelding - brukeren saa en hvit rute uten aa vite hvorfor. Ugyldig faller til default.
+* task_id markerer raden, filtrerer den IKKE. Filtrering ville fjernet konteksten brukeren kom for aa se.
+* TILBAKE: AI KR-merke paa hver AI-utfoert rad i alle tre visninger + KPI Gjort av AI klikkbar til AI KR. Konteksten foelger med (task_id + menyValg), saa han lander paa samme oppgave.
+
+19.0.1.21.0 - SJEKKLISTE-PANELET KOBLET PAA MOTOREN:
 
 * get_sjekklister(oppgave_id) - datalaget for sprettopp-panelet i fasiten (utkast03).
 * Fasiten viser EEN liste med TO flater: Prosjekteier legger til punkter, Arbeider kvitterer ut uten Odoo-lisens.
