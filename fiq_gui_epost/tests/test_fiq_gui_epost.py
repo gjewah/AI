@@ -15,6 +15,7 @@
 
 from datetime import date, datetime, timedelta
 
+from odoo import fields
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
@@ -51,32 +52,41 @@ class TestEpost(TransactionCase):
 
     # ---- REGRESJON: date vs datetime ----------------------------------------------
 
-    def test_kalender_finner_frist_sent_paa_siste_dag(self):
-        """🔴 Denne fella felte Staging for to andre moduler 22.07.
+    def test_kalender_plasserer_frist_i_brukerens_tidssone(self):
+        """🔴 To feller i én: date-vs-datetime OG tidssone-grensen.
 
-        `project.task.date_deadline` er DATETIME. Sammenlignet med et rent
-        date-objekt tolkes `<= end` som «<= end 00:00:00», og ALT som ligger
-        senere på månedens siste dag faller ut — stille, uten feilmelding.
-        Testen lager en frist kl. 23:30 på siste dag i inneværende måned og
-        krever at den kommer med."""
+        `date_deadline` er DATETIME lagret i UTC, men rutenettet viser datoer i
+        brukerens tidssone. En frist «siste dag 23:30 UTC» er 01:30 NESTE dag i
+        Oslo/Brussel — den skal derfor havne i NESTE måneds rute, ikke i denne.
+        Testen krever begge deler: at fristen finnes (hentevinduet må strekke seg
+        forbi månedsskiftet), og at den ligger på RIKTIG dato etter konvertering.
+
+        Første kjøring 22.07 avslørte at hentevinduet stoppet ved månedsslutt i
+        UTC → fristen ble hentet i én måned og plassert i en annen, og forsvant
+        derfor fra begge visningene. Stille, uten feilmelding."""
         i_dag = date.today()
         forste = i_dag.replace(day=1)
-        neste = (forste + timedelta(days=32)).replace(day=1)
-        siste = neste - timedelta(days=1)
+        neste_mnd = (forste + timedelta(days=32)).replace(day=1)
+        siste = neste_mnd - timedelta(days=1)
 
         prosjekt = self.env["project.project"].create({"name": "TEST kalender-grense"})
+        frist_utc = datetime.combine(siste, datetime.min.time()) + timedelta(hours=23, minutes=30)
         oppgave = self.env["project.task"].create({
             "name": "TEST frist sent paa siste dag",
             "project_id": prosjekt.id,
             "user_ids": [(6, 0, self.env.user.ids)],
-            "date_deadline": datetime.combine(siste, datetime.min.time()) + timedelta(hours=23, minutes=30),
+            "date_deadline": frist_utc,
         })
 
-        kal = self.Data.get_kalender(aar=siste.year, mnd=siste.month)
-        nokkel = siste.strftime("%Y-%m-%d")
-        navn = [h["navn"] for h in kal["dager"].get(nokkel, [])]
+        # Hvor HØRER den hjemme etter tidssone-konvertering? Spør Odoo, ikke gjett.
+        lokal = fields.Datetime.context_timestamp(self.env["res.users"], frist_utc)
+        forventet_dato = lokal.date()
+
+        kal = self.Data.get_kalender(aar=forventet_dato.year, mnd=forventet_dato.month)
+        navn = [h["navn"] for h in kal["dager"].get(forventet_dato.strftime("%Y-%m-%d"), [])]
         self.assertIn(oppgave.name, navn,
-                      "frist 23:30 på siste dag må være med — ellers er date/datetime-fella tilbake")
+                      "fristen må ligge på datoen den har i BRUKERENS tidssone — "
+                      "faller den ut, er hentevinduet eller konverteringen feil")
 
     def test_kalender_grunnform(self):
         """Rutenettet trenger startukedag og antall dager. Mandag = 0
@@ -101,7 +111,10 @@ class TestEpost(TransactionCase):
         p = self.env["project.project"].create({"name": "TEST Kabelgata 6"})
         treff = self.Data.sok_mal("Kabelgata", "prosjekt")
         self.assertIn(p.id, [t["id"] for t in treff])
-        if p.sequence_code:
+        # `sequence_code` kommer fra en FIQ/OCA-modul og finnes ikke i alle baser
+        # (Dev har den ikke). Sjekk feltet FØR bruk — ellers feiler testen på
+        # miljøet, ikke på koden. Samme lærdom som «ID-er overlever ikke oppgradering».
+        if "sequence_code" in p._fields and p.sequence_code:
             self.assertIn(p.id, [t["id"] for t in self.Data.sok_mal(p.sequence_code, "prosjekt")])
 
     def test_par_melding_flytter_upart_melding(self):
