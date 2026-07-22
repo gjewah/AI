@@ -234,3 +234,96 @@ class TestRgsData(TransactionCase):
         d = self.Data.hent_grunnbilde()
         self.assertEqual(d["antall_firmaer"], len(self.env.user.company_ids))
 
+    # ---------- TIDLIG KORRIGERING (08.03.01) ----------
+
+    def _betal(self, faktura, dager_etter_forfall):
+        """Registrerer en innbetaling på en faktura, med kjent dato.
+
+        Speiler fiqas Production: betalinger som er REGISTRERT men ikke avstemt
+        mot bank. Testen må kunne bevise at motoren finner dem likevel.
+        """
+        betaling = self.env["account.payment"].create({
+            "payment_type": "inbound",
+            "partner_type": "customer",
+            "partner_id": faktura.partner_id.id,
+            "amount": faktura.amount_total,
+            "date": fields.Date.add(faktura.invoice_date_due, days=dager_etter_forfall),
+        })
+        betaling.action_post()
+        # Knytt betalingen til fakturaen slik Odoo selv gjør ved avstemming.
+        linjer = (faktura.line_ids + betaling.move_id.line_ids).filtered(
+            lambda l: l.account_id.account_type == "asset_receivable" and not l.reconciled
+        )
+        linjer.reconcile()
+        return betaling
+
+    def test_betalingsmonster_maaler_dager_etter_forfall(self):
+        """Kjernen i tidlig korrigering: HVOR sent betaler kunden faktisk?
+
+        Uten dette tallet er «kortere frister» en gjetning. 30 dager forsinkelse
+        skal måles som 30 — ikke som «betalt» eller «ikke betalt».
+        """
+        faktura = self._faktura(-60, belop=10000.0)
+        self._betal(faktura, 30)
+
+        m = self.Data.hent_betalingsmonster()
+        mine = [x for x in m["motparter"] if x["motpart"] == self.kunde.name]
+        self.assertTrue(mine, "Motparten mangler i mønsteret")
+        self.assertAlmostEqual(mine[0]["snitt_dager"], 30.0, places=1)
+        self.assertTrue(mine[0]["betaler_sent"])
+
+    def test_betalingsstatus_brukes_ikke_som_maal(self):
+        """🔴 KRITISK: motoren må IKKE bygge på `payment_state`.
+
+        Målt på fiqas Production 22.07: 0 av 20 fakturaer står som `paid` mens 27
+        betalinger finnes. Et mål bygd på bilagets betalingsstatus ville rapportert
+        «ingen data» der det finnes rikelig. Denne testen feiler hvis noen senere
+        bytter til payment_state — da blir antallet 0.
+        """
+        faktura = self._faktura(-40, belop=5000.0)
+        self._betal(faktura, 10)
+
+        m = self.Data.hent_betalingsmonster()
+        self.assertGreater(m["antall_fakturaer"], 0,
+                           "Motoren fant ingen betalinger — bygger den på payment_state?")
+
+    def test_tynt_grunnlag_gir_ikke_anbefaling(self):
+        """🛑 «ALDRI gjett»: ett tilfelle er en anekdote, ikke et mønster.
+
+        Én kunde med én faktura skal ALDRI gi grønt lys for en anbefaling.
+        Vakten er bevisst — fjernes `godt_nok`, kan flaten anbefale kortere
+        betalingsfrister på grunnlag av én enkelt hendelse.
+        """
+        faktura = self._faktura(-30, belop=1000.0)
+        self._betal(faktura, 5)
+
+        m = self.Data.hent_betalingsmonster()
+        self.assertFalse(m["godt_nok"],
+                         "Én motpart skal ikke være godt nok grunnlag for en anbefaling")
+
+    def test_ubekreftede_betalinger_telles_men_merkes(self):
+        """Registrert ≠ bekreftet. Begge deler må være synlig.
+
+        En betaling som ikke er avstemt mot bank er ikke verifisert av banken.
+        Å utelate den skjuler data; å telle den stille overdriver sikkerheten.
+        Derfor: tell den, og si fra.
+        """
+        faktura = self._faktura(-20, belop=3000.0)
+        self._betal(faktura, 7)
+
+        m = self.Data.hent_betalingsmonster()
+        self.assertGreater(m["ubekreftede_betalinger"], 0,
+                           "Uavstemt betaling skal telles som ubekreftet")
+        self.assertTrue(m["forbehold"], "Forbeholdet må stå i datasettet, ikke bare i visningen")
+
+    def test_base_merket_oppgir_server_ikke_bare_firma(self):
+        """🔑 LÆRDOM 22.07: firmanavn identifiserer INNHOLD, ikke SERVER.
+
+        «FIQ as» finnes på både Staging og Production. Fire økter rapporterte tall
+        fra feil base samme dag fordi ingen målte `web.base.url`. Uten dette merket
+        kan et demodata-tall leses som ekte i en rapport bygget oppå flaten.
+        """
+        m = self.Data.hent_betalingsmonster()
+        self.assertIn("url", m["base"], "Base-merket må oppgi server-URL, ikke bare firma")
+        self.assertIn("firma", m["base"])
+

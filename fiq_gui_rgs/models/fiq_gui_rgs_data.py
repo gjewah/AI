@@ -300,3 +300,128 @@ class FiqGuiRgsData(models.AbstractModel):
             }
             for p in poster
         ]
+
+    # ------------------------------------------------------------------
+    # TIDLIG KORRIGERING (Gjermunds spec: «kortere frister · tidligere fakturering»)
+    # ------------------------------------------------------------------
+
+    # Under dette antallet er et snitt ikke et mønster, men en anekdote.
+    # 🛑 Terskel for å UTTALE seg — ikke for å regne. Vi regner uansett, men
+    #    flaten sier fra når grunnlaget er for tynt til en anbefaling.
+    MIN_FAKTURA_FOR_MONSTER = 5
+
+    @api.model
+    def _base_merke(self):
+        """Hvilken base tallene kommer fra — SERVER, ikke bare firmanavn.
+
+        🔑 LÆRDOM 22.07 (fire økter, samme dag, samme feil): firmanavn identifiserer
+        INNHOLD, ikke SERVER. «FIQ as» finnes på både Staging og Production, og et
+        demodata-tall uten base-merke leses som ekte. Både Finans og denne økta
+        rapporterte tall fra feil base før noen målte `web.base.url`.
+        """
+        url = self.env["ir.config_parameter"].sudo().get_param("web.base.url") or ""
+        return {"firma": self.env.company.name, "url": url}
+
+    @api.model
+    def _betalingsdager(self, partner_id=False):
+        """Faktisk betalingsforsinkelse per faktura: betalingsdato − forfallsdato.
+
+        🛑 HVORFOR IKKE `payment_state`: den sier om Odoo anser bilaget oppgjort,
+        ikke NÅR pengene kom. Målt på fiqas Production 22.07 (`https://www.fiq.no`):
+        0 av 20 kundefakturaer står som `paid`, og alle 27 betalinger som
+        `in_process`. Et mål bygd på `payment_state` ville rapportert «ingen data»
+        der det faktisk finnes 27 registrerte betalinger.
+
+        Vi leser derfor `account.payment.date` via `reconciled_invoice_ids` —
+        koblingen betaling→faktura, uavhengig av avstemmingsstatus.
+
+        ⚠️ FAKTA vs USIKKERHET: en betaling som ikke er avstemt mot bank
+        (`is_matched = False`) er REGISTRERT, ikke BEKREFTET. Vi teller den, men
+        merker den — å utelate den skjuler data, å telle den stille overdriver
+        sikkerheten.
+        """
+        domene = [
+            ("state", "!=", "cancel"),
+            ("payment_type", "=", "inbound"),
+            ("company_id", "=", self.env.company.id),  # fra sesjonen, aldri klienten
+        ]
+        if partner_id:
+            domene.append(("partner_id", "=", partner_id))
+
+        rader = []
+        for bet in self.env["account.payment"].search(domene):
+            if not bet.date:
+                continue
+            for faktura in bet.reconciled_invoice_ids:
+                if faktura.move_type not in self.INN_TYPER or not faktura.invoice_date_due:
+                    continue
+                rader.append({
+                    "partner_id": bet.partner_id.id,
+                    "motpart": bet.partner_id.display_name or "—",
+                    "dager": (bet.date - faktura.invoice_date_due).days,
+                    "belop": bet.amount,
+                    "bekreftet": bet.is_matched,  # avstemt mot bankutskrift?
+                })
+        return rader
+
+    @api.model
+    def hent_betalingsmonster(self):
+        """Hvordan betaler kundene FAKTISK — grunnlaget for tidlig korrigering.
+
+        Gjermunds spec 2.80: «tidlig korrigering — kortere frister, tidligere
+        fakturering». En slik anbefaling er verdiløs uten å vite hvem som faktisk
+        betaler sent. Dette er MÅLINGEN; anbefalingen bygger på den.
+
+        🛑 FRAMSKRIVNING, IKKE BOKFØRT TALL. Snittet beskriver fortida og brukes til
+        å anslå framtida. Det er ikke et regnskapstall, og flaten merker det slik.
+
+        🛑 ÆRLIG OM GRUNNLAGET (samme prinsipp som `mangler` i hent_cashflow):
+        returverdien sier hvor mange fakturaer og motparter snittet bygger på, og
+        `godt_nok` er False når det er for tynt. En anbefaling på tynt grunnlag er
+        gjetning i pen innpakning — og «ALDRI gjett» er rollens egen regel.
+        """
+        rader = self._betalingsdager()
+
+        per_motpart = {}
+        for r in rader:
+            p = per_motpart.setdefault(r["partner_id"], {
+                "motpart": r["motpart"], "dager": [], "antall": 0, "ubekreftet": 0,
+            })
+            p["dager"].append(r["dager"])
+            p["antall"] += 1
+            if not r["bekreftet"]:
+                p["ubekreftet"] += 1
+
+        motparter = []
+        for data in per_motpart.values():
+            dager = data["dager"]
+            snitt = sum(dager) / len(dager)
+            motparter.append({
+                "motpart": data["motpart"],
+                "antall_fakturaer": data["antall"],
+                "snitt_dager": round(snitt, 1),
+                "verste_dager": max(dager),
+                # Positivt snitt = betaler ETTER forfall. Det er dem tiltaket gjelder.
+                "betaler_sent": snitt > 0,
+                "ubekreftede": data["ubekreftet"],
+            })
+        motparter.sort(key=lambda m: m["snitt_dager"], reverse=True)
+
+        antall = len(rader)
+        ubekreftede = sum(1 for r in rader if not r["bekreftet"])
+        return {
+            "motparter": motparter,
+            "antall_fakturaer": antall,
+            "antall_motparter": len(motparter),
+            "ubekreftede_betalinger": ubekreftede,
+            "godt_nok": antall >= self.MIN_FAKTURA_FOR_MONSTER and len(motparter) >= 2,
+            "grunnlag": (
+                "Registrerte innbetalinger koblet til bokførte kundefakturaer. "
+                "Måler betalingsdato mot forfallsdato — ikke bilagets betalingsstatus."
+            ),
+            "forbehold": (
+                "%s av %s betalinger er ikke avstemt mot bankutskrift — "
+                "registrert, men ikke bekreftet." % (ubekreftede, antall)
+            ) if ubekreftede else "",
+            "base": self._base_merke(),
+        }
