@@ -574,6 +574,13 @@ class FiqMeldingssenterData(models.AbstractModel):
         if nrfelt:
             dom.append((nrfelt, "ilike", term))
         if "company_id" in f:
+            # 🔴 FANGET AV EGEN TEST 22.07: `company_id in [1]` utelukker poster med
+            # TOMT firma — og et prosjekt uten firma er synlig for ALLE (det er hele
+            # meningen med feltet i Odoo). Filteret skjulte altså poster brukeren har
+            # full tilgang til, uten feilmelding. Samme mønster som date-vs-datetime:
+            # riktig-utseende kode som stille fjerner rader.
+            dom.append("|")
+            dom.append(("company_id", "=", False))
             dom.append(("company_id", "in", firmaer))
         for rec in Rec.search(dom, limit=int(limit), order="write_date desc"):
             ut.append({
@@ -914,11 +921,24 @@ class FiqMeldingssenterData(models.AbstractModel):
         mnd = int(mnd or today.month)
         start = date(aar, mnd, 1)
         end = date(aar + (mnd == 12), (mnd % 12) + 1, 1) - timedelta(days=1)
+        # 🔴 FANGET AV EGEN TEST 22.07 — TIDSSONE-GRENSEN:
+        # Vi HENTER i UTC, men VISER datoene i brukerens tidssone. En frist «31.07
+        # 23:30 UTC» er 01.08 kl. 01:30 i Oslo. Med et vindu som stopper 31.07 23:59
+        # UTC ble den hentet, men plassert i august-ruta — og i august-visningen ble
+        # den aldri hentet. Hendelser sent på månedens siste dag forsvant STILLE.
+        # Fiks: utvid HENTEVINDUET ett døgn i hver ende; plasseringen styres uansett
+        # av den tidssone-konverterte datoen, så feil måned filtreres bort av `_legg`.
+        hent_fra = start - timedelta(days=1)
+        hent_til = end + timedelta(days=1)
 
         dager = {}
 
         def _legg(d, post):
-            if not d:
+            # `d` er allerede konvertert til brukerens tidssone. Hentevinduet er
+            # bevisst ett døgn videre i hver ende (se over), så her lukes det som
+            # faller utenfor selve måneden — ellers ville nabomånedens kanter dukket
+            # opp i rutenettet.
+            if not d or d < start or d > end:
                 return
             dager.setdefault(d.strftime("%Y-%m-%d"), []).append(post)
 
@@ -927,9 +947,9 @@ class FiqMeldingssenterData(models.AbstractModel):
         Cal = self.env["calendar.event"]
         for e in Cal.search([("partner_ids", "in", meg.ids),
                              ("start", ">=", fields.Datetime.to_string(
-                                 datetime.combine(start, datetime.min.time()))),
+                                 datetime.combine(hent_fra, datetime.min.time()))),
                              ("start", "<=", fields.Datetime.to_string(
-                                 datetime.combine(end, datetime.max.time())))],
+                                 datetime.combine(hent_til, datetime.max.time())))],
                             order="start", limit=300):
             lokal = fields.Datetime.context_timestamp(self, e.start) if e.start else False
             _legg(lokal.date() if lokal else False, {
@@ -948,13 +968,16 @@ class FiqMeldingssenterData(models.AbstractModel):
             # senere enn midnatt på månedens siste dag falt ut av kalenderen, stille.
             # Derfor eksplisitt tidsvindu til slutten av siste dag.
             dom = [("date_deadline", ">=", fields.Datetime.to_string(
-                        datetime.combine(start, datetime.min.time()))),
+                        datetime.combine(hent_fra, datetime.min.time()))),
                    ("date_deadline", "<=", fields.Datetime.to_string(
-                        datetime.combine(end, datetime.max.time()))),
+                        datetime.combine(hent_til, datetime.max.time()))),
                    ("user_ids", "in", self.env.user.ids)]
             if firm and "company_id" in Task._fields:
                 try:
-                    dom.append(("company_id", "in", [int(firm)]))
+                    # Samme rettelse som i sok_mal: en oppgave UTEN firma er synlig
+                    # for alle og skal ikke filtreres bort av et firmavalg.
+                    dom += ["|", ("company_id", "=", False),
+                            ("company_id", "in", [int(firm)])]
                 except (TypeError, ValueError):
                     pass
             for t in Task.search(dom, order="date_deadline", limit=300):
