@@ -32,21 +32,37 @@ class TestFiqGuiRelation(TransactionCase):
         cls.type_partner = cls.env.ref("fiq_gui_relations.type_partner")
 
     def _foreign_company(self):
-        """A company the test user is NOT a member of.
+        """A company that is OUT of scope for this test, whichever way we get one.
 
-        Deliberately not created here. res.company.create() pulls in every enterprise
-        module that extends it, and on a real database one of them rejects the write:
-        "Company Project Folders cannot be linked to another company" (documents). The
-        test would then fail on a constraint that has nothing to do with relations.
+        Two earlier attempts both broke on a real database, and the reason is worth
+        keeping: res.company.create() drags in every enterprise module that extends the
+        model, and one of them refuses the write ("Company Project Folders cannot be
+        linked to another company"). Searching for a company the user is not a member of
+        then failed too - the test administrator belongs to every company that exists,
+        so the search came back empty and fell straight back to create().
 
-        An existing company answers the actual question - is a relation outside the
-        user's scope counted rather than silently dropped - without depending on which
-        modules happen to be installed. Falls back to creating one only on a bare
-        database where no second company exists.
+        The simple answer, once tillatte_firmaer() is read rather than assumed
+        (fiq_gui_control_config.py:85): without the 000 right it returns the ACTIVE
+        company only - not every company the user belongs to. So any company other than
+        the active one is out of scope, whatever the user's membership looks like. No
+        need to create one, and no need to touch the user at all.
         """
-        other = self.env["res.company"].search(
-            [("id", "not in", self.env.user.company_ids.ids)], limit=1)
+        other = self.env["res.company"].search([("id", "!=", self.env.company.id)], limit=1)
         return other or self.env["res.company"].create({"name": "Relations Test Co"})
+
+    def _uten_000(self):
+        """Make the 'no cross-company insight' assumption explicit.
+
+        Both scope tests only mean something for a user WITHOUT the 000 right - with it,
+        seeing another company's relation is correct behaviour, not a leak. The test
+        administrator may well hold the group, so it is removed here rather than assumed
+        absent. Stated in the test instead of left implicit: an assumption that is only
+        true by accident is the kind that silently stops being true.
+        """
+        group = self.env.ref(
+            "fiq_gui_control.group_000_kryss_firma", raise_if_not_found=False)
+        if group and group in self.env.user.all_group_ids:
+            self.env.user.write({"group_ids": [(3, group.id)]})
 
     # ---- the core case: one person, several companies -----------------------------
 
@@ -255,6 +271,7 @@ class TestFiqGuiRelation(TransactionCase):
         silently dropped. Half a graph looks complete, so the omission must be reported.
         """
         other = self._foreign_company()
+        self._uten_000()
         self.Relation.create({
             "partner_a_id": self.person.id,
             "partner_b_id": self.company_a.id,
@@ -274,6 +291,7 @@ class TestFiqGuiRelation(TransactionCase):
         """A company id from the client can only narrow. Asking for a company the user
         has no access to must not reveal it."""
         other = self._foreign_company()
+        self._uten_000()
         self.Relation.create({
             "partner_a_id": self.person.id,
             "partner_b_id": self.company_a.id,
