@@ -91,11 +91,35 @@ class TestRgsData(TransactionCase):
         self.assertNotIn(9000.0, [b["haster"], b["kritisk"]],
                          "Forfall om 60 dager er hverken haster eller kritisk")
 
-    def test_betalt_faktura_teller_ikke(self):
-        """Ekte mønster fra Staging: alle 4 leverandørfakturaer hadde restbeløp 0.
+    def test_betaling_uten_avstemming_teller_fortsatt(self):
+        """🔴 EKTE BEGRENSNING, ikke en bug — målt 22.07 på Dev OG fiqas Production.
 
-        «Utgående = 0» så ut som en kodefeil, men var korrekt. Denne testen låser
-        oppførselen: betalte bilag skal ut av likviditetsbildet.
+        Erstatter `test_betalt_faktura_teller_ikke` (Finans 2.70). Den bygget på
+        antakelsen at Odoos betalingsveiviser gir `paid`. Antakelsen var feil, og
+        testen avdekket det ved å feile. Den er omskrevet — ikke slakket — til å
+        låse det som faktisk er sant. Finans verifiserte uavhengig og godkjente.
+
+        Målt på Dev `35275074` etter FULL betaling via veiviseren:
+            payment_state  = in_payment    (IKKE «paid»)
+            amount_residual = 3000.0        (IKKE 0 — restbeløpet står urørt)
+        Målt på fiqas Production (`https://www.fiq.no`):
+            0 av 20 kundefakturaer er `paid` · alle 27 betalinger er `in_process`
+
+        `paid` kommer FØRST ved BANKAVSTEMMING. Derfor teller en registrert-men-
+        uavstemt betaling fortsatt som utestående i `_basis_domene`.
+
+        🛑 DET ER DET KONSERVATIVE VALGET, OG DET ER BEVISST: penger som ikke er
+        bankbekreftet er ikke penger på konto. Å telle dem som mottatt er den
+        farligere feilen — daglig leder får en likviditetskurve som viser dekning
+        som ikke finnes.
+
+        🛑 IKKE «FIKS» DETTE MED `amount_residual != 0`: Finans målte at
+        restbeløpet er 3000 etter full betaling. Filteret ville ikke virket —
+        bare gjort domenet mer komplisert uten effekt.
+
+        📌 Om uavstemte betalinger SKAL telle som utestående er et regnskaps-
+        spørsmål, ikke et kodespørsmål. Det ligger hos Gjermund (oppgave 08.07).
+        Uansett svar er dagens forsiktige valg + synlig forklaring riktig.
         """
         faktura = self._faktura(-5, belop=3000.0)
         for_ = self.Data.hent_grunnbilde()["botter"][4]["verdi"]
@@ -106,8 +130,19 @@ class TestRgsData(TransactionCase):
         ).create({})
         wizard.action_create_payments()
 
+        self.assertEqual(faktura.payment_state, "in_payment",
+                         "Veiviseren gir «in_payment» — «paid» krever bankavstemming")
+        self.assertNotEqual(faktura.amount_residual, 0.0,
+                            "Restbeløpet står urørt til betalingen er avstemt")
+
         etter = self.Data.hent_grunnbilde()["botter"][4]["verdi"]
-        self.assertLess(etter, for_, "Betalt faktura skal ut av ubetalt-summen")
+        self.assertGreaterEqual(etter, for_,
+                                "Uavstemt betaling skal fortsatt telle som utestående")
+        # Men flaten MÅ forklare hvorfor tallet ser høyt ut — ellers leses det
+        # som manglende innbetaling. Det er halve forklaringen på likviditets-
+        # bildet i Production, der 19 av 20 bilag ligger slik.
+        self.assertGreater(self.Data.hent_grunnbilde()["i_betaling_antall"], 0,
+                           "Grunnbildet må si fra om registrerte, uavstemte betalinger")
 
     # ---------- SAMLEBOKS (KR-kontrakt) ----------
 
