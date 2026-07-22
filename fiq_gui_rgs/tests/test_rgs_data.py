@@ -239,23 +239,27 @@ class TestRgsData(TransactionCase):
     def _betal(self, faktura, dager_etter_forfall):
         """Registrerer en innbetaling på en faktura, med kjent dato.
 
-        Speiler fiqas Production: betalinger som er REGISTRERT men ikke avstemt
-        mot bank. Testen må kunne bevise at motoren finner dem likevel.
+        🔴 LÆRDOM (min egen feil, v1.19.0): første forsøk opprettet betalingen med
+        rå ORM og reconcile(). Det felte ikke bare mine egne tester — det felte
+        `test_betalt_faktura_teller_ikke`, en test som virket før jeg rørte noe.
+        Rå ORM setter ikke opp mot-postene Odoo forventer, så koblingen
+        betaling→faktura (`reconciled_invoice_ids`) ble aldri opprettet.
+
+        Riktig vei er den `test_betalt_faktura_teller_ikke` allerede brukte:
+        Odoos egen betalingsveiviser. Husets regel «aldri rå ORM på regnskap»
+        gjelder også i tester — testen skal speile hvordan systemet faktisk brukes.
+
+        Speiler fiqas Production: betalingen blir REGISTRERT, men ikke avstemt
+        mot bank (`is_matched = False`). Motoren må finne den likevel.
         """
-        betaling = self.env["account.payment"].create({
-            "payment_type": "inbound",
-            "partner_type": "customer",
-            "partner_id": faktura.partner_id.id,
-            "amount": faktura.amount_total,
-            "date": fields.Date.add(faktura.invoice_date_due, days=dager_etter_forfall),
-        })
-        betaling.action_post()
-        # Knytt betalingen til fakturaen slik Odoo selv gjør ved avstemming.
-        linjer = (faktura.line_ids + betaling.move_id.line_ids).filtered(
-            lambda l: l.account_id.account_type == "asset_receivable" and not l.reconciled
+        betalingsdato = fields.Date.add(faktura.invoice_date_due, days=dager_etter_forfall)
+        wizard = self.env["account.payment.register"].with_context(
+            active_model="account.move", active_ids=faktura.ids,
+        ).create({"payment_date": betalingsdato})
+        wizard.action_create_payments()
+        return self.env["account.payment"].search(
+            [("partner_id", "=", faktura.partner_id.id)], order="id desc", limit=1
         )
-        linjer.reconcile()
-        return betaling
 
     def test_betalingsmonster_maaler_dager_etter_forfall(self):
         """Kjernen i tidlig korrigering: HVOR sent betaler kunden faktisk?
