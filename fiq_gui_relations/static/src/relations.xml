@@ -5,20 +5,20 @@
         <div class="fiq-rel o_fiq_flate">
 
             <div t-if="state.laster" class="fiq-rel-melding">
-                Henter relasjoner…
+                Loading relations…
             </div>
 
             <div t-elif="state.feil" class="fiq-rel-melding fiq-rel-feil">
-                Relasjonene kunne ikke hentes. Prøv igjen, eller si fra hvis det vedvarer.
+                Relations could not be loaded. Try again, or say so if it persists.
             </div>
 
             <t t-else="">
                 <div class="fiq-rel-verktoy">
                     <button class="btn btn-sm btn-light" t-on-click="() => this.foldAlt(true)">
-                        Slå sammen alle
+                        Collapse all
                     </button>
                     <button class="btn btn-sm btn-light" t-on-click="() => this.foldAlt(false)">
-                        Utvid alle
+                        Expand all
                     </button>
                     <span class="fiq-rel-tall">
                         <t t-esc="state.noder.length"/> kontakter ·
@@ -30,13 +30,13 @@
                     <strong><t t-esc="state.utenfor"/></strong>
                     <t t-if="state.utenfor === 1"> relasjon peker</t>
                     <t t-else=""> relasjoner peker</t>
-                    på firmaer du ikke har innsyn i, og vises ikke her.
-                    Grafen under er derfor ikke hele bildet.
+                    at companies you do not have access to, and are not shown here.
+                    The graph below is therefore not the whole picture.
                 </div>
 
                 <div t-if="!state.noder.length" class="fiq-rel-melding">
-                    Ingen relasjoner er registrert ennå. Legg dem inn på kontaktkortet,
-                    under fanen Relasjoner.
+                    No relations recorded yet. Add them on the contact form,
+                    under the Relations tab.
                 </div>
 
                 <div class="fiq-rel-grupper">
@@ -67,7 +67,7 @@
                         <span class="fiq-rel-lukk" t-on-click="() => this.velg(state.valgt)">×</span>
                     </div>
                     <div t-if="!valgteRelasjoner.length" class="fiq-rel-tomt">
-                        Ingen relasjoner å vise for denne kontakten.
+                        No relations to show for this contact.
                     </div>
                     <div t-foreach="valgteRelasjoner" t-as="r" t-key="r.id" class="fiq-rel-rad">
                         <span class="fiq-rel-type" t-esc="r.label"/>
