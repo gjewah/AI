@@ -320,6 +320,29 @@ class TestRgsData(TransactionCase):
                            "Uavstemt betaling skal telles som ubekreftet")
         self.assertTrue(m["forbehold"], "Forbeholdet må stå i datasettet, ikke bare i visningen")
 
+    def test_uavstemt_betaling_finnes_i_monsteret(self):
+        """🔴 REGRESJON (min egen feil, v1.19.0 → v1.19.2).
+
+        Jeg koblet betaling→faktura via `reconciled_invoice_ids`. Den fylles
+        FØRST NÅR betalingen er avstemt mot bank. Målt på Dev 22.07:
+            reconciled_invoice_ids: []      ← tom
+            invoice_ids: ['INV/2026/00010']  ← koblingen finnes her
+        På fiqas Production står ALLE 27 betalinger som `in_process` (uavstemt).
+        Motoren ville rapportert «ingen betalinger» på en base med 27 av dem —
+        og det er nøyaktig den basen flaten skal brukes på.
+
+        Denne testen feiler hvis noen bytter tilbake til reconciled_invoice_ids.
+        """
+        faktura = self._faktura(-45, belop=8000.0)
+        betaling = self._betal(faktura, 15)
+
+        self.assertFalse(betaling.is_matched,
+                         "Forutsetningen for testen: betalingen skal være uavstemt")
+        m = self.Data.hent_betalingsmonster()
+        self.assertGreater(m["antall_fakturaer"], 0,
+                           "Uavstemt betaling må finnes i mønsteret — bruker koden "
+                           "reconciled_invoice_ids i stedet for invoice_ids?")
+
     def test_base_merket_oppgir_server_ikke_bare_firma(self):
         """🔑 LÆRDOM 22.07: firmanavn identifiserer INNHOLD, ikke SERVER.
 

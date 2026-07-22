@@ -352,7 +352,13 @@ class FiqGuiRgsData(models.AbstractModel):
         for bet in self.env["account.payment"].search(domene):
             if not bet.date:
                 continue
-            for faktura in bet.reconciled_invoice_ids:
+            # 🔴 `invoice_ids`, IKKE `reconciled_invoice_ids` (målt på Dev 22.07):
+            # `reconciled_invoice_ids` fylles først når betalingen er AVSTEMT mot
+            # bank. På fiqas Production står alle 27 betalinger som `in_process` —
+            # da er den lista TOM, og motoren hadde rapportert «ingen betalinger»
+            # på en base med 27 av dem. `invoice_ids` er koblingen som finnes fra
+            # betalingen registreres, uavhengig av avstemming.
+            for faktura in bet.invoice_ids:
                 if faktura.move_type not in self.INN_TYPER or not faktura.invoice_date_due:
                     continue
                 rader.append({
