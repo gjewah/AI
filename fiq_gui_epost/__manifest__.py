@@ -4,7 +4,7 @@
     # E-POST-KANALEN under den → egen etikett, ellers to like app-fliser i Apper.
     # Teknisk modulnavn (fiq_gui_epost) er URØRT — modulen er live på Staging + Production.
     "name": "Kommunikasjon — E-post",
-    "version": "19.0.6.16.0",
+    "version": "19.0.6.17.0",
     "summary": "FIQ Meldingssenter – kommunikasjonsflaten i Kontrollrommet. "
                "V00.04-designet (godkjent) som levende flate: tilstede-topplinje, firmavelger "
                "m/ logo, taksonomi 0–8, kompakte meldingsrader, lesepanel, paring/tildeling og AI-flate.",
