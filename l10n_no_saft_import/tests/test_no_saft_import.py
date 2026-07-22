@@ -67,10 +67,22 @@ class TestNoSaftImport(AccountTestInvoicingCommon):
         # attachment_id er required paa wizarden — create({}) feiler.
         # Innholdet er likegyldig her; testene kaller _prepare_*-metodene
         # direkte med sitt eget tre.
+        #
+        # 🔑 company_id MAA settes eksplisitt til testselskapet.
+        # account.account.code er SELSKAPSAVHENGIG i Odoo 19 (lagres i
+        # code_store som jsonb: {"<selskaps-id>": "<kode>"}), og
+        # _prepare_account_data slaar opp eksisterende kontoer med
+        # .with_company(self.company_id). Uten riktig selskap her leter
+        # koden i feil selskap og finner ingenting.
         cls.wizard = cls.env['account.saft.import.wizard'].create({
             'attachment_name': 'test.xml',
             'attachment_id': base64.b64encode(b'<AuditFile/>'),
+            'company_id': cls.env.company.id,
         })
+
+    def _kontokode(self, konto):
+        """Leser kontokoden i wizardens selskap — code er selskapsavhengig i 19."""
+        return konto.with_company(self.wizard.company_id).code
 
     def _tree(self, xml_string):
         return etree.fromstring(xml_string.encode('utf-8'))
@@ -84,38 +96,38 @@ class TestNoSaftImport(AccountTestInvoicingCommon):
         Generisk modul gjor .find(...).text direkte -> AttributeError paa
         forste konto. Dette er selve grunnen til at modulen finnes.
         """
-        tree = self._tree(_saft(accounts_xml=_konto('3000', 'salgsinntekt')))
+        tree = self._tree(_saft(accounts_xml=_konto('TST3000', 'salgsinntekt')))
         to_create, mapping = self.wizard._prepare_account_data(tree)
 
         self.assertEqual(len(to_create), 1, 'Kontoen skal opprettes')
         vals = list(to_create.values())[0]
-        self.assertEqual(vals['code'], '3000',
+        self.assertEqual(vals['code'], 'TST3000',
                          'Kontokoden skal komme fra AccountID naar StandardAccountID er tom')
-        self.assertIn('3000', mapping)
+        self.assertIn('TST3000', mapping)
 
     def test_utfylt_standard_account_id_vinner(self):
         """Er StandardAccountID FYLT UT, skal den brukes — ikke fallbacken."""
         tree = self._tree(_saft(
-            accounts_xml=_konto('3000', 'salgsinntekt', std_account_id='3010')))
+            accounts_xml=_konto('TST3000', 'salgsinntekt', std_account_id='TST3010')))
         to_create, _ = self.wizard._prepare_account_data(tree)
-        self.assertEqual(list(to_create.values())[0]['code'], '3010')
+        self.assertEqual(list(to_create.values())[0]['code'], 'TST3010')
 
     def test_konto_helt_uten_standard_account_id_node(self):
         """Noden mangler helt (ikke bare tom) — skal ikke krasje."""
-        xml = f"""<Account>
-          <AccountID>3000</AccountID>
+        xml = """<Account>
+          <AccountID>TST3000</AccountID>
           <AccountDescription>Salg</AccountDescription>
           <AccountType>GL</AccountType>
           <GroupingCategory>salgsinntekt</GroupingCategory>
         </Account>"""
         tree = self._tree(_saft(accounts_xml=xml))
         to_create, _ = self.wizard._prepare_account_data(tree)
-        self.assertEqual(list(to_create.values())[0]['code'], '3000')
+        self.assertEqual(list(to_create.values())[0]['code'], 'TST3000')
 
     def test_konto_uten_account_id_hoppes_over_uten_krasj(self):
         """Rad uten AccountID i det hele tatt — skal hoppes over, ikke felle importen."""
         xml = '<Account><AccountDescription>Soppel</AccountDescription></Account>'
-        tree = self._tree(_saft(accounts_xml=xml + _konto('3000', 'salgsinntekt')))
+        tree = self._tree(_saft(accounts_xml=xml + _konto('TST3000', 'salgsinntekt')))
         to_create, _ = self.wizard._prepare_account_data(tree)
         self.assertEqual(len(to_create), 1, 'Kun den gyldige kontoen skal opprettes')
 
@@ -131,7 +143,7 @@ class TestNoSaftImport(AccountTestInvoicingCommon):
         self.assertEqual(len(kart), 14, 'Kartet skal dekke 14 kategorier')
 
         konti = ''.join(
-            _konto(str(4000 + i), grouping)
+            _konto('TST%04d' % (4000 + i), grouping)
             for i, grouping in enumerate(kart)
         )
         tree = self._tree(_saft(accounts_xml=konti))
@@ -140,13 +152,13 @@ class TestNoSaftImport(AccountTestInvoicingCommon):
         self.assertEqual(len(to_create), 14)
         faktiske = {v['code']: v['account_type'] for v in to_create.values()}
         for i, (grouping, ventet) in enumerate(kart.items()):
-            self.assertEqual(faktiske[str(4000 + i)], ventet,
+            self.assertEqual(faktiske['TST%04d' % (4000 + i)], ventet,
                              f'{grouping} skal gi {ventet}')
 
     def test_ukjent_grupperingskategori_faller_tilbake_uten_krasj(self):
         """Ny/ukjent kategori fra POG skal ikke felle importen."""
         tree = self._tree(_saft(
-            accounts_xml=_konto('9999', 'heltNyKategoriIngenHarSett')))
+            accounts_xml=_konto('TST9999', 'heltNyKategoriIngenHarSett')))
         to_create, _ = self.wizard._prepare_account_data(tree)
         self.assertEqual(len(to_create), 1)
         self.assertEqual(list(to_create.values())[0]['account_type'], 'asset_current')
@@ -157,7 +169,7 @@ class TestNoSaftImport(AccountTestInvoicingCommon):
 
     def test_konto_uten_grouping_bruker_account_type(self):
         """Mangler GroupingCategory -> fall tilbake paa AccountType."""
-        tree = self._tree(_saft(accounts_xml=_konto('1500', grouping=None)))
+        tree = self._tree(_saft(accounts_xml=_konto('TST1500', grouping=None)))
         to_create, _ = self.wizard._prepare_account_data(tree)
         self.assertEqual(list(to_create.values())[0]['account_type'], 'asset_current')
 
@@ -167,14 +179,14 @@ class TestNoSaftImport(AccountTestInvoicingCommon):
     def test_inngaaende_saldo_debet_og_kredit(self):
         """Kredit skal bli NEGATIV. Feil fortegn her gir feil i hele regnskapet."""
         tree = self._tree(_saft(accounts_xml=(
-            _konto('1500', 'balanseverdiForOmloepsmiddel', opening_debit='1000.50')
-            + _konto('2400', 'kortsiktigGjeld', opening_credit='750.25')
-            + _konto('3000', 'salgsinntekt')
+            _konto('TST1500', 'balanseverdiForOmloepsmiddel', opening_debit='1000.50')
+            + _konto('TST2400', 'kortsiktigGjeld', opening_credit='750.25')
+            + _konto('TST3000', 'salgsinntekt')
         )))
         _, mapping = self.wizard._prepare_account_data(tree)
-        self.assertAlmostEqual(mapping['1500']['balance'], 1000.50)
-        self.assertAlmostEqual(mapping['2400']['balance'], -750.25)
-        self.assertAlmostEqual(mapping['3000']['balance'], 0.0,
+        self.assertAlmostEqual(mapping['TST1500']['balance'], 1000.50)
+        self.assertAlmostEqual(mapping['TST2400']['balance'], -750.25)
+        self.assertAlmostEqual(mapping['TST3000']['balance'], 0.0,
                                msg='Uten saldo skal balansen vaere 0, ikke None')
 
     # ------------------------------------------------------------------
@@ -182,28 +194,31 @@ class TestNoSaftImport(AccountTestInvoicingCommon):
     # ------------------------------------------------------------------
     def test_eksisterende_konto_gjenbrukes_ikke_dupliseres(self):
         """Kjores importen to ganger, skal ikke kontoene opprettes paa nytt."""
-        eksisterende = self.env['account.account'].create({
-            'code': '3000',
+        # .with_company() er noedvendig: code er selskapsavhengig i Odoo 19,
+        # saa kontoen maa opprettes i SAMME selskap som wizarden leser i.
+        eksisterende = self.env['account.account'].with_company(
+            self.wizard.company_id).create({
+            'code': 'TST3000',
             'name': 'Salgsinntekt',
             'account_type': 'income',
-            'company_ids': [(4, self.env.company.id)],
+            'company_ids': [(4, self.wizard.company_id.id)],
         })
-        tree = self._tree(_saft(accounts_xml=_konto('3000', 'salgsinntekt')))
+        tree = self._tree(_saft(accounts_xml=_konto('TST3000', 'salgsinntekt')))
         to_create, mapping = self.wizard._prepare_account_data(tree)
 
         self.assertEqual(len(to_create), 0, 'Eksisterende konto skal ikke opprettes paa nytt')
-        self.assertEqual(mapping['3000']['id'], eksisterende.id)
+        self.assertEqual(mapping['TST3000']['id'], eksisterende.id)
 
     def test_blandet_eksisterende_og_nye(self):
         """Realistisk import: noen kontoer finnes, andre ikke."""
-        self.env['account.account'].create({
-            'code': '3000', 'name': 'Salg', 'account_type': 'income',
-            'company_ids': [(4, self.env.company.id)],
+        self.env['account.account'].with_company(self.wizard.company_id).create({
+            'code': 'TST3000', 'name': 'Salg', 'account_type': 'income',
+            'company_ids': [(4, self.wizard.company_id.id)],
         })
         tree = self._tree(_saft(accounts_xml=(
-            _konto('3000', 'salgsinntekt')
-            + _konto('4000', 'varekostnad')
-            + _konto('5000', 'loennskostnad')
+            _konto('TST3000', 'salgsinntekt')
+            + _konto('TST4000', 'varekostnad')
+            + _konto('TST5000', 'loennskostnad')
         )))
         to_create, mapping = self.wizard._prepare_account_data(tree)
         self.assertEqual(len(to_create), 2, 'Kun de to nye skal opprettes')
@@ -270,7 +285,7 @@ class TestNoSaftImport(AccountTestInvoicingCommon):
         eller feiler over en viss mengde."""
         kategorier = list(self.wizard.NO_GROUPING_CATEGORY_MAP)
         konti = ''.join(
-            _konto(str(10000 + i), kategorier[i % len(kategorier)],
+            _konto('TST%05d' % (10000 + i), kategorier[i % len(kategorier)],
                    opening_debit=str(i * 1.5))
             for i in range(800)
         )
