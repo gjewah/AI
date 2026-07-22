@@ -271,7 +271,11 @@ class TestRgsData(TransactionCase):
         self._betal(faktura, 30)
 
         m = self.Data.hent_betalingsmonster()
-        mine = [x for x in m["motparter"] if x["motpart"] == self.kunde.name]
+        # `display_name`, ikke `name`: på fiqas har partnere kundenummer foran
+        # («10088 FIQ Testkunde AS»). Salgssporet meldte samme felle 22.07 —
+        # navnet er BEREGNET, og en test som sammenligner med råfeltet feiler
+        # på en base med nummerering, men er grønn på en uten.
+        mine = [x for x in m["motparter"] if x["motpart"] == self.kunde.display_name]
         self.assertTrue(mine, "Motparten mangler i mønsteret")
         self.assertAlmostEqual(mine[0]["snitt_dager"], 30.0, places=1)
         self.assertTrue(mine[0]["betaler_sent"])
