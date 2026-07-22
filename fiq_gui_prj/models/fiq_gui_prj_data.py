@@ -471,6 +471,86 @@ class FiqGuiPrjData(models.AbstractModel):
             "avkortet": len(rader) >= int(grense),
         }
 
+    # ---------- SJEKKLISTE-PANELET (fasit utkast03) ----------
+
+    @api.model
+    def get_sjekklister(self, oppgave_id, firma_id=None):
+        """Sjekklistene på én oppgave — grunnlaget for sprettopp-panelet.
+
+        Fasiten viser ÉN liste med TO flater:
+          🖥 Prosjekteier — «legger til punkter»: nummerert, krav-merker, ＋ Legg til
+          📱 Arbeider     — «kvitterer ut UTEN Odoo-lisens»: stor hake, ✍ Signer
+
+        Dette laget LESER bare. Motoren (`fiq.sjekkliste`, AI KRs arbeid) eier all
+        logikk: krav-constraint, versjonsbump, maler, kvittering. Vi gjenskaper
+        ingenting av det — flaten er en pen inngang til de samme dataene.
+
+        🛑 Firma-scope FØRST, som overalt ellers. Oppgaven må ligge i et firma
+        sesjonen har, ellers får man ingenting — ikke en tom liste som ser normal ut.
+        """
+        Sjekk = self.env.get("fiq.sjekkliste")
+        if Sjekk is None:
+            return {"tilgjengelig": False, "lister": []}
+
+        domene = self._firma_domene(firma_id) + [("id", "=", int(oppgave_id))]
+        oppgave = self.env["project.task"].search(domene, limit=1)
+        if not oppgave:
+            return {"tilgjengelig": True, "lister": [], "oppgave": False}
+
+        lister = []
+        for s in oppgave.fiq_sjekkliste_ids:
+            punkter = []
+            for p in s.punkt_ids.sorted(key=lambda x: (x.sequence, x.id)):
+                # Kravene er UAVHENGIGE (Gjermund 16.07): dok / foto / signatur.
+                # FDV og klima ER dokumenter — ikke bilder.
+                krav = []
+                if p.krav_dok:
+                    krav.append("dok")
+                if p.krav_foto:
+                    krav.append("foto")
+                if p.krav_sign:
+                    krav.append("sign")
+                punkter.append({
+                    "id": p.id,
+                    "navn": p.name or "",
+                    "beskrivelse": p.beskrivelse or "",
+                    "utfoert": bool(p.utfoert),
+                    "krav": krav,
+                    # Motorens egen constraint avgjør om punktet KAN kvitteres.
+                    # Flaten viser sperren; den finner den ikke opp.
+                    "kan_kvitteres": bool(p.kan_kvitteres),
+                    "mangler": p.mangler or "",
+                    "har_dok": bool(p.kvitt_dok_id),
+                    "har_foto": bool(p.kvitt_foto_id),
+                    "signert_av": p.kvitt_sign_av or "",
+                    "kvittert_av": p.kvitt_av or "",
+                })
+            lister.append({
+                "id": s.id,
+                "navn": s.name or "",
+                "nivaa": s.nivaa or "",
+                "type": s.type_liste or "",
+                "versjon": s.versjon or "1.0",
+                "er_mal": bool(s.er_mal),
+                "antall": s.antall_punkt,
+                "antall_ok": s.antall_ok,
+                "fremdrift": round(s.fremdrift or 0.0, 1),
+                "punkter": punkter,
+            })
+
+        return {
+            "tilgjengelig": True,
+            "oppgave": {
+                "id": oppgave.id,
+                "navn": oppgave.display_name,
+                "wbs": oppgave.fiq_wbs_number or "",
+                "oppgavenr": (oppgave.code or "") if "code" in oppgave._fields else "",
+                "prosjekt": oppgave.project_id.display_name or "",
+            },
+            "lister": lister,
+            "antall_lister": len(lister),
+        }
+
     # ---------- AI-arbeid som PROSJEKT (Gjermund-direktiv 2026-07-20) ----------
 
     @api.model

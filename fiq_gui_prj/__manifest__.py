@@ -1,11 +1,19 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.20.0",
+    "version": "19.0.1.21.0",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
-    "description": """19.0.1.20.0 - TAALER AT VALGFRIE NABOMODULER MANGLER (fanget paa DEV):
+    "description": """19.0.1.21.0 - SJEKKLISTE-PANELET KOBLET PAA MOTOREN:
+
+* get_sjekklister(oppgave_id) - datalaget for sprettopp-panelet i fasiten (utkast03).
+* Fasiten viser EEN liste med TO flater: Prosjekteier legger til punkter, Arbeider kvitterer ut uten Odoo-lisens.
+* Dette laget LESER bare. Motoren fiq.sjekkliste (AI KRs arbeid) eier all logikk: krav-constraint, versjonsbump, maler, kvittering. Vi gjenskaper ingenting.
+* Kravene er UAVHENGIGE: dok / foto / signatur. Flaten VISER motorens sperre (kan_kvitteres + mangler) i stedet for aa finne opp sin egen.
+* 3 nye tester, en av dem oppretter en liste med ukvitterbart punkt og krever at sperren er synlig (port 6).
+
+19.0.1.20.0 - TAALER AT VALGFRIE NABOMODULER MANGLER (fanget paa DEV):
 
 * Foerste kjoering paa DEV_AI_FIQ_01 ga 2 feil som Staging ALDRI viste:
 * KeyError planned_date_begin i domenet - feltet kommer fra project_enterprise, som er uninstalled paa Dev.

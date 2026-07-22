@@ -528,6 +528,65 @@ class TestPrjData(TransactionCase):
                udaterte[0]["navn"] if udaterte else ""),
         )
 
+    # ---------- SJEKKLISTE-PANELET ----------
+
+    def test_sjekklister_taaler_oppgave_uten_lister(self):
+        """En oppgave uten sjekklister skal gi tom liste, ikke krasj.
+
+        Basen har 0 sjekklister i dag (målt 19.07) — motoren er ubrukt i praksis.
+        Flaten må tåle det uten å se ødelagt ut.
+        """
+        prosjekt = self.Project.search(self._prosjekt_domene_for_test(), limit=1)
+        if not prosjekt:
+            self.skipTest("Ingen prosjekter å teste mot")
+        t = self.env["project.task"].create({
+            "name": "TEST uten sjekkliste", "project_id": prosjekt.id,
+        })
+        res = self.Data.get_sjekklister(t.id)
+        self.assertTrue(res["tilgjengelig"])
+        self.assertEqual(res["lister"], [])
+        self.assertEqual(res["oppgave"]["id"], t.id)
+
+    def test_sjekklister_viser_krav_og_sperre(self):
+        """🔑 Panelet må vise motorens sperre, ikke finne opp sin egen.
+
+        Kravene er UAVHENGIGE (Gjermund 16.07): dok / foto / signatur. Et punkt kan
+        ikke kvitteres før ALLE påslåtte krav er levert — det håndheves av
+        `@api.constrains` i motoren, ikke av flaten.
+
+        Denne testen oppretter tilstanden den verner mot (port 6): en liste med ett
+        punkt som krever dokument, uten at dokumentet finnes.
+        """
+        prosjekt = self.Project.search(self._prosjekt_domene_for_test(), limit=1)
+        if not prosjekt:
+            self.skipTest("Ingen prosjekter å teste mot")
+        t = self.env["project.task"].create({
+            "name": "TEST med sjekkliste", "project_id": prosjekt.id,
+        })
+        s = self.env["fiq.sjekkliste"].create({
+            "name": "Testliste", "task_id": t.id,
+            "punkt_ids": [(0, 0, {"name": "Krever dok", "krav_dok": True})],
+        })
+
+        res = self.Data.get_sjekklister(t.id)
+        self.assertEqual(len(res["lister"]), 1, "Sjekklista kom ikke med")
+        liste = res["lister"][0]
+        self.assertEqual(liste["antall"], 1)
+        self.assertEqual(liste["fremdrift"], 0.0)
+
+        p = liste["punkter"][0]
+        self.assertIn("dok", p["krav"], "Kravet «dok» mangler i det flaten viser")
+        self.assertFalse(
+            p["kan_kvitteres"],
+            "Punktet krever dokument som ikke finnes — sperren skal være synlig i flaten",
+        )
+        self.assertTrue(p["mangler"], "Brukeren må få vite HVA som mangler, ikke bare at det er sperret")
+
+    def test_sjekklister_respekterer_firma_scope(self):
+        """Oppgave utenfor sesjonens firmaer skal ikke gi data."""
+        res = self.Data.get_sjekklister(oppgave_id=999999999)
+        self.assertFalse(res["oppgave"], "Ukjent oppgave skal ikke gi innhold")
+
     def _prosjekt_domene_for_test(self):
         """Prosjekt vi trygt kan henge testoppgaver på."""
         d = [("company_id", "in", self.env.companies.ids or [self.env.company.id])]
