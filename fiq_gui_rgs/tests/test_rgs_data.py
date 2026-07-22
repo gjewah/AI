@@ -422,11 +422,3 @@ class TestRgsData(TransactionCase):
         self.assertIn("url", m["base"], "Base-merket må oppgi server-URL, ikke bare firma")
         self.assertIn("firma", m["base"])
 
-
-    def test_BEVIS_skal_feile_fjernes_straks(self):
-        """MIDLERTIDIG bevis-test — skal feile. Fjernes i samme runde.
-
-        Eneste måte å vite at kjøringen faktisk treffer MIN kode og ikke en
-        cachet/eldre versjon. Ser jeg ikke denne feile, måler jeg noe annet.
-        """
-        self.assertEqual(1, 2, "BEVIS: kjoeringen treffer min kode")
