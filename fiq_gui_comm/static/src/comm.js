@@ -98,3 +98,27 @@ export class FiqKommunikasjon extends Component {
 }
 
 registry.category("actions").add("fiq_gui_comm_dashboard", FiqKommunikasjon);
+
+// ---- Registrering i det delte skallet (V00.04) --------------------------------------
+// KR meldte 22.07: røret for undermenyer er ferdig, men INGEN flate leverer punkter —
+// derfor står venstremenyen tom. Kontrakten er lest i `shell.js:44-65`, ikke antatt:
+//   key/label/color/sequence/Component + valgfri `meny: [{key, label, badge}]`
+//
+// 🛑 `label` MÅ være ren tekst. Et objekt {en_US, nb_NO} felte HELE grensesnittet 22.07
+//    (`fiq_gui_relations` → «Invalid object: 'label' is not a string»). Samme feltnavn har
+//    MOTSATT kontrakt i menypunkter, der oversettelsesobjekt er lov. Ikke bland dem.
+//
+// Menypunktene speiler flatens egne visninger — de samme brukeren allerede kjenner
+// fra sidemenyen: oversikt, e-postkanalen og kalenderen. Ingen nye begreper.
+registry.category("fiq_gui_flates").add("komm", {
+    key: "komm",
+    label: "Kommunikasjon",
+    color: "#0078CC",          // 2 Admin-blå, kanonisk fargekart
+    sequence: 40,              // samme plass som i KR-menyen (mellom 35 og 45)
+    Component: FiqKommunikasjon,
+    meny: [
+        { key: "oversikt", label: "Oversikt" },
+        { key: "epost", label: "E-post" },
+        { key: "kalender", label: "Møter og kalender" },
+    ],
+});
