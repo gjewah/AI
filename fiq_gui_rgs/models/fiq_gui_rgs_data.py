@@ -90,6 +90,23 @@ class FiqGuiRgsData(models.AbstractModel):
         # 19.07: env.companies=1 mens brukeren har tilgang til flere.
         antall_tilgjengelige = len(self.env.user.company_ids)
 
+        # 🔴 REGISTRERT ≠ BEKREFTET (målt på fiqas Production 22.07, www.fiq.no):
+        # 19 av 20 kundefakturaer står som `in_payment`, og alle 27 betalinger som
+        # `in_process` — betaling er registrert, men ikke avstemt mot bankutskrift.
+        # `_basis_domene` teller `in_payment` som UTESTÅENDE (konservativt valg).
+        #
+        # Dilemmaet, og grunnen til at tallet ikke endres her: teller de som betalt,
+        # viser flaten penger som kanskje aldri kom. Teller de som utestående, ser
+        # likviditeten dårligere ut enn den er. Begge feil er ille og peker motsatt
+        # vei — derfor er dette en MENNESKELIG avgjørelse, ikke et kodevalg.
+        #
+        # Til den er tatt: behold det konservative tallet, men SI HVA DET INNEHOLDER.
+        # Da lyver det ikke i noen retning, og brukeren ser hvorfor. (Finans 2.70, 22.07)
+        i_betaling = self.env["account.move"].search_count(
+            self._basis_domene(self.INN_TYPER + self.UT_TYPER)
+            + [("payment_state", "=", "in_payment")]
+        )
+
         return {
             "firma": self.env.company.name,
             "valuta": valuta.symbol or valuta.name,
@@ -110,6 +127,14 @@ class FiqGuiRgsData(models.AbstractModel):
             ],
             # Netto = det bildet daglig leder faktisk spør om: har vi penger igjen?
             "netto": inn - ut,
+            # Ærlighet i datasettet, ikke bare i visningen — samme prinsipp som
+            # `mangler` i hent_cashflow. Er tallet 0, skal flaten ikke vise noe.
+            "i_betaling_antall": i_betaling,
+            "i_betaling_merknad": (
+                "%s bilag er registrert betalt, men ikke avstemt mot bankutskrift. "
+                "De telles fortsatt som utestående." % i_betaling
+            ) if i_betaling else "",
+            "base": self._base_merke(),
         }
 
     @api.model

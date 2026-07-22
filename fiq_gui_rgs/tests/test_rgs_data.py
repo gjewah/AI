@@ -324,6 +324,35 @@ class TestRgsData(TransactionCase):
                            "Uavstemt betaling skal telles som ubekreftet")
         self.assertTrue(m["forbehold"], "Forbeholdet må stå i datasettet, ikke bare i visningen")
 
+    def test_grunnbildet_sier_fra_om_uavstemte_bilag(self):
+        """🔴 «Registrert betalt» er ikke «bekreftet betalt» — og det må SYNES.
+
+        Målt på fiqas Production 22.07 (www.fiq.no): 19 av 20 kundefakturaer står
+        som `in_payment` og alle 27 betalinger som `in_process`. Odoo setter ikke
+        `paid` før betalingen er avstemt mot bankutskrift, og `amount_residual`
+        står urørt. `_basis_domene` teller dem derfor som UTESTÅENDE.
+
+        Det er et bevisst konservativt valg — men et tall som er konservativt uten
+        å si det, leses som eksakt. Denne testen låser at grunnbildet forteller
+        hvor mange bilag som ligger i den tilstanden.
+
+        📌 Samme mekanisme er årsaken til at `test_betalt_faktura_teller_ikke`
+        feiler på en base uten bankavstemming: fakturaen ER betalt, men får
+        `in_payment`, ikke `paid`. Den testen er IKKE feil — den avdekker
+        begrensningen. Om `_basis_domene` skal endres er en menneskelig
+        avgjørelse (Finans 2.70 + Gjermund), ikke et kodevalg her.
+        """
+        faktura = self._faktura(-15, belop=4000.0)
+        self._betal(faktura, 5)
+
+        d = self.Data.hent_grunnbilde()
+        self.assertEqual(faktura.payment_state, "in_payment",
+                         "Forutsetning: uavstemt betaling gir in_payment, ikke paid")
+        self.assertGreater(d["i_betaling_antall"], 0,
+                           "Grunnbildet må si fra om bilag som er registrert betalt")
+        self.assertTrue(d["i_betaling_merknad"],
+                        "Merknaden må stå i datasettet, ikke bare i visningen")
+
     def test_uavstemt_betaling_finnes_i_monsteret(self):
         """🔴 REGRESJON (min egen feil, v1.19.0 → v1.19.2).
 
