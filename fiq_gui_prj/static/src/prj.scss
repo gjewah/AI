@@ -707,3 +707,22 @@
 
     &:hover { border-color: var(--fiq-accent); color: var(--fiq-accent); }
 }
+
+// Sjekkliste-knapp per oppgaverad — «☑ 2» viser antall lister.
+// Vises KUN når oppgaven faktisk har sjekklister; en knapp som alltid er der,
+// men ofte fører til tomt, lærer brukeren å ignorere den.
+.fiq_gui_prj .fiq_prj_sjekk {
+    font-family: var(--fiq-mono);
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border: 1px solid var(--fiq-line);
+    border-radius: 100px;
+    background: var(--fiq-good-soft);
+    color: var(--fiq-good);
+    cursor: pointer;
+    flex: none;
+    white-space: nowrap;
+
+    &:hover { border-color: var(--fiq-good); }
+}

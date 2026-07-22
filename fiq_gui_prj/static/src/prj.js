@@ -24,6 +24,14 @@ import { _t } from "@web/core/l10n/translation";
 //
 // KANON «Odoo-native først»: flaten er et LAG. Alt den viser finnes i Odoos egne
 // visninger; slås flaten av, står dataene uendret. Den oppretter ingenting.
+//
+// ✅ «TIL STEDE NÅ» BYGGES BEVISST IKKE HER — den eies av skallet.
+// Verifisert i `fiq_gui_shell/static/src/shell.xml:6-10`: presence-linja er et FAST
+// element i rammen, med ekte data fra KRs `get_presence`. Flaten vår rendres i sloten
+// UNDER den. Bygde vi vår egen, ville Gjermund fått to presence-bånd som kunne vise
+// ulike tall for samme øyeblikk — verre enn ett.
+// (AI KRs sidemannskontroll 22.07 spurte om fraværet var bevisst. Det er det, og nå
+// står det her i stedet for bare i en kommentar lenger nede.)
 const DATA = "fiq.gui.prj.data";
 
 // Tidsstatus → farge. EGEN akse fra budsjett-status (blå/rød/grønn på timer).
@@ -319,6 +327,29 @@ export class FiqGuiPrj extends Component {
                 menyValg: menyValg || "oppgaver",
                 task_id: taskId || false,
                 fra: "prj",
+            },
+        });
+    }
+
+    // ---------- sjekkliste fra en oppgaverad ----------
+    // 🔴 FANGET AV AI KRs SIDEMANNSKONTROLL 22.07: datalaget (get_sjekklister) ble
+    // bygget i 1.21.0 og meldt som levert — men var ALDRI koblet inn i flaten.
+    // 0 treff på «sjekkliste» i prj.xml og prj.js. Gjermund kunne ikke nå den.
+    //
+    // Nøyaktig samme klasse som resten av uka: bygget riktig, aldri koblet på.
+    // Jeg har kritisert andre for dette og gjorde det selv.
+    //
+    // Flaten (sjekkliste/sjekkliste_flate.js) er en egen klient-handling som leser
+    // `active_model` + `active_id` fra context — verifisert i deres kode, linje 85-88.
+    apneSjekkliste(taskId) {
+        this.action.doAction({
+            type: "ir.actions.client",
+            tag: "fiq_sjekkliste_flate",
+            name: _t("Checklists"),
+            context: {
+                active_model: "project.task",
+                active_id: taskId,
+                default_task_id: taskId,
             },
         });
     }

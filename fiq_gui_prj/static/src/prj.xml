@@ -165,6 +165,11 @@
                                     <button class="fiq_prj_aikr" t-if="o.er_ai"
                                             title="Åpne samme oppgave i AI KR"
                                             t-on-click.stop="() => this.apneAiKr(o.id, 'oppgaver')">AI KR ›</button>
+                                    <button class="fiq_prj_sjekk" t-if="o.antall_sjekklister"
+                                            title="Åpne sjekklistene på denne oppgaven"
+                                            t-on-click.stop="() => this.apneSjekkliste(o.id)">
+                                        ☑ <t t-esc="o.antall_sjekklister"/>
+                                    </button>
                                     <span class="fiq_prj_onavn" t-on-click.stop="() => this.apneOppgave(o.id)"
                                           t-esc="o.navn"/>
                                     <span class="fiq_prj_nr">
@@ -215,6 +220,11 @@
                                     <button class="fiq_prj_aikr" t-if="o.er_ai"
                                             title="Åpne samme oppgave i AI KR"
                                             t-on-click.stop="() => this.apneAiKr(o.id, 'oppgaver')">AI KR ›</button>
+                                    <button class="fiq_prj_sjekk" t-if="o.antall_sjekklister"
+                                            title="Åpne sjekklistene på denne oppgaven"
+                                            t-on-click.stop="() => this.apneSjekkliste(o.id)">
+                                        ☑ <t t-esc="o.antall_sjekklister"/>
+                                    </button>
                                 <div class="fiq_prj_li_midt">
                                     <span class="fiq_prj_onavn" t-esc="o.navn"/>
                                     <span class="fiq_prj_nr">
@@ -260,6 +270,11 @@
                                     <button class="fiq_prj_aikr" t-if="o.er_ai"
                                             title="Åpne samme oppgave i AI KR"
                                             t-on-click.stop="() => this.apneAiKr(o.id, 'oppgaver')">AI KR ›</button>
+                                    <button class="fiq_prj_sjekk" t-if="o.antall_sjekklister"
+                                            title="Åpne sjekklistene på denne oppgaven"
+                                            t-on-click.stop="() => this.apneSjekkliste(o.id)">
+                                        ☑ <t t-esc="o.antall_sjekklister"/>
+                                    </button>
                                     <span class="fiq_prj_pille" t-att-class="tidKlasse(o.tid_status)"
                                           t-esc="tidTekst(o.tid_status)"/>
                                 </div>

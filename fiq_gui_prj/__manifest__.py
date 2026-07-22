@@ -1,11 +1,19 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.22.0",
+    "version": "19.0.1.23.0",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
-    "description": """19.0.1.22.0 - BROEN TIL AI KR GAAR NAA BEGGE VEIER:
+    "description": """19.0.1.23.0 - SJEKKLISTA KOBLET INN I FLATEN (AI KRs sidemannskontroll):
+
+* AI KR maalte 22.07: 0 treff paa sjekkliste i prj.xml OG prj.js. Datalaget (get_sjekklister, 1.21.0) var bygget og MELDT som levert - men aldri koblet paa. Gjermund kunne ikke naa den.
+* Noeyaktig samme klasse som resten av uka: bygget riktig, aldri koblet paa. Jeg har kritisert andre for dette og gjorde det selv.
+* NAA: sjekkliste-knapp per oppgaverad i alle tre visninger, vises kun naar oppgaven faktisk HAR lister. Aapner sjekkliste-flaten med active_model/active_id - kontrakten verifisert i deres kode, linje 85-88.
+* TIL STEDE NAA: bevisst IKKE bygget her. Verifisert i fiq_gui_shell/static/src/shell.xml:6-10 at skallet eier presence-linja med ekte data fra KRs get_presence. To baand ville kunnet vise ulike tall for samme oeyeblikk.
+* MOBILFLATE for arbeider staar fortsatt igjen - stoerste gjenstaaende bit i fasiten.
+
+19.0.1.22.0 - BROEN TIL AI KR GAAR NAA BEGGE VEIER:
 
 * Avtalt med AI KR 22.07. Flaten LESER naa context: aktiv_visning (gantt/liste/kanban), opplosning (uke/mnd), task_id, fra. AI KRs fem knapper lander riktig sted.
 * Verdiene VALIDERES mot lovlige lister. En ukjent visning ville gitt tom flate uten feilmelding - brukeren saa en hvit rute uten aa vite hvorfor. Ugyldig faller til default.
