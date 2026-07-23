@@ -255,7 +255,7 @@ export class FiqMeldingssenter extends Component {
         const term = (verdi || "").trim();
         if (term.length < (felt === "nr" ? 1 : 2)) { p[slag].treff = []; return; }
         p[slag].treff = await this.orm.call(DATA, "sok_mal", [
-            term, slag, this.state.firm || false,
+            term, slag, this.state.current_firm || false,
         ]);
     }
 
@@ -633,7 +633,7 @@ export class FiqMeldingssenter extends Component {
     async aapneKalender(aar, mnd) {
         this.state.view = "kalender";
         this.state.kal = await this.orm.call(DATA, "get_kalender", [
-            aar || false, mnd || false, this.state.firm || false,
+            aar || false, mnd || false, this.state.current_firm || false,
         ]);
     }
 

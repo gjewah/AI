@@ -108,7 +108,7 @@
                             <span>Møter</span>
                         </div>
                         <div class="nav" t-if="!seksjonFoldet('moter')">
-                            <button class="cd_blaa" t-on-click="aapneKalender"><span class="dot"/>Møter &amp; Kalender</button>
+                            <button class="cd_blaa" t-on-click="() => this.aapneKalender()"><span class="dot"/>Møter &amp; Kalender</button>
                             <button class="cd_tealx" t-on-click="() => this.aapneBoks('motereferater','Møtereferater')"><span class="dot"/>Møtereferater</button>
                         </div>
 

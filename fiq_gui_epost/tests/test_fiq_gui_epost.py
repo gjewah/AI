@@ -88,6 +88,20 @@ class TestEpost(TransactionCase):
                       "fristen må ligge på datoen den har i BRUKERENS tidssone — "
                       "faller den ut, er hentevinduet eller konverteringen feil")
 
+    def test_kalender_taaler_rart_argument_uten_aa_kaste(self):
+        """🔴 KRASJET I NETTLESEREN 23.07: `t-on-click="aapneKalender"` sendte KLIKK-
+        EVENTET som `aar`, og et event blir en DICT over RPC. `int(dict)` kastet
+        TypeError — kallet returnerte HTTP 200 (Odoo pakker exceptionen i RPC-svaret),
+        så INGEN ren -i-test fanget den. Flaten dør først i nettleseren.
+
+        Denne testen kaller get_kalender som en klient KAN gjøre det — med et objekt —
+        og krever at metoden RETURNERER, ikke bare at den finnes."""
+        r = self.Data.get_kalender(aar={"onmousedown": True}, mnd=False, firm=False)
+        self.assertIn("dager", r, "et rart argument skal gi standardmåned, ikke exception")
+        # Ugyldig måned skal heller ikke sprenge date():
+        r2 = self.Data.get_kalender(aar=2026, mnd=99, firm=False)
+        self.assertIn("dager", r2)
+
     def test_kalender_grunnform(self):
         """Rutenettet trenger startukedag og antall dager. Mandag = 0
         (norsk uke); JS' getDay() gir søndag = 0 og må ikke brukes her."""
