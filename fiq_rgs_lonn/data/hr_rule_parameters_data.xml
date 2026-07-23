@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ARBEIDSGIVERAVGIFT — SATSER MED GYLDIGHETSDATO
+
+    KILDER (verifisert 23.07.2026, to uavhengige offisielle kilder som stemmer overens):
+      1. Stortingsvedtak FOR-2025-12-18-2748 § 3 foerste ledd (JURIDISK KILDE)
+         https://lovdata.no/dokument/STV/forskrift/2025-12-18-2748/§5
+      2. Skatteetaten, satser for arbeidsgiveravgift
+         https://www.skatteetaten.no/satser/arbeidsgiveravgift/
+
+    🔑 HELE SONETABELLEN LIGGER SOM ÉN PARAMETER, ikke én parameter per sone.
+    hr.rule.parameter.value.parameter_value er en fri datastruktur ("Python data
+    structure"), ikke ett tall. Ved nytt statsbudsjett legges det til ÉN ny
+    <record> med ny date_from — den gamle blir staaende som historikk.
+    Det er derfor vi bygget paa Enterprise hr_payroll: satshistorikken finnes alt.
+
+    ⚠️ SATSENE ENDRES HVERT STATSBUDSJETT. Legg ALDRI inn en sats fra hukommelsen —
+    hent den fra Stortingsvedtaket for det aktuelle aaret. Feil sats er ikke en
+    programfeil man retter neste sprint; det er avviksmelding fra Skatteetaten.
+-->
+<odoo>
+
+    <!-- ================================================================
+         01 · SONESATSER
+         ================================================================ -->
+    <record id="rule_parameter_no_aga_sonesatser" model="hr.rule.parameter">
+        <field name="name">Norge: arbeidsgiveravgift — sonesatser</field>
+        <field name="code">no_aga_sonesatser</field>
+        <field name="country_id" ref="base.no"/>
+        <field name="description" type="html">
+            <p>Sonesatser for arbeidsgiveravgift, som prosent. Slaas opp paa sonekoden
+            til kommunen virksomheten er registrert i.</p>
+            <p><b>Sone Ia er IKKE en ren sats.</b> Verdien 10,6 gjelder kun saa lenge
+            differansen mot 14,1 % ligger innenfor fribeloepet
+            (<code>no_aga_fribelop</code>). Naar fribeloepet er brukt opp, gjelder
+            14,1 %. Akkumuleringen skjer per foretak per aar og maa gjoeres i
+            beregningen — den kan ikke uttrykkes som en sats.</p>
+        </field>
+    </record>
+
+    <!-- 2026: Stortingsvedtak FOR-2025-12-18-2748 § 3 foerste ledd.
+         Ingen endring i soneinndelingen fra 2025 til 2026. -->
+    <record id="rule_parameter_no_aga_sonesatser_2026" model="hr.rule.parameter.value">
+        <field name="rule_parameter_id" ref="rule_parameter_no_aga_sonesatser"/>
+        <field name="date_from" eval="datetime(2026, 1, 1).date()"/>
+        <field name="parameter_value">{
+    '1':   14.1,
+    '1a':  10.6,
+    '2':   10.6,
+    '3':    6.4,
+    '4':    5.1,
+    '4a':   7.9,
+    '5':    0.0,
+}</field>
+    </record>
+
+    <!-- ================================================================
+         02 · FRIBELOEP (de minimis-terskel) — sone Ia og IVa
+         ================================================================ -->
+    <record id="rule_parameter_no_aga_fribelop" model="hr.rule.parameter">
+        <field name="name">Norge: arbeidsgiveravgift — fribeløp</field>
+        <field name="code">no_aga_fribelop</field>
+        <field name="country_id" ref="base.no"/>
+        <field name="description" type="html">
+            <p>Fribeloep per foretak per aar (de minimis-stoette), i kroner.
+            Stortingsvedtak FOR-2025-12-18-2748 § 4 fjerde ledd.</p>
+            <p>Naar differansen mellom avgift beregnet med full sats (14,1 %) og
+            redusert sats overstiger fribeloepet, skal full sats brukes for det
+            overskytende.</p>
+        </field>
+    </record>
+
+    <record id="rule_parameter_no_aga_fribelop_2026" model="hr.rule.parameter.value">
+        <field name="rule_parameter_id" ref="rule_parameter_no_aga_fribelop"/>
+        <field name="date_from" eval="datetime(2026, 1, 1).date()"/>
+        <field name="parameter_value">850000</field>
+    </record>
+
+    <!-- ================================================================
+         03 · FULL SATS — referansesatsen fribeloepet maales mot
+         ================================================================ -->
+    <record id="rule_parameter_no_aga_full_sats" model="hr.rule.parameter">
+        <field name="name">Norge: arbeidsgiveravgift — full sats</field>
+        <field name="code">no_aga_full_sats</field>
+        <field name="country_id" ref="base.no"/>
+        <field name="description" type="html">
+            <p>Full sats (sone I). Egen parameter fordi den brukes som
+            <i>referanse</i> i fribeloepsberegningen for sone Ia og IVa — ikke bare
+            som satsen for sone I. Endres den, endres begge bruksomraadene samtidig.</p>
+        </field>
+    </record>
+
+    <record id="rule_parameter_no_aga_full_sats_2026" model="hr.rule.parameter.value">
+        <field name="rule_parameter_id" ref="rule_parameter_no_aga_full_sats"/>
+        <field name="date_from" eval="datetime(2026, 1, 1).date()"/>
+        <field name="parameter_value">14.1</field>
+    </record>
+
+</odoo>
