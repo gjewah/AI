@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ CRM",
-    "version": "19.0.1.2.2",
+    "version": "19.0.1.2.3",
     "summary": "FIQ GUI-skjelett for flaten CRM – OWL klient-handling "
                "(placeholder-dashbord), menuitem og rettighetsgruppe. Klar for ekte funksjonalitet.",
     "description": """
@@ -18,7 +18,7 @@ Bygd rent og konsistent med Hovedmeny-stilen, klart for å fylles med ekte funks
     "author": "FIQ AS",
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
-    "license": "LGPL-3",
+    "license": "OPL-1",
     "depends": ["fiq_gui_control", "web", "crm"],
     "data": [
         "security/fiq_gui_crm_groups.xml",

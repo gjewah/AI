@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Kommunikasjon",
-    "version": "19.0.1.10.3",
+    "version": "19.0.1.10.4",
     "summary": "FIQ Kommunikasjon – paraply-flaten for ALL kommunikasjon. "
                "E-post, WhatsApp, Teams og chat er KANALER inne i denne flaten.",
     "description": """
@@ -27,7 +27,7 @@ Kommunikasjon = paraply. E-post = ÉN kanal inne i den, vises ikke i hovedmenyen
     "author": "FIQ as",
     "website": "https://www.fiq.no",
     "category": "Productivity/FIQ",
-    "license": "LGPL-3",
+    "license": "OPL-1",
     # `fiq_gui_shell` er nødvendig fordi comm.js registrerer seg i skallets
     # `fiq_gui_flates`-register. Uten avhengigheten er lasterekkefølgen tilfeldig, og
     # registreringen kan kjøre før registeret finnes — flaten blir da usynlig i

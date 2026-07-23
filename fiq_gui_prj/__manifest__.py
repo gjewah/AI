@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.32.1",
+    "version": "19.0.1.32.2",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
@@ -156,7 +156,7 @@ Fra før:
     "author": "FIQ AS",
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
-    "license": "LGPL-3",
+    "license": "OPL-1",
     "depends": ["fiq_gui_control", "web", "project"],
     "data": [
         "security/fiq_gui_prj_groups.xml",

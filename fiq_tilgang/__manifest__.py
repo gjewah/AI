@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Tilgang",
-    "version": "19.0.1.3.2",
+    "version": "19.0.1.3.3",
     "summary": "Arvede rettigheter (Novell-stil) på taksonomi-treet: Lese/Skrive/Administrere "
                "som arves nedover dokument-etikett-hierarkiet, med eksplisitte brudd. "
                "Global admin på topp og per selskap. Speiler Office/SharePoint-tilgangen.",
@@ -23,7 +23,7 @@ Utkast 02 – kjerne. Dra-og-slipp-tre (OWL) og M365/Graph-synk kommer i neste i
     "author": "FIQ AS",
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
-    "license": "LGPL-3",
+    "license": "OPL-1",
     # 🔴 `documents_tag` lagt til 23.07.2026: `effektiv_nivaa()` gaar oppover
     # forelder-kjeden via `parent_id` paa `documents.tag`. Det feltet finnes IKKE i
     # Odoo 19 — det kommer fra denne modulen. Uten avhengigheten krasjet hele

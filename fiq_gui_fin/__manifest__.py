@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Finans",
-    "version": "19.0.1.7.1",
+    "version": "19.0.1.7.2",
     "summary": "AI GUI Finans (2.70) — visningen av AI Finans-Rådgiveren: analyse, "
                "framskrivning, simulator (fortid/nåtid/fremtid), KPI og POG.",
     "description": """
@@ -25,7 +25,7 @@ Harde regler innebygd i flaten:
     "author": "FIQ AS",
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
-    "license": "LGPL-3",
+    "license": "OPL-1",
     "depends": ["fiq_gui_control", "fiq_gui_shell", "web", "account"],
     "data": [
         "security/fiq_gui_fin_groups.xml",

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Relations",
-    "version": "19.0.1.6.1",
+    "version": "19.0.1.6.2",
     "summary": "Typed, directed relations between contacts, companies, properties and "
                "projects. One person, many affiliations - without duplicate contacts.",
     "description": """
@@ -32,7 +32,7 @@ rewritten.
     "author": "FIQ AS",
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
-    "license": "LGPL-3",
+    "license": "OPL-1",
     # fiq_gui_shell is NOT optional: the surface registers itself in the shell's
     # fiq_gui_flates registry, so it depends on the shell. Without the declaration the
     # load order is undefined - that was the root cause of the blank screen on 18.07

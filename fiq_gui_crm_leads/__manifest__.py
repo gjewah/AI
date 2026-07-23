@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Salgsmuligheter",
-    "version": "19.0.1.4.4",
+    "version": "19.0.1.4.5",
     "summary": "AI GUI Salg (6 SALG) — visningen av AI Salg-Rådgiveren: pipeline per "
                "stadium med antall og forventet omsetning, lest fra crm.lead.",
     "description": """
@@ -31,7 +31,7 @@ Harde regler innebygd i flaten
     "author": "FIQ AS",
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
-    "license": "LGPL-3",
+    "license": "OPL-1",
     # fiq_gui_shell er IKKE valgfri: uten den er lasterekkefølgen for
     # flate-registeret udefinert. Det var rotårsaken til blank skjerm 18.07.
     "depends": ["fiq_gui_control", "fiq_gui_shell", "web", "crm"],

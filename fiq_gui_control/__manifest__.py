@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Control room",
-    "version": "19.0.7.7.1",
+    "version": "19.0.7.7.2",
     "summary": "Control room – the unified OWL shell (dashboard/landing) that hosts every "
                "main menu as a navigation view: company picker, Simple/Full mode, per-company "
                "accent/logo, KPIs from real Odoo data, communication and dynamic widgets.",
@@ -24,7 +24,7 @@ Key features
     "author": "FIQ AS",
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
-    "license": "LGPL-3",
+    "license": "OPL-1",
     "depends": ["web", "project"],
     "data": [
         "security/fiq_gui_control_groups.xml",

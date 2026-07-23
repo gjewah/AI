@@ -1,5 +1,7 @@
 # Copyright 2025 FIQ as
-# License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
+# License OPL-1 (Odoo Proprietary License v1.0).
+# Eid av FIQ AS. Kode utviklet av Loym AS eies av FIQ og kan brukes fritt av FIQ
+# (Gjermund E. Waehre 23.07.2026).
 
 {
     "name": "FIQ modules",
@@ -17,7 +19,7 @@
         "product_fiq",
         "project_fiq",
     ],
-    "license": "AGPL-3",
-    "version": "19.0.5.0.1",
+    "license": "OPL-1",
+    "version": "19.0.5.0.2",
     "website": "https://www.loym.com",
 }
