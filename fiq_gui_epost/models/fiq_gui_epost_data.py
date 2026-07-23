@@ -901,7 +901,131 @@ class FiqMeldingssenterData(models.AbstractModel):
             "relasjoner": rels,
             "siste": self._siste_for_partner(partner),
             "ukesplan": self._ukesplan_for_partner(partner),
+            # Kanaler personen faktisk kan nås på + antall kontakt-poster som er samme
+            # menneske. Selve kommunikasjonen hentes ved behov (get_person_kommunikasjon)
+            # — den kan være hundrevis av meldinger og skal ikke lastes med kortet.
+            "kanaler": self.get_person_kanaler(partner.id),
+            "antall_identiteter": len(self._samme_person(partner)),
         }
+
+    # ---- Person-oversikt: ÉN person, ALL kommunikasjon (Gjermund 14.07 + 18.07) -------
+    #
+    # «ikke glem at jeg skal kunne trykke på et navn og få oversikt å kunne kommunisere
+    #  på alle flater og se all kommunikasjon med vedkommende»
+    #
+    # 🔴 KJERNEPROBLEMET: Gjermund finnes som 12 kontakter i Production. Slår vi opp på
+    # ÉN partner-id, får han 12 halve historikker — én per kontakt — i stedet for hele
+    # bildet. Det ville sett riktig ut og vært galt: nøyaktig feilklassen som har kostet
+    # oss mest (rader som mangler stille).
+    #
+    # Vi samler identiteten på E-POSTADRESSE, fordi det er den koblingen som FAKTISK
+    # finnes i dataene i dag. Relasjonsmodulen (`fiq.gui.relation`) har ingen
+    # «samme person»-type ennå — når den kommer, utvides `_samme_person()` til å bruke
+    # den, uten at resten av koden endres.
+
+    def _samme_person(self, partner):
+        """Alle partner-poster som ER samme menneske. Returnerer et recordset.
+
+        Grunnlaget er e-postadressen: to kontakter med samme adresse er samme person.
+        Uten adresse kan vi ikke vite det — da returneres kun kontakten selv, aldri
+        en gjetning på navn (to «Kari Hansen» kan være to mennesker).
+        """
+        if not partner:
+            return self.env["res.partner"].browse()
+        epost = (partner.email or "").strip().lower()
+        if not epost:
+            return partner
+        andre = self.env["res.partner"].search([("email", "=ilike", epost)])
+        return (partner | andre)
+
+    @api.model
+    def get_person_kommunikasjon(self, partner_id, limit=40):
+        """ALL kommunikasjon med ett menneske — på tvers av kontakt-dubletter og kanaler.
+
+        Returnerer {personer: [...], meldinger: [...], antall: n}.
+        `personer` viser HVILKE kontakter som er slått sammen, så brukeren ser at de 12
+        er samme person — og kan si fra hvis systemet tar feil.
+        """
+        partner = self.env["res.partner"].browse(int(partner_id)).exists()
+        if not partner:
+            return {"personer": [], "meldinger": [], "antall": 0}
+
+        alle = self._samme_person(partner)
+        adresser = [e.strip().lower() for e in alle.mapped("email") if e]
+
+        # Meldinger FRA personen (forfatter eller avsenderadresse) ELLER TIL personen
+        # (mottaker). Begge veier — «all kommunikasjon» betyr ikke bare innkommende.
+        dom = ["|", "|",
+               ("author_id", "in", alle.ids),
+               ("partner_ids", "in", alle.ids),
+               ("email_from", "=ilike", adresser[0] if adresser else "___ingen___")]
+        for a in adresser[1:]:
+            dom = ["|"] + dom + [("email_from", "=ilike", a)]
+        dom = dom + self._firma_domene(False)
+
+        ut = []
+        for m in self.env["mail.message"].search(dom, order="date desc", limit=int(limit)):
+            lokal = fields.Datetime.context_timestamp(self, m.date) if m.date else False
+            # Retning sett fra OSS: sendte personen den, eller fikk personen den?
+            fra_personen = (m.author_id.id in alle.ids) or \
+                           ((m.email_from or "").strip().lower() in adresser)
+            ut.append({
+                "id": m.id,
+                "emne": (m.subject or m.preview or "").strip()[:120] or "(uten emne)",
+                "preview": (m.preview or "")[:120],
+                "dato": lokal.strftime("%d.%m.%Y %H:%M") if lokal else "",
+                "retning": "fra" if fra_personen else "til",
+                "kanal": "epost" if m.message_type == "email" else "notat",
+                "element": m.model or "",
+                "res_id": m.res_id or 0,
+            })
+
+        return {
+            "personer": [{"id": p.id, "navn": p.display_name or "",
+                          "epost": p.email or "",
+                          "firma": p.parent_id.display_name if p.parent_id else ""}
+                         for p in alle],
+            "meldinger": ut,
+            "antall": len(ut),
+        }
+
+    @api.model
+    def get_person_kanaler(self, partner_id):
+        """Hvilke kanaler personen FAKTISK kan nås på — «kommunisere på alle flater».
+
+        🛑 Vi viser kun kanaler som er reelle: en telefonknapp uten telefonnummer er en
+        blindvei, og det var nettopp problemet med paringsfeltene (knapper som så ut som
+        funksjoner, men ikke gjorde noe). Mangler dataene, vises ikke kanalen.
+        """
+        partner = self.env["res.partner"].browse(int(partner_id)).exists()
+        if not partner:
+            return []
+        alle = self._samme_person(partner)
+        ut = []
+
+        epost = next((e for e in alle.mapped("email") if e), "")
+        if epost:
+            ut.append({"kode": "epost", "navn": "E-post", "verdi": epost, "ikon": "✉"})
+
+        mobil = next((m for m in alle.mapped("mobile") if m), "")
+        if mobil:
+            # `tel:`-lenke — ringer fra mobil, åpner programvaretelefon på PC.
+            ut.append({"kode": "mobil", "navn": "Mobil", "verdi": mobil, "ikon": "📱"})
+        fasttlf = next((t for t in alle.mapped("phone") if t), "")
+        if fasttlf and fasttlf != mobil:
+            ut.append({"kode": "telefon", "navn": "Telefon", "verdi": fasttlf, "ikon": "☎"})
+
+        # Intern chat: kun for personer som HAR en Odoo-bruker. Eksterne kontakter kan
+        # ikke chattes med — å vise knappen ville lovet noe systemet ikke kan holde.
+        brukere = alle.mapped("user_ids").filtered(lambda u: not u.share)
+        if brukere:
+            ut.append({"kode": "chat", "navn": "Chat", "verdi": brukere[0].name,
+                       "ikon": "💬", "user_id": brukere[0].id})
+
+        # Teams/WhatsApp: kanal-modulene finnes ikke ennå. Vi later ikke som noe annet —
+        # de dukker opp her automatisk når `fiq_gui_teams`/`_whatsapp` melder seg inn i
+        # kanal-registeret, uten at denne koden endres.
+        return ut
 
     def _siste_for_partner(self, partner):
         """«Siste hos oss»: nyeste salg/oppgaver/helpdesk knyttet til kontakten. Defensivt."""

@@ -236,6 +236,53 @@ class TestEpost(TransactionCase):
         self.assertFalse(self.Data.get_brodtekst(notat.id)["outlook"],
                          "interne notater finnes ikke i Outlook — ingen lenke")
 
+    # ---- Person-oversikt: ÉN person, ALL kommunikasjon ----------------------------
+
+    def test_samme_person_samler_kontakt_dubletter(self):
+        """🔴 KJERNEN i Gjermunds krav (etterlyst 14.07 OG 18.07): han finnes som 12
+        kontakter i Production. Slår vi opp på ÉN partner-id, får han 12 halve
+        historikker i stedet for hele bildet — og det ville sett riktig ut.
+
+        Vi samler på e-postadresse, fordi det er koblingen som FAKTISK finnes i dataene."""
+        a = self.env["res.partner"].create({"name": "TEST Person A", "email": "same@fiq.no"})
+        b = self.env["res.partner"].create({"name": "TEST Person B", "email": "SAME@fiq.no"})
+        samlet = self.Data._samme_person(a)
+        self.assertIn(b.id, samlet.ids,
+                      "to kontakter med samme adresse ER samme menneske — også med ulik store bokstaver")
+
+    def test_uten_epost_gjettes_det_ALDRI_paa_navn(self):
+        """🛑 To «Kari Hansen» kan være to mennesker. Mangler adressen, returneres kun
+        kontakten selv — vi gjetter aldri på navn."""
+        a = self.env["res.partner"].create({"name": "Kari Hansen"})
+        self.env["res.partner"].create({"name": "Kari Hansen"})
+        self.assertEqual(self.Data._samme_person(a).ids, [a.id])
+
+    def test_person_kommunikasjon_gaar_BEGGE_veier(self):
+        """«All kommunikasjon» er ikke bare innkommende — også det VI har sendt."""
+        p = self.env["res.partner"].create({"name": "TEST Motpart", "email": "motpart@x.no"})
+        self.env["mail.message"].create({
+            "subject": "TEST fra personen", "message_type": "email",
+            "author_id": p.id, "body": "<p>hei</p>"})
+        self.env["mail.message"].create({
+            "subject": "TEST til personen", "message_type": "email",
+            "partner_ids": [(6, 0, [p.id])], "body": "<p>svar</p>"})
+        r = self.Data.get_person_kommunikasjon(p.id)
+        retninger = {m["retning"] for m in r["meldinger"]}
+        self.assertIn("fra", retninger, "det personen sendte oss må være med")
+        self.assertIn("til", retninger, "det vi sendte personen må være med")
+
+    def test_person_kanaler_viser_kun_det_som_finnes(self):
+        """🛑 En telefonknapp uten telefonnummer er en blindvei — nøyaktig problemet
+        paringsfeltene hadde (knapper som så ut som funksjoner, men gjorde ingenting)."""
+        uten = self.env["res.partner"].create({"name": "TEST uten data"})
+        self.assertEqual(self.Data.get_person_kanaler(uten.id), [],
+                         "ingen kontaktdata → ingen kanalknapper")
+        med = self.env["res.partner"].create({
+            "name": "TEST med data", "email": "a@b.no", "mobile": "+47 900 00 000"})
+        koder = [k["kode"] for k in self.Data.get_person_kanaler(med.id)]
+        self.assertIn("epost", koder)
+        self.assertIn("mobil", koder)
+
     def test_brodtekst_taaler_melding_uten_html(self):
         """Ren tekst uten HTML-kropp skal pakkes så linjeskift overlever."""
         m = self.env["mail.message"].create({

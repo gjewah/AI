@@ -524,16 +524,55 @@
                             </div>
                             <button class="pmx" t-on-click="lukkPerson">✕</button>
                         </div>
+                        <!-- KOMMUNISER PÅ ALLE FLATER (Gjermund 14.07 + 18.07).
+                             Kun kanaler personen FAKTISK kan nås på — en telefonknapp
+                             uten nummer er en blindvei, som paringsfeltene var. -->
                         <div class="pmact">
-                            <button class="tbtn pri" t-on-click="aapneKontakt">✉ E-post / kontakt</button>
-                            <button class="tbtn" t-on-click="personChat">💬 Chat</button>
+                            <button t-foreach="state.person.kanaler || []" t-as="k" t-key="k.kode"
+                                    t-att-class="'tbtn' + (k.kode==='epost' ? ' pri' : '')"
+                                    t-on-click="() => this.personKanal(k)"
+                                    t-att-title="k.verdi">
+                                <t t-esc="k.ikon"/> <t t-esc="k.navn"/>
+                            </button>
+                            <button class="tbtn" t-on-click="aapneKontakt">Åpne kontakt</button>
                         </div>
+
+                        <!-- Slås flere kontakt-poster sammen, MÅ brukeren se det —
+                             ellers ser tallene feil ut uten at han vet hvorfor.
+                             Gjermund finnes som 12 kontakter i Production. -->
+                        <div class="pmident" t-if="state.person.antall_identiteter > 1">
+                            🔗 <t t-esc="state.person.antall_identiteter"/> kontakter er slått sammen
+                            til én person (samme e-postadresse).
+                        </div>
+
                         <div class="pmtabs">
+                            <button t-att-class="'pmtab' + (state.ctxTab==='komm'?' on':'')" t-on-click="() => this.visPersonKomm()">All kommunikasjon</button>
                             <button t-att-class="'pmtab' + (state.ctxTab==='rel'?' on':'')" t-on-click="() => this.setCtxTab('rel')">Tilknyttede personer</button>
                             <button t-att-class="'pmtab' + (state.ctxTab==='hist'?' on':'')" t-on-click="() => this.setCtxTab('hist')">Siste hos oss</button>
                             <button t-att-class="'pmtab' + (state.ctxTab==='week'?' on':'')" t-on-click="() => this.setCtxTab('week')">Ukesplan</button>
                         </div>
                         <div class="pmbody">
+                            <!-- ALL KOMMUNIKASJON — på tvers av kontakt-dubletter og kanaler.
+                                 Begge retninger: det personen har sendt OSS, og det vi har
+                                 sendt hen. «All kommunikasjon» er ikke bare innkommende. -->
+                            <t t-if="state.ctxTab==='komm'">
+                                <div t-if="state.pkomm.laster" class="pmempty">Henter kommunikasjonen …</div>
+                                <t t-else="">
+                                    <div t-if="!state.pkomm.meldinger.length" class="pmempty">
+                                        Ingen registrert kommunikasjon med denne personen ennå.
+                                    </div>
+                                    <button class="kv kvklikk" t-foreach="state.pkomm.meldinger" t-as="k" t-key="k.id"
+                                            t-on-click="() => this.aapneFraPerson(k)">
+                                        <span t-att-class="'kk ' + (k.retning==='fra' ? 'inn' : 'ut')"
+                                              t-esc="k.retning==='fra' ? 'Fra' : 'Til'"/>
+                                        <span class="kn">
+                                            <b t-esc="k.emne"/>
+                                            <span class="kpv" t-esc="k.preview"/>
+                                        </span>
+                                        <span class="kd" t-esc="k.dato"/>
+                                    </button>
+                                </t>
+                            </t>
                             <t t-if="state.ctxTab==='rel'">
                                 <div t-if="!state.person.relasjoner.length" class="pmempty">Ingen registrerte relasjoner ennå.</div>
                                 <div class="rel">

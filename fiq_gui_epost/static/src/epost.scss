@@ -401,6 +401,20 @@
   .pmtab.on{color:var(--accent);border-bottom-color:var(--accent)}
   .pmbody{padding:14px 18px 18px}
   .pmempty{color:var(--muted);font-size:12.5px;padding:10px 0}
+  // Person-oversikt: sammenslåtte identiteter + all kommunikasjon (Gjermund 14.07+18.07).
+  // Sammenslåingen SKAL være synlig — ellers ser tallene feil ut uten at brukeren
+  // forstår hvorfor (Gjermund finnes som 12 kontakter i Production).
+  .pmident{display:flex;align-items:center;gap:7px;padding:9px 18px;font-size:11.5px;
+           color:var(--ink-soft);background:var(--accent-soft);
+           border-bottom:1px solid var(--line-soft)}
+  .kvklikk{width:100%;text-align:left;border:none;background:none;color:var(--ink);
+           border-radius:8px;padding:7px 8px;align-items:flex-start}
+  .kvklikk:hover{background:var(--surface-2)}
+  .kvklikk .kn{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .kvklikk .kpv{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  // Retning sett fra oss: hva personen har sendt OSS vs. hva vi har sendt HEN.
+  .kv .kk.inn{background:var(--blaa)}
+  .kv .kk.ut{background:var(--gronn)}
   .rel{display:flex;flex-wrap:wrap;gap:6px}
   .relc{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface-2);border-radius:100px;padding:5px 11px;font-size:12px;font-weight:600}
   .relc .rk{font-family:var(--mono);font-size:8.5px;font-weight:800;text-transform:uppercase;color:#fff;background:var(--lilla);border-radius:5px;padding:2px 6px}

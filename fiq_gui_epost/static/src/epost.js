@@ -36,6 +36,7 @@ export class FiqMeldingssenter extends Component {
             trad: { status: "", notater: [] }, nyNotat: "",  // arbeidsstatus + interne notater
             tverrValg: [],                    // gruppene mennesket kan overstyre til
             person: false, personOpen: false,                // person-visning (klikk «Til stede»)
+            pkomm: { meldinger: [], laster: false },          // ALL kommunikasjon med én person
             vedlegg: [], vedleggMsg: "",                      // vedlegg → element (Loym)
             redigerer: false, nyttNavn: "", fv: false,        // dokumentnavn · PDF · forhåndsvisning
             hoder: false, visHoder: false,                    // nøyaktige Fra/Til/Kopi-felter
@@ -531,6 +532,52 @@ export class FiqMeldingssenter extends Component {
     }
     lukkPerson() { this.state.personOpen = false; }
     personChat() { this.action.doAction("mail.action_discuss"); }
+
+    // ---- ALL KOMMUNIKASJON MED ÉN PERSON (Gjermund 14.07 + 18.07) -------------------
+    // «trykke på et navn og få oversikt å kunne kommunisere på alle flater og se all
+    //  kommunikasjon med vedkommende»
+
+    /** Hentes ved KLIKK på fanen, ikke sammen med person-kortet: kan være hundrevis av
+     *  meldinger, og de fleste åpner kortet for å se ukesplan eller ringe. */
+    async visPersonKomm() {
+        this.state.ctxTab = "komm";
+        if (!this.state.person || !this.state.person.id) { return; }
+        this.state.pkomm = { meldinger: [], laster: true };
+        const r = await this.orm.call(DATA, "get_person_kommunikasjon", [this.state.person.id]);
+        this.state.pkomm = { ...r, laster: false };
+    }
+
+    /** Klikk en melding i personens historikk → åpne den der den hører hjemme.
+     *  Er den paret med et prosjekt/oppgave, går vi DIT; ellers åpner vi meldingen. */
+    aapneFraPerson(k) {
+        this.lukkPerson();
+        if (k.element && k.res_id) {
+            this.action.doAction({
+                type: "ir.actions.act_window", res_model: k.element,
+                res_id: k.res_id, views: [[false, "form"]], target: "current",
+            });
+        }
+    }
+
+    /** Kommuniser på valgt kanal. Kun kanaler personen faktisk kan nås på vises
+     *  (se `get_person_kanaler`), så ingen av disse er blindveier. */
+    personKanal(k) {
+        if (!k) { return; }
+        if (k.kode === "epost") {
+            // Native compose med mottakeren utfylt — vi sender ALDRI selv.
+            this.action.doAction({
+                type: "ir.actions.act_window", res_model: "mail.compose.message",
+                views: [[false, "form"]], target: "new",
+                context: { default_partner_ids: [this.state.person.id],
+                           default_composition_mode: "comment" },
+            });
+        } else if (k.kode === "chat") {
+            this.action.doAction("mail.action_discuss");
+        } else if (k.kode === "mobil" || k.kode === "telefon") {
+            // `tel:` ringer fra mobil og åpner programvaretelefon på PC.
+            window.location.href = "tel:" + (k.verdi || "").replace(/\s/g, "");
+        }
+    }
     aapneKontakt() {
         if (!this.state.person) return;
         this.action.doAction({
