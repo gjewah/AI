@@ -277,11 +277,14 @@ class TestEpost(TransactionCase):
         uten = self.env["res.partner"].create({"name": "TEST uten data"})
         self.assertEqual(self.Data.get_person_kanaler(uten.id), [],
                          "ingen kontaktdata → ingen kanalknapper")
+        # `mobile` finnes IKKE på res.partner i Odoo 19 (verifisert i
+        # information_schema) — kun `phone`. Testen må bruke feltene som faktisk
+        # finnes, ellers feiler den på MILJØET og ikke på koden.
         med = self.env["res.partner"].create({
-            "name": "TEST med data", "email": "a@b.no", "mobile": "+47 900 00 000"})
+            "name": "TEST med data", "email": "a@b.no", "phone": "+47 900 00 000"})
         koder = [k["kode"] for k in self.Data.get_person_kanaler(med.id)]
         self.assertIn("epost", koder)
-        self.assertIn("mobil", koder)
+        self.assertIn("telefon", koder)
 
     def test_brodtekst_taaler_melding_uten_html(self):
         """Ren tekst uten HTML-kropp skal pakkes så linjeskift overlever."""
