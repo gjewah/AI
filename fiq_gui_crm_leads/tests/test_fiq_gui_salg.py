@@ -83,6 +83,13 @@ class TestFiqGuiSalg(TransactionCase):
         i_dag = fields.Date.context_today(cls.Data)
         # Én sak over frist i et aktivt stadium = én sak som skal HASTE.
         cls.forfalt_sak = cls.Lead.create({
+            # `name` MÅ med i create-kallet: crm_lead.name er NOT NULL i
+            # basen, og crm_name beregner navnet FØRST ETTER super().create()
+            # (crm_name/models/crm_lead.py:18-20) — altså etter at INSERT
+            # allerede har kjørt. Uten `name` her feiler INSERT før crm_name
+            # får sjansen. Verdien blir uansett overskrevet av det beregnede
+            # navnet rett etterpå; den er kun en gyldig plassholder for INSERT.
+            "name": "Testsak",
             "partner_id": cls.testkunde.id,
             "type": "opportunity",
             "stage_id": cls.aktivt_stadium.id,
@@ -91,6 +98,13 @@ class TestFiqGuiSalg(TransactionCase):
         })
         # Én vunnet sak: skal ALDRI telle som åpen pipeline.
         cls.vunnet_sak = cls.Lead.create({
+            # `name` MÅ med i create-kallet: crm_lead.name er NOT NULL i
+            # basen, og crm_name beregner navnet FØRST ETTER super().create()
+            # (crm_name/models/crm_lead.py:18-20) — altså etter at INSERT
+            # allerede har kjørt. Uten `name` her feiler INSERT før crm_name
+            # får sjansen. Verdien blir uansett overskrevet av det beregnede
+            # navnet rett etterpå; den er kun en gyldig plassholder for INSERT.
+            "name": "Testsak",
             "partner_id": cls.testkunde.id,
             "type": "opportunity",
             "stage_id": cls.vunnet_stadium.id,
@@ -185,7 +199,9 @@ class TestFiqGuiSalg(TransactionCase):
         for_antall = for_boks["totalt"] if for_boks else 0
 
         self.Lead.create({
-            # Kunde, ikke navn: `crm_name` beregner navnet. Se setUpClass.
+            # `name` som plassholder for INSERT, kunde for det beregnede
+            # navnet. Se setUpClass for hvorfor begge trengs.
+            "name": "Regresjonstest tapt sak",
             "partner_id": self.testkunde.id,
             "type": "opportunity",
             "stage_id": tapt_stadium.id,
