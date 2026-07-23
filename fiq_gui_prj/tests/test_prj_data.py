@@ -408,7 +408,6 @@ class TestPrjData(TransactionCase):
         uansett hvordan basen ser ut. En test som bare leser eksisterende data kan
         ikke bevise fravær av data-betingede krasj.
         """
-        from datetime import timedelta
         prosjekt = self.Project.search(self._prosjekt_domene_for_test(), limit=1)
         if not prosjekt:
             self.skipTest("Ingen prosjekter å teste mot")
@@ -459,7 +458,6 @@ class TestPrjData(TransactionCase):
         Samme klasse som Kommunikasjons fredags-frister som forsvant fra ukesplanen.
         Meldt av KR 22.07 før det rakk å bli et ekte tap her.
         """
-        from datetime import timedelta
         prosjekt = self.Project.search(self._prosjekt_domene_for_test(), limit=1)
         if not prosjekt:
             self.skipTest("Ingen prosjekter å teste mot")
