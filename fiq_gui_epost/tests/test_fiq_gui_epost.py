@@ -216,6 +216,26 @@ class TestEpost(TransactionCase):
         self.assertIn("Kari Hansen", bt["html"], "signaturen må være med")
         self.assertIn("fiq.no", bt["html"], "lenker må overleve")
 
+    def test_outlook_lenke_kun_naar_headeren_finnes(self):
+        """«Åpne i Outlook» (Gjermund 23.07) bygger på e-postens RFC-header
+        (`message_id`) — samme identifikator Outlook selv bruker.
+
+        🛑 Knappen må IKKE vises for meldinger Outlook ikke kjenner: Odoo-genererte
+        meldinger har en header Outlook aldri har sett, og interne notater har ingen.
+        En død lenke er verre enn ingen knapp."""
+        ekte = self.env["mail.message"].create({
+            "subject": "TEST ekte e-post", "message_type": "email",
+            "body": "<p>hei</p>", "message_id": "<abc123@vidir.no>",
+        })
+        self.assertTrue(self.Data.get_brodtekst(ekte.id)["outlook"],
+                        "e-post med RFC-header skal få Outlook-lenke")
+
+        notat = self.env["mail.message"].create({
+            "subject": "TEST internt notat", "message_type": "comment", "body": "<p>notat</p>",
+        })
+        self.assertFalse(self.Data.get_brodtekst(notat.id)["outlook"],
+                         "interne notater finnes ikke i Outlook — ingen lenke")
+
     def test_brodtekst_taaler_melding_uten_html(self):
         """Ren tekst uten HTML-kropp skal pakkes så linjeskift overlever."""
         m = self.env["mail.message"].create({

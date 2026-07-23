@@ -18,6 +18,7 @@ import json
 import os
 import re
 from datetime import date, datetime, timedelta
+from urllib.parse import quote
 
 # Import-stier verifisert mot Odoo 19s egen kilde, ikke hukommelsen:
 # `markupsafe.escape` brukes av odoo/tools/translate.py:33 og er det samme som
@@ -1102,10 +1103,26 @@ class FiqMeldingssenterData(models.AbstractModel):
         if not html and m.preview:
             # Ren tekst uten HTML-kropp: pakk i <pre> så linjeskift overlever.
             html = "<pre style='white-space:pre-wrap;font-family:inherit;margin:0'>%s</pre>" % escape(m.preview)
+
+        # «Åpne i Outlook» (Gjermund 23.07): `message_id` er e-postens RFC-header — samme
+        # identifikator Outlook selv bruker. Med den kan brukeren åpne DEN e-posten i sin
+        # egen Outlook, med alle funksjonene der (oversett, flagg, kategoriser, arkiv).
+        # ⚠️ ÆRLIG BEGRENSNING: dette virker kun for e-post som FAKTISK kom via Outlook.
+        # Meldinger Odoo har laget selv har en `message_id` Outlook ikke kjenner, og
+        # interne notater har ingen. Vi viser derfor knappen KUN når headeren finnes og
+        # ser ut som en ekte e-post — ellers ville brukeren fått en død lenke.
+        rfc = (m.message_id or "").strip("<> ")
+        outlook = ""
+        if rfc and "@" in rfc and m.message_type == "email":
+            # Websøk i Outlook på RFC-headeren. Fungerer i Outlook på nett og i
+            # skrivebordsklienten via protokollhåndtereren.
+            outlook = "https://outlook.office.com/mail/search/id/%s" % quote(rfc)
+
         return {
             "html": html,
             "tom": not bool(html),
             "vedlegg": len(m.attachment_ids),
+            "outlook": outlook,
         }
 
     @api.model

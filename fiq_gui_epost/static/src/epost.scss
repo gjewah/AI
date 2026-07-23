@@ -203,6 +203,17 @@
   // MELDINGSTEKSTEN — hele e-posten i en avgrenset ramme (Gjermund 23.07: «vis den slik
   // den er med innhold og signatur osv.»). Rammen isolerer avsenderens HTML fra vår CSS
   // begge veier: deres stiler kan ikke lekke ut i flaten, og vår kan ikke forvrenge deres.
+  // Vedleggsstripe ØVERST i lesepanelet — som i Outlook. Man skal se at det ER et
+  // vedlegg før man leser teksten, ikke oppdage det etterpå.
+  .attstripe{display:flex;gap:8px;flex-wrap:wrap;padding:10px 0 4px}
+  .attchip{display:flex;align-items:center;gap:8px;max-width:320px;
+           border:1px solid var(--line);background:var(--surface-2);color:var(--ink);
+           border-radius:9px;padding:7px 11px;font-size:12px;text-align:left}
+  .attchip:hover{border-color:var(--accent)}
+  .attchip .an{font-weight:640;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .attchip .ak{font-family:var(--mono);font-size:10px;color:var(--muted);flex:none}
+  .olbtn{display:inline-block;text-decoration:none;margin-left:8px}
+
   .mailbody{padding:2px 0 14px}
   .mbramme{width:100%;height:320px;border:none;background:transparent;display:block}
   .mbtom{font-size:12.5px;color:var(--muted);padding:10px 0}

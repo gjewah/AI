@@ -239,7 +239,25 @@
                                         <div t-esc="state.valgt.dato"/>
                                         <button class="hodebtn" t-on-click="toggleHoder"
                                                 t-esc="state.visHoder ? 'Skjul detaljer ▴' : 'Vis alle mottakere ▾'"/>
+                                        <!-- «Åpne i Outlook» (Gjermund 23.07). Vises KUN når
+                                             meldingen faktisk har en RFC-header Outlook kjenner —
+                                             ellers ville lenken vært død. Se get_brodtekst(). -->
+                                        <a t-if="state.brodtekst.outlook" class="hodebtn olbtn"
+                                           t-att-href="state.brodtekst.outlook" target="_blank"
+                                           title="Åpne denne e-posten i Outlook">✉ Åpne i Outlook</a>
                                     </div>
+                                </div>
+
+                                <!-- VEDLEGG øverst, som i Outlook — man ser at det ER et vedlegg
+                                     før man leser teksten, ikke etterpå. -->
+                                <div class="attstripe" t-if="state.vedlegg.length">
+                                    <button t-foreach="state.vedlegg" t-as="a" t-key="'top'+a.id"
+                                            class="attchip" t-on-click="() => this.visVedlegg(a)"
+                                            t-att-title="a.navn">
+                                        <span class="ai">📄</span>
+                                        <span class="an" t-esc="a.navn"/>
+                                        <span class="ak" t-esc="a.kb + ' kB'"/>
+                                    </button>
                                 </div>
 
                                 <!-- Nøyaktig e-posthode: Fra · Til · Kopi · Blindkopi · Svar-til -->
