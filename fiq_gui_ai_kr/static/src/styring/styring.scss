@@ -170,7 +170,14 @@
   }
   .styr_panel {
     background: var(--st-panel); border: 1px solid var(--st-line);
-    border-radius: 14px; width: min(700px, 100%); max-height: 88vh;
+    // 🔴 23.07: her sto `width: min(700px, 100%)`. Sass har sin EGEN min() og regner den
+    // ut ved KOMPILERING — den kan ikke sammenligne px og %, og HELE assets-bundelen
+    // feiler («Incompatible units: '%' and 'px'»). Da faller stilen for hele basen
+    // tilbake på forrige utgave, og Gjermund får «Style error» på Odoos startskjerm.
+    // `width` + `max-width` gir samme resultat uten å røre Sass. Husets beviste fiks:
+    // advarselen sto ALLEREDE i fiq_gui_epost/static/src/epost.scss:384, og v6.73
+    // (d410d4e) løste nøyaktig det samme i .fiq_hm_sugg. Tredje gang i samme familie.
+    border-radius: 14px; width: 700px; max-width: 100%; max-height: 88vh;
     overflow: auto; box-shadow: 0 24px 70px -24px #000; padding: 18px;
   }
   .styr_p_topp {
