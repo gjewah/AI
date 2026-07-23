@@ -722,3 +722,24 @@ class TestPrjData(TransactionCase):
                 str(p["risiko_hvorfor"]).strip(),
                 "Begrunnelsen var tom for %s" % p["navn"],
             )
+
+    def test_risiko_penger_brukt_uten_fremdrift_er_ikke_i_balanse(self):
+        """🔴 REGRESJON — funnet 23.07 på ekte rader ETTER at ni tester var grønne.
+
+        Dommen meldte «i_balanse» om «36 % brukt / 0 % fremdrift». Vakten
+        `fremdrift > 0` var ment mot manglende data, men slapp gjennom det
+        VERSTE tilfellet: penger brukt uten at noe er gjort.
+
+        🔑 Ingen av de ni testene hadde fremdrift = 0. De var grønne på en sak
+        de aldri stilte. Det er hele grunnen til at jeg leste ekte rader etter
+        at testene passerte — «grønn» og «riktig» er to påstander.
+        """
+        i_dag = fields.Date.today()
+        dom = self.Data._risiko_dom(
+            fort=36.0, budsjett=100.0, fremdrift=0.0,
+            naermeste_frist=None, i_dag=i_dag,
+        )
+        self.assertEqual(
+            dom, "tett_budsjett",
+            "36 % av budsjettet brukt uten en eneste ferdig oppgave er ikke balanse",
+        )

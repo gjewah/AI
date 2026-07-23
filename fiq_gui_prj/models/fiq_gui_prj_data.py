@@ -313,7 +313,13 @@ class FiqGuiPrjData(models.AbstractModel):
             # 62 % brukt av 62 % ferdig = i balanse. 62 % brukt av 20 % ferdig er
             # på vei mot sprekk selv om ingen grense er passert ennå. Det er
             # nettopp dette Odoo ikke sier fra om.
-            if fremdrift > 0 and brukt - fremdrift >= 20.0:
+            # 🔴 `fremdrift > 0` sto her som vakt mot manglende data. Den slapp
+            # gjennom det VERSTE tilfellet: penger brukt uten at noe er gjort.
+            # Funnet 23.07 ved å lese ekte rader etter at testene var grønne —
+            # «36 % brukt / 0 % fremdrift» ble meldt som «i balanse».
+            # Ingen av mine ni tester hadde fremdrift = 0. Grønne tester på en
+            # sak de aldri stilte.
+            if brukt - fremdrift >= 20.0:
                 return "tett_budsjett"
 
         return "i_balanse"
