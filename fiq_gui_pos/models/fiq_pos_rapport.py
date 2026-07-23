@@ -44,6 +44,9 @@ class FiqPosRapport(models.Model):
     # § 2-8-2 d: ID-nummer til kassapunkt
     kassapunkt_id_nummer = fields.Char(string="ID-nummer kassapunkt", readonly=True)
     fra_tidspunkt = fields.Datetime(string="Fra", readonly=True)
+    # Siste ordre som inngår i rapporten. Neste X-rapport starter etter denne.
+    # Brukes i stedet for tidsstempel — se _hent_ordrer().
+    siste_ordre_id = fields.Integer(string="Siste ordre", readonly=True, default=0)
 
     # --- § 2-8-2 e-z ----------------------------------------------------
     totalt_kontantsalg = fields.Monetary(string="e) Totalt kontantsalg", readonly=True)
@@ -97,13 +100,12 @@ class FiqPosRapport(models.Model):
     innbetalinger = fields.Monetary(string="Innbetalinger", readonly=True)
     utbetalinger = fields.Monetary(string="Utbetalinger", readonly=True)
 
-    _sql_constraints = [
-        (
-            "z_nummer_unikt",
-            "unique(company_id, type, nummer)",
-            "Et Z-rapportnummer kan ikke brukes to ganger (kassasystemforskrifta § 2-8-3).",
-        ),
-    ]
+    # § 2-8-3 (2): et Z-nummer kan ikke brukes to ganger.
+    # Odoo 19 bruker models.Constraint — _sql_constraints som liste er utgått.
+    _z_nummer_unikt = models.Constraint(
+        "unique (company_id, type, nummer)",
+        "Et Z-rapportnummer kan ikke brukes to ganger (kassasystemforskrifta § 2-8-3).",
+    )
 
     @api.depends("type", "nummer", "config_id", "dato")
     def _compute_name(self):
@@ -157,12 +159,18 @@ class FiqPosRapport(models.Model):
         )
 
     def _hent_ordrer(self, session, type):
-        """X = siden forrige Z. Z = dagens registreringer i økta."""
+        """X = registreringene siden forrige Z (§ 1-2 n). Z = dagens registreringer.
+
+        🔴 Avgrensningen skjer på ORDRE-ID, ikke på tidsstempel. Et salg som avsluttes i
+        SAMME sekund som Z-rapporten ville falt ut av begge rapportene med et `date_order >`-
+        filter — datofeltet har sekundoppløsning. Da ville omsetning forsvunnet stille, og
+        grand totals ikke stemt. Ordre-ID er monotont økende og har ingen slik grense.
+        """
         domene = [("session_id", "=", session.id), ("state", "in", ["paid", "done", "invoiced"])]
         if type == "x":
             forrige = self._forrige_z(session)
             if forrige:
-                domene.append(("date_order", ">", forrige.dato))
+                domene.append(("id", ">", forrige.siste_ordre_id))
         return self.env["pos.order"].search(domene)
 
     def _samle_tall(self, session, type):
@@ -181,8 +189,8 @@ class FiqPosRapport(models.Model):
             (l.price_unit * l.qty) * (l.discount / 100.0) for l in rabatt_linjer
         )
 
-        forrige = self._forrige_z(session) if type == "x" else None
-        fra = forrige.dato if forrige else session.start_at
+        forrige = self._forrige_z(session)
+        fra = forrige.dato if (forrige and type == "x") else session.start_at
 
         return {
             "type": type,
@@ -193,6 +201,9 @@ class FiqPosRapport(models.Model):
             "dato": fields.Datetime.now(),
             "fra_tidspunkt": fra,
             "kassapunkt_id_nummer": session.config_id.name,
+            "siste_ordre_id": max(ordrer.ids) if ordrer else (
+                forrige.siste_ordre_id if forrige else 0
+            ),
             "totalt_kontantsalg": valuta.round(grand_salg - grand_retur),
             "antall_salg": len(ordrer),
             "antall_salgskvitteringer": len(salg),
