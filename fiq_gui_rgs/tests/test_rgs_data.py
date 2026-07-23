@@ -12,7 +12,7 @@ Testene her speiler ekte datamønstre fra Staging 19.07: forfalte fakturaer oppt
 1248 dager gamle, kreditnotaer, og bilag som er betalt (amount_residual = 0).
 """
 
-from odoo import fields
+from odoo import api, fields
 from odoo.tests import TransactionCase, tagged
 
 
@@ -130,19 +130,34 @@ class TestRgsData(TransactionCase):
         ).create({})
         wizard.action_create_payments()
 
-        self.assertEqual(faktura.payment_state, "in_payment",
-                         "Veiviseren gir «in_payment» — «paid» krever bankavstemming")
-        self.assertNotEqual(faktura.amount_residual, 0.0,
-                            "Restbeløpet står urørt til betalingen er avstemt")
-
+        # 🔴 MILJØAVHENGIG (målt 23.07 på to baser): utfallet av veiviseren
+        # avhenger av bankjournalens utestående-konto, ikke av vår kode.
+        #   fiqas Production:  in_payment · residual urørt
+        #   Dev 35326209:      paid       · residual 0
+        # Regelen vi låser er derfor SAMMENHENGEN, ikke den ene verdien:
+        # er bilaget ikke bekreftet betalt, skal det bli stående i utestående.
         etter = self.Data.hent_grunnbilde()["botter"][4]["verdi"]
-        self.assertGreaterEqual(etter, for_,
-                                "Uavstemt betaling skal fortsatt telle som utestående")
+        if faktura.payment_state == "in_payment":
+            self.assertNotEqual(faktura.amount_residual, 0.0,
+                                "Restbeløpet står urørt til betalingen er avstemt")
+            self.assertGreaterEqual(etter, for_,
+                                    "Uavstemt betaling skal fortsatt telle som utestående")
+        else:
+            self.assertEqual(faktura.payment_state, "paid",
+                             "Enten in_payment (uavstemt) eller paid (avstemt)")
+            self.assertEqual(faktura.amount_residual, 0.0,
+                             "Bekreftet betaling nullstiller restbeløpet")
         # Men flaten MÅ forklare hvorfor tallet ser høyt ut — ellers leses det
         # som manglende innbetaling. Det er halve forklaringen på likviditets-
         # bildet i Production, der 19 av 20 bilag ligger slik.
-        self.assertGreater(self.Data.hent_grunnbilde()["i_betaling_antall"], 0,
-                           "Grunnbildet må si fra om registrerte, uavstemte betalinger")
+        # Merknaden gjelder bilag som VENTER på bekreftelse. Avstemmer basen
+        # automatisk (som Dev-demodata gjør), finnes det ingen slike — og da
+        # skal tallet være 0, ikke oppdiktet. Feltet må uansett finnes.
+        d = self.Data.hent_grunnbilde()
+        self.assertIn("i_betaling_antall", d)
+        if faktura.payment_state == "in_payment":
+            self.assertGreater(d["i_betaling_antall"], 0,
+                               "Grunnbildet må si fra om registrerte, uavstemte betalinger")
 
     # ---------- SAMLEBOKS (KR-kontrakt) ----------
 
@@ -188,8 +203,11 @@ class TestRgsData(TransactionCase):
         """
         c = self.Data.hent_cashflow(uker=12)
         self.assertEqual(len(c["punkter"]), 12)
-        self.assertIn("Lønnskjøringer", c["mangler"])
-        self.assertIn("Feriepenger", c["mangler"])
+        # `mangler` ble strukturert i 1.22.0 (navn → navn + grunn + forklaring),
+        # så typene sjekkes på `navn`-feltet i stedet for på rå strenger.
+        navn = [m["navn"] for m in c["mangler"]]
+        self.assertIn("Lønnskjøringer", navn)
+        self.assertIn("Feriepenger", navn)
         self.assertTrue(c["grunnlag"], "Kurven må oppgi hva den bygger på")
 
     def test_cashflow_saldo_akkumulerer(self):
@@ -381,12 +399,24 @@ class TestRgsData(TransactionCase):
         self._betal(faktura, 5)
 
         d = self.Data.hent_grunnbilde()
-        self.assertEqual(faktura.payment_state, "in_payment",
-                         "Forutsetning: uavstemt betaling gir in_payment, ikke paid")
-        self.assertGreater(d["i_betaling_antall"], 0,
-                           "Grunnbildet må si fra om bilag som er registrert betalt")
-        self.assertTrue(d["i_betaling_merknad"],
-                        "Merknaden må stå i datasettet, ikke bare i visningen")
+        # 🔴 MÅLT 23.07 — `in_payment` vs `paid` er MILJØAVHENGIG, ikke universelt:
+        #   fiqas Production (www.fiq.no):      in_payment · residual urørt
+        #   Dev 35326209 (ny demodata-base):    paid       · residual 0
+        # Forskjellen ligger i bankjournalens oppsett (utestående-konto), ikke i
+        # vår kode. En test som krever «in_payment» låser derfor et MILJØ, ikke en
+        # regel — og feiler når basen bygges på nytt. Min forrige versjon gjorde
+        # nettopp det. Vi tester i stedet det som ALLTID er sant: er bilaget
+        # fortsatt utestående, MÅ flaten forklare hvorfor.
+        if faktura.payment_state == "in_payment":
+            self.assertGreater(d["i_betaling_antall"], 0,
+                               "Grunnbildet må si fra om bilag som er registrert betalt")
+            self.assertTrue(d["i_betaling_merknad"],
+                            "Merknaden må stå i datasettet, ikke bare i visningen")
+        else:
+            # Basen avstemmer automatisk → bilaget er ute av bildet. Da skal det
+            # heller ikke meldes som ventende. Feltene må uansett finnes.
+            self.assertIn("i_betaling_antall", d)
+            self.assertIn("i_betaling_merknad", d)
 
     def test_uavstemt_betaling_finnes_i_monsteret(self):
         """🔴 REGRESJON (min egen feil, v1.19.0 → v1.19.2).
@@ -411,6 +441,201 @@ class TestRgsData(TransactionCase):
                            "Uavstemt betaling må finnes i mønsteret — bruker koden "
                            "reconciled_invoice_ids i stedet for invoice_ids?")
 
+    def test_mangler_sier_hvorfor_ikke_bare_hva(self):
+        """🔴 TRE TILSTANDER, IKKE TO (funnet 23.07 sammen med 2.20 Lønn).
+
+        Den gamle `mangler` var en flat liste med navn. Da kunne en type som var
+        KOBLET, men uten data for selskapet, blitt fjernet — og kurven sett
+        komplett ut mens en hel forpliktelsestype manglet. Nøyaktig det lista
+        finnes for å hindre.
+
+        Konkret tilfelle fra Lønn: et selskap uten registrert sone for
+        arbeidsgiveravgift gir INGEN AGA-linjer — ikke null kroner. «Levert, men
+        tomt» må derfor kunne skilles fra «ikke bygd ennå».
+        """
+        c = self.Data.hent_cashflow()
+        self.assertTrue(c["mangler"], "Lista skal ikke være tom før alt er koblet")
+        for m in c["mangler"]:
+            for felt in ("type", "navn", "grunn", "forklaring"):
+                self.assertIn(felt, m, "mangler-linja mangler feltet %r" % felt)
+            self.assertTrue(m["forklaring"],
+                            "En manglende type må forklares, ikke bare navngis")
+
+    def test_grunnen_hentes_fra_lonn_naar_modulen_finnes(self):
+        """🔴 REGRESJON (min egen feil, 1.22.3 → 1.22.4) — koblingen var DØD.
+
+        Alle 26 tester var grønne mens flaten meldte «ikke bygd» for alle fire
+        typene, samtidig som 2.20 Lønn svarte `mangler_sone` på AGA. Ingen test
+        sammenlignet de to sidene, så feilen var usynlig.
+
+        Årsak: `finnes and env[modell] or None` faller ALLTID til None — et tomt
+        recordset er falskt i Python. Oppslaget slo derfor aldri til.
+
+        Denne testen sammenligner flatens `grunn` med Lønns egen status. Er de
+        ulike, er koblingen brutt — uansett hva de andre testene sier.
+        """
+        if not self.env["ir.model"].sudo().search_count(
+                [("model", "=", "fiq.lonnsforpliktelse")]):
+            self.skipTest("Lønnsmodulen er ikke installert på denne basen")
+
+        i_dag = fields.Date.context_today(self.Data)
+        status = self.env["fiq.lonnsforpliktelse"].status_forpliktelser(
+            i_dag, fields.Date.add(i_dag, days=84))
+        mine = {m["type"]: m["grunn"] for m in self.Data.hent_cashflow()["mangler"]}
+
+        for kode, info in status.items():
+            if info.get("levert"):
+                self.assertNotIn(kode, mine,
+                                 "%s er levert av Lønn og skal være ute av lista" % kode)
+                continue
+            self.assertEqual(
+                mine.get(kode), info.get("grunn"),
+                "Flaten melder «%s» for %s, men Lønn sier «%s» — koblingen er brutt"
+                % (mine.get(kode), kode, info.get("grunn")))
+
+    def _falsk_lonn(self, dager_frem, belop=50000.0, sikkerhet="planlagt"):
+        """Setter inn en kjent lønnsforpliktelse i kurven, uten lønnsmodulen.
+
+        🔴 HVORFOR DENNE FINNES (2.20 Lønn, 23.07): deres kontrakttester
+        itererte over en TOM liste — løkka kjørte aldri, testen passerte alltid.
+        Mine tre første kurve-tester hadde nøyaktig samme feil: målt på Dev ga
+        `lonn_linjer` 0 elementer, så alle tre var grønne uten å teste noe.
+
+        Vi kan ikke opprette ekte lønnsslipper her — det er 2.20 Lønns domene,
+        og en test som krever deres modul ville brutt det myke oppslaget. Vi
+        overstyrer derfor henteren med kjente linjer, og tester VÅR plassering
+        og merking av dem. Deres side testes hos dem (test 25 hos Lønn).
+        """
+        i_dag = fields.Date.context_today(self.Data)
+        linjer = [{
+            "type": "aga", "label": "Arbeidsgiveravgift",
+            "forfall": fields.Date.add(i_dag, days=dager_frem),
+            "belop": belop, "sikkerhet": sikkerhet, "kilde": "Odoo",
+            "periode": "Termin 1 2026", "merknad": "",
+        }]
+        Data = type(self.Data)
+        original = Data._hent_lonnslinjer
+
+        def falsk(self_, fra, til):
+            return [l for l in linjer if fra <= l["forfall"] < til]
+
+        Data._hent_lonnslinjer = api.model(falsk)
+        self.addCleanup(setattr, Data, "_hent_lonnslinjer", original)
+        return linjer[0]
+
+    def test_lonnslinjer_plasseres_etter_forfall_ikke_periode(self):
+        """🔑 Lønn plasseres etter FORFALL — `periode` er ren visning.
+
+        Avtalt med 2.20 Lønn 22.07: augustlønn betalt 15. september hører i
+        septemberuka, uansett hva perioden heter. Forveksles de, forskyves
+        hele likviditetsbildet — og det er nettopp derfor `periode` aldri får
+        røre en beregning.
+
+        Testen bruker kurvens egne uker, så den er sann uansett dagens dato.
+        """
+        self._falsk_lonn(dager_frem=17)  # midt i uke 2
+        c = self.Data.hent_cashflow(uker=12)
+
+        # 🔴 VAKTPOST: uten denne itererer testen over en tom liste og passerer
+        # alltid — feilen 2.20 Lønn fant i sine egne kontrakttester 23.07.
+        antall = sum(len(p["lonn_linjer"]) for p in c["punkter"])
+        self.assertEqual(antall, 1, "Testen må ha data å måle på, ellers beviser den ingenting")
+
+        for p in c["punkter"]:
+            for linje in p["lonn_linjer"]:
+                fra = fields.Date.to_date(p["fra"])
+                til = fields.Date.add(fra, days=7)
+                self.assertTrue(
+                    fra <= linje["forfall"] < til,
+                    "Lønnslinje med forfall %s havnet i uka som starter %s"
+                    % (linje["forfall"], p["fra"]))
+
+    def test_planlagt_lonn_ser_aldri_ut_som_bokfort(self):
+        """🛑 «ALDRI gjett — regnskap er juridisk bindende.»
+
+        2.20 Lønn merker hver linje `bokfort` · `planlagt` · `estimat`. En
+        validert lønnskjøring som ikke er utbetalt er `planlagt` — en fremtidig
+        utbetaling, ikke et bokført tall. Feltet må følge helt ut i flaten;
+        mistes det, ser en framskrivning ut som fakta.
+
+        Mangler `sikkerhet` på en linje, settes den til `estimat` — det
+        forsiktige valget. Aldri `bokfort` for sikkerhets skyld.
+        """
+        self._falsk_lonn(dager_frem=10, sikkerhet="planlagt")
+        gyldige = {"bokfort", "planlagt", "estimat"}
+        funnet = []
+        for p in self.Data.hent_cashflow()["punkter"]:
+            for linje in p["lonn_linjer"]:
+                self.assertIn(linje["sikkerhet"], gyldige,
+                              "Ukjent sikkerhetsnivå %r" % linje["sikkerhet"])
+                funnet.append(linje["sikkerhet"])
+
+        # Vaktpost mot tom-liste-fella, og bevis på at nivået faktisk bæres helt
+        # ut i kurven — ikke bare at det er gyldig når det finnes.
+        self.assertEqual(funnet, ["planlagt"],
+                         "«planlagt» må følge uendret ut i flaten, ikke bli bokført")
+
+    def test_lonn_teller_med_i_ut_og_saldo(self):
+        """Lønn er penger UT — den må påvirke saldoen, ikke bare vises.
+
+        `lonn_ut` finnes for at flaten skal kunne forklare et brått hopp (f.eks.
+        når AGA-fribeløpet er brukt opp). Men den skal være en DEL av `ut`, ikke
+        et sidespor — ellers viser kurven en likviditet firmaet ikke har.
+        """
+        self._falsk_lonn(dager_frem=10, belop=50000.0)
+        punkter = self.Data.hent_cashflow()["punkter"]
+
+        # Vaktpost: uten lønn i kurven ville løkka under ikke bevist noe.
+        self.assertGreater(sum(p["lonn_ut"] for p in punkter), 0,
+                           "Testen må ha et lønnsbeløp å måle på")
+
+        for p in punkter:
+            self.assertGreaterEqual(
+                p["ut"], p["lonn_ut"],
+                "Lønnsbeløpet må være inkludert i ukas «ut», ikke stå utenfor")
+
+        # Og saldoen må faktisk trekkes ned — ellers vises likviditet firmaet
+        # ikke har. `lonn_ut` skal være en del av regnestykket, ikke pynt.
+        uke = next(p for p in punkter if p["lonn_ut"] > 0)
+        self.assertGreaterEqual(uke["ut"], 50000.0,
+                                "Lønnsutbetalingen må slå ut i ukas «ut»")
+
+    def test_flaten_virker_uten_lonnsmodulen(self):
+        """🛑 `fiq_rgs_lonn` er IKKE en avhengighet — og skal aldri bli det.
+
+        En base uten lønn er en normal base, ikke en feil. Ville flaten krasjet
+        eller returnert tom `mangler` når modulen ikke finnes, hadde vi enten
+        felt regnskapsflaten på alle slike baser, eller — verre — vist en kurve
+        som ser komplett ut fordi ingenting ble meldt som manglende.
+
+        Testen kjører på en base der `fiq_rgs_lonn` ikke er installert, og er
+        derfor beviset i seg selv: kommer vi hit med fire forklarte linjer,
+        virker det myke oppslaget.
+        """
+        # 🔴 MÅLT 23.07: `env.get('ukjent.modell')` gir et TOMT RECORDSET, ikke
+        # None. En None-sjekk ville vært grønn av feil grunn. Riktig test på om
+        # en modell finnes er modellregisteret.
+        #
+        # 🔴 OG: min forrige versjon KREVDE at modulen ikke var installert. Det
+        # var å låse et miljø, ikke en regel — Dev `35326209` har den installert,
+        # Production har den ikke. Testen må gjelde BEGGE veier, ellers feiler
+        # den på annenhver base.
+        finnes = bool(self.env["ir.model"].sudo().search_count(
+            [("model", "=", "fiq.lonnsforpliktelse")]))
+        c = self.Data.hent_cashflow()
+
+        self.assertIsInstance(c["mangler"], list,
+                              "Flaten må svare uansett om lønnsmodulen finnes")
+        for m in c["mangler"]:
+            self.assertTrue(m["forklaring"], "Hver manglende type må forklares")
+
+        if not finnes:
+            # Uten modulen: alle fire meldes som ikke bygd — aldri en tom liste,
+            # for en tom `mangler` leses som «alt er med i kurven».
+            self.assertEqual(len(c["mangler"]), 4,
+                             "Uten lønnsmodulen skal alle fire meldes som manglende")
+            self.assertTrue(all(m["grunn"] == "ikke_bygd" for m in c["mangler"]))
+
     def test_bilag_forsvinner_forst_naar_bekreftet_mot_bank(self):
         """🛑 GJERMUNDS AVGJØRELSE 23.07 (08.10) — låst i test.
 
@@ -428,12 +653,20 @@ class TestRgsData(TransactionCase):
         for_ = self.Data.hent_grunnbilde()["botter"][4]["verdi"]
         self._betal(faktura, 3)
 
-        self.assertEqual(faktura.payment_state, "in_payment")
         etter = self.Data.hent_grunnbilde()["botter"][4]["verdi"]
-        self.assertGreaterEqual(
-            etter, for_,
-            "Registrert-men-ubekreftet betaling skal IKKE fjerne bilaget "
-            "fra utestående (Gjermund 08.10)")
+        # Miljøavhengig (målt 23.07): Production gir `in_payment`, en fersk
+        # demodata-base gir `paid` fordi bankjournalen er satt opp ulikt.
+        # Regelen vi låser er Gjermunds: er betalingen IKKE bekreftet, skal
+        # bilaget bli stående. Er den bekreftet, skal det ut.
+        if faktura.payment_state == "in_payment":
+            self.assertGreaterEqual(
+                etter, for_,
+                "Registrert-men-ubekreftet betaling skal IKKE fjerne bilaget "
+                "fra utestående (Gjermund 08.10)")
+        else:
+            self.assertLessEqual(
+                etter, for_,
+                "Bekreftet betaling skal ta bilaget UT av utestående")
 
     def test_flaten_sier_om_bankavstemming_er_mulig(self):
         """Tallet må kunne forklare seg selv — ellers leses det som slurv.
