@@ -30,7 +30,7 @@
                     </div>
                     <div class="fiq_gui_salg_tall">
                         <span class="fiq_gui_salg_verdi" t-esc="formatKr(apenVerdi)"/>
-                        <span class="fiq_gui_salg_merkelapp">Expected revenue</span>
+                        <span class="fiq_gui_salg_merkelapp">Expected revenue, open stages only</span>
                     </div>
                 </div>
 
@@ -50,6 +50,18 @@
                             <div class="fiq_gui_salg_radbunn" t-esc="formatKr(stadium.verdi)"/>
                         </div>
                     </t>
+                </div>
+
+                <!--
+                  Kildemerknad. En flate som viser tall UTEN å si hvor de kommer fra,
+                  er verre enn en tom flate: på Dev er dette demodata, og Gjermund kan
+                  ikke skille det fra ekte tall. Finans gjør det riktig og sier rett ut
+                  at datakildene ikke er koblet. Samme prinsipp som de grå boksene i
+                  Kontrollrommet: en grå boks sier hva den ikke vet, en tom boks lyver.
+                -->
+                <div class="fiq_gui_salg_kilde">
+                    Source: opportunities in this database (crm.lead). Open stages exclude
+                    won and lost. Figures are live data — on a demo database they are demo figures.
                 </div>
             </t>
 

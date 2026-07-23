@@ -85,8 +85,21 @@ registry.category("actions").add("fiq_gui_crm_leads_dashboard", FiqGuiCrmLeads);
 // Nøkkelen «salg» er unik — to moduler med samme nøkkel gir DuplicatedKeyError
 // og blank skjerm for hele grensesnittet, og ingen server-test fanger den.
 // Farge #D80000 = 6 SALG i det kanoniske fargekartet (brand/fiq_fargekart_omrader.md).
-registry.category("fiq_gui_flates").add("salg", {
-    key: "salg",
+// 🛑 NØKKELEN MÅ VÆRE «crm_leads» — IKKE «salg».
+//
+// Kontrollrommet slår opp flaten via NOKKEL_ALIAS (control_room.js): menyens nøkkel
+// «gui_leads» oversettes til «crm_leads». Jeg registrerte «salg» fordi det er navnet
+// på området (6 SALG). Da fant oppslaget INGENTING, og KR falt tilbake på doAction —
+// som bytter HELE siden. Resultatet: salgsflaten åpnet UTENFOR rammen, uten
+// venstremeny, firmavelger eller vei tilbake. Gjermund 23.07: «bortsett fra salg har
+// de klart å innarbeide KR shell.» Fire av fem flater sto riktig; denne var den siste.
+//
+// 🔑 Feilen ga INGEN feilmelding. Oppslaget returnerer null, fallback overtar, og alt
+// «virker» — bare i feil ramme. Samme klasse som resten av uka: ingen krasj, bare et
+// stille galt svar. Et navn som betyr noe for mennesker er ikke nødvendigvis nøkkelen
+// maskinen leter etter.
+registry.category("fiq_gui_flates").add("crm_leads", {
+    key: "crm_leads",
     label: "Sales",
     color: "#D80000",
     sequence: 40,

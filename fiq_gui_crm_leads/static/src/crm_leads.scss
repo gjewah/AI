@@ -67,8 +67,21 @@
     .fiq_gui_salg_spor {
         background: #eceef1; border-radius: 999px; height: 6px; overflow: hidden;
     }
+    // 🛑 SØYLEN ER NØYTRAL — IKKE RØD.
+    //
+    // Første utgave brukte områdefargen (#D80000) på hver søyle, fordi rød er 6 SALG i
+    // fargekartet. Men i Kontrollrommet betyr rødt KRITISK. Da fikk «Vunnet» en rød
+    // søyle — en vunnet handel er ikke kritisk. Samme farge, to betydninger, og
+    // brukeren må lære fargekoden på nytt for hver flate.
+    // Områdefargen hører på MERKET (identitet); statusfarge er forbeholdt det som
+    // faktisk krever handling. AI PK fanget dette 23.07.
     .fiq_gui_salg_stolpe {
-        background: var(--fiq-salg); height: 100%; border-radius: 999px;
+        background: #5b6472; height: 100%; border-radius: 999px;
+    }
+    // Kildemerknad: flaten skal aldri vise tall uten å si hvor de kommer fra.
+    .fiq_gui_salg_kilde {
+        margin-top: 10px; font-size: 11px; color: var(--fiq-mut);
+        border-top: 1px solid var(--fiq-bd); padding-top: 8px;
     }
     .fiq_gui_salg_radbunn {
         font-size: 11px; color: var(--fiq-mut); margin-top: 3px;

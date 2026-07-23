@@ -39,8 +39,17 @@ msgstr "Åpne salgsmuligheter"
 
 #. module: fiq_gui_crm_leads
 #. Nøkkeltall: summen av forventet omsetning i åpen pipeline
-msgid "Expected revenue"
-msgstr "Forventet omsetning"
+msgid "Expected revenue, open stages only"
+msgstr "Forventet omsetning, kun åpne stadier"
+
+#. module: fiq_gui_crm_leads
+#. Kildemerknad under tallene — sier hvor tallene kommer fra
+msgid ""
+"Source: opportunities in this database (crm.lead). Open stages exclude\n"
+"                    won and lost. Figures are live data — on a demo database they are demo figures."
+msgstr ""
+"Kilde: salgsmuligheter i denne basen (crm.lead). Åpne stadier utelater\n"
+"                    vunnet og tapt. Tallene er levende data — på en demobase er de demotall."
 
 #. module: fiq_gui_crm_leads
 #. Vises mens pipelinen hentes fra basen
