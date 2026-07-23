@@ -200,6 +200,12 @@
 
   .prose{font-size:13px;line-height:1.6;color:var(--ink)}
   .prose.body{white-space:pre-wrap;padding:2px 0 12px;color:var(--ink-soft)}
+  // MELDINGSTEKSTEN — hele e-posten i en avgrenset ramme (Gjermund 23.07: «vis den slik
+  // den er med innhold og signatur osv.»). Rammen isolerer avsenderens HTML fra vår CSS
+  // begge veier: deres stiler kan ikke lekke ut i flaten, og vår kan ikke forvrenge deres.
+  .mailbody{padding:2px 0 14px}
+  .mbramme{width:100%;height:320px;border:none;background:transparent;display:block}
+  .mbtom{font-size:12.5px;color:var(--muted);padding:10px 0}
 
   .card{border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-bottom:12px;background:var(--surface)}
   .card.aisum{background:color-mix(in srgb,#7030A0 6%,var(--surface));border-color:color-mix(in srgb,#7030A0 22%,var(--line))}

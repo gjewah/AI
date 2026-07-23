@@ -328,8 +328,19 @@
                                     <div class="prose" t-esc="state.valgt.ai_sammendrag"/>
                                 </div>
 
-                                <!-- Meldingstekst -->
-                                <div class="prose body" t-esc="state.valgt.preview"/>
+                                <!-- MELDINGSTEKSTEN — hele e-posten slik den er.
+                                     Gjermund 23.07: «vis den slik den er med innhold og
+                                     signatur osv.» Før viste vi `preview` = 140 tegn ren
+                                     tekst; formatering, lenker og signatur forsvant.
+                                     🛑 `body` er HTML fra ekstern avsender → vises i en
+                                     AVGRENSET ramme (sandbox uten skript), samme valg
+                                     Odoo selv tar i Discuss. Rammen vokser med innholdet. -->
+                                <div class="mailbody">
+                                    <div t-if="state.brodtekst.laster" class="mbtom">Henter meldingen …</div>
+                                    <iframe t-elif="!state.brodtekst.tom" class="mbramme"
+                                            sandbox="" title="Meldingstekst"/>
+                                    <div t-else="" class="mbtom">Denne meldingen har ingen tekst.</div>
+                                </div>
 
                                 <!-- Internt notat (team-only) -->
                                 <div class="card note">

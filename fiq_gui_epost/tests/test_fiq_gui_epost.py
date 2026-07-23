@@ -196,6 +196,35 @@ class TestEpost(TransactionCase):
         self.assertFalse(r.get("ok"))
         self.assertTrue(r.get("feil"), "brukeren må få vite hvorfor")
 
+    def test_brodtekst_gir_HELE_meldingen_ikke_utdrag(self):
+        """Gjermund 23.07: «Selve mail teksten kommer dårlig frem. du må vise den slik
+        den er med innhold og signatur osv.»
+
+        Lesepanelet viste `preview` — Odoos rene tekstutdrag, KUTTET på 140 tegn.
+        Formatering, lenker og signatur forsvant, og lange e-poster endte midt i en
+        setning. Testen lager en melding med HTML-signatur og krever at hele kommer med."""
+        lang = "Hei Gjermund,<br/><br/>" + ("Detaljert avsnitt om leveransen. " * 20) + \
+               "<br/><br/>--<br/><b>Kari Hansen</b><br/>Daglig leder<br/>" \
+               "<a href='https://fiq.no'>fiq.no</a>"
+        m = self.env["mail.message"].create({
+            "subject": "TEST lang melding", "message_type": "email", "body": lang,
+        })
+        bt = self.Data.get_brodtekst(m.id)
+        self.assertFalse(bt["tom"])
+        self.assertGreater(len(bt["html"]), 140,
+                           "hele meldingen skal med — ikke preview-utdraget på 140 tegn")
+        self.assertIn("Kari Hansen", bt["html"], "signaturen må være med")
+        self.assertIn("fiq.no", bt["html"], "lenker må overleve")
+
+    def test_brodtekst_taaler_melding_uten_html(self):
+        """Ren tekst uten HTML-kropp skal pakkes så linjeskift overlever."""
+        m = self.env["mail.message"].create({
+            "subject": "TEST", "message_type": "email", "body": "",
+        })
+        bt = self.Data.get_brodtekst(m.id)
+        self.assertIsInstance(bt["html"], str)
+        self.assertIn("tom", bt)
+
     def test_forhandsvisning_gir_url_ikke_innhold(self):
         """Store vedlegg skal ikke gjennom en RPC-runde bare for å vises."""
         a = self.env["ir.attachment"].create({"name": "d.pdf", "raw": b"%PDF-1.4",

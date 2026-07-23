@@ -1077,6 +1077,38 @@ class FiqMeldingssenterData(models.AbstractModel):
         return [{"navn": p.display_name or "", "adresse": p.email or ""} for p in partners]
 
     @api.model
+    def get_brodtekst(self, message_id):
+        """HELE e-posten slik den er — med formatering, lenker og signatur.
+
+        Gjermund 23.07.2026: «Selve mail teksten kommer dårlig frem. du må vise den slik
+        den er med innhold og signatur osv.»
+
+        Lesepanelet viste `preview` — Odoos rene tekstutdrag, **kuttet på 140 tegn**. Det
+        er laget for lista, ikke for lesing: avsnitt, lenker, tabeller og signatur
+        forsvinner, og lange e-poster ender midt i en setning.
+
+        Hentes som EGET kall, ikke i `get_messages`: 514 hele e-poster i én last ville
+        være tungt og unødvendig — brukeren leser én om gangen.
+
+        🛑 SIKKERHET: `body` er HTML fra en ekstern avsender og kan inneholde skript.
+        Vi sender den rå og lar KLIENTEN vise den i en avgrenset ramme (sandbox), som er
+        samme valg Odoo selv tar i Discuss. Sanering her ville ødelagt legitim
+        formatering — signaturer, logoer og tabeller er nettopp det brukeren vil se.
+        """
+        m = self.env["mail.message"].browse(int(message_id)).exists()
+        if not m:
+            return {"html": "", "tom": True}
+        html = m.body or ""
+        if not html and m.preview:
+            # Ren tekst uten HTML-kropp: pakk i <pre> så linjeskift overlever.
+            html = "<pre style='white-space:pre-wrap;font-family:inherit;margin:0'>%s</pre>" % escape(m.preview)
+        return {
+            "html": html,
+            "tom": not bool(html),
+            "vedlegg": len(m.attachment_ids),
+        }
+
+    @api.model
     def get_hoder(self, message_id):
         """Nøyaktige e-posthoder for lesepanelet: Fra · Til · Kopi · Blindkopi · Svar-til,
         med både navn og adresse. Viser også HVEM et «Svar alle» faktisk treffer, slik at

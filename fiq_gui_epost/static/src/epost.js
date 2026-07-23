@@ -39,6 +39,7 @@ export class FiqMeldingssenter extends Component {
             vedlegg: [], vedleggMsg: "",                      // vedlegg → element (Loym)
             redigerer: false, nyttNavn: "", fv: false,        // dokumentnavn · PDF · forhåndsvisning
             hoder: false, visHoder: false,                    // nøyaktige Fra/Til/Kopi-felter
+            brodtekst: { html: "", tom: false, laster: false },  // HELE e-posten (egen henting)
             // Paring/tildeling — MANUELL vei når AI-forslaget ikke treffer (Gjermund 18.07.2026:
             // feltene sto som tomme skall uten funksjon). Ett åpent søkefelt om gangen.
             paring: {
@@ -137,10 +138,46 @@ export class FiqMeldingssenter extends Component {
         this.state.hoder = false; this.state.visHoder = false;
         this.state.kandidater = { prosjekt: [], oppgave: [] };
         this.state.trad = { status: "", notater: [] };
+        this.state.brodtekst = { html: "", tom: false, laster: true };
         this.state.hoder = await this.orm.call(DATA, "get_hoder", [m.id]);
         this.state.kandidater = await this.orm.call(DATA, "get_kandidater", [m.id]);
         this.state.trad = await this.orm.call(DATA, "get_thread", [m.id]);
         this.state.vedlegg = await this.orm.call(DATA, "get_vedlegg", [m.id]);
+        // Hele e-posten hentes til SLUTT: den er tyngst, og resten av panelet kan
+        // tegnes i mellomtiden. Egen forespørsel — 514 hele e-poster i lista ville
+        // vært unødvendig tungt når brukeren leser én om gangen.
+        const bt = await this.orm.call(DATA, "get_brodtekst", [m.id]);
+        this.state.brodtekst = { ...bt, laster: false };
+        // Rammen finnes ikke i DOM før OWL har tegnet den nye tilstanden — derfor
+        // etter neste tegning, ikke med én gang. (Samme grep som `lastBredder`
+        // bruker for tre-ruta, som heller ikke finnes før visningen er bygget.)
+        requestAnimationFrame(() => this._tegnBrodtekst());
+    }
+
+    /** Skriv meldingen inn i den avgrensede rammen og la den vokse med innholdet.
+     *  `sandbox=""` uten verdier = ingen skript, ingen skjemaer, ingen navigasjon —
+     *  ekstern HTML kan ikke gjøre noe. Formatering og signatur beholdes. */
+    _tegnBrodtekst() {
+        // `querySelector` som ellers i modulen (jf. `lastBredder`) — ikke `useRef`,
+        // som ville krevd import og et annet oppsett enn resten av fila.
+        const ramme = document.querySelector(".msapp .mbramme");
+        if (!ramme || this.state.brodtekst.tom) { return; }
+        const stil = "<style>"
+            + "body{margin:0;font:13.5px/1.6 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;"
+            + "color:#151B23;word-wrap:break-word}"
+            + "img{max-width:100%;height:auto}"          // brede logoer skal ikke sprenge panelet
+            + "table{max-width:100%;border-collapse:collapse}"
+            + "blockquote{margin:8px 0;padding-left:12px;border-left:3px solid #E0E5EC;color:#47515D}"
+            + "a{color:#4C63D2}"
+            + "</style>";
+        ramme.srcdoc = stil + this.state.brodtekst.html;
+        // Høyden kan først måles når innholdet er tegnet.
+        ramme.onload = () => {
+            try {
+                const h = ramme.contentDocument?.body?.scrollHeight;
+                if (h) { ramme.style.height = Math.min(h + 16, 2000) + "px"; }
+            } catch (e) { /* sandbox kan nekte innsyn — da beholdes standardhøyden */ }
+        };
     }
 
     // Vis/skjul alle detaljer i e-posthodet (Fra/Til/Kopi/Blindkopi/Svar-til)
