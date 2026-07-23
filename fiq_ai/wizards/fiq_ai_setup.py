@@ -59,10 +59,13 @@ class FiqAiSetupWizard(models.TransientModel):
             ans = self.env["fiq.ai"].chat(_("Svar med nøyaktig denne teksten: OK"))
             self.test_result = _("✅ Nøkkel lagret. Claude svarte: «%s». «Spør AI» er nå aktiv.") % ans
         except Exception as exc:  # noqa: BLE001 — vis feilen til brukeren
+            # 🔴 SIKKERHET (funnet av enhetstesten 2026-07-23): Anthropics
+            # 401-svar kan ekko-e nøkkelen. `test_result` lagres i basen og vises
+            # i skjemaet — den må ALDRI inneholde hemmeligheten i klartekst.
             self.test_result = _(
                 "⚠ Nøkkelen er lagret, men testen mot Claude feilet:\n%s\n"
                 "Sjekk at nøkkelen er riktig og aktiv i Anthropic Console."
-            ) % str(exc)
+            ) % str(exc).replace(key, "***")
         # tøm feltet fra minnet så nøkkelen ikke blir liggende i wizard-recorden
         self.anthropic_key = False
         return self._reopen()

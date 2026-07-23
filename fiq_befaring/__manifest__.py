@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Befaring — mobil befaring → romskjema → tilbud → prosjekt",
-    "version": "19.0.1.0.1",
+    "version": "19.0.1.1.0",
     "summary": "Backend-fundament for befaring på salgsmulighet: befaring · rom/romskjema · "
                "funn/avvik. Kobler crm.lead → tilbud (sale.order) → prosjekt (project.project) "
                "med oppgaven «Befaring». Generisk for alle FIQ-kunder, tenant-isolert (company_id "

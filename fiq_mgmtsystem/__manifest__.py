@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Styringssystem — ISO 9001 (krav/kontroll/sjekkliste/avvik)",
-    "version": "19.0.1.0.1",
+    "version": "19.0.1.1.0",
     "summary": "ISO-styringssystem: krav (klausuler), kontroller, sjekklister og avvik "
                "med taksonomi-kobling (code.list / documents.tag, feature-detektert). "
                "Multi-selskap, tenant-isolert, config-drevet — generisk for alle FIQ-kunder.",

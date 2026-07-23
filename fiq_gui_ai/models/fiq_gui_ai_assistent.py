@@ -24,6 +24,20 @@ PARAM_KEY = "fiq_gui_ai.anthropic_api_key"
 PARAM_MODEL = "fiq_gui_ai.anthropic_model"
 
 
+def _uten_noekkel(tekst, api_key):
+    """Fjern API-nøkkelen fra en tekst før den logges eller vises.
+
+    🔴 SIKKERHET (funnet av enhetstesten 2026-07-23): Anthropics 401-svar og
+    `requests`-unntak kan ekko-e forespørselen — inkludert `x-api-key`. Uten
+    denne vaskingen havner nøkkelen i klartekst i Odoo.sh-loggen, der den blir
+    liggende. Logg og feilmelding skal ALDRI inneholde hemmeligheten.
+    """
+    tekst = str(tekst)
+    if api_key:
+        tekst = tekst.replace(api_key, "***")
+    return tekst
+
+
 class FiqGuiAiAssistent(models.AbstractModel):
     """FIQ AI co-worker backend: 'Ask AI for help' (Claude) + presence.
 
@@ -87,13 +101,16 @@ class FiqGuiAiAssistent(models.AbstractModel):
             resp.raise_for_status()
             data = resp.json()
         except requests.exceptions.RequestException as e:
-            _logger.warning("FIQ AI co-worker: Anthropic request failed: %s", e)
+            # Vask bort nøkkelen: 401-svar kan ekko-e headeren tilbake til oss.
+            _logger.warning("FIQ AI co-worker: Anthropic request failed: %s",
+                            _uten_noekkel(e, api_key))
             return _(
                 "AI is unavailable right now – I couldn't reach the assistant. "
                 "Please try again in a moment."
             )
         except ValueError as e:  # JSON decode error
-            _logger.warning("FIQ AI co-worker: could not parse Anthropic response: %s", e)
+            _logger.warning("FIQ AI co-worker: could not parse Anthropic response: %s",
+                            _uten_noekkel(e, api_key))
             return _("AI is unavailable right now – I got an unreadable answer.")
 
         # Response shape: {"content": [{"type": "text", "text": "..."}], ...}

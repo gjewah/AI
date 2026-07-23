@@ -43,7 +43,14 @@ class FiqTilgangRegel(models.Model):
         if self.subjekt_type == "rolle":
             return bool(self.rolle_id) and self.rolle_id == user.fiq_tilgang_rolle_id
         if self.subjekt_type == "gruppe":
-            return bool(self.gruppe_id) and self.gruppe_id in user.groups_id
+            # 🔴 ODOO 18-KODE RETTET 23.07.2026: her sto `user.groups_id`. Feltet heter
+            # `group_ids` i Odoo 19 (odoo/addons/base/models/res_users.py) — målt i
+            # `ir_model_fields`: res.users har `group_ids` og `all_group_ids`, IKKE
+            # `groups_id`. Hver regel med subjekt_type = "gruppe" krasjet med
+            # AttributeError. Vi bruker `all_group_ids` fordi den tar med ARVEDE
+            # grupper (implied) — `group_ids` gir bare de direkte tildelte, og en
+            # bruker som har gruppa via arv ville feilaktig fått nei.
+            return bool(self.gruppe_id) and self.gruppe_id in user.all_group_ids
         if self.subjekt_type == "bruker":
             return self.bruker_id == user
         if self.subjekt_type == "partner":
