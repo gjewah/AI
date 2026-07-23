@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ AI KR – AI Kontrollrom",
-    "version": "19.0.3.0.1",
+    "version": "19.0.3.0.2",
     "summary": "FIQ AI Kontrollrom (AI KR) – operatør-cockpit: oversikt over alle AI-økter "
                "(Claude Code + Cowork), AI-organisasjonskart, redigerbare roller/skills, "
                "ressursbruk og ROI. Snippet-basert (firma → rolle → person).",

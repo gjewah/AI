@@ -29,7 +29,13 @@
   color: var(--st-tekst);
   font-size: 15px;
   line-height: 1.5;
+  // 🔴 SCROLL — samme rettelse som ai_kr.scss 23.07. Skallet låser toppen
+  // (`overflow: hidden`) og forventer at flaten scroller selv. `min-height`
+  // alene lar containeren VOKSE i stedet, og bunnen blir uåbaklig.
+  // Fasit: comm.scss:30. Rotårsak funnet i prj.scss:45 av Gjermund i nettleser.
   min-height: 100%;
+  height: 100%;
+  overflow-y: auto;
   padding: clamp(14px, 2vw, 22px);
   box-sizing: border-box;
   -webkit-font-smoothing: antialiased;
