@@ -743,3 +743,45 @@ class TestPrjData(TransactionCase):
             dom, "tett_budsjett",
             "36 % av budsjettet brukt uten en eneste ferdig oppgave er ikke balanse",
         )
+
+    # ---------- KR-BOKSEN — mine fire tall til forsiden ----------
+
+    def test_kr_boks_har_teller_og_nevner(self):
+        """Fasiten viser «18 / 23» — aldri et nakent tall.
+
+        🔑 «18 i rute» uten «av 23» er ikke en status, det er et tall uten
+        målestokk. Forsiden må kunne skrive brøken uten å regne selv.
+        """
+        b = self.Data.get_kr_boks()
+        self.assertIn("prosjekter_i_rute", b)
+        self.assertIn("prosjekter_totalt", b)
+        self.assertLessEqual(
+            b["prosjekter_i_rute"], b["prosjekter_totalt"],
+            "Teller kan aldri være større enn nevner",
+        )
+
+    def test_kr_boks_avvik_er_false_ikke_null(self):
+        """🛑 0 ville sagt «ingen avvik». Det kan jeg ikke belegge.
+
+        Det finnes ingen avviksmodell i fiq_gui_prj ennå. `False` sier «vet
+        ikke», og forsiden kan skjule feltet i stedet for å vise en påstand
+        som ser ut som en måling. Samme disiplin som ellers denne uka:
+        fravær av data er ikke det samme som fravær av avvik.
+        """
+        b = self.Data.get_kr_boks()
+        self.assertIs(
+            b["avvik_apne"], False,
+            "Ubygget tall skal være False (vet ikke), aldri 0 (ingen)",
+        )
+
+    def test_kr_boks_peker_paa_slot_ikke_xmlid(self):
+        """🔴 REGRESJON: xmlid ville tatt brukeren UT av Kontrollrommet.
+
+        Klikk på et tall skal bytte INNMAT så rammen står. Nøkkelen må være
+        slot-navnet i `fiq_gui_flates`. Med en xmlid ville `doAction` forlatt
+        skallet — nøyaktig feilen som gjorde at hovedmenyen forsvant for
+        Gjermund 23.07.
+        """
+        b = self.Data.get_kr_boks()
+        self.assertEqual(b["slot"], "gui_prj")
+        self.assertNotIn(".", b["slot"], "En xmlid har punktum; en slot-nøkkel har ikke")

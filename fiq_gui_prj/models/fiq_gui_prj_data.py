@@ -823,6 +823,70 @@ class FiqGuiPrjData(models.AbstractModel):
         }
 
     @api.model
+    def get_kr_boks(self, firma_id=None):
+        """Prosjektets fire tall til Kontrollrommets forside «Hvordan ligger vi an».
+
+        Fasit: `docs/mockups/0.00 IQ demo_kontrollrom_08.html:195`, lest i kilden
+        23.07 — ikke gjenfortalt fra en melding:
+
+            Prosjekter i rute   18 / 23   ›
+            Avvik                    4    ›   (åpne)
+            EM-frister               3    ›   (denne uka)
+            Aktive prosjekter       23    ›   (uke 28)
+
+        🔑 FORSIDEN EIES AV ANDRE — jeg leverer BARE mine tall.
+        Penger kommer fra Finans, post fra Kommunikasjon, «Krever deg i dag» fra
+        AI KR. Bygde jeg hele boksen, ville jeg duplisert tre spors data og skapt
+        en fjerde sannhet om samme tall. Kontrakten er: hver flate leverer sitt,
+        forsiden setter sammen.
+
+        📌 «18 / 23» — teller OG nevner. Fasiten viser aldri et nakent tall her;
+        «18 i rute» uten «av 23» er ikke en status, det er et tall uten målestokk.
+
+        🛑 `avvik` returneres som False, ikke 0. Det finnes ingen avviksmodell i
+        `fiq_gui_prj` ennå (`fiq.befaring.funn.type = avvik` er nærmest, og den
+        eies delvis av Salg fram til `state = overfort`). **0 ville sagt «ingen
+        avvik» — det er en påstand jeg ikke kan belegge.** False sier «vet ikke»,
+        og forsiden kan skjule feltet i stedet for å vise en løgn.
+        """
+        data = self.get_prosjektoversikt(firma_id=firma_id, grense=500)
+        prosjekter = data["prosjekter"]
+
+        # «I rute» = ikke rød på noen av de to aksene. Vi bruker risiko-dommen,
+        # ikke budsjett_status alene — et prosjekt med frist i dag er ikke i rute
+        # selv om økonomien er sunn.
+        i_rute = [
+            p for p in prosjekter
+            if p["risiko"] in ("i_balanse", "ferdig")
+        ]
+
+        # Lokal import: `timedelta` importeres allerede lokalt i _kolonner()
+        # lenger opp. Å flytte den til toppen ville rørt en metode som ikke er
+        # min sak akkurat nå — én endring om gangen.
+        from datetime import timedelta
+
+        i_dag = fields.Date.context_today(self)
+        uke_slutt = i_dag + timedelta(days=(6 - i_dag.weekday()))
+        frister_uka = [
+            p for p in prosjekter
+            if p["frist"] and i_dag <= fields.Date.to_date(p["frist"]) <= uke_slutt
+        ]
+
+        return {
+            "prosjekter_i_rute": len(i_rute),
+            "prosjekter_totalt": len(prosjekter),
+            "aktive_prosjekter": len(prosjekter),
+            "frister_denne_uka": len(frister_uka),
+            # 🛑 Ikke bygget — se docstring. False, aldri 0.
+            "avvik_apne": False,
+            # Hva forsiden skal åpne når noen klikker et tall. Nøkkelen er slot-
+            # navnet i `fiq_gui_flates` (`gui_prj`), ikke en xmlid — da bytter
+            # skallet innmat og RAMMEN STÅR. Med xmlid ville doAction forlatt
+            # Kontrollrommet, som er nettopp feilen vi brukte 23.07 på å finne.
+            "slot": "gui_prj",
+        }
+
+    @api.model
     def get_oppgaver(self, prosjekt_id, firma_id=None):
         """Oppgavene i ett prosjekt, flatt, sortert etter disposisjonsnummer (WBS).
 
