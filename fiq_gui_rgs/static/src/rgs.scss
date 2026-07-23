@@ -158,6 +158,17 @@
     margin-bottom: 10px;
   }
 
+  // Hver manglende type på egen linje MED forklaring — «mangler sone» sier
+  // hva som må gjøres, «mangler» sier bare at noe er galt.
+  .fiqr-mangelliste {
+    margin: 6px 0 6px 0;
+    padding-left: 18px;
+
+    li {
+      margin-bottom: 3px;
+    }
+  }
+
   .fiqr-start {
     margin-bottom: 8px;
   }

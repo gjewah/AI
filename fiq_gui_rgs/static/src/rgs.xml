@@ -96,11 +96,25 @@
                     <t t-esc="state.cashflow.grunnlag.toLowerCase()"/>.
                 </p>
 
-                <!-- Mangelen står FØR kurven, ikke som en fotnote under. -->
+                <!-- Mangelen står FØR kurven, ikke som en fotnote under.
+                     🔴 RETTET 23.07: lista ble `join()`-et direkte og skrev
+                     «[object Object]» fire ganger — Gjermund så det i flaten.
+                     Årsaken var min egen: i 1.22.0 gikk `mangler` fra en liste
+                     med NAVN til en liste med OBJEKTER (navn + grunn + forklaring),
+                     men malen ble stående på det gamle formatet. Modell og visning
+                     kom i utakt, og ingen test dekket visningen.
+                     Nå brukes forklaringen fra 2.20 Lønn — hele poenget med å
+                     strukturere lista: si HVORFOR, ikke bare HVA. -->
                 <div class="fiqr-mangler">
                     <b>Kurven er ufullstendig.</b> Den tar ikke høyde for:
-                    <t t-esc="state.cashflow.mangler.join(' · ')"/>.
-                    Ingen AI-rolle eier lønn ennå — tallene gjettes ikke.
+                    <ul class="fiqr-mangelliste">
+                        <li t-foreach="state.cashflow.mangler" t-as="m" t-key="m.type">
+                            <b><t t-esc="m.navn"/></b>
+                            <t t-if="m.forklaring"> — <t t-esc="m.forklaring"/></t>
+                        </li>
+                    </ul>
+                    Tallene gjettes ikke — et hull som ser ut som en null er
+                    farligere enn et synlig hull.
                 </div>
 
                 <div class="fiqr-start">

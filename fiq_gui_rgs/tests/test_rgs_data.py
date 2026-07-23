@@ -441,6 +441,40 @@ class TestRgsData(TransactionCase):
                            "Uavstemt betaling må finnes i mønsteret — bruker koden "
                            "reconciled_invoice_ids i stedet for invoice_ids?")
 
+    def test_malen_leser_manglerlista_slik_modellen_gir_den(self):
+        """🔴 REGRESJON — Gjermund så «[object Object]» fire ganger i flaten 23.07.
+
+        Årsak: i 1.22.0 gikk `mangler` fra en liste med NAVN til en liste med
+        OBJEKTER (navn + grunn + forklaring). Modellen ble oppdatert; malen ble
+        stående på `mangler.join(' · ')`. Å `join`-e objekter gir «[object Object]».
+
+        🔑 DET EGENTLIGE HULLET: 30 tester dekket modellen, null dekket VISNINGEN.
+        Alle var grønne mens flaten skrev søppel til daglig leder. Samme familie
+        som dagens andre funn — «riktig form, feil innhold», bare ett lag opp.
+
+        Denne testen leser malen som tekst og krever at den ikke `join`-er lista,
+        men plukker feltene ut. Den kan ikke rendre QWeb, men den fanger nettopp
+        den utaktsfeilen som oppsto her.
+        """
+        import os
+        sti = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                           "static", "src", "rgs.xml")
+        with open(sti, encoding="utf-8") as f:
+            mal = f.read()
+
+        self.assertNotIn("mangler.join", mal,
+                         "Malen join-er mangler-lista — det gir «[object Object]» "
+                         "siden lista inneholder objekter, ikke tekst")
+        # Feltene modellen faktisk leverer må brukes, ellers vises ingenting.
+        self.assertIn("m.navn", mal, "Malen må vise navnet på hver manglende type")
+        self.assertIn("m.forklaring", mal,
+                      "Malen må vise forklaringen — hele poenget med å strukturere lista")
+
+        # Og feltene må finnes i det modellen gir, ikke bare i malen.
+        for m in self.Data.hent_cashflow()["mangler"]:
+            self.assertIn("navn", m)
+            self.assertIn("forklaring", m)
+
     def test_mangler_sier_hvorfor_ikke_bare_hva(self):
         """🔴 TRE TILSTANDER, IKKE TO (funnet 23.07 sammen med 2.20 Lønn).
 
