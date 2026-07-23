@@ -80,7 +80,7 @@ const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj
 // ⚠️ MÅ FØLGE __manifest__.py sin "version" — ellers tror KR at fanen kjører gammel
 // kode og viser «A new version is installed»-banneret som ALDRI forsvinner, uansett
 // hvor mange ganger brukeren laster på nytt. Bump denne i SAMME commit som manifestet.
-const GUI_BUILD = "19.0.7.11.1";
+const GUI_BUILD = "19.0.7.11.2";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -2126,15 +2126,23 @@ export class FiqControlRoom extends Component {
               n: mottatt.filter((k) => k.ktype === "epost" || k.kind === "E-post").length },
             { nr: "0.2", key: "ai", label: _t("AI messages"),
               n: mottatt.filter((k) => k.ktype === "ai").length },
-            // 🛑 «Oppgaver» FJERNET (Gjermund 23.07.2026): «fjern den helt, den skal ikke være der».
-            // 7.9.0 koblet den til Odoos EGEN oppgaveliste (`project.action_view_task`) og gjorde den
-            // dermed til det ENESTE punktet som åpnet noe — fordi den pekte UT av Kontrollrommet, på
-            // noe Odoo alltid har installert.
-            // 🔑 Det gjorde den verre enn de andre, ikke bedre: den virket, og skjulte at resten av
-            // menyen manglet kobling. Et punkt som fungerer og fører feil sted koster mer enn ett
-            // som ikke fungerer — det ene blir meldt, det andre blir trodd.
-            { nr: "0.3", key: "aktiviteter", label: _t("Activities"),
-              n: (this.state.kal && this.state.kal.aktiviteter ? this.state.kal.aktiviteter.length : 0) },
+            // 🛑 INNBOKSEN HAR TO KILDER. IKKE FLERE.
+            // Gjermund 23.07, mot skjermbildet: «tasks og aktiviteter skal ikke ligge der, og de
+            // to som skal ligge der er ikke koblet.»
+            //
+            // Begge de fjernede pekte på Odoos EGNE lister — «Oppgaver» på
+            // `project.action_view_task`, «Aktiviteter» på `mail.mail_activity_action`. Derfor var
+            // de de eneste punktene som åpnet noe: de forlot Kontrollrommet og landet på noe Odoo
+            // alltid har installert.
+            // 🔑 Skillet er hva innboksen ER: den viser det som kommer INN til deg. Oppgaver og
+            // aktiviteter er noe du ARBEIDER med, og de har sine egne flater. At de to virket
+            // skjulte at de to ekte kildene ikke gjorde det — de fungerende punktene var
+            // kamuflasjen. Et punkt som fungerer og fører feil sted koster mer enn ett som ikke
+            // fungerer: det ene blir meldt, det andre blir trodd.
+            //
+            // 🔑 At E-post og AI-meldinger står ukoblet er PORT 0, ikke en kodefeil: begge
+            // handlingene finnes (verifisert i koden 23.07), men modulene `fiq_gui_epost` og
+            // `fiq_gui_ai_kr` er ikke installert i basen. Koden her er derfor ikke rørt for dem.
         ];
     }
 

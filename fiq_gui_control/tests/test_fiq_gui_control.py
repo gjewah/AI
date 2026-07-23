@@ -263,6 +263,59 @@ class TestFiqControlRoom(TransactionCase):
         self.assertIn("min-height: 40px", scss,
                       "berøringsmål under 40px — en finger treffer ikke en 20px-knapp")
 
+    # ── INNBOKSEN: nøyaktig to kilder ─────────────────────────────────────────────────
+
+    def test_innboksen_peker_aldri_ut_av_kontrollrommet(self):
+        """Innboksens punkter skal peke på FIQ-flater — aldri på Odoos egne lister.
+
+        🔴 Gjermund 23.07, to ganger på én kveld: først «du har koblet tasks til odoo native og
+        det er eneste menyen som virker og den skal ikke en gang være der», så «tasks og
+        aktiviteter skal ikke ligge der».
+
+        🔑 Feilen var ikke feil handling, men feil RETNING. `project.action_view_task` og
+        `mail.mail_activity_action` er alltid installert, så de to punktene var de eneste som
+        åpnet noe — mens de to ekte kildene sto ukoblet. **De fungerende punktene var
+        kamuflasjen**: de fikk innboksen til å se halvferdig ut i stedet for ukoblet, og det er
+        forskjellen på et problem som blir meldt og ett som blir trodd.
+
+        Testen låser at ingen legger dem inn igjen «fordi de finnes fra før» — det er nettopp
+        derfor nøklene ble fjernet helt, ikke bare menypunktene.
+        """
+        handlinger = self.Config.get_actions()
+        for nokkel in ("oppgaver", "aktiviteter"):
+            self.assertNotIn(
+                nokkel, handlinger,
+                "«%s» er tilbake i innboksens oppslagstabell — den peker ut av "
+                "Kontrollrommet og skal ikke finnes" % nokkel,
+            )
+        # De to som SKAL være der. At de er ukoblet i en base er PORT 0 (modulen ikke
+        # installert), ikke en kodefeil — men nøkkelen skal alltid finnes i tabellen.
+        for nokkel in ("epost", "ai"):
+            self.assertIn(
+                nokkel, handlinger,
+                "innboksens kilde «%s» mangler i oppslagstabellen" % nokkel,
+            )
+
+    def test_innboksen_har_noeyaktig_to_kilder(self):
+        """Nøyaktig to punkter i innboksen: 0.1 E-post og 0.2 AI-meldinger.
+
+        Testen leser malen/koden framfor å telle i et kjørende grensesnitt, fordi antallet er
+        en BESTILLING og ikke en tilfeldighet. Vokser lista igjen, skal det være et bevisst
+        valg noen må endre denne testen for å gjøre.
+        """
+        import re
+        from odoo.tools import file_path
+        with open(file_path("fiq_gui_control/static/src/control_room.js"),
+                  "r", encoding="utf-8") as f:
+            js = f.read()
+        blokk = re.search(r"get innboksKilder\(\)\s*\{(.*?)\n    \}", js, re.S)
+        self.assertTrue(blokk, "fant ikke innboksKilder")
+        kilder = re.findall(r'nr:\s*"(0\.\d)"', blokk.group(1))
+        self.assertEqual(
+            kilder, ["0.1", "0.2"],
+            "innboksen skal ha nøyaktig to kilder (E-post, AI-meldinger), fant: %s" % kilder,
+        )
+
     # ── AVDELING-raden (utkast 08) ────────────────────────────────────────────────────
 
     def test_avdelinger_svarer_uten_aa_krasje(self):
