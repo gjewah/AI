@@ -124,6 +124,57 @@ class HrPayslip(models.Model):
             return grunnlag * sats / 100.0
         return tak * sats / 100.0 + (grunnlag - tak) * ordinaer / 100.0
 
+    # ==================================================================
+    # OTP — obligatorisk tjenestepensjon (OTP-loven § 4)
+    # ==================================================================
+    def fiq_otp_sats(self):
+        """Selskapets OTP-sats, eller lovens minstekrav om ingen er satt."""
+        self.ensure_one()
+        return self.company_id.fiq_otp_sats or self._rule_parameter(
+            "no_otp_minstesats")
+
+    def fiq_otp_omfattet(self):
+        """Om denne ansatte skal ha pensjonsinnskudd.
+
+        🔑 «PENSJON FRA FOERSTE KRONE OG DAG» (LOV-2021-12-22-164) fjernet
+        20 %-stillingsgrensen og senket aldersgrensen fra 20 til 13 aar.
+        **Alder er den eneste gjenvaerende terskelen.**
+
+        🛑 Bygger man paa en eldre beskrivelse av OTP, faar deltidsansatte og
+        unge INGEN pensjon — og foretaket bryter loven uten at noe feiler.
+
+        Manglende foedselsdato → omfattet. Det forsiktige valget peker MOTSATT
+        vei her enn for feriepenger: der ga forsiktighet lavere avsetning, her
+        gir den hoeyere. **Aa utelate noen fra pensjonsordningen er verre enn
+        aa avsette for mye.**
+        """
+        self.ensure_one()
+        fodselsdato = self.employee_id.birthday
+        if not fodselsdato:
+            return True
+        min_alder = self._rule_parameter("no_otp_min_alder")
+        return (self._fiq_aga_aar() - fodselsdato.year) >= min_alder
+
+    def fiq_otp_innskudd(self, grunnlag=None):
+        """Pensjonsinnskudd for denne loennsslippen, i kroner.
+
+        Innskuddet beregnes av loenn opp til 12 G (OTP-loven § 4); loenn over
+        taket gir ingen pliktig innskudd.
+
+        ⚠️ **BEGRENSNING:** taket gjelder AARLIG loenn. Denne metoden maaler
+        slippens eget grunnlag mot 12 G, ikke akkumulert loenn hittil i aaret.
+        For maanedskjoeringer under taket er det riktig; for en ansatt som
+        passerer 12 G i loepet av aaret, blir innskuddet for hoeyt i
+        maanedene etter passeringen. **Ikke bygget — meldt som aapent.**
+        """
+        self.ensure_one()
+        if grunnlag is None:
+            grunnlag = self.fiq_aga_grunnlag()
+        if not grunnlag or not self.fiq_otp_omfattet():
+            return 0.0
+        tak = self._rule_parameter("no_otp_12g")
+        return min(grunnlag, tak) * self.fiq_otp_sats() / 100.0
+
     def _fiq_aga_aar(self):
         """Aaret loennsslippen hoerer til — styrer hvilket fribeloep som gjelder."""
         self.ensure_one()

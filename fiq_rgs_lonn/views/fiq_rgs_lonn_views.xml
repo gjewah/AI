@@ -27,6 +27,15 @@
                         </span>
                     </div>
                 </group>
+                <group string="Tjenestepensjon (OTP)" name="fiq_otp">
+                    <field name="fiq_otp_sats"/>
+                    <div colspan="2">
+                        <span class="text-muted">
+                            Lovens minstekrav er 2 % av lønn opp til 12 G.
+                            Tomt felt betyr at minstekravet brukes.
+                        </span>
+                    </div>
+                </group>
             </page>
         </field>
     </record>

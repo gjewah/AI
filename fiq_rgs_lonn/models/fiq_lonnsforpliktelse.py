@@ -61,7 +61,59 @@ class FiqLonnsforpliktelse(models.AbstractModel):
         forpliktelser += self._lonn_forpliktelser(fra_dato, til_dato, company)
         forpliktelser += self._aga_forpliktelser(fra_dato, til_dato, company)
         forpliktelser += self._feriepenger_forpliktelser(fra_dato, til_dato, company)
+        forpliktelser += self._otp_forpliktelser(fra_dato, til_dato, company)
         return forpliktelser
+
+    def _otp_forpliktelser(self, fra_dato, til_dato, company):
+        """Pensjonsinnskudd — betales normalt KVARTALSVIS til leverandoeren.
+
+        📌 Terminen foelger AVTALEN med pensjonsleverandoeren, ikke loven.
+        Kvartalsvis er vanligst; noen betaler maanedlig. Vi bruker kvartal som
+        standard og merker linjene `estimat` — de er ikke bokfoerte krav slik
+        AGA-terminene er.
+        """
+        slipper = self.env["hr.payslip"].search([
+            ("company_id", "=", company.id),
+            ("state", "in", ("validated", "paid")),
+            ("date_to", ">=", fra_dato),
+            ("date_to", "<=", til_dato),
+        ])
+
+        per_kvartal = {}
+        for slip in slipper:
+            innskudd = slip.fiq_otp_innskudd()
+            if not innskudd:
+                # Ansatte under aldersgrensen gir 0 — de skal heller ikke
+                # telle med i ansatt-antallet for personverngrensen.
+                continue
+            kvartal = (slip.date_to.month - 1) // 3 + 1
+            data = per_kvartal.setdefault(
+                (slip.date_to.year, kvartal), {"belop": 0.0, "ansatte": set()},
+            )
+            data["belop"] += innskudd
+            data["ansatte"].add(slip.employee_id.id)
+
+        from datetime import date
+        linjer = []
+        for (aar, kvartal), data in sorted(per_kvartal.items()):
+            if len(data["ansatte"]) < MIN_ANSATTE or not data["belop"]:
+                continue
+            # Forfall: den 15. i maaneden ETTER kvartalets slutt.
+            forfall_mnd = kvartal * 3 + 1
+            forfall_aar = aar
+            if forfall_mnd > 12:
+                forfall_mnd, forfall_aar = 1, aar + 1
+
+            linjer.append({
+                "type": "otp",
+                "label": "Tjenestepensjon",
+                "forfall": date(forfall_aar, forfall_mnd, 15),
+                "belop": data["belop"],
+                "sikkerhet": "estimat",
+                "kilde": "Odoo",
+                "periode": "Q%s %s" % (kvartal, aar),
+            })
+        return linjer
 
     def _feriepenger_forpliktelser(self, fra_dato, til_dato, company):
         """Feriepenger — opptjent ETT aar, utbetalt DET NESTE.
@@ -193,11 +245,7 @@ class FiqLonnsforpliktelse(models.AbstractModel):
             "aga": self._aga_status(fra_dato, til_dato, company),
             "lonn": self._lonn_status(fra_dato, til_dato, company),
             "feriepenger": self._feriepenger_status(fra_dato, til_dato, company),
-            "otp": {
-                "levert": False,
-                "grunn": "ikke_bygget",
-                "forklaring": "Tjenestepensjon er ikke tatt i bruk ennå",
-            },
+            "otp": self._otp_status(fra_dato, til_dato, company),
         }
 
     def _lonn_status(self, fra_dato, til_dato, company):
@@ -211,6 +259,20 @@ class FiqLonnsforpliktelse(models.AbstractModel):
             "forklaring": (
                 "Ingen lønnskjøringer i perioden, eller for få ansatte til at "
                 "tall kan vises uten å identifisere enkeltpersoner."
+            ),
+        }
+
+    def _otp_status(self, fra_dato, til_dato, company):
+        """Status for tjenestepensjon."""
+        if self._otp_forpliktelser(fra_dato, til_dato, company):
+            return {"levert": True, "grunn": None, "forklaring": None}
+        return {
+            "levert": False,
+            "grunn": "ingen_data",
+            "forklaring": (
+                "Ingen lønnskjøringer å beregne pensjonsinnskudd av i "
+                "perioden, eller for få ansatte til at tall kan vises uten å "
+                "identifisere enkeltpersoner."
             ),
         }
 

@@ -471,6 +471,98 @@ class TestFeriepenger(TransactionCase):
 
 
 @tagged("post_install", "-at_install")
+class TestOtp(TransactionCase):
+    """Type 04 — obligatorisk tjenestepensjon (OTP-loven § 4).
+
+    🔑 «Pensjon fra foerste krone og dag» (2021) fjernet 20 %-stillingsgrensen
+    og senket aldersgrensen fra 20 til 13 aar. Bygger man paa en eldre
+    beskrivelse, faar deltidsansatte og unge INGEN pensjon — uten feilmelding.
+    """
+
+    def setUp(self):
+        super().setUp()
+        from datetime import date
+        self.date = date
+        self.company = self.env["res.company"].create({
+            "name": "Pensjonsfirma", "fiq_aga_sone": "2",
+        })
+        self.struktur = self.env.ref(
+            "fiq_rgs_lonn.hr_payroll_structure_no_employee")
+
+    def _slip(self, fodselsaar=1990, aar=2026):
+        vals = {"name": "Pensjonsansatt", "company_id": self.company.id}
+        if fodselsaar:
+            vals["birthday"] = "%s-03-15" % fodselsaar
+        ansatt = self.env["hr.employee"].create(vals)
+        return self.env["hr.payslip"].create({
+            "name": "Slipp", "employee_id": ansatt.id,
+            "company_id": self.company.id,
+            "date_from": "%s-01-01" % aar, "date_to": "%s-01-31" % aar,
+            "struct_id": self.struktur.id,
+        })
+
+    def _param(self, kode, aar=2026, mnd=6):
+        return self.env["hr.rule.parameter"]._get_parameter_from_code(
+            kode, self.date(aar, mnd, 1))
+
+    def test_43_minstesatsen_er_2_prosent(self):
+        """OTP-loven § 4 — lovens gulv."""
+        self.assertEqual(self._param("no_otp_minstesats"), 2.0)
+
+    def test_44_tomt_selskapsfelt_gir_lovens_minstekrav(self):
+        self.assertEqual(self._slip().fiq_otp_sats(), 2.0)
+
+    def test_45_selskapets_egen_sats_overstyrer(self):
+        self.company.fiq_otp_sats = 5.0
+        self.assertEqual(self._slip().fiq_otp_sats(), 5.0)
+
+    def test_46_sats_UNDER_lovens_minstekrav_avvises(self):
+        """🛑 Uten denne sperren kunne noen satt 1 % i god tro — og foretaket
+        ville brutt loven uten at noe feilet."""
+        from odoo.exceptions import ValidationError
+        with self.assertRaises(ValidationError):
+            self.company.fiq_otp_sats = 1.0
+
+    def test_47_innskudd_under_taket(self):
+        """🛡️ Bevis-vaktpost: 500 000 x 2 % = 10 000."""
+        self.assertAlmostEqual(
+            self._slip().fiq_otp_innskudd(500_000), 10_000.0, 2,
+            "Innskuddet er ikke grunnlag x sats — testen måler noe annet.",
+        )
+
+    def test_48_innskudd_kappes_ved_12G(self):
+        """OTP-loven § 4: innskuddet beregnes av loenn OPP TIL 12 G.
+        Loenn over taket gir ingen pliktig innskudd."""
+        tak = self._param("no_otp_12g")
+        over = self._slip().fiq_otp_innskudd(tak + 500_000)
+        paa = self._slip().fiq_otp_innskudd(tak)
+        self.assertAlmostEqual(over, paa, 2, "Lønn over 12 G skal ikke telle.")
+
+    def test_49_ung_ansatt_UNDER_13_er_ikke_omfattet(self):
+        # Foedt 2015 → fyller 11 i 2026.
+        self.assertFalse(self._slip(fodselsaar=2015).fiq_otp_omfattet())
+
+    def test_50_ansatt_som_fyller_13_ER_omfattet(self):
+        """🔑 Aldersgrensen er 13 aar, ikke 20. Ble senket ved «pensjon fra
+        foerste krone og dag» — en eldre beskrivelse ville utelatt unge."""
+        self.assertTrue(self._slip(fodselsaar=2013).fiq_otp_omfattet())
+
+    def test_51_manglende_fodselsdato_gir_MEDLEMSKAP(self):
+        """Det forsiktige valget peker MOTSATT vei her enn for feriepenger:
+        aa utelate noen fra pensjonsordningen er verre enn aa avsette for mye."""
+        self.assertTrue(self._slip(fodselsaar=None).fiq_otp_omfattet())
+
+    def test_52_ikke_omfattet_gir_null_innskudd(self):
+        self.assertEqual(
+            self._slip(fodselsaar=2015).fiq_otp_innskudd(500_000), 0.0)
+
+    def test_53_12g_folger_aaret(self):
+        """G justeres 1. mai — taket maa finnes for hvert aar."""
+        self.assertEqual(self._param("no_otp_12g", aar=2025), 1561920)
+        self.assertEqual(self._param("no_otp_12g", aar=2026), 1638588)
+
+
+@tagged("post_install", "-at_install")
 class TestPersonvern(TransactionCase):
     """🔒 Re-identifiseringsgrensen. 2.80 RGS har bedt om aa bli holdt til den."""
 

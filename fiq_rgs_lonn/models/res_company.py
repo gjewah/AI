@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from odoo import fields, models
+from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 # Sonekodene er felles for selskap og ansatt. Verdiene MAA stemme med noeklene i
 # rule-parameteren `no_aga_sonesatser` (data/hr_rule_parameters_data.xml) —
@@ -54,6 +55,37 @@ class ResCompany(models.Model):
         help="Aaret det forbrukte fribeloepet gjelder for. Byttes aaret, "
              "nullstilles telleren automatisk ved neste loennskjoering.",
     )
+
+    # OTP — obligatorisk tjenestepensjon. Lovens minstekrav er 2 % av loenn
+    # opp til 12 G (OTP-loven § 4), men mange foretak har hoeyere sats gjennom
+    # avtale eller tariff. Derfor et FELT per selskap, ikke en fast verdi.
+    # Staar det tomt, brukes lovens minstekrav.
+    fiq_otp_sats = fields.Float(
+        string="OTP-sats (%)",
+        digits=(5, 2),
+        help="Innskuddssats for obligatorisk tjenestepensjon, i prosent av "
+             "loenn opp til 12 G. Lovens minstekrav er 2 %. Tomt felt "
+             "betyr at minstekravet brukes.",
+    )
+
+    @api.constrains("fiq_otp_sats")
+    def _check_fiq_otp_sats(self):
+        """OTP-satsen kan ikke settes lavere enn loven tillater.
+
+        🛑 Uten denne sperren kunne noen satt 1 % i god tro — og foretaket
+        ville braatt loven uten at noe feilet. Samme klasse som en manglende
+        AGA-sone: en stille feil med juridiske foelger.
+        """
+        minste = self.env["hr.rule.parameter"]._get_parameter_from_code(
+            "no_otp_minstesats", fields.Date.context_today(self),
+        )
+        for company in self:
+            if company.fiq_otp_sats and company.fiq_otp_sats < minste:
+                raise ValidationError(
+                    "OTP-satsen kan ikke være lavere enn lovens minstekrav på "
+                    "%s %%. Angitt: %s %%. Se OTP-loven § 4."
+                    % (minste, company.fiq_otp_sats)
+                )
 
     def fiq_aga_fribelop_gjenstaaende(self, fribelop, aar):
         """Gjenstaaende fribeloep for `aar`, med automatisk aarsskifte.

@@ -171,4 +171,84 @@
         <field name="parameter_value">819294</field>
     </record>
 
+    <!-- ================================================================
+         05 · OTP — obligatorisk tjenestepensjon
+
+         KILDE: OTP-loven (LOV-2005-12-21-124) § 4, verifisert mot lovdata
+         + skatteetaten.no 23.07.2026.
+
+         🔑 «PENSJON FRA FOERSTE KRONE OG DAG» (LOV-2021-12-22-164):
+         de gamle tersklene er FJERNET — ingen 20 %-stillingsgrense, og
+         innskuddet regnes fra FOERSTE KRONE (ikke fra 1 G som foer).
+         Aldersgrensen er senket til 13 aar.
+         🛑 Bygger man paa en eldre beskrivelse av OTP, faar deltidsansatte og
+         unge INGEN pensjon — og foretaket bryter loven uten aa faa noen
+         feilmelding. Stille feil, som resten av dette regelverket.
+         ================================================================ -->
+    <record id="rule_parameter_no_otp_minstesats" model="hr.rule.parameter">
+        <field name="name">Norge: OTP — minste innskuddssats</field>
+        <field name="code">no_otp_minstesats</field>
+        <field name="country_id" ref="base.no"/>
+        <field name="description" type="html">
+            <p>Lovens MINSTEKRAV i prosent av loenn: <b>2 %</b> (OTP-loven § 4).</p>
+            <p>⚠️ Dette er et <b>gulv, ikke en fasit</b>. Mange foretak har
+            hoeyere sats gjennom avtale eller tariff — den settes per selskap i
+            <code>fiq_otp_sats</code>. Parameteren her brukes til aa VALIDERE at
+            selskapets sats ikke er lavere enn loven tillater.</p>
+        </field>
+    </record>
+
+    <record id="rule_parameter_no_otp_minstesats_2026" model="hr.rule.parameter.value">
+        <field name="rule_parameter_id" ref="rule_parameter_no_otp_minstesats"/>
+        <field name="date_from" eval="datetime(2026, 1, 1).date()"/>
+        <field name="parameter_value">2.0</field>
+    </record>
+
+    <!-- Innskuddstaket: 12 G. Egen parameter fordi G endres 1. mai hvert aar.
+         Samme moenster som 6 G for feriepenger — legg til ny verdi, ALDRI
+         framskriv. -->
+    <record id="rule_parameter_no_otp_12g" model="hr.rule.parameter">
+        <field name="name">Norge: OTP — innskuddstak (12 G)</field>
+        <field name="code">no_otp_12g</field>
+        <field name="country_id" ref="base.no"/>
+        <field name="description" type="html">
+            <p>Tolv ganger folketrygdens grunnbeloep. OTP-loven § 4: innskuddet
+            beregnes av loenn <b>opp til 12 G</b>. Loenn over taket gir ingen
+            pliktig innskudd.</p>
+            <p>⚠️ <b>G justeres 1. mai hvert aar</b> etter trygdeoppgjoeret.</p>
+        </field>
+    </record>
+
+    <!-- G per 01.05.2025 = 130 160 → 12 G = 1 561 920 -->
+    <record id="rule_parameter_no_otp_12g_2025" model="hr.rule.parameter.value">
+        <field name="rule_parameter_id" ref="rule_parameter_no_otp_12g"/>
+        <field name="date_from" eval="datetime(2025, 1, 1).date()"/>
+        <field name="parameter_value">1561920</field>
+    </record>
+
+    <!-- G per 01.05.2026 = 136 549 → 12 G = 1 638 588 (verifisert mot nav.no) -->
+    <record id="rule_parameter_no_otp_12g_2026" model="hr.rule.parameter.value">
+        <field name="rule_parameter_id" ref="rule_parameter_no_otp_12g"/>
+        <field name="date_from" eval="datetime(2026, 5, 1).date()"/>
+        <field name="parameter_value">1638588</field>
+    </record>
+
+    <!-- Nedre aldersgrense for medlemskap: 13 aar (LOV-2021-12-22-164).
+         Var tidligere 20 aar. -->
+    <record id="rule_parameter_no_otp_min_alder" model="hr.rule.parameter">
+        <field name="name">Norge: OTP — nedre aldersgrense</field>
+        <field name="code">no_otp_min_alder</field>
+        <field name="country_id" ref="base.no"/>
+        <field name="description" type="html">
+            <p>Laveste alder for medlemskap i pensjonsordningen: <b>13 aar</b>.
+            Senket fra 20 aar ved «pensjon fra foerste krone og dag».</p>
+        </field>
+    </record>
+
+    <record id="rule_parameter_no_otp_min_alder_2026" model="hr.rule.parameter.value">
+        <field name="rule_parameter_id" ref="rule_parameter_no_otp_min_alder"/>
+        <field name="date_from" eval="datetime(2026, 1, 1).date()"/>
+        <field name="parameter_value">13</field>
+    </record>
+
 </odoo>
