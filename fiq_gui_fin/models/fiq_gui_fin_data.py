@@ -41,6 +41,84 @@ class FiqGuiFinData(models.AbstractModel):
             ("company_id", "=", selv.env.company.id),
         ]
 
+    # KPI-rapporter brukeren kan velge mellom. NATIVE-FØRST: hver peker på Odoos
+    # EGEN rapport-handling — vi gjenskaper ingen tall og ingen visning.
+    # Gjermunds krav: «vis de vanlige KPI-rapportene som i Odoos native dashboard,
+    # men inne i Finans-flaten. Brukeren velger hvilke som vises.»
+    #
+    # Navn hentes fra `account.report` i basen (Odoo har dem alt oversatt til norsk),
+    # ikke hardkodet her — da følger de språket til brukeren.
+    KPI_RAPPORTER = [
+        ("resultat", "account_reports.action_account_report_pl"),
+        ("balanse", "account_reports.action_account_report_bs"),
+        ("nokkeltall", "account_reports.action_account_report_exec_summary"),
+        ("fordringer", "account_reports.action_account_report_ar"),
+        ("gjeld", "account_reports.action_account_report_ap"),
+        ("kontantstrom", "account_reports.action_account_report_cs"),
+        ("hovedbok", "account_reports.action_account_report_general_ledger"),
+        ("saldobalanse", "account_reports.action_account_report_coa"),
+    ]
+
+    # Vises som standard for en bruker som ikke har valgt selv. De tre en daglig
+    # leder spør etter først — ikke alle åtte, det ville vært en veggavis.
+    STANDARD_VALG = ("resultat", "balanse", "nokkeltall")
+
+    @api.model
+    def _valgte_kpier(self):
+        """Brukerens eget valg, lagret per bruker+firma. Tom = standard.
+
+        Samme mønster som KRs `skjulte_flater` — serverlagret, ikke localStorage,
+        så valget følger brukeren mellom maskiner.
+        """
+        param = "fiq_gui_fin.kpi.%s.%s" % (self.env.user.id, self.env.company.id)
+        raw = self.env["ir.config_parameter"].sudo().get_param(param, "")
+        if not raw:
+            return list(self.STANDARD_VALG)
+        gyldige = {n for n, _x in self.KPI_RAPPORTER}
+        return [k for k in raw.split(",") if k in gyldige]
+
+    @api.model
+    def sett_valgte_kpier(self, valgte):
+        """Lagrer brukerens valg. Ukjente nøkler forkastes stille — en klient
+        skal ikke kunne skrive vilkårlige verdier inn i konfigurasjonen."""
+        gyldige = {n for n, _x in self.KPI_RAPPORTER}
+        rene = [k for k in (valgte or []) if k in gyldige]
+        param = "fiq_gui_fin.kpi.%s.%s" % (self.env.user.id, self.env.company.id)
+        self.env["ir.config_parameter"].sudo().set_param(param, ",".join(rene))
+        return True
+
+    @api.model
+    def hent_kpi_valg(self):
+        """Alle tilgjengelige KPI-rapporter + hva brukeren har valgt.
+
+        🛑 En rapport tas kun med hvis handlingen FINNES i denne basen. Odoo
+        Enterprise-moduler kan mangle hos en kunde, og et menypunkt som peker
+        på en handling som ikke finnes gir en feilmelding i stedet for en rapport.
+        """
+        valgte = self._valgte_kpier()
+        ut = []
+        for navn, xmlid in self.KPI_RAPPORTER:
+            handling = self.env.ref(xmlid, raise_if_not_found=False)
+            if not handling:
+                continue  # ikke installert i denne basen — hopp over, ikke krasj
+            ut.append({
+                "key": navn,
+                "label": handling.name,      # Odoos eget navn, allerede oversatt
+                "xmlid": xmlid,
+                "valgt": navn in valgte,
+            })
+        return {"rapporter": ut, "antall_valgt": len(valgte)}
+
+    @api.model
+    def apne_kpi(self, key):
+        """Åpner Odoos EGEN rapport. Vi bygger ingen kopi av den."""
+        for navn, xmlid in self.KPI_RAPPORTER:
+            if navn == key:
+                handling = self.env.ref(xmlid, raise_if_not_found=False)
+                if handling:
+                    return handling.read()[0]
+        return False
+
     @api.model
     def get_kr_boks(self, company_id=False):
         """Samleboks til KR-forsiden (kontrakt: fiq_gui_control_config.py:1335).

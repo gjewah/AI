@@ -92,14 +92,51 @@
             </div>
         </section>
 
-        <!-- 3. KPI -->
+        <!-- 3. KPI — Odoos EGNE rapporter, brukeren velger selv hvilke -->
         <section class="fiqf-kort">
-            <h3>KPI-rapporter</h3>
-            <p class="fiqf-hjelp">
-                Odoos egne rapporter vises her inne — brukeren velger selv hvilke (native-først,
-                ingen parallelle rapporter bygges).
-            </p>
-            <div class="fiqf-tom">Rapport-velger — bygges når datakildene er avklart.</div>
+            <div class="fiqf-korthode">
+                <h3>KPI-rapporter</h3>
+                <span class="fiqf-native">Odoos egne rapporter</span>
+                <button class="fiqf-velg-knapp" t-on-click="() => this.vekslVelger()">
+                    <t t-if="state.velgerApen">Ferdig</t>
+                    <t t-else="">Velg rapporter</t>
+                </button>
+            </div>
+
+            <div t-if="state.kpiFeil" class="fiqf-feil">
+                <b>Kunne ikke hente rapportlista.</b>
+                <div t-esc="state.kpiFeil"/>
+            </div>
+
+            <t t-if="!state.kpiFeil and state.kpi">
+                <!-- Velgeren: alle tilgjengelige, huk av det du vil se -->
+                <div t-if="state.velgerApen" class="fiqf-velger">
+                    <p class="fiqf-hjelp">
+                        Kun rapporter som finnes i denne basen vises. Valget lagres på deg
+                        og gjeldende firma.
+                    </p>
+                    <label t-foreach="state.kpi.rapporter" t-as="r" t-key="r.key"
+                           class="fiqf-velg-rad">
+                        <input type="checkbox" t-att-checked="r.valgt"
+                               t-on-change="() => this.velgKpi(r.key)"/>
+                        <span t-esc="r.label"/>
+                    </label>
+                </div>
+
+                <!-- De valgte, som klikkbare kort -->
+                <div t-else="" class="fiqf-kpier">
+                    <button t-foreach="valgteKpier" t-as="r" t-key="r.key"
+                            class="fiqf-kpi-kort"
+                            t-on-click="() => this.apneKpi(r.key)"
+                            t-att-title="'Åpne ' + r.label">
+                        <span class="fiqf-kpi-navn" t-esc="r.label"/>
+                        <span class="fiqf-kpi-pil">→</span>
+                    </button>
+                    <div t-if="!valgteKpier.length" class="fiqf-tom">
+                        Ingen rapporter valgt. Trykk «Velg rapporter».
+                    </div>
+                </div>
+            </t>
         </section>
 
         <!-- 4. POG -->
