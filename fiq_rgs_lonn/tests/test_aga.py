@@ -314,14 +314,21 @@ class TestKontraktMedEkteData(TransactionCase):
             self.env["hr.payslip.line"].create({
                 "name": "Grunnlønn",
                 "code": "BASIC",
-                # salary_rule_id er PAAKREVD (NOT NULL i hr_payslip_line) —
-                # en loennslinje maa peke paa loennsarten som skapte den.
+                # salary_rule_id er PAAKREVD (NOT NULL) — en loennslinje maa
+                # peke paa loennsarten som skapte den. `category_id` settes
+                # IKKE her: det er et `related`-felt fra loennsarten og ville
+                # blitt overstyrt uansett.
                 "salary_rule_id": self.env.ref("fiq_rgs_lonn.rule_no_basic").id,
-                "category_id": self.env.ref("hr_payroll.BASIC").id,
+                "employee_id": ansatt.id,
                 "slip_id": slip.id,
                 "amount": 40000.0,
                 "quantity": 1.0,
                 "rate": 100.0,
+                # 🔑 `total` er et LAGRET felt, ikke beregnet — det fylles av
+                # loennsmotoren under `compute_sheet()`. Opprettes linja
+                # direkte, maa total settes eksplisitt, ellers er den 0 og
+                # grunnlaget blir null. Det var derfor testene ga tomme lister.
+                "total": 40000.0,
             })
             self.slipper |= slip
 
@@ -359,10 +366,22 @@ class TestKontraktMedEkteData(TransactionCase):
             self.assertEqual(linje["sikkerhet"], "bokfort")
 
     def test_24_alle_sju_feltene_paa_EKTE_linjer(self):
-        """Det test_12 skulle bevist, men ikke gjorde uten data."""
+        """Det test_12 skulle bevist, men ikke gjorde uten data.
+
+        🛡️ VAKTPOST (grep fra 2.80 RGS 23.07): en test som itererer over
+        ingenting ser IDENTISK ut med en som passerer. Derfor bekreftes det
+        eksplisitt at det FINNES data, og at beloepet er det forventede —
+        ikke bare at feltene er der.
+        """
         self.slipper.write({"state": "paid"})
         linjer = self._linjer()
         self.assertTrue(linjer, "Ingen linjer å teste kontrakten mot.")
+        # 3 ansatte x 40 000 = 120 000 grunnlag, sone II = 10,6 %
+        self.assertAlmostEqual(
+            sum(l["belop"] for l in linjer), 12_720.0, 2,
+            "Beløpet er ikke det grunnlaget tilsier — testen måler noe annet "
+            "enn den tror.",
+        )
         paakrevd = {"type", "label", "forfall", "belop", "sikkerhet", "kilde", "periode"}
         for linje in linjer:
             self.assertEqual(paakrevd - set(linje), set())
@@ -387,8 +406,12 @@ class TestKontraktMedEkteData(TransactionCase):
         """🔒 Re-identifiseringsgrensen, testet med EKTE data."""
         self.slipper.write({"state": "paid"})
         self.assertTrue(self._linjer(), "Tre ansatte skal gi linjer.")
-        # Fjern én slipp -> to ansatte igjen -> linja skal forsvinne HELT.
-        self.slipper[0].unlink()
+
+        # Ta én slipp UT av utvalget ved å sette den tilbake til utkast.
+        # `unlink()` ville vært mer direkte, men sletting av en lønnsslipp
+        # utløser meldingssporing (mail.thread) som feiler i testkontekst —
+        # og den mekanikken er ikke det denne testen skal måle.
+        self.slipper[0].state = "draft"
         self.assertEqual(
             self._linjer(), [],
             "En sum for under tre ansatte er personopplysning selv uten navn.",
