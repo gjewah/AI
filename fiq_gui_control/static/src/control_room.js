@@ -8,8 +8,14 @@ import { _t } from "@web/core/l10n/translation";
 import { View } from "@web/views/view";
 import { useFileViewer } from "@web/core/file_viewer/file_viewer_hook";
 import { FileModel } from "@web/core/file_viewer/file_model";
+// De fire datadrevne seksjonene (utkast 08): «Krever handling på tvers av rom» ·
+// «Siste aktivitet» · «Åpne oppgaver» · periode-grupperte aktiviteter.
+// 🔑 Egen fil, egen komponent, egne tester — bevisst delt eierskap så to spor kan bygge
+// samtidig uten å skrive i de samme linjene. Kontrollrommet monterer den ETT sted og
+// sender inn firmavalget; komponenten eier sine egne data og sine egne serverkall.
+import { KrLister } from "./kr_lister";
 
-const WIDGETS = ["kpis", "projects", "kommunikasjon", "activity", "tasks", "chart", "copilot", "quick"];
+const WIDGETS =["kpis", "projects", "kommunikasjon", "activity", "tasks", "chart", "copilot", "quick"];
 
 // Kanonisk fargekart per fagområde (fiq-fargekart-omrader). Underområde-unntak først.
 // KANONISK FARGEKART — synket mot `brand/fiq_fargekart_omrader.md` (Gjermund 18.07.2026).
@@ -63,12 +69,18 @@ const mndNames = () => [_t("January"), _t("February"), _t("March"), _t("April"),
 const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj", "cpMode", "cpSlag", "cpGrp",
     "kommPeriod", "anchorDate", "kommQuery", "kommDir", "projQuery", "projNoQuery", "projArea", "projAreaId",
     "taskNoQuery", "taskTextQuery", "taskStage", "taskMile", "dagVis", "aktFilter", "aktGruppe", "selectedKpi",
-    "progLevel", "progProjId", "progProjName", "progSubs", "progGroup", "kalMnd", "stageHidden", "dashSel"];
+    "progLevel", "progProjId", "progProjName", "progSubs", "progGroup", "kalMnd", "stageHidden", "dashSel",
+    // Utkast 08: avdelingsfilteret og tidslinjens uke/måned er BRUKERVALG — de skal
+    // overleve en tur innom native Odoo på samme måte som de andre filtrene.
+    // 🔑 Utelates de her, nullstilles de stille ved retur, og det leses som at flaten
+    // «glemte» valget. `avdelinger` (selve listen) hører IKKE hjemme her — den hentes
+    // fra serveren hver gang; det er valget som fryses, ikke dataene.
+    "avdelingId", "tlMode"];
 // 🚨 Utdatert-GUI-vakt: bumpes ved HVER versjon — sammenlignes med installert modulversjon
 // ⚠️ MÅ FØLGE __manifest__.py sin "version" — ellers tror KR at fanen kjører gammel
 // kode og viser «A new version is installed»-banneret som ALDRI forsvinner, uansett
 // hvor mange ganger brukeren laster på nytt. Bump denne i SAMME commit som manifestet.
-const GUI_BUILD = "19.0.7.10.0";
+const GUI_BUILD = "19.0.7.11.1";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -82,7 +94,7 @@ function isoWeek(date) {
 export class FiqControlRoom extends Component {
     static template = "fiq_gui_control.ControlRoom";
     static props = ["*"];
-    static components = { View };
+    static components = { View, KrLister };
 
     setup() {
         this.orm = useService("orm");
@@ -155,6 +167,9 @@ export class FiqControlRoom extends Component {
             // snevrer inn HVA du ser — derfor i innholdet, ikke i rammen (spec 2.3).
             avdelinger: [],       // [{id, name}] fra get_avdelinger
             avdelingId: false,    // false = «Alle» (ingen avgrensning)
+            // Tidslinjens visning: uke | maaned. ALDRI år — 52 ruter sier ingenting
+            // (grunnstruktur-specen §2.5). Standard er uke: det er planleggingshorisonten.
+            tlMode: "uke",
             areaOpen: {},         // {nr: true} = nedtrekk åpent i sidemenyen
             expanded: {},         // utvid-funksjon: {"model:id": true} = utvidet
             treeClosed: {},       // prosjekt-treet: {prosjektId: true} = forelderens barn foldet inn
@@ -1445,6 +1460,89 @@ export class FiqControlRoom extends Component {
             this.state.kommSender = { id: pr.partner_id, name: pr.navn };
         }
         this._loadKalender();
+    }
+
+    // ── TIDSLINJE: uke/dag/dato med travelhet i seks faste trinn (utkast 08) ──────────
+    //
+    // 🔑 Måler BELEGG, ikke antall møter. Fem korte statusmøter er ikke en full dag; ett
+    // heldagsmøte er det. Møtene har start og slutt — å telle rader i stedet ville gjort
+    // fargen tilfeldig, og en farge som ikke betyr noe er verre enn ingen farge.
+    //
+    // 🛑 FAST SKALA mot en 8-timers dag, aldri relativ til ukens travleste. Ellers blir en
+    // rolig uke rød fordi den er travlest av sju rolige. Samme feil som «Ikke møtt» i rødt:
+    // da tre av fire kort ble røde uten grunn, sluttet rødt å bety noe.
+    //
+    // 🛑 «Aldri år» (spec §2.5): 52 ruter sier ingenting. Uke og måned, ikke mer.
+    get tidslinje() {
+        const a = this._anchorDate();
+        const dager = this.state.tlMode === "maaned" ? this._mndDager(a) : this._ukeDager(a);
+        const belegg = {};                       // {YYYY-MM-DD: minutter}
+        for (const m of (this.state.kal.moter || [])) {
+            // «dato» er dd.mm.åå (kort år — se get_kalender). «tid»/«slutt» er HH:MM.
+            const d = (m.dato || "").split(".");
+            if (d.length !== 3) { continue; }
+            const iso = "20" + d[2] + "-" + d[1] + "-" + d[0];
+            const min = (t) => {
+                const p = (t || "").split(":");
+                return p.length === 2 ? parseInt(p[0], 10) * 60 + parseInt(p[1], 10) : null;
+            };
+            const fra = min(m.tid), til = min(m.slutt);
+            // Møte uten klokkeslett teller som en halv arbeidsdag. Å hoppe over det ville
+            // vist en heldags-workshop som en helt ledig dag.
+            belegg[iso] = (belegg[iso] || 0) +
+                (fra !== null && til !== null && til > fra ? til - fra : 240);
+        }
+        const idag = new Date().toISOString().slice(0, 10);
+        return dager.map((dt) => {
+            const iso = dt.toISOString().slice(0, 10);
+            const mins = belegg[iso] || 0;
+            // 480 min = 8 t. Trinnene er de seks i specen; over 80 % er dagen «fullt».
+            const pst = Math.min(100, Math.round((mins / 480) * 100));
+            let trinn = 0;
+            if (pst > 80) { trinn = 100; }
+            else if (pst > 60) { trinn = 80; }
+            else if (pst > 40) { trinn = 60; }
+            else if (pst > 20) { trinn = 40; }
+            else if (pst > 0) { trinn = 20; }
+            return {
+                iso,
+                dag: dt.getDate(),
+                ukedag: dayNames()[(dt.getDay() + 6) % 7],   // man=0, ikke søn=0
+                trinn,
+                idag: iso === idag,
+                // Ro-budsjett: 0 vises ikke. Et nulltall er støy, ikke informasjon.
+                title: mins ? Math.round(mins / 60) + " t" : "",
+            };
+        });
+    }
+
+    _ukeDager(a) {
+        const d = new Date(a);
+        d.setDate(d.getDate() - ((d.getDay() + 6) % 7));     // tilbake til mandag
+        return Array.from({ length: 7 }, (_, i) => {
+            const x = new Date(d); x.setDate(d.getDate() + i); return x;
+        });
+    }
+
+    _mndDager(a) {
+        const y = a.getFullYear(), m = a.getMonth();
+        const n = new Date(y, m + 1, 0).getDate();
+        return Array.from({ length: n }, (_, i) => new Date(y, m, i + 1));
+    }
+
+    setTlMode(m) { this.state.tlMode = m; }
+
+    // Uke-nummer (ISO, torsdagsregelen) til overskriften «uke 30 · juli 2026».
+    // 🔑 Gjenbrukt regel, ikke ny: samme torsdagsregel som datoBolk i Meldingssenteret.
+    // En uke tilhører året der TORSDAGEN ligger — uten det havner nyttårsuka i feil år.
+    get tlOverskrift() {
+        const a = this._anchorDate();
+        const t = new Date(a);
+        t.setDate(t.getDate() + 3 - ((t.getDay() + 6) % 7));  // torsdagen i denne uka
+        const f = new Date(t.getFullYear(), 0, 4);
+        const uke = 1 + Math.round(((t - f) / 86400000 - 3 + ((f.getDay() + 6) % 7)) / 7);
+        return this.tr("week") + " " + uke + " · " +
+               mndNames()[a.getMonth()] + " " + a.getFullYear();
     }
 
     // Måned-/år-navigasjon (std kalenderfunksjoner): ◂ ▸ + nedtrekk + I dag

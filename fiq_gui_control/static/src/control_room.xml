@@ -674,6 +674,48 @@
                                 <t t-else=""><div class="fiq_hm_empty">No lines to show for the selection.</div></t>
                             </div>
                         </div>
+                        <!-- ═══ TIDSLINJE — travelhet i seks faste trinn (utkast 08) ═══════════
+                             Uke · dag · dato for valgt periode, med Uke ↔ Måned.
+                             🛑 ALDRI år: 52 ruter sier ingenting (spec §2.5).
+
+                             Fyllet vokser NEDENFRA, så høyden ER tallet — du leser en uke
+                             uten å lese et eneste tall. Skalaen er FAST mot en 8-timers dag,
+                             ikke relativ til ukens travleste: ellers blir en rolig uke rød
+                             fordi den er travlest av sju rolige, og fargen slutter å bety noe
+                             på tvers av uker. -->
+                        <div class="fiq_hm_card fiq_hm_tlcard">
+                            <div class="fiq_hm_ch">
+                                <h4>▾ <t t-esc="tr('Timeline')"/></h4>
+                                <span class="fiq_hm_chbtns">
+                                    <span class="fiq_hm_tlhead" t-esc="tlOverskrift"/>
+                                    <div class="fiq_hm_pseg" t-att-title="tr('Week or month')">
+                                        <button t-att-class="state.tlMode === 'uke' ? 'on' : ''"
+                                                t-on-click="() =&gt; this.setTlMode('uke')" t-esc="tr('Week')"/>
+                                        <button t-att-class="state.tlMode === 'maaned' ? 'on' : ''"
+                                                t-on-click="() =&gt; this.setTlMode('maaned')" t-esc="tr('Month')"/>
+                                    </div>
+                                </span>
+                            </div>
+                            <div class="fiq_hm_tlrad">
+                                <t t-foreach="tidslinje" t-as="td" t-key="td.iso">
+                                    <div t-att-class="td.idag ? 'fiq_hm_tldag idag' : 'fiq_hm_tldag'"
+                                         t-att-title="td.title">
+                                        <span class="fiq_hm_tlukedag" t-esc="td.ukedag"/>
+                                        <span class="fiq_hm_tlnr" t-esc="td.dag"/>
+                                        <span t-att-class="'fiq_hm_tlfyll t' + td.trinn"/>
+                                    </div>
+                                </t>
+                            </div>
+                            <!-- Skalaforklaring: uten den er fargene bare pynt. «rolig → fullt»
+                                 sier hva retningen betyr, uten å bruke plass på seks tall. -->
+                            <div class="fiq_hm_tlskala">
+                                <span class="fiq_hm_tlprikk t0"/><span class="fiq_hm_tlprikk t20"/>
+                                <span class="fiq_hm_tlprikk t40"/><span class="fiq_hm_tlprikk t60"/>
+                                <span class="fiq_hm_tlprikk t80"/><span class="fiq_hm_tlprikk t100"/>
+                                <span class="fiq_hm_tlskalatxt" t-esc="tr('calm → full')"/>
+                            </div>
+                        </div>
+
                         <!-- Møter og aktiviteter (eget vindu ved siden av brukerne) -->
                         <div t-att-class="'fiq_hm_card' + (state.collapsed.dagens ? ' fiq_hm_collapsed' : '')">
                             <div class="fiq_hm_ch"><h4>📅 Meetings and activities (<t t-esc="periodeTekst"/><t t-if="state.selPerson"> · <t t-esc="state.selPerson.name"/></t>)</h4><span class="fiq_hm_chbtns"><div class="fiq_hm_pseg" title="Show both, only meetings or only activities"><button t-att-class="state.dagVis === 'begge' ? 'on' : ''" t-on-click="() =&gt; { state.dagVis = 'begge'; }">Both</button><button t-att-class="state.dagVis === 'moter' ? 'on' : ''" t-on-click="() =&gt; { state.dagVis = 'moter'; }">Meetings</button><button t-att-class="state.dagVis === 'akt' ? 'on' : ''" t-on-click="() =&gt; { state.dagVis = 'akt'; }">Activities</button></div><button class="fiq_hm_ext" t-on-click="() =&gt; this.runAction('kalender')" title="Open the calendar (native Odoo)">🗓 Calendar</button><button class="fiq_hm_ext" t-on-click="() =&gt; this.runAction('aktivitet')" title="Open your activities (native Odoo)">⚡ Activities</button><button class="fiq_hm_coll" t-on-click="() =&gt; this.toggleCollapse('dagens')" t-esc="state.collapsed.dagens ? tr('Show ▸') : tr('Hide ▾')"/></span></div>
@@ -778,6 +820,22 @@
                         </div>
 
                         <!-- (KPI-varslene er flyttet inn under personene i Til stede-kortet) -->
+
+                        <!-- ═══ DE FIRE DATADREVNE SEKSJONENE (utkast 08) ══════════════════════
+                             «Krever handling — på tvers av rom» · «Siste aktivitet» ·
+                             «Åpne oppgaver» · periode-grupperte aktiviteter.
+
+                             🔑 Egen komponent i egen fil (kr_lister), montert ETT sted. Den eier
+                             sine egne data og sine egne serverkall; Kontrollrommet sender kun inn
+                             firmavalget. Delingen er bevisst: to spor kunne bygge samtidig uten å
+                             skrive i de samme linjene — og delt eierskap på én flate er nettopp
+                             det som ga oss nøkkel-splittelsen, navnekollisjonen i stilarket og
+                             høydekontrakten, tre feilklasser på én uke.
+
+                             Plassert etter «Til stede nå» og før beslutningsstøtten, slik
+                             rekkefølgen er i utkastet: hvem som er her → hva som brenner → hva
+                             du kan gjøre. -->
+                        <KrLister companyId="state.companyId" sok="state.projQuery"/>
 
                         <!-- (4) Beslutningsstøtte: 4 kolonner tilpassbare knapper -->
                         <div t-att-class="'fiq_hm_card fiq_blk_quick' + (state.collapsed.beslutning ? ' fiq_hm_collapsed' : '')" t-att-style="'order:' + bo('quick')">

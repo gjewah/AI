@@ -326,3 +326,68 @@ class TestFiqControlRoom(TransactionCase):
             scss, r"\.fiq_hm_nav,[^\n]*\.fiq_hm_avd,",
             "fiq_hm_avd mangler i 40px-regelen — de minste knappene på flaten",
         )
+
+    # ── TIDSLINJEN (utkast 08) ────────────────────────────────────────────────────────
+
+    def test_tidslinje_har_seks_faste_fargetrinn(self):
+        """Skalaen skal ha ALLE seks trinn, og de skal være ulike farger.
+
+        🔑 Hvorfor en test på dette: skalaen sto i den godkjente spesifikasjonen fra 20.07
+        og ble aldri bygget — den var «spesifisert» i fire dager uten at noen målte at den
+        manglet. En regel som bare finnes i et dokument, finnes ikke.
+
+        🛑 Seks IDENTISKE verdier ville bestått en ren «finnes trinnene?»-sjekk, men gitt
+        en tidslinje der alt ser like travelt ut. Derfor sjekkes også at de er forskjellige.
+        """
+        from odoo.tools import file_path
+        with open(file_path("fiq_gui_control/static/src/control_room.scss"),
+                  "r", encoding="utf-8") as f:
+            scss = f.read()
+        import re
+        farger = {}
+        for trinn in ("t0", "t20", "t40", "t60", "t80", "t100"):
+            treff = re.search(r"--%s:\s*(#[0-9a-fA-F]{3,8})" % trinn, scss)
+            self.assertTrue(treff, "travelhetstrinn --%s mangler i stilarket" % trinn)
+            farger[trinn] = treff.group(1).lower()
+        self.assertEqual(
+            len(set(farger.values())), 6,
+            "to travelhetstrinn har SAMME farge — da kan de ikke skilles: %s" % farger,
+        )
+
+    def test_tidslinjen_viser_aldri_aar(self):
+        """«Aldri år» er et krav fra Gjermund i grunnstruktur-specen §2.5: 52 ruter sier
+        ingenting. Bare uke og måned skal kunne velges.
+
+        Testen finnes fordi det er akkurat den slags krav som forsvinner stille når noen
+        senere «utvider» en velger i beste mening.
+        """
+        from odoo.tools import file_path
+        with open(file_path("fiq_gui_control/static/src/control_room.js"),
+                  "r", encoding="utf-8") as f:
+            js = f.read()
+        self.assertIn('tlMode: "uke"', js, "tidslinjen mangler standardvisning")
+        self.assertNotRegex(
+            js, r'setTlMode\(["\']aar["\']\)',
+            "tidslinjen har fått årsvisning — spec §2.5 forbyr den",
+        )
+
+    def test_tidslinjens_valg_overlever_tur_til_odoo(self):
+        """Avdeling og uke/måned er BRUKERVALG og må ligge i fryselista.
+
+        Utelates de, nullstilles de stille når man kommer tilbake fra native Odoo — og det
+        leses som at flaten glemte valget, ikke som at det aldri ble lagret.
+        🛑 Selve avdelings-LISTA skal derimot IKKE fryses: den hentes fra serveren hver gang.
+        Fryses data i stedet for valg, viser flaten gamle avdelinger etter en endring.
+        """
+        from odoo.tools import file_path
+        with open(file_path("fiq_gui_control/static/src/control_room.js"),
+                  "r", encoding="utf-8") as f:
+            js = f.read()
+        import re
+        blokk = re.search(r"FREEZE_KEYS\s*=\s*\[(.*?)\]", js, re.S)
+        self.assertTrue(blokk, "fant ikke FREEZE_KEYS")
+        nokler = blokk.group(1)
+        self.assertIn('"avdelingId"', nokler, "avdelingsvalget fryses ikke")
+        self.assertIn('"tlMode"', nokler, "tidslinjens uke/måned fryses ikke")
+        self.assertNotIn('"avdelinger"', nokler,
+                         "selve avdelingslista skal IKKE fryses — kun valget")

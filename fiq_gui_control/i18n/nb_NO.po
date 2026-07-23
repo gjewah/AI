@@ -3046,3 +3046,21 @@ msgstr "AVDELING"
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "All departments"
 msgstr "Alle avdelinger"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.js:0
+msgid "week"
+msgstr "uke"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "Week or month"
+msgstr "Uke eller måned"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "calm → full"
+msgstr "rolig → fullt"
