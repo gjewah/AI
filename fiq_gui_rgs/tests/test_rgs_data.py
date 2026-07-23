@@ -411,6 +411,48 @@ class TestRgsData(TransactionCase):
                            "Uavstemt betaling må finnes i mønsteret — bruker koden "
                            "reconciled_invoice_ids i stedet for invoice_ids?")
 
+    def test_bilag_forsvinner_forst_naar_bekreftet_mot_bank(self):
+        """🛑 GJERMUNDS AVGJØRELSE 23.07 (08.10) — låst i test.
+
+            «De skal være registrert betalt før de forsvinner — ikke nødvendigvis
+             månedlig bankavstemming, men ja: en avstemming mot bank.»
+
+        Et bilag forlater likviditetsbildet FØRST når betalingen er bekreftet mot
+        bank. `payment_state = in_payment` = registrert, ikke bekreftet — og skal
+        derfor fortsatt telle som utestående.
+
+        Denne testen feiler hvis noen senere «rydder» `_basis_domene` til å slippe
+        gjennom `in_payment`. Det ville vist penger som kanskje aldri kom inn.
+        """
+        faktura = self._faktura(-10, belop=6000.0)
+        for_ = self.Data.hent_grunnbilde()["botter"][4]["verdi"]
+        self._betal(faktura, 3)
+
+        self.assertEqual(faktura.payment_state, "in_payment")
+        etter = self.Data.hent_grunnbilde()["botter"][4]["verdi"]
+        self.assertGreaterEqual(
+            etter, for_,
+            "Registrert-men-ubekreftet betaling skal IKKE fjerne bilaget "
+            "fra utestående (Gjermund 08.10)")
+
+    def test_flaten_sier_om_bankavstemming_er_mulig(self):
+        """Tallet må kunne forklare seg selv — ellers leses det som slurv.
+
+        «19 bilag venter på bekreftelse» betyr noe helt ulikt avhengig av om
+        bankkoblingen finnes og ikke brukes, eller ikke finnes i det hele tatt.
+        Målt på fiqas Production 23.07: bankjournalen har verken kontonummer
+        eller kilde, og det finnes 0 kontoutskriftslinjer.
+        """
+        b = self.Data.hent_grunnbilde()["bankavstemming"]
+        for felt in ("bankjournaler", "uten_kilde", "utskriftslinjer",
+                     "avstemming_mulig", "merknad"):
+            self.assertIn(felt, b, "bankavstemming mangler feltet %r" % felt)
+        # Er avstemming umulig, MÅ merknaden forklare hvorfor — ellers står
+        # brukeren igjen med et tall uten årsak.
+        if not b["avstemming_mulig"]:
+            self.assertTrue(b["merknad"],
+                            "Umulig avstemming må forklares, ikke bare flagges")
+
     def test_base_merket_oppgir_server_ikke_bare_firma(self):
         """🔑 LÆRDOM 22.07: firmanavn identifiserer INNHOLD, ikke SERVER.
 

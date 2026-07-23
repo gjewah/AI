@@ -36,6 +36,15 @@ class FiqGuiRgsData(models.AbstractModel):
 
         `state = posted` er det som gjør tallet til FAKTA. Kladd og kansellerte
         bilag er ikke bokført og skal aldri telle med i et likviditetsbilde.
+
+        🛑 GJERMUNDS AVGJØRELSE 23.07 (oppgave 08.10) — `in_payment` teller som
+        UTESTÅENDE, og det er BEVISST:
+            «De skal være registrert betalt før de forsvinner — ikke nødvendigvis
+             månedlig bankavstemming, men ja: en avstemming mot bank.»
+        Et bilag forlater altså likviditetsbildet først når betalingen er bekreftet
+        mot bank. `payment_state = in_payment` betyr registrert, ikke bekreftet.
+        Filteret er derfor UENDRET — men flaten SIER FRA (`i_betaling_antall`),
+        og sier også om banktilstanden gjør bekreftelse mulig (`bankavstemming`).
         """
         return [
             ("move_type", "in", typer),
@@ -131,9 +140,13 @@ class FiqGuiRgsData(models.AbstractModel):
             # `mangler` i hent_cashflow. Er tallet 0, skal flaten ikke vise noe.
             "i_betaling_antall": i_betaling,
             "i_betaling_merknad": (
-                "%s bilag er registrert betalt, men ikke avstemt mot bankutskrift. "
+                "%s bilag er registrert betalt, men ikke bekreftet mot bank. "
                 "De telles fortsatt som utestående." % i_betaling
             ) if i_betaling else "",
+            # Sier HVORFOR de blir stående: er avstemming i det hele tatt mulig?
+            # Uten dette leses tallet som slurv, når årsaken kan være at ingen
+            # bankkobling finnes. (Gjermund 08.10)
+            "bankavstemming": self.hent_bankavstemming(),
             "base": self._base_merke(),
         }
 
@@ -346,6 +359,56 @@ class FiqGuiRgsData(models.AbstractModel):
         """
         url = self.env["ir.config_parameter"].sudo().get_param("web.base.url") or ""
         return {"firma": self.env.company.name, "url": url}
+
+    @api.model
+    def hent_bankavstemming(self):
+        """Er bankavstemming i det hele tatt mulig i dag? Måler, påstår ikke.
+
+        Gjermund 23.07 (08.10): et bilag skal forlate likviditetsbildet først når
+        betalingen er «registrert betalt» — bekreftet mot bank. Da må flaten kunne
+        svare på om den bekreftelsen er MULIG, ikke bare om den har skjedd.
+        Uten dette leses «19 bilag venter på avstemming» som slurv, når årsaken
+        kan være at ingen bankkobling finnes ennå.
+
+        🛑 MÅLER TILSTAND, GIR IKKE RÅD. Hvilken bank som skal kobles og når er
+        et menneskevalg (08.11). Flaten sier hva som er, ikke hva som bør gjøres.
+
+        Målt på fiqas Production 23.07 (`https://www.fiq.no`):
+            account_online_synchronization  installert
+            account_bank_statement_import_camt  installert
+            bankjournal «Bank»: kontonummer TOMT · kilde «undefined»
+            account.bank.statement       0
+            account.bank.statement.line  0
+        Altså: verktøyet finnes, men er aldri tatt i bruk.
+        """
+        Journal = self.env["account.journal"]
+        journaler = Journal.search([
+            ("type", "=", "bank"),
+            ("company_id", "=", self.env.company.id),
+        ])
+        # `bank_statements_source` = «undefined» betyr at ingen kilde er valgt —
+        # verken filimport eller direkte kobling. Da kan ingenting avstemmes.
+        uten_kilde = journaler.filtered(
+            lambda j: not j.bank_statements_source
+            or j.bank_statements_source == "undefined"
+        )
+        linjer = self.env["account.bank.statement.line"].search_count([
+            ("company_id", "=", self.env.company.id),
+        ])
+
+        mulig = bool(journaler) and len(uten_kilde) < len(journaler)
+        return {
+            "bankjournaler": len(journaler),
+            "uten_kilde": len(uten_kilde),
+            "utskriftslinjer": linjer,
+            "avstemming_mulig": mulig,
+            "merknad": "" if mulig else (
+                "Ingen bankjournal har en kilde for kontoutskrift. Betalinger kan "
+                "registreres, men ikke bekreftes mot bank — derfor blir bilag "
+                "stående som utestående."
+            ),
+            "base": self._base_merke(),
+        }
 
     @api.model
     def _betalingsdager(self, partner_id=False):
