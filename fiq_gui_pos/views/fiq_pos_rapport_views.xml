@@ -102,11 +102,12 @@
                 <field name="name"/>
                 <field name="nummer"/>
                 <field name="config_id"/>
+                <separator/>
                 <filter name="filter_z" string="Z-rapporter" domain="[('type','=','z')]"/>
                 <filter name="filter_x" string="X-rapporter" domain="[('type','=','x')]"/>
-                <group expand="0" string="Grupper etter">
-                    <filter name="group_config" string="Kassapunkt" context="{'group_by': 'config_id'}"/>
-                    <filter name="group_type" string="Rapporttype" context="{'group_by': 'type'}"/>
+                <group>
+                    <filter name="group_config" string="Kassapunkt" context="{'group_by':'config_id'}"/>
+                    <filter name="group_type" string="Rapporttype" context="{'group_by':'type'}"/>
                 </group>
             </search>
         </field>
