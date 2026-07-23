@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Lønn Norge",
-    "version": "19.0.0.2.0",
+    "version": "19.0.0.3.0",
     "summary": "Norsk lønnslokalisering (2.20) — lønnsarter, satser og AA-register. "
                "Regnskapsfunksjon som LESER HR-data.",
     "description": """
@@ -54,6 +54,7 @@ Modulen er en regnskapsfunksjon som leser HR-data; den flytter ikke lønn ut av 
         # Satser med gyldighetsdato. Kilde: Stortingsvedtak FOR-2025-12-18-2748 § 3.
         # Ved nytt statsbudsjett legges ÉN ny record til her — historikken består.
         "data/hr_rule_parameters_data.xml",
+        "views/fiq_rgs_lonn_views.xml",
     ],
     "installable": True,
     "application": False,
