@@ -23,7 +23,7 @@ import re
 from odoo.tests.common import TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install")
+@tagged("post_install", "-at_install", 'fiq')
 class TestMaler(TransactionCase):
 
     # Python-operatorer som IKKE finnes i JavaScript. QWeb oversetter `and`/`or`,

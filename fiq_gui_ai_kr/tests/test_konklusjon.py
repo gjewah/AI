@@ -14,7 +14,7 @@ Testene bruker DEFAULTS og skitne verdier, ikke pene tall jeg selv har valgt
 from odoo.tests.common import TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install")
+@tagged("post_install", "-at_install", 'fiq')
 class TestKonklusjon(TransactionCase):
 
     @classmethod

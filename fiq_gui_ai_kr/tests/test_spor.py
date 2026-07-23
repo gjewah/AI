@@ -16,7 +16,7 @@ speiler ekte datamønstre beviser ingenting — den gir falsk trygghet.
 from odoo.tests.common import TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install")
+@tagged("post_install", "-at_install", 'fiq')
 class TestSporNormalisering(TransactionCase):
 
     @classmethod

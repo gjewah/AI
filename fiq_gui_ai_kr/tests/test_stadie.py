@@ -12,7 +12,7 @@ i køen, og han svarer på det samme igjen i morgen.
 from odoo.tests.common import TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install")
+@tagged("post_install", "-at_install", 'fiq')
 class TestStadie(TransactionCase):
 
     @classmethod
