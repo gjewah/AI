@@ -16,7 +16,11 @@ from odoo import api, fields
 from odoo.tests import TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install", "fiq_rgs")
+# 🛑 `fiq`-taggen er PÅKREVD (kanon 24.07): CI-gaten i `apps-ai` plukker tester
+# på den. Uten den hoppes hele klassen over — og gaten melder grønt uten at én
+# test kjørte. Det var nettopp slik gaten sto åpen etter domeneinndelingen.
+# `fiq_rgs` beholdes som mer spesifikt filter for kjøring av kun dette sporet.
+@tagged("post_install", "-at_install", "fiq", "fiq_rgs")
 class TestRgsData(TransactionCase):
 
     @classmethod
