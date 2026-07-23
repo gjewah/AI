@@ -706,3 +706,105 @@ class TestPrjData(TransactionCase):
             )
             self.assertIn("nummer", p, "Risikoraden viser prosjektnummer")
             self.assertIn("forbruk_prosent", p, "Risikoraden viser en stolpe")
+
+    def test_kpi_kortene_fylles_naar_oppgaver_finnes(self):
+        """🔴 Gjermund så flaten 23.07: ALLE fem KPI-kort viste 0, Gantt tom.
+
+        To forklaringer var mulige — (A) basen er tom og flaten viser sannheten,
+        eller (B) datakoblingen svikter og flaten tegner nuller. Ingen test kunne
+        skille dem: den eneste KPI-sjekken var `assertIn("kpi", res)`, som bare
+        krever at NØKKELEN finnes. Et tomt oppslagsverk består den.
+
+        🔑 Denne testen OPPRETTER tre oppgaver med kjente frister og krever at
+        tallene faktisk stiger. Er den grønn mens flaten viser 0, er basen tom
+        (A). Er den rød, svikter koblingen (B). Da er nullene et svar, ikke bare
+        et symptom.
+
+        📌 Samme lærdom som resten av uka: «nøkkelen finnes» og «tallet stemmer»
+        er to påstander, og bare den andre er verdt noe for den som ser skjermen.
+        """
+        prosjekt = self.Project.search(self._prosjekt_domene_for_test(), limit=1)
+        if not prosjekt:
+            self.skipTest("Ingen prosjekter å teste mot")
+
+        i_dag = fields.Date.context_today(self.Data)
+        self.env["project.task"].create([
+            {"name": "KPI passert", "project_id": prosjekt.id,
+             "date_deadline": fields.Datetime.to_datetime(i_dag - timedelta(days=2))},
+            {"name": "KPI naer", "project_id": prosjekt.id,
+             "date_deadline": fields.Datetime.to_datetime(i_dag + timedelta(days=2))},
+        ])
+
+        res = self.Data.get_oppgaver_over_tid(antall=7)
+        kpi = res.get("kpi") or {}
+
+        self.assertTrue(
+            res["oppgaver"],
+            "To oppgaver med frister i vinduet ble opprettet, men datasettet er "
+            "tomt — koblingen mellom domenet og flaten svikter",
+        )
+        self.assertGreater(
+            (kpi.get("kritisk") or 0) + (kpi.get("folg_opp") or 0), 0,
+            "Oppgaver med passert frist og frist om to dager finnes, men både "
+            "«kritisk» og «følg opp» står på 0. Kortene fylles ikke.",
+        )
+
+    def test_ai_nevneren_er_ikke_null_naar_oppgaver_finnes(self):
+        """«GJORT AV AI 0/0» — nevneren var også 0 på Gjermunds skjerm.
+
+        🔑 Det skiller «ingen er gjort av AI» (0/12, et ærlig svar) fra «vi har
+        ingen data» (0/0, som ser ut som en feil). Nevneren er antall oppgaver
+        totalt — den kan bare være 0 hvis datasettet er tomt.
+        """
+        prosjekt = self.Project.search(self._prosjekt_domene_for_test(), limit=1)
+        if not prosjekt:
+            self.skipTest("Ingen prosjekter å teste mot")
+
+        i_dag = fields.Date.context_today(self.Data)
+        self.env["project.task"].create({
+            "name": "AI-nevner", "project_id": prosjekt.id,
+            "date_deadline": fields.Datetime.to_datetime(i_dag + timedelta(days=1)),
+        })
+
+        kpi = self.Data.get_oppgaver_over_tid(antall=7).get("kpi") or {}
+        self.assertGreater(
+            kpi.get("ai_totalt") or 0, 0,
+            "En oppgave med frist i morgen finnes, men «gjort av AI»-nevneren er "
+            "0. 0/0 ser ut som manglende data, ikke som et svar.",
+        )
+
+    def test_oppgave_uten_firma_forsvinner_ikke_stille(self):
+        """🔴 MULIG ÅRSAK til at Gjermund så 0 overalt (23.07).
+
+        `_firma_domene` bruker `("company_id", "in", tillatte)`. Et Odoo-domene
+        med `in` slipper IKKE gjennom rader der feltet er tomt. Har en oppgave
+        eller et prosjekt `company_id = False` — fullt lovlig i Odoo — faller den
+        ut av HVER eneste spørring i flaten, uten feilmelding.
+
+        🔑 Det er den farligste formen: ingen krasj, ingen advarsel, bare tall
+        som er for lave. Nøyaktig samme klasse som Gantt-domenet 22.07, der 379
+        av 400 rader var utegnbare mens alt så grønt ut.
+
+        Denne testen dokumenterer atferden. Er den grønn, håndteres tomt firma
+        riktig. Er den rød, har vi funnet hvorfor flaten viser 0 — og da skal
+        domenet utvides med `'|', ('company_id', '=', False)`.
+        """
+        prosjekt = self.Project.search(self._prosjekt_domene_for_test(), limit=1)
+        if not prosjekt:
+            self.skipTest("Ingen prosjekter å teste mot")
+
+        i_dag = fields.Date.context_today(self.Data)
+        opg = self.env["project.task"].create({
+            "name": "Uten firma", "project_id": prosjekt.id,
+            "date_deadline": fields.Datetime.to_datetime(i_dag + timedelta(days=1)),
+        })
+        if opg.company_id:
+            self.skipTest("Oppgaven arvet firma fra prosjektet — tomt firma "
+                          "kan ikke oppstå i denne basen")
+
+        res = self.Data.get_oppgaver_over_tid(antall=7)
+        self.assertIn(
+            opg.id, [r["id"] for r in res["oppgaver"]],
+            "En oppgave uten firma forsvant fra flaten uten feilmelding. "
+            "Domenet må også slippe gjennom company_id = False.",
+        )
