@@ -4,7 +4,9 @@
   "version": "19.0.5.0.0",
   "summary": "Klimaregnskap og digitalt produktpass (DPP): kalkulator, GS1/QR, portal, bransjeprofiler, ESG-eksport til Excel, ERP-mapping, flerspråklig.",
   "license": "LGPL-3",
-  "author": "Vidir",
+  "author": "FIQ AS",
+  "website": "https://www.fiq.no",
+  "category": "Sustainability",
   "depends": [
     "base",
     "website",
