@@ -77,13 +77,45 @@ export class FiqGuiPrj extends Component {
         this.fraAiKr = ctx.fra === "ai_kr";
         this.markerOppgave = parseInt(ctx.task_id, 10) || false;
 
+        // ---------- undermeny fra KR-skallet (GUI KR 23.07) ----------
+        // Skallet sender valget fra hovedmenyens undermeny som prop `menyValg`.
+        // Fanene «I dag / Uke / Måned / Gantt» er IKKE fire like ting — de blander
+        // to akser som fasiten holder adskilt:
+        //     dag/uke/mnd = OPPLØSNING   ·   gantt = VISNING
+        // Derfor oversettes valget til begge aksene her, ikke bare kopieres.
+        //
+        // «I dag» finnes ennå ikke som egen oppløsning (fasiten har __pick(this,'day')).
+        // Inntil den er bygget faller den til uke — en visning brukeren forstår, ikke
+        // en tom rute. 📌 Meldt som åpen post i kartleggingen.
+        //
+        // 🛑 Samme validering som over: ukjent verdi ignoreres i stedet for å tas i god
+        // tro. Skallet er ikke fiendtlig, men en skrivefeil i deres meny skal ikke gi
+        // Gjermund en hvit skjerm uten forklaring.
+        const meny = this.props && this.props.menyValg;
+        const menyKart = {
+            dag: { visning: "liste", opplosning: "uke" },
+            uke: { visning: "liste", opplosning: "uke" },
+            mnd: { visning: "liste", opplosning: "mnd" },
+            gantt: { visning: "gantt", opplosning: "uke" },
+        };
+        const fraMeny = (meny && menyKart[meny]) || false;
+
         this.state = useState({
             laster: true,
             feil: false,
             // visning × oppløsning — fasitens to akser
-            // Fra AI KRs context om den er satt, ellers default.
-            visning: ønsketVisning,
-            opplosning: ønsketOppl,
+            //
+            // TRE kilder kan sette dem. Rekkefølgen er et VALG, ikke tilfeldig:
+            //   1. AI KRs context  — brukeren klikket «Åpne i Gantt» på en konkret
+            //                        oppgave og forventer å lande nettopp der
+            //   2. undermenyen     — brukeren valgte en fane i hovedmenyen
+            //   3. default         — gantt + uke
+            // AI KR vinner fordi den er det MEST spesifikke ønsket: den bærer en
+            // task_id og et uttrykt mål. Undermenyen er et bredere valg.
+            visning: (ctx.aktiv_visning ? ønsketVisning
+                : fraMeny ? fraMeny.visning : ønsketVisning),
+            opplosning: (ctx.opplosning ? ønsketOppl
+                : fraMeny ? fraMeny.opplosning : ønsketOppl),
             grupper: "prosjekt",    // prosjekt | rolle | ansvarlig | status | firma
             fraUke: null,
             valgtFirma: fraSkallet,
@@ -410,8 +442,30 @@ registry.category("actions").add("fiq_gui_prj_dashboard", FiqGuiPrj);
 // ⚠️ `add()` kaster i KALLERENS modul (registry.js:100-101), ikke i skallet. En
 // ugyldig oppføring her ville altså tatt ned MIN modul under lasting — og med den
 // hele modulgrafen. Derfor er dette siste linje i fila: alt annet er ferdig definert.
-registry.category("fiq_gui_flates").add("prj", {
-    key: "prj",
+// 🔴 NØKKELEN MÅ VÆRE «gui_prj», IKKE «prj» (GUI KR 23.07, verifisert i deres kode).
+//
+// Menyen i control_room.js:1481 kaller `runAction("gui_prj")`. Jeg registrerte «prj».
+// `gui_prj` ≠ `prj` → oppslaget i `fiq_gui_flates` fant ingenting → fallback til
+// `doAction` → HELE siden byttes → rammen (hovedmeny, firmavelger, «Til stede nå»)
+// forsvant. Gjermunds adresse viste sju `action-`-ledd på rad: han navigerte bort,
+// gjentatte ganger, i stedet for å bytte innmat.
+//
+// Komponenten min var altså riktig registrert hele tiden — den ble bare aldri spurt
+// etter. Lærdommen: en registrering som «ser riktig ut» er verdiløs hvis nøkkelen
+// ikke er DEN kalleren bruker. Samme grunnform som resten av uka: målt på ett lag,
+// konkludert om et annet.
+//
+// 📌 `ir.actions.client` i data/fiq_gui_prj_flate.xml BEHOLDES. Kontrakten (GUI KR):
+//    ir.config_parameter = AT flaten finnes (server: meny, tilgang, samlebokser)
+//    fiq_gui_flates      = HVORDAN den vises (klient: komponenten)
+//    `runAction` prøver sloten FØRST, `doAction` er riktig fallback for native skjermer.
+//    Å fjerne den ville gjort menypunktet dødt i stedet for å åpne feil.
+//
+// ⚠️ Nøkkelen må være UNIK — `DuplicatedKeyError` gir blank skjerm for HELE
+// grensesnittet. Verifisert ledig 23.07: registeret har finans · komm · prj ·
+// regnskap · relasjoner · salg. «gui_prj» er ubrukt, og «prj» fjernes her.
+registry.category("fiq_gui_flates").add("gui_prj", {
+    key: "gui_prj",
     label: "Prosjekt",
     color: "#4C63D2",
     // Sequence 40 = etter AI KR (30), før tidslinje (45). Samme tall som i
@@ -419,4 +473,26 @@ registry.category("fiq_gui_flates").add("prj", {
     // sted i menyen og et annet i skallet.
     sequence: 40,
     Component: FiqGuiPrj,
+
+    // ── UNDERMENY: fire faner, ÉN slot (GUI KR 23.07) ──────────────────────────
+    //
+    // «I dag / Uke / Måned / Gantt» er FIRE FANER INNE I FLATEN, ikke fire flater.
+    // De viser SAMME data i ulik oppløsning — det er en visningsbryter. Fire
+    // slot-nøkler ville gitt fire menypunkter, og Gjermund 19.07: «det var aldri
+    // intensjonen at det skulle være 20-30 menyer i KR.»
+    //
+    // Kjernen eier utseende og oppførsel; jeg leverer bare data. Bygde jeg min egen
+    // meny, ville vi fått fem menyer som ser ulike ut og ikke kan foldes på tvers —
+    // samme feil som de seks kollaps-implementasjonene.
+    //
+    // `label` som {nb_NO, en_US}: norsk før engelsk. Valget kommer tilbake som
+    // prop `menyValg`, og JEG bestemmer hva det betyr.
+    // `badge` = det som HASTER, ikke totalen. 0 vises ikke — settes når flaten har
+    // ekte tall å melde (frister i dag), ikke som fast pynt.
+    meny: [
+        { key: "dag", label: { nb_NO: "I dag", en_US: "Today" } },
+        { key: "uke", label: { nb_NO: "Uke", en_US: "Week" } },
+        { key: "mnd", label: { nb_NO: "Måned", en_US: "Month" } },
+        { key: "gantt", label: { nb_NO: "Gantt", en_US: "Gantt" } },
+    ],
 });
