@@ -110,8 +110,22 @@ registry.category("actions").add("fiq_gui_comm_dashboard", FiqKommunikasjon);
 //
 // Menypunktene speiler flatens egne visninger — de samme brukeren allerede kjenner
 // fra sidemenyen: oversikt, e-postkanalen og kalenderen. Ingen nye begreper.
-registry.category("fiq_gui_flates").add("komm", {
-    key: "komm",
+//
+// 🔴 TO NØKLER, MED VILJE (rettet 23.07.2026 — meldt av AI PK, bevist i Prosjekt-flaten):
+// KR slår opp flaten med MENYENS nøkkel: `_slotKomponent(key)` → `reg.get(key)`
+// (`control_room.js:1790`). Den faste menylista bruker **"kommunikasjon"** (:1478), mens
+// selvregistreringen her brukte **"komm"**. `reg.get("kommunikasjon")` fant da ingenting →
+// flaten åpnet UTEN ramme, og hovedmenyen forsvant. Symptomet er stille: menypunktet
+// vises, noe åpnes — men rammen er borte. Nøyaktig samme feil felte `fiq_gui_prj`.
+// KRs egen kommentar (:1502) navngir kollisjonen: «kommunikasjon/komm».
+//
+// Vi registrerer derfor under BEGGE nøkler, med samme objekt:
+//   "kommunikasjon" — det menyen faktisk kaller (KR-oppslaget)
+//   "komm"          — matcher selvregistreringen i `fiq_gui_comm_flate.xml` og `fiq.gui.komm.data`
+// KRs dedup går på HANDLINGEN (xmlid), ikke nøkkelen, så dette gir ingen dublett i menyen.
+// 🛑 Fiksen hører i MIN modul — `fiq_gui_control` røres ikke.
+const FLATE_KOMM = {
+    key: "kommunikasjon",
     label: "Kommunikasjon",
     color: "#0078CC",          // 2 Admin-blå, kanonisk fargekart
     sequence: 40,              // samme plass som i KR-menyen (mellom 35 og 45)
@@ -121,4 +135,6 @@ registry.category("fiq_gui_flates").add("komm", {
         { key: "epost", label: "E-post" },
         { key: "kalender", label: "Møter og kalender" },
     ],
-});
+};
+registry.category("fiq_gui_flates").add("kommunikasjon", FLATE_KOMM);
+registry.category("fiq_gui_flates").add("komm", { ...FLATE_KOMM, key: "komm" });
