@@ -216,6 +216,38 @@ class TestStatusForpliktelser(TransactionCase):
 
 
 @tagged("post_install", "-at_install")
+class TestOdoo19Tilstander(TransactionCase):
+    """🔴 Fanger Odoo 18-navn som ser riktige ut men aldri matcher.
+
+    Bakgrunn: aggregatet filtrerte paa state in ('done','paid','verify').
+    'done' og 'verify' finnes IKKE i Odoo 19 — de heter 'validated' og
+    'cancel'. Feilen ga ingen feilmelding; den ga bare FAERRE linjer, og
+    validerte loennskjoeringer ville aldri naadd cashflow.
+
+    Varselet kom fra 2.80 RGS 23.07: en test som laaser ÉN tilstandsverdi
+    laaser ETT miljoe. Denne testen laaser i stedet at verdiene FINNES.
+    """
+
+    def test_19_tilstandene_vi_filtrerer_paa_finnes(self):
+        felt = self.env["hr.payslip"]._fields["state"]
+        gyldige = {verdi for verdi, _ in felt.selection}
+        brukt = {"validated", "paid"}
+        self.assertEqual(
+            brukt - gyldige, set(),
+            "Aggregatet filtrerer på tilstander som ikke finnes i denne "
+            "Odoo-versjonen. Da blir cashflow stille tom, ikke rød.",
+        )
+
+    def test_20_gamle_odoo18_navn_er_borte(self):
+        felt = self.env["hr.payslip"]._fields["state"]
+        gyldige = {verdi for verdi, _ in felt.selection}
+        self.assertEqual(
+            gyldige & {"done", "verify"}, set(),
+            "Dukker Odoo 18-navnene opp igjen, må filteret vurderes på nytt.",
+        )
+
+
+@tagged("post_install", "-at_install")
 class TestPersonvern(TransactionCase):
     """🔒 Re-identifiseringsgrensen. 2.80 RGS har bedt om aa bli holdt til den."""
 

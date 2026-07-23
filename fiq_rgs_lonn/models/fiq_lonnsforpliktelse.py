@@ -125,7 +125,11 @@ class FiqLonnsforpliktelse(models.AbstractModel):
         """
         slipper = self.env["hr.payslip"].search([
             ("company_id", "=", company.id),
-            ("state", "in", ("done", "paid", "verify")),
+            # Odoo 19-tilstander: draft | validated | paid | cancel.
+            # 🔴 IKKE 'done'/'verify' — de er Odoo 18-navn. Verifisert i
+            # hr_payroll/models/hr_payslip.py. Med de gamle navnene ville
+            # VALIDERTE loennskjoeringer aldri naadd cashflow.
+            ("state", "in", ("validated", "paid")),
             ("date_to", ">=", fra_dato),
             ("date_to", "<=", til_dato),
         ])
@@ -149,7 +153,12 @@ class FiqLonnsforpliktelse(models.AbstractModel):
                 # null er farligere enn et synlig hull.
                 continue
             data["ansatte"].add(slip.employee_id.id)
-            if slip.state == "verify":
+            # `paid` = pengene er utbetalt -> bokfoert faktum.
+            # `validated` = bekreftet, men ikke utbetalt -> planlagt.
+            # 🔑 Vi laaser SAMMENHENGEN, ikke en tilstandsverdi: er slippen
+            # utbetalt, er tallet bokfoert; er den ikke det, er det planlagt.
+            # (2.80 RGS 23.07: tester som laaser ÉN tilstand laaser ETT miljoe.)
+            if slip.state != "paid":
                 data["bokfort"] = False
 
         linjer = []
