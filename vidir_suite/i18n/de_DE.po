@@ -1,3 +1,0 @@
-msgid ""
-msgstr ""
-"Language: de_DE\n"
