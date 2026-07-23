@@ -42,6 +42,13 @@ per firma arves. Add-only, ingen destruktiv endring.
         # progress-feltet paa project.task eies av hr_timesheet; _compute_time_status
         # avhenger av det, saa modulen maa lastes foer oss (ellers: 'progress' not found).
         "hr_timesheet",
+        # code (project.task) og sequence_code (project.project) eies av
+        # project_sequence_number - IKKE av Odoo-kjernen. Begge brukes direkte i
+        # Gantt-viewene vaare (project_task_gantt_views.xml / project_project_gantt_views.xml).
+        # Uten denne depends feiler installasjonen paa en base der modulen er
+        # uninstalled: «Field "code" does not exist in model "project.task"»
+        # (verifisert paa Dev 23.07 - modulen lot seg ikke installere i det hele tatt).
+        "project_sequence_number",
     ],
     "data": [
         "views/project_task_gantt_views.xml",
