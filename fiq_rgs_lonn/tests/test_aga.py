@@ -248,6 +248,119 @@ class TestOdoo19Tilstander(TransactionCase):
 
 
 @tagged("post_install", "-at_install")
+class TestLonnskostnad(TransactionCase):
+    """Type 02 i den avtalte rekkefoelgen mot cashflow.
+
+    🛡️ Bevis-vaktpost fra START denne gangen (grep fra 2.80 RGS): hver test
+    som teller linjer bekrefter ogsaa BELOEPET, slik at en tom liste ikke kan
+    passere som gront.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.company = self.env["res.company"].create({
+            "name": "Lønnsfirma",
+            "fiq_aga_sone": "2",
+        })
+        struktur = self.env.ref("fiq_rgs_lonn.hr_payroll_structure_no_employee")
+        self.slipper = self.env["hr.payslip"]
+        for i in range(3):
+            ansatt = self.env["hr.employee"].create({
+                "name": "Lønnsansatt %s" % i,
+                "company_id": self.company.id,
+            })
+            slip = self.env["hr.payslip"].create({
+                "name": "Lønnsslipp %s" % i,
+                "employee_id": ansatt.id,
+                "company_id": self.company.id,
+                "date_from": "2026-08-01",
+                "date_to": "2026-08-31",
+                "struct_id": struktur.id,
+            })
+            # net_wage er et LAGRET felt (som `total` paa linja) — det fylles
+            # av compute_sheet(). Settes eksplisitt her, jf. laerdommen fra AGA.
+            slip.net_wage = 30000.0
+            self.slipper |= slip
+
+    def _lonnslinjer(self):
+        return [
+            l for l in self.env["fiq.lonnsforpliktelse"].with_company(
+                self.company
+            ).hent_lonnsforpliktelser("2026-01-01", "2026-12-31")
+            if l["type"] == "lonn"
+        ]
+
+    def test_27_augustlonn_forfaller_15_september(self):
+        """🔑 Forfall og periode SPRIKER systematisk — det er hele grunnen til
+        at `periode`-feltet finnes. Riktig for likviditeten, forklarlig for
+        leseren."""
+        self.slipper.write({"state": "paid"})
+        linjer = self._lonnslinjer()
+        self.assertEqual(len(linjer), 1, "Én linje per utbetaling.")
+        self.assertEqual(linjer[0]["forfall"].month, 9)
+        self.assertEqual(linjer[0]["forfall"].day, 15)
+        self.assertEqual(linjer[0]["periode"], "August 2026")
+
+    def test_28_belopet_er_NETTO_ikke_brutto(self):
+        """🛡️ Bevis-vaktpost: 3 x 30 000 netto = 90 000.
+
+        Brukte vi brutto, ville forskuddstrekket blitt talt to ganger naar
+        skattetrekk senere legges inn som egen forpliktelsestype.
+        """
+        self.slipper.write({"state": "paid"})
+        linjer = self._lonnslinjer()
+        self.assertTrue(linjer, "Ingen lønnslinjer å måle på.")
+        self.assertAlmostEqual(
+            sum(l["belop"] for l in linjer), 90_000.0, 2,
+            "Beløpet er ikke summen av nettolønn — testen måler noe annet "
+            "enn den tror.",
+        )
+
+    def test_29_desemberlonn_forfaller_i_januar_neste_aar(self):
+        """Aarsskiftet i forfallsberegningen. Uten det ville desemberlønn
+        forfalt 15. maaned 13."""
+        self.slipper.write({
+            "date_from": "2026-12-01", "date_to": "2026-12-31", "state": "paid",
+        })
+        linjer = self._lonnslinjer()
+        self.assertTrue(linjer)
+        self.assertEqual(linjer[0]["forfall"].year, 2027)
+        self.assertEqual(linjer[0]["forfall"].month, 1)
+
+    def test_30_validert_er_planlagt_utbetalt_er_bokfort(self):
+        """Samme skille som for AGA — og det MAA holdes her, fordi 2.80 RGS
+        viser det vi sender uten aa overproeve det."""
+        self.slipper.write({"state": "validated"})
+        self.assertTrue(all(
+            l["sikkerhet"] == "planlagt" for l in self._lonnslinjer()
+        ))
+        self.slipper.write({"state": "paid"})
+        self.assertTrue(all(
+            l["sikkerhet"] == "bokfort" for l in self._lonnslinjer()
+        ))
+
+    def test_31_status_og_linjer_er_enige(self):
+        """🤝 Kryss-testen — motstykket til 2.80 RGS' egen. Bygget FRA START
+        denne gangen, ikke etterpaa."""
+        self.slipper.write({"state": "paid"})
+        status = self.env["fiq.lonnsforpliktelse"].with_company(
+            self.company
+        ).status_forpliktelser("2026-01-01", "2026-12-31")
+        self.assertEqual(
+            bool(self._lonnslinjer()), status["lonn"]["levert"],
+            "status_forpliktelser() og aggregatet spriker — kontrakten er "
+            "brutt selv om begge sider ser riktige ut hver for seg.",
+        )
+
+    def test_32_faerre_enn_tre_ansatte_gir_ingen_linje(self):
+        """🔒 Re-identifiseringsgrensen gjelder ogsaa loennskostnad."""
+        self.slipper.write({"state": "paid"})
+        self.assertTrue(self._lonnslinjer())
+        self.slipper[0].state = "draft"
+        self.assertEqual(self._lonnslinjer(), [])
+
+
+@tagged("post_install", "-at_install")
 class TestPersonvern(TransactionCase):
     """🔒 Re-identifiseringsgrensen. 2.80 RGS har bedt om aa bli holdt til den."""
 

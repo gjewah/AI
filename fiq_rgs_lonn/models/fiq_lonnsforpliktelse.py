@@ -15,6 +15,14 @@ MIN_ANSATTE = 3
 # etter hver tomaanedersperiode. Termin 1 (jan-feb) forfaller 15. mars, osv.
 AGA_TERMIN_MND = {1: 3, 2: 5, 3: 7, 4: 9, 5: 11, 6: 1}
 
+# `periode` skal vaere MENNESKELESBAR, aldri en maskindato (kontrakt-krav fra
+# 2.80 RGS). «August 2026» — ikke «2026-08».
+MAANEDER = {
+    1: "Januar", 2: "Februar", 3: "Mars", 4: "April", 5: "Mai", 6: "Juni",
+    7: "Juli", 8: "August", 9: "September", 10: "Oktober", 11: "November",
+    12: "Desember",
+}
+
 
 class FiqLonnsforpliktelse(models.AbstractModel):
     """Loennsforpliktelser som aggregat til cashflow (2.80 RGS).
@@ -50,8 +58,66 @@ class FiqLonnsforpliktelse(models.AbstractModel):
         """
         company = self.env.company
         forpliktelser = []
+        forpliktelser += self._lonn_forpliktelser(fra_dato, til_dato, company)
         forpliktelser += self._aga_forpliktelser(fra_dato, til_dato, company)
         return forpliktelser
+
+    def _lonn_forpliktelser(self, fra_dato, til_dato, company):
+        """Loennskostnad — det som faktisk forlater konto til de ansatte.
+
+        🔑 NETTOLOENN, ikke brutto. Cashflow spoer hva som forlater konto:
+        forskuddstrekket gaar til Skatteetaten som en EGEN betaling med egen
+        termin, ikke til den ansatte. Brukte vi brutto, ville vi telt
+        skattetrekket to ganger naar trekket senere legges inn som egen type.
+
+        ÉN LINJE PER FORFALL — loenn utbetales den 15., og hver maaned er en
+        egen utbetaling. En sum for hele aaret kan ikke plasseres i en kurve.
+        """
+        slipper = self.env["hr.payslip"].search([
+            ("company_id", "=", company.id),
+            ("state", "in", ("validated", "paid")),
+            ("date_to", ">=", fra_dato),
+            ("date_to", "<=", til_dato),
+        ])
+
+        per_maaned = {}
+        for slip in slipper:
+            noekkel = (slip.date_to.year, slip.date_to.month)
+            data = per_maaned.setdefault(
+                noekkel, {"belop": 0.0, "ansatte": set(), "bokfort": True}
+            )
+            data["belop"] += slip.net_wage
+            data["ansatte"].add(slip.employee_id.id)
+            if slip.state != "paid":
+                data["bokfort"] = False
+
+        linjer = []
+        for (aar, mnd), data in sorted(per_maaned.items()):
+            # 🔒 Re-identifiseringsgrensen — samme regel som for AGA.
+            if len(data["ansatte"]) < MIN_ANSATTE or not data["belop"]:
+                continue
+
+            linjer.append({
+                "type": "lonn",
+                "label": "Lønnskjøring",
+                "forfall": self._lonn_forfall(aar, mnd),
+                "belop": data["belop"],
+                "sikkerhet": "bokfort" if data["bokfort"] else "planlagt",
+                "kilde": "Odoo",
+                "periode": "%s %s" % (MAANEDER[mnd], aar),
+            })
+        return linjer
+
+    def _lonn_forfall(self, aar, mnd):
+        """Loenn utbetales den 15. i MAANEDEN ETTER opptjeningsmaaneden.
+
+        Derfor spriker `periode` og `forfall` systematisk: augustloenn staar
+        som «August 2026» men forfaller 15. september. Det er nettopp den
+        forskjellen 2.80 RGS ba om `periode`-feltet for — riktig for
+        likviditeten, forklarlig for leseren.
+        """
+        from datetime import date
+        return date(aar + 1, 1, 15) if mnd == 12 else date(aar, mnd + 1, 15)
 
     @api.model
     def status_forpliktelser(self, fra_dato, til_dato, company_id=False):
@@ -74,11 +140,7 @@ class FiqLonnsforpliktelse(models.AbstractModel):
         company = self.env.company
         return {
             "aga": self._aga_status(fra_dato, til_dato, company),
-            "lonn": {
-                "levert": False,
-                "grunn": "ikke_bygget",
-                "forklaring": "Lønnskostnad er ikke tatt i bruk ennå",
-            },
+            "lonn": self._lonn_status(fra_dato, til_dato, company),
             "feriepenger": {
                 "levert": False,
                 "grunn": "ikke_bygget",
@@ -89,6 +151,20 @@ class FiqLonnsforpliktelse(models.AbstractModel):
                 "grunn": "ikke_bygget",
                 "forklaring": "Tjenestepensjon er ikke tatt i bruk ennå",
             },
+        }
+
+    def _lonn_status(self, fra_dato, til_dato, company):
+        """Status for loennskostnad. Trenger IKKE sone — nettoloenn er
+        uavhengig av arbeidsgiveravgift."""
+        if self._lonn_forpliktelser(fra_dato, til_dato, company):
+            return {"levert": True, "grunn": None, "forklaring": None}
+        return {
+            "levert": False,
+            "grunn": "ingen_data",
+            "forklaring": (
+                "Ingen lønnskjøringer i perioden, eller for få ansatte til at "
+                "tall kan vises uten å identifisere enkeltpersoner."
+            ),
         }
 
     def _aga_status(self, fra_dato, til_dato, company):
