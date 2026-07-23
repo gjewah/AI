@@ -344,9 +344,15 @@
         .fiq_prj_spor { display: flex; }
     }
 
+    // `flex-wrap: wrap` følger av at navnet nå kan bryte: uten den ville et langt
+    // navn presset nummer og merker ut av raden i stedet for ned på neste linje.
+    // `align-items: baseline` i stedet for `center` — med flerlinjet navn ville
+    // sentrering flyttet prioritets- og AI-merkene til midten av en høy rad, langt
+    // fra teksten de hører til.
     .fiq_prj_navnkol {
         display: flex;
-        align-items: center;
+        align-items: baseline;
+        flex-wrap: wrap;
         gap: 6px;
         padding: 8px 13px;
         min-width: 0;
@@ -526,11 +532,22 @@
         white-space: nowrap;
     }
 
+    // 🔴 RETTET 23.07: her sto `text-overflow: ellipsis` + `white-space: nowrap`.
+    // Fasiten (Gantt-utkastet, V00.04) er uttrykkelig: **oppgavenavnet FØRST og
+    // HELT — «aldri kuttet til Forbru…»**.
+    //
+    // 🔑 Dette var ikke en manglende funksjon, det var en feil jeg hadde bygget
+    // inn. Et kuttet navn ser ryddig ut i et pent testoppsett og blir ubrukelig
+    // i ekte data, der «Forbruksmateriell etasje 3» og «Forbruksmateriell etasje
+    // 4» begge blir «Forbru…». Da må brukeren åpne hver rad for å vite hvilken
+    // han ser på — og hele poenget med en oversikt er å slippe det.
+    //
+    // Navnet får nå bryte over to linjer i stedet for å kuttes. Radhøyden vokser
+    // litt for de lengste; det er en billigere pris enn tvetydighet.
     .fiq_prj_onavn {
         cursor: pointer;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        overflow-wrap: anywhere;
+        line-height: 1.25;
 
         &:hover { color: var(--fiq-accent); text-decoration: underline; }
     }
