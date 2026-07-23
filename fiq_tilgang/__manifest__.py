@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Tilgang",
-    "version": "19.0.1.3.1",
+    "version": "19.0.1.3.2",
     "summary": "Arvede rettigheter (Novell-stil) på taksonomi-treet: Lese/Skrive/Administrere "
                "som arves nedover dokument-etikett-hierarkiet, med eksplisitte brudd. "
                "Global admin på topp og per selskap. Speiler Office/SharePoint-tilgangen.",

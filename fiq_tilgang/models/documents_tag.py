@@ -71,7 +71,17 @@ class DocumentsTag(models.Model):
             ("ressurs_id", "in", noder.ids),
             ("company_id", "!=", False),
         ]).mapped("company_id")
-        return (not eiere) or bool(set(eiere.ids) & set(user.company_ids.ids))
+
+        # 🛑 INGEN REGLER = INGEN TILKNYTNING = INGEN SELSKAPS-ADMIN-TILGANG.
+        # Gruppa heter «Global admin (selskap)» og skal gi «alt i EGET selskap»
+        # (`security/fiq_tilgang_groups.xml`). Kan vi ikke fastslå at området hører
+        # til brukerens selskap, kan vi heller ikke fastslå at det er «eget» — og da
+        # skal svaret være NEI. Å tolke fravær av tilknytning som «generisk, alle
+        # slipper inn» er nøyaktig lekkasjen vi retter: en admin i firma B ville
+        # fortsatt vært allmektig på et hvilket som helst nytt område.
+        # 🔑 Tilgang skal innvilges på et POSITIVT grunnlag, aldri på fravær av bevis.
+        # Trenger man tilgang på tvers av alle selskap, finnes «Global admin (topp)».
+        return bool(eiere) and bool(set(eiere.ids) & set(user.company_ids.ids))
 
     def _forelder(self):
         """Forelderen i områdehierarkiet, eller tomt recordset.
