@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 FIQ AS, Loym AS
+     License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html). -->
+<odoo>
+    <!-- Globale multi-company record-rules: vis delte (company_id=False)
+         + records som tilhører et av brukerens selskaper. -->
+
+    <record id="crm_stage_company_rule" model="ir.rule">
+        <field name="name">CRM Stage: multi-company</field>
+        <field name="model_id" ref="crm.model_crm_stage"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="crm_lost_reason_company_rule" model="ir.rule">
+        <field name="name">CRM Lost Reason: multi-company</field>
+        <field name="model_id" ref="crm.model_crm_lost_reason"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="mail_template_company_rule" model="ir.rule">
+        <field name="name">Mail Template: multi-company</field>
+        <field name="model_id" ref="mail.model_mail_template"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="res_partner_category_company_rule" model="ir.rule">
+        <field name="name">Partner Category: multi-company</field>
+        <field name="model_id" ref="base.model_res_partner_category"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_gdpr_log_user,gdpr.log user,model_gdpr_log,group_gdpr_user,1,0,0,0
+access_gdpr_log_manager,gdpr.log manager,model_gdpr_log,group_gdpr_manager,1,1,1,1
+access_gdpr_log_internal,gdpr.log internal,model_gdpr_log,base.group_user,1,0,1,0

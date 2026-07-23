@@ -1,2 +1,66 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Loym-moduler kopiert byte-identisk (ALDRI-ROR sekvens) - ingen linjeskift-konvertering
+base_display_name/** -text
+base_mixin_expression_value/** -text
+base_mixin_sequence_number/** -text
+base_model_code/** -text
+crm_sequence_number/** -text
+partner_sequence_number/** -text
+product_sequence_number/** -text
+project_internal_external/** -text
+project_sequence_number/** -text
+
+# apps-fiq (loym) kopiert byte-identisk
+action_goto_documents_mixin/** -text
+base_code_list/** -text
+base_fiq/** -text
+crm_code_list/** -text
+crm_documents_tag/** -text
+crm_fiq/** -text
+crm_lead_firstname/** -text
+crm_name/** -text
+crm_partner_assign_location/** -text
+crm_sale_project/** -text
+custom_info_mixin/** -text
+documents_code/** -text
+documents_code_list/** -text
+documents_color/** -text
+documents_fiq/** -text
+documents_form/** -text
+documents_name/** -text
+documents_tag/** -text
+documents_url/** -text
+fiq_custom/** -text
+fiq_modules/** -text
+fiq_multi_company/** -text
+mail_chat/** -text
+mail_config_by_user/** -text
+mail_fiq/** -text
+mail_force_email_notification_compose/** -text
+mail_message_search_global/** -text
+mail_message_security/** -text
+mail_never_autofollow/** -text
+partner_assign_location/** -text
+partner_code_list/** -text
+partner_documents_folder/** -text
+partner_documents_tag/** -text
+partner_short_name/** -text
+portal_user/** -text
+product_attribute_keep_variant/** -text
+product_documents_folder/** -text
+product_documents_tag/** -text
+product_fiq/** -text
+project_code_list/** -text
+project_documents/** -text
+project_documents_folder_url/** -text
+project_documents_tab/** -text
+project_documents_tag/** -text
+project_fiq/** -text
+project_partner_rel/** -text
+project_role/** -text
+project_shared/** -text
+project_template/** -text
+res_company_address_stored/** -text
+web_notify/** -text

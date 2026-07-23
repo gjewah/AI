@@ -1,0 +1,1 @@
+This module disables auto-following.

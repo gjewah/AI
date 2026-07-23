@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <!-- BUTTON BOX -->
+    <!-- Projects -->
+    <record id="project_partner_rel.res_partner_view_form" model="ir.ui.view">
+        <field name="priority">1</field>
+    </record>
+    <!-- Tasks -->
+    <record id="project.view_task_partner_info_form" model="ir.ui.view">
+        <field name="priority">2</field>
+    </record>
+    <!-- Documents -->
+    <record id="documents.documents_document_res_partner_view" model="ir.ui.view">
+        <field name="priority">3</field>
+    </record>
+
+    <!-- TABS -->
+    <!-- Credit Insurance -->
+    <!-- <record id="partner_risk_insurance.view_partner_form" model="ir.ui.view">
+        <field name="priority">1</field>
+    </record> -->
+</data>

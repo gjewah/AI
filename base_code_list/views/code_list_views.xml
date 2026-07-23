@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="code_list_view_form" model="ir.ui.view">
+        <field name="model">code.list</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <widget
+                        name="web_ribbon"
+                        title="Archived"
+                        bg_color="bg-danger"
+                        invisible="active"
+                    />
+                    <group name="main">
+                        <group name="general">
+                            <field name="active" invisible="1" />
+                            <field name="code" />
+                            <field name="name" />
+                            <field name="description" />
+                            <field name="parent_ids" widget="many2many_tags" />
+                            <field name="compute_item_codes"/>
+                            <field name="sequence_separator" invisible="not compute_item_codes"/>
+                            <button
+                                name="action_open_items"
+                                type="object"
+                                string="Go to Items List"
+                                icon="fa-list"
+                            />
+                        </group>
+                    </group>
+                    <group name="items_group" string="Items" invisible="not id">
+                        <field
+                            name="item_ids"
+                            context="{'hide_list_id': True, 'list_view_ref': 'base_code_list.code_list_item_view_list_reorder'}"
+                            nolabel="1"
+                            colspan="2"
+                        />
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="code_list_view_list" model="ir.ui.view">
+        <field name="model">code.list</field>
+        <field name="arch" type="xml">
+            <list >
+                <field name="code" optional="hide"/>
+                <field name="name" />
+                <field name="description" optional="hide" />
+                <field name="parent_ids" widget="many2many_tags" optional="hide"/>
+                <field name="compute_item_codes" optional="hide"/>
+                <field name="sequence_separator" optional="hide"/>
+                <button name="action_open_items" type="object" string="Items" icon="fa-list"/>
+            </list>
+        </field>
+    </record>
+    <record id="code_list_view_search" model="ir.ui.view">
+        <field name="model">code.list</field>
+        <field name="arch" type="xml">
+            <search>
+                <field
+                    name="name"
+                    string="Name or Code"
+                    filter_domain="['|', ('name', 'ilike', self), ('code', 'ilike', self)]"
+                />
+                <field name="code" />
+                <field name="description" />
+                <field name="parent_ids" />
+                <filter
+                    string="Archived"
+                    name="inactive"
+                    domain="[('active', '=', False)]"
+                />
+            </search>
+        </field>
+    </record>
+    <record id="code_list_action" model="ir.actions.act_window">
+        <field name="name">Code Lists</field>
+        <field name="res_model">code.list</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

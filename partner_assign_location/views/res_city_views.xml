@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <record id="res_city_view_list" model="ir.ui.view">
+        <field name="name">res.city.view.list.inherit.location</field>
+        <field name="model">res.city</field>
+        <field name="inherit_id" ref="base_address_extended.view_city_tree"/>
+        <field name="arch" type="xml">
+            <list position="inside">
+                <field name="assign_location_ids" widget="many2many_tags" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="res_city_view_form" model="ir.ui.view">
+        <field name="name">res.city.view.form.inherit.location</field>
+        <field name="model">res.city</field>
+        <field name="inherit_id" ref="base_location.view_city_form"/>
+        <field name="arch" type="xml">
+            <notebook position="inside">
+                <page string="Assigned Locations">
+                    <field name="assign_location_ids"/>
+                </page>
+            </notebook>
+        </field>
+    </record>
+</data>

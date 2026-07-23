@@ -8,11 +8,11 @@
                 <group string="Bundle Engine">
                     <field name="is_bundle"/>
                     <field name="bundle_line_ids">
-                        <tree editable="bottom">
+                        <list editable="bottom">
                             <field name="qty"/>
                             <field name="uom_id"/>
                             <field name="price_factor"/>
-                        </tree>
+                        </list>
                     </field>
                 </group>
             </xpath>

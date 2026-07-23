@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_helpdesk_ticket_form_gdpr" model="ir.ui.view">
+            <field name="name">helpdesk.ticket.form.gdpr</field>
+            <field name="model">helpdesk.ticket</field>
+            <field name="inherit_id" ref="helpdesk.helpdesk_ticket_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[hasclass('oe_button_box')]" position="inside">
+                    <button name="action_gdpr_block_partner" type="object"
+                            class="oe_stat_button" icon="fa-ban"
+                            invisible="not partner_id or x_gdpr_blocked"
+                            confirm="Block all contact with this person (GDPR)?">
+                        <div class="o_stat_info">
+                            <span class="o_stat_text">GDPR</span>
+                            <span class="o_stat_text">Block</span>
+                        </div>
+                    </button>
+                    <button name="action_gdpr_unblock_partner" type="object"
+                            class="oe_stat_button btn-danger" icon="fa-ban"
+                            invisible="not partner_id or not x_gdpr_blocked"
+                            confirm="Remove the GDPR block for this contact?">
+                        <div class="o_stat_info">
+                            <span class="o_stat_text text-danger">GDPR</span>
+                            <span class="o_stat_text text-danger">Blocked</span>
+                        </div>
+                    </button>
+                </xpath>
+                <xpath expr="//sheet" position="before">
+                    <div class="alert alert-danger o_gdpr_block_banner" role="alert"
+                         invisible="not partner_id or not x_gdpr_blocked">
+                        <i class="fa fa-ban me-2"/>
+                        <strong>GDPR BLOCKED: This contact cannot be contacted</strong>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

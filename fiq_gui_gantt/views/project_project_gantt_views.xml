@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================= -->
+    <!--  Prosjekt-Gantt (portefølje-tidslinje + FIQ tids-status)      -->
+    <!-- ============================================================= -->
+    <record id="view_project_project_gantt_fiq" model="ir.ui.view">
+        <field name="name">project.project.gantt.fiq</field>
+        <field name="model">project.project</field>
+        <field name="arch" type="xml">
+            <gantt
+                date_start="date_start"
+                date_stop="date"
+                default_scale="month"
+                scales="week,month,year"
+                progress="task_completion_percentage"
+                color="color"
+                decoration-danger="time_status == 'rod'"
+                decoration-warning="time_status == 'oransje'"
+                decoration-success="time_status == 'gronn'">
+                <field name="sequence_code"/>
+                <field name="time_status"/>
+                <field name="company_id"/>
+                <field name="user_id"/>
+                <field name="task_completion_percentage"/>
+                <templates>
+                    <div t-name="gantt-popover" class="o_fiq_gantt_popover">
+                        <ul class="p-0 m-0" style="list-style:none;">
+                            <li t-if="sequence_code"><strong>Prosjektnr:</strong> <t t-esc="sequence_code"/></li>
+                            <li t-if="user_id"><strong>Prosjektleder:</strong> <t t-esc="user_id"/></li>
+                            <li t-if="task_completion_percentage"><strong>Fullført:</strong> <t t-esc="task_completion_percentage"/>%</li>
+                        </ul>
+                    </div>
+                </templates>
+            </gantt>
+        </field>
+    </record>
+
+    <!-- Handling: Prosjekt-Gantt -->
+    <record id="action_project_project_gantt_fiq" model="ir.actions.act_window">
+        <field name="name">Prosjekt-Gantt</field>
+        <field name="res_model">project.project</field>
+        <field name="view_mode">gantt,list,form</field>
+        <field name="view_id" ref="view_project_project_gantt_fiq"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Ingen prosjekter med datoer ennå</p>
+            <p>Sett <b>Startdato</b> og <b>Utløpsdato</b> på prosjekter for å se porteføljen i tidslinjen.</p>
+        </field>
+    </record>
+
+    <!-- Drill-ned-knapp i prosjektskjemaet: åpne oppgave-Gantt for prosjektet -->
+    <record id="view_project_form_fiq_gantt_button" model="ir.ui.view">
+        <field name="name">project.project.form.fiq.gantt.button</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button type="object"
+                        name="action_open_task_gantt"
+                        class="oe_stat_button"
+                        icon="fa-tasks">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Oppgave-</span>
+                        <span class="o_stat_text">Gantt</span>
+                    </div>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="email_compose_message_wizard_form" model="ir.ui.view">
+        <field name="model">mail.compose.message</field>
+        <field name="inherit_id" ref="mail.email_compose_message_wizard_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='email_from']" position="after">
+                <field
+                    name="force_notification_by_email"
+                    invisible="composition_mode == 'mass_mail'"
+                />
+            </xpath>
+        </field>
+    </record>
+</odoo>

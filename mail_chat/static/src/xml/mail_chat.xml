@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="mail_chat.ChatterTopbar" t-inherit="mail.Chatter" t-inherit-mode="extension">
+        <xpath expr="//div[contains(@class, 'o-mail-Chatter-top')]/div[contains(@class, 'o-mail-Chatter-topbar')]" position="before">
+            <div t-if="mailChatState.sourceId and mailChatState.chats.length" class="d-flex flex-wrap align-items-center gap-1 px-2 pt-2 pb-1 border-bottom bg-view">
+                <t t-foreach="mailChatState.chats" t-as="chat" t-key="chat.id">
+                    <button
+                        class="btn btn-sm d-inline-flex align-items-center gap-2"
+                        t-att-class="chat.id === mailChatState.activeChatId ? 'btn-primary' : 'btn-outline-secondary'"
+                        draggable="true"
+                        t-on-dragstart="(ev) => this.mailChatDragStart(ev, chat.id)"
+                        t-on-dragover="mailChatDragOver"
+                        t-on-drop="(ev) => this.mailChatDrop(ev, chat.id)"
+                        t-on-dragend="mailChatDragEnd"
+                        t-on-dblclick="() => this.mailChatRename(chat)"
+                        t-on-click="() => this.mailChatSwitch(chat.id)">
+                        <span><t t-esc="chat.name"/></span>
+                        <span class="d-inline-flex align-items-center gap-1 opacity-75">
+                            <i class="fa fa-user" aria-label="Followers"/>
+                            <span><t t-esc="chat.followers_count or 0"/></span>
+                        </span>
+                        <span class="d-inline-flex align-items-center gap-1 opacity-75">
+                            <i class="fa fa-paperclip" aria-label="Attachments"/>
+                            <span><t t-esc="chat.attachments_count or 0"/></span>
+                        </span>
+                    </button>
+                </t>
+                <button class="btn btn-sm btn-outline-primary" t-on-click="mailChatCreate">+ New Chat</button>
+            </div>
+        </xpath>
+    </t>
+</templates>

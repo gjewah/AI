@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Toppmeny (egen app-inngang for FIQ Gantt-flatene) -->
+    <menuitem id="menu_fiq_gantt_root"
+              name="FIQ Gantt"
+              web_icon="project,static/description/icon.png"
+              sequence="95"
+              groups="project.group_project_user"/>
+
+    <menuitem id="menu_fiq_gantt_project"
+              name="Prosjekt-Gantt"
+              parent="menu_fiq_gantt_root"
+              action="action_project_project_gantt_fiq"
+              sequence="10"/>
+
+    <menuitem id="menu_fiq_gantt_task"
+              name="Oppgave-Gantt"
+              parent="menu_fiq_gantt_root"
+              action="action_project_task_gantt_fiq"
+              sequence="20"/>
+
+    <menuitem id="menu_fiq_gantt_milestone"
+              name="Milepæl-Gantt"
+              parent="menu_fiq_gantt_root"
+              action="action_project_milestone_gantt_fiq"
+              sequence="30"/>
+
+</odoo>

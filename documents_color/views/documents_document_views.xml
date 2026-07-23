@@ -1,0 +1,32 @@
+<odoo>
+    <record id="documents_document_view_kanban" model="ir.ui.view">
+        <field name="name">documents.document.view.kanban.inherit</field>
+        <field name="model">documents.document</field>
+        <field name="inherit_id" ref="documents.document_view_kanban"/>
+        <field name="arch" type="xml">
+            <data>
+                <kanban position="attributes">
+                    <attribute name="highlight_color">color</attribute>
+                </kanban>
+                <!-- <xpath expr="//templates/t/div/div[2]/div[1]/t" position="before">
+                    <field name="color" widget="color_picker" class="me-2"/>
+                </xpath>
+                <xpath expr="//templates/t/div/div[2]/div[2]/div/a" position="before">
+                    <field name="color" widget="color_picker" class="me-2"/>
+                </xpath> -->
+            </data>
+        </field>
+    </record>
+    <record id="documents_document_view_form" model="ir.ui.view">
+        <field name="name">documents.document.view.form.inherit</field>
+        <field name="model">documents.document</field>
+        <field name="inherit_id" ref="documents_form.document_view_form"/>
+        <field name="arch" type="xml">
+            <data>
+                <field name="type" position="after">
+                    <field name="color" widget="color_picker" class="me-2"/>
+                </field>
+            </data>
+        </field>
+    </record>
+</odoo>

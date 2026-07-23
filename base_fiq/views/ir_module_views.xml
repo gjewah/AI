@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="ir_module_module_view_form" model="ir.ui.view">
+        <field name="name">ir.module.module.view.form.inherit.module_type</field>
+        <field name="model">ir.module.module</field>
+        <field name="inherit_id" ref="base.module_form" />
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <data>
+                <xpath expr="//page[@name='technical_data']" position="attributes">
+                    <attribute name="invisible">0</attribute>
+                </xpath>
+            </data>
+        </field>
+    </record>
+</odoo>

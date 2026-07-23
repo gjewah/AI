@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+        <record id="res_config_settings_view_form" model="ir.ui.view">
+            <field name="name">res.config.settings.view.form.inherit.crm.sale.project</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="crm_name.res_config_settings_view_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//app[@name='crm']" position="inside">
+                    <block name="crm_sale_project" title="Create sale order and project">
+                        <setting string="Product for new sale order">
+                            <field
+                                name="crm_sale_project__sale_order_product_id"
+                                class="w-100"
+                            />
+                        </setting>
+                    </block>
+                </xpath>
+                <field name="crm_lead_name_expression" position="attributes">
+                    <attribute name="placeholder">{r.get_partner_name_and_project_address(' - ')}</attribute>
+                </field>
+            </field>
+        </record>
+    </data>
+</odoo>

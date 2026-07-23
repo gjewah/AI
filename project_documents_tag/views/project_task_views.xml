@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <record id="project_task_view_list" model="ir.ui.view">
+        <field name="name">project.task.view.list.inherit.project_documents_tag</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_tree2" />
+        <field name="arch" type="xml">
+            <data>
+                <list position="inside">
+                    <field name="documents_tag_id" optional="hide"/>
+                    <field name="documents_tag_ids" optional="hide" widget="many2many_tags"/>
+                </list>
+            </data>
+        </field>
+    </record>
+    <record id="project_task_view_form" model="ir.ui.view">
+        <field name="name">project.task.view.form.inherit.project_documents_tag</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2" />
+        <field name="arch" type="xml">
+            <data>
+                <xpath expr="//sheet/group/group[2]" position="inside">
+                    <field name="documents_tag_id" />
+                    <field name="documents_tag_tooltip_translate" />
+                    <field name="documents_tag_ids_filter" widget="boolean_toggle" />
+                    <div class="d-inline-flex w-100" colspan="2">
+                        <button
+                            string="Select DOC Tags"
+                            type="object"
+                            name="action_open_tag_selector"
+                            class="btn-secondary"
+                        />
+                        <field
+                            name="documents_tag_ids"
+                            invisible="documents_tag_ids_filter"
+                            widget="many2many_tags"
+                            options="{'no_quick_create': True}"
+                        />
+                        <field
+                            name="documents_tag_ids"
+                            domain="[('id', 'in', documents_tag_all_child_ids)]"
+                            invisible="not documents_tag_ids_filter"
+                            widget="many2many_tags"
+                            options="{'no_quick_create': True}"
+                        />
+                    </div>
+                </xpath>
+            </data>
+        </field>
+    </record>
+</data>

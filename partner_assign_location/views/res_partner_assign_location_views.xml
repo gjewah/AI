@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <record id="res_partner_assign_location_view_list" model="ir.ui.view">
+        <field name="name">res.partner.assign.location.view.list</field>
+        <field name="model">res.partner.assign.location</field>
+        <field name="arch" type="xml">
+            <list string="Assign Partner Location">
+                <field name="state"/>
+                <field name="partner_id"/>
+                <field name="is_exclusive"/>
+                <field name="location_field"/>
+                <field name="display_name" string="Location"/>
+                <field name="zip_id" optional="hide"/>
+                <field name="city_id" optional="hide"/>
+                <field name="state_id" optional="hide"/>
+                <field name="country_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="res_partner_assign_location_view_form" model="ir.ui.view">
+        <field name="name">res.partner.assign.location.view.form</field>
+        <field name="model">res.partner.assign.location</field>
+        <field name="arch" type="xml">
+            <form string="Assign Partner Location">
+                <header>
+                    <field name="state" widget="statusbar" options="{'clickable': 1}"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="partner_id" readonly="state=='confirmed'"/>
+                        <field name="is_exclusive" readonly="state=='confirmed'"/>
+                        <field name="location_field" readonly="state=='confirmed'"/>
+                        <field
+                            name="country_id"
+                            invisible="location_field != 'country_id'"
+                            readonly="state=='confirmed'"
+                        />
+                        <field
+                            name="state_id"
+                            invisible="location_field != 'state_id'"
+                            readonly="state=='confirmed'"
+                        />
+                        <field
+                            name="city_id"
+                            invisible="location_field != 'city_id'"
+                            readonly="state=='confirmed'"
+                        />
+                        <field
+                            name="zip_id"
+                            invisible="location_field != 'zip_id'"
+                            readonly="state=='confirmed'"
+                        />
+                    </group>
+                    <group name="conflicts" string="Conflicting Assignments">
+                        <field name="conflict_ids" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="res_partner_assign_location_view_search" model="ir.ui.view">
+        <field name="name">res.partner.assign.location.view.search</field>
+        <field name="model">res.partner.assign.location</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="partner_id"/>
+                <field name="location_field"/>
+                <field name="country_id"/>
+                <field name="state_id"/>
+                <field name="city_id"/>
+                <field name="zip_id"/>
+                <field name="state"/>
+                <filter name="is_exclusive" string="Exclusive" domain="[('is_exclusive', '=', True)]"/>
+            </search>
+        </field>
+    </record>
+    <record id="res_partner_assign_location_action" model="ir.actions.act_window">
+        <field name="name">Assign Partner Location</field>
+        <field name="res_model">res.partner.assign.location</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Assign your first area to an agent
+            </p>
+        </field>
+    </record>
+    <menuitem
+        id="res_partner_assign_location_menu"
+        name="Assign Partner Location"
+        sequence="90"
+        parent="contacts.menu_localisation"
+        action="res_partner_assign_location_action"
+    />
+</data>

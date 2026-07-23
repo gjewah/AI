@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <record id="res_partner_view_form" model="ir.ui.view">
+        <field name="name">res.partner.view.form.inherit.documents</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/group" position="inside">
+                <group name="document_folders">
+                    <group>
+                        <field name="partner_folder_id" invisible="1" />
+                        <field name="partner_folder_url"
+                            string="Contact Document URL"
+                            widget="url"
+                            invisible="partner_folder_id"
+                        />
+                        <button name="action_goto_documents"
+                                context="{'contact_type': 'partner', 'internal_external': 'internal'}"
+                                type="object"
+                                string="Contact Doc"
+                                icon="fa-folder-open"
+                                invisible="not partner_folder_id"
+                        />
+                        <button name="action_goto_documents"
+                                context="{'contact_type': 'partner', 'internal_external': 'external'}"
+                                type="object"
+                                string="Contact URL"
+                                icon="fa-link"
+                                invisible="not partner_folder_id"
+                        />
+                    </group>
+                    <group>
+                        <field name="customer_folder_id" invisible="1" />
+                        <field name="customer_folder_url"
+                            string="Customer Document URL"
+                            widget="url"
+                            invisible="customer_folder_id"
+                        />
+                        <button name="action_goto_documents"
+                                context="{'contact_type': 'customer', 'internal_external': 'internal'}"
+                                type="object"
+                                string="Customer Doc"
+                                icon="fa-folder-open"
+                                invisible="not customer_folder_id"
+                        />
+                        <button name="action_goto_documents"
+                                context="{'contact_type': 'customer', 'internal_external': 'external'}"
+                                type="object"
+                                string="Customer URL"
+                                icon="fa-link"
+                                invisible="not customer_folder_id"
+                        />
+                    </group>
+                    <group>
+                        <field name="supplier_folder_id" invisible="1" />
+                        <field name="supplier_folder_url"
+                            string="Supplier Document URL"
+                            widget="url"
+                            invisible="supplier_folder_id"
+                        />
+                        <button name="action_goto_documents"
+                                context="{'contact_type': 'supplier', 'internal_external': 'internal'}"
+                                type="object"
+                                string="Supplier Doc"
+                                icon="fa-folder-open"
+                                invisible="not supplier_folder_id"
+                        />
+                        <button name="action_goto_documents"
+                                context="{'contact_type': 'supplier', 'internal_external': 'external'}"
+                                type="object"
+                                string="Supplier URL"
+                                icon="fa-link"
+                                invisible="not supplier_folder_id"
+                        />
+                    </group>
+                    <group invisible="not customer_folder_id">
+                        <field name="shared_folder_id" invisible="1" />
+                        <field name="shared_folder_url"
+                            string="Shared Document URL"
+                            widget="url"
+                            invisible="shared_folder_id"
+                        />
+                        <button name="action_goto_documents"
+                                context="{'contact_type': 'shared', 'internal_external': 'internal'}"
+                                type="object"
+                                string="Shared Doc"
+                                icon="fa-folder-open"
+                                invisible="not shared_folder_id"
+                        />
+                        <button name="action_goto_documents"
+                                context="{'contact_type': 'shared', 'internal_external': 'external'}"
+                                type="object"
+                                string="Shared URL"
+                                icon="fa-link"
+                                invisible="not shared_folder_id"
+                        />
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</data>

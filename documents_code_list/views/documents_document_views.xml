@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="documents_document_view_list" model="ir.ui.view">
+        <field name="name">documents.document.view.list.inherit</field>
+        <field name="model">documents.document</field>
+        <field name="inherit_id" ref="documents.documents_view_list"/>
+        <field name="arch" type="xml">
+            <list position="inside">
+                <field
+                    name="code_list_item_ids"
+                    widget="many2many_tags"
+                    readonly="0"
+                    context="{'include_list_code': True}"
+                    optional="hide"
+                />
+                <field name="codes_number" string="Codes No." readonly="1" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="documents_document_view_form" model="ir.ui.view">
+        <field name="name">documents.document.view.form.inherit</field>
+        <field name="model">documents.document</field>
+        <field name="inherit_id" ref="documents_form.documents_document_view_form"/>
+        <field name="arch" type="xml">  
+            <notebook position="inside">
+                <page name="codes" string="Codes">
+                    <group>
+                        <field
+                            name="code_list_item_ids"
+                            widget="many2many_tags"
+                            readonly="0"
+                            context="{'include_list_code': True}"
+                        />
+                        <field name="codes_number" string="Codes No." readonly="1"/>
+                    </group>
+                    <field name="code_list_usage_ids" context="{'default_model': 'documents.document', 'default_res_id': id}">
+                        <list editable="bottom">
+                            <field name="model" column_invisible="1"/>
+                            <field name="res_id" column_invisible="1"/>
+                            <field name="code_list_id"/>
+                            <field name="code_list_item_id" domain="[('list_id', '=', code_list_id)]"/>
+                        </list>
+                    </field>
+                </page>
+            </notebook>
+        </field>
+    </record>
+    <record id="documents_document_view_search" model="ir.ui.view">
+        <field name="name">documents.document.view.search</field>
+        <field name="model">documents.document</field>
+        <field name="inherit_id" ref="documents.document_view_search" />
+        <field name="arch" type="xml">
+            <search position="inside">
+                <field name="name" string="Name"/>
+                <field name="code_list_item_ids" string="Code List Items"/>
+                <field name="codes_number" string="Codes No."/>
+                <filter string="Code List Item" name="filter_code_list_item" domain="[('code_list_item_ids', '!=', False)]"/>
+            </search>
+        </field>
+    </record>
+</odoo>

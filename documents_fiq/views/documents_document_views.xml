@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="documents_document_view_kanban" model="ir.ui.view">
+        <field name="name">documents.document.view.kanban.inherit</field>
+        <field name="model">documents.document</field>
+        <field name="inherit_id" ref="documents.document_view_kanban"/>
+        <field name="priority" eval="100"/>
+        <field name="arch" type="xml">
+            <data>
+                <kanban position="attributes">
+                    <!-- Not working -->
+                    <attribute name="default_order">name</attribute>
+                </kanban>
+            </data>
+        </field>
+    </record>
+</odoo>
