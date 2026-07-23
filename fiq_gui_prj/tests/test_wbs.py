@@ -21,7 +21,7 @@ Feiler den, er fiksen: bygg en id-liste og bruk `.index(task.id)`.
 from odoo.tests import TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install", "fiq_prj")
+@tagged("post_install", "-at_install", "fiq", "fiq_prj")
 class TestFiqWbs(TransactionCase):
 
     @classmethod

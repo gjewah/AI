@@ -16,7 +16,7 @@ from odoo import fields
 from odoo.tests import TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install", "fiq_prj")
+@tagged("post_install", "-at_install", "fiq", "fiq_prj")
 class TestPrjData(TransactionCase):
 
     @classmethod
@@ -786,8 +786,24 @@ class TestPrjData(TransactionCase):
         av 400 rader var utegnbare mens alt så grønt ut.
 
         Denne testen dokumenterer atferden. Er den grønn, håndteres tomt firma
-        riktig. Er den rød, har vi funnet hvorfor flaten viser 0 — og da skal
-        domenet utvides med `'|', ('company_id', '=', False)`.
+        riktig.
+
+        🔴 RETTET RÅD 24.07 — den forrige setningen her sa: «er den rød, skal
+        domenet utvides med `'|', ('company_id', '=', False)`». **Det rådet var
+        feil**, og port 6 ble skjerpet samme kveld nettopp på grunn av tre feil
+        av denne klassen — én av dem min.
+
+        🔑 Regelen: *en test som oppretter data UTENFOR domenet koden filtrerer
+        på, er grønn når koden er tom og rød når den virker.* Å utvide domenet
+        for å få grønt ville sluppet gjennom oppgaver uten firma i en flate som
+        skal være tenant-isolert. **Domenet er riktig; det er testdataen som
+        eventuelt ligger utenfor.**
+
+        Derfor hopper testen over (under) når firma arves fra prosjektet — da
+        KAN tilstanden ikke oppstå, og en test av noe umulig beviser ingenting.
+        Blir den rød i en base der tomt firma faktisk finnes, er spørsmålet om
+        SLIKE oppgaver skal vises i det hele tatt — et tenant-spørsmål for
+        Gjermund, ikke en domene-endring jeg tar selv.
         """
         prosjekt = self.Project.search(self._prosjekt_domene_for_test(), limit=1)
         if not prosjekt:
