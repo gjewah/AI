@@ -79,13 +79,23 @@ class TestAgaFribelop(TransactionCase):
             "fiq_aga_sone": "1a",
         })
 
-    def _belop(self, grunnlag, brukt=0.0):
+    def _belop(self, grunnlag, brukt=0.0, aar=2026):
         # Grunnlaget sendes inn som parameter. Metoder paa Odoo-modeller kan
         # ikke overstyres paa en instans («object attribute is read-only»),
         # og en beregning som bare kan testes med ekte loennsslipper er
         # daarlig testbar uansett.
-        self.company.fiq_aga_fribelop_brukt = brukt
-        slip = self.env["hr.payslip"].new({"company_id": self.company.id})
+        #
+        # 🔑 `fiq_aga_fribelop_aar` MAA settes sammen med forbruket. Uten det
+        # ser aarsskifte-logikken et annet aar og nullstiller telleren — som
+        # er RIKTIG oppfoersel, og som avslørte at disse testene manglet aaret.
+        self.company.write({
+            "fiq_aga_fribelop_brukt": brukt,
+            "fiq_aga_fribelop_aar": aar,
+        })
+        slip = self.env["hr.payslip"].new({
+            "company_id": self.company.id,
+            "date_to": "%s-06-30" % aar,
+        })
         return slip.fiq_aga_belop(grunnlag=grunnlag)
 
     def test_07_under_fribelopet_gir_redusert_sats(self):
@@ -108,6 +118,27 @@ class TestAgaFribelop(TransactionCase):
     def test_10_sone_5_gir_null(self):
         self.company.fiq_aga_sone = "5"
         self.assertEqual(self._belop(1_000_000), 0.0)
+
+    def test_10b_fjoraarets_forbruk_teller_ikke(self):
+        """Fribeloepet er PER AAR. Et oppbrukt fribeloep fra i fjor skal ikke
+        gi full sats i aar — da ville et sone Ia-foretak betalt full sats for
+        resten av sin levetid etter foerste aar.
+
+        Denne testen finnes fordi test_08 og test_09 feilet paa nettopp dette:
+        de satte forbruket uten aaret, og aarsskifte-logikken nullstilte
+        korrekt. Feilen var i testene, ikke i beregningen."""
+        self.company.write({
+            "fiq_aga_fribelop_brukt": 850_000,
+            "fiq_aga_fribelop_aar": 2025,
+        })
+        slip = self.env["hr.payslip"].new({
+            "company_id": self.company.id,
+            "date_to": "2026-06-30",
+        })
+        # Fjoraarets forbruk er utdatert -> redusert sats gjelder igjen.
+        self.assertAlmostEqual(
+            slip.fiq_aga_belop(grunnlag=1_000_000), 106_000.0, places=2,
+        )
 
 
 @tagged("post_install", "-at_install")
