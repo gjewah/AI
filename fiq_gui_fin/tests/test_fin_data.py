@@ -95,6 +95,63 @@ class TestFinData(TransactionCase):
         self.assertIn("FIQ Test Navnevisning AS", tekster)
         self.assertNotIn("res.partner(", tekster)
 
+    # ---------- KPI-VELGER (native-først) ----------
+
+    def test_kpi_peker_paa_odoos_egne_rapporter(self):
+        """🛑 NATIVE-FØRST: hver KPI må peke på en EKTE Odoo-rapport-handling.
+
+        Bygger vi egne rapporter, får vi to sannheter om samme tall — og den ene
+        blir feil først. Denne testen låser at vi kun peker, aldri gjenskaper.
+        """
+        res = self.Data.hent_kpi_valg()
+        self.assertTrue(res["rapporter"], "Ingen KPI-rapporter funnet i basen")
+        for r in res["rapporter"]:
+            self.assertTrue(r["xmlid"].startswith("account_reports."),
+                            "KPI må peke på Odoos egen rapport, ikke vår egen")
+            self.assertTrue(self.env.ref(r["xmlid"], raise_if_not_found=False),
+                            "xmlid %s finnes ikke i basen" % r["xmlid"])
+
+    def test_kpi_hopper_over_manglende_rapporter(self):
+        """En rapport som ikke er installert skal utelates, ikke krasje.
+
+        Odoo Enterprise-moduler kan mangle hos en kunde. Et kort som peker på en
+        handling som ikke finnes gir feilmelding i stedet for rapport.
+        """
+        res = self.Data.hent_kpi_valg()
+        # Alle returnerte må la seg slå opp — det er hele poenget med filteret.
+        for r in res["rapporter"]:
+            self.assertIsNotNone(self.env.ref(r["xmlid"], raise_if_not_found=False))
+
+    def test_kpi_valg_lagres_per_bruker_og_firma(self):
+        """Brukerens valg skal overleve — og ikke lekke til andre firmaer."""
+        self.Data.sett_valgte_kpier(["balanse"])
+        valgte = [r["key"] for r in self.Data.hent_kpi_valg()["rapporter"] if r["valgt"]]
+        self.assertEqual(valgte, ["balanse"])
+
+    def test_kpi_forkaster_ukjente_nokler(self):
+        """🛑 En klient skal ikke kunne skrive vilkårlige verdier inn i konfigurasjonen.
+
+        `sett_valgte_kpier` tar imot en liste fra nettleseren. Uten filtrering
+        kunne hva som helst havnet i `ir.config_parameter`.
+        """
+        self.Data.sett_valgte_kpier(["balanse", "noe_tull", "../../etc/passwd"])
+        valgte = [r["key"] for r in self.Data.hent_kpi_valg()["rapporter"] if r["valgt"]]
+        self.assertEqual(valgte, ["balanse"], "Ukjente nøkler skal forkastes")
+
+    def test_kpi_tomt_valg_gir_standard(self):
+        """Ny bruker skal se de tre viktigste, ikke en tom flate eller alle åtte."""
+        self.Data.sett_valgte_kpier([])
+        valgte = [r["key"] for r in self.Data.hent_kpi_valg()["rapporter"] if r["valgt"]]
+        self.assertEqual(set(valgte), set(self.Data.STANDARD_VALG))
+
+    def test_apne_kpi_gir_gyldig_handling(self):
+        """«Tall → klikk → rapport», aldri blindvei."""
+        handling = self.Data.apne_kpi("balanse")
+        self.assertTrue(handling, "apne_kpi returnerte ingenting")
+        self.assertIn("type", handling)
+        self.assertFalse(self.Data.apne_kpi("finnes_ikke"),
+                         "Ukjent nøkkel skal gi False, ikke en tilfeldig handling")
+
     # ---------- TENANT ----------
 
     def test_kun_eget_firma(self):

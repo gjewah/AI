@@ -158,6 +158,92 @@
     padding: 10px;
   }
 
+  // KPI-velger. Ingen min()/max() med blandede enheter — Sass feiler på det.
+  .fiqf-korthode {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+
+    h3 { margin: 0; }
+  }
+
+  .fiqf-native {
+    background: #E8F3EC;
+    color: #1E7A45;
+    border: 1px solid #1E7A45;
+    border-radius: 3px;
+    padding: 1px 8px;
+    font-size: 11px;
+  }
+
+  .fiqf-velg-knapp {
+    margin-left: auto;
+    border: 1px solid var(--fin);
+    background: #fff;
+    color: var(--fin);
+    border-radius: 4px;
+    padding: 3px 12px;
+    cursor: pointer;
+
+    &:hover { background: var(--fin-myk); }
+  }
+
+  .fiqf-velger {
+    background: #F7F8FA;
+    border: 1px solid #D6DAE2;
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+
+  .fiqf-velg-rad {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    cursor: pointer;
+
+    &:hover { color: var(--fin); }
+  }
+
+  .fiqf-kpier {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .fiqf-kpi-kort {
+    flex: 1 1 200px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: #fff;
+    border: 1px solid #D6DAE2;
+    border-left: 3px solid var(--fin);
+    border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+    text-align: left;
+
+    &:hover {
+      border-color: var(--fin);
+      box-shadow: 0 1px 6px rgba(68, 114, 196, .18);
+    }
+  }
+
+  .fiqf-kpi-navn { font-weight: 600; }
+  .fiqf-kpi-pil { color: var(--fin); }
+
+  .fiqf-feil {
+    background: #FDECEC;
+    border: 1px solid #C00000;
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: #C00000;
+  }
+
   .fiqf-rad {
     display: flex;
     gap: 10px;
