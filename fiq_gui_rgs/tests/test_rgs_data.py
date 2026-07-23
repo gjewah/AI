@@ -539,7 +539,7 @@ class TestRgsData(TransactionCase):
         # 🔴 VAKTPOST: uten denne itererer testen over en tom liste og passerer
         # alltid — feilen 2.20 Lønn fant i sine egne kontrakttester 23.07.
         antall = sum(len(p["lonn_linjer"]) for p in c["punkter"])
-        self.assertEqual(antall, 1, "Testen må ha data å måle på, ellers beviser den ingenting")
+        self.assertEqual(antall, 99, "BEVIS-SKAL-FEILE Testen må ha data å måle på, ellers beviser den ingenting")
 
         for p in c["punkter"]:
             for linje in p["lonn_linjer"]:
