@@ -1115,8 +1115,21 @@ class FiqMeldingssenterData(models.AbstractModel):
         Kjøres som brukeren (record rules gjelder) — ingen sudo, ingen fremmed kalender.
         """
         today = fields.Date.context_today(self)
-        aar = int(aar or today.year)
-        mnd = int(mnd or today.month)
+        # 🔴 KRASJET I NETTLESEREN 23.07 (meldt av AI PK, funnet i loggen på Gjermunds base):
+        # `TypeError: int() argument must be ... not 'dict'`. Rotårsak i front-enden —
+        # `t-on-click="aapneKalender"` sendte KLIKK-EVENTET som `aar`, og et event blir en
+        # dict over RPC. `int(event)` kaster. Malen er rettet, men vi HERDER også her: en
+        # klient skal aldri kunne velte en server-metode med et rart argument.
+        # `_som_tall()` gir standardverdien når input ikke er et tall — aldri en exception.
+        def _som_tall(v, standard):
+            try:
+                return int(v)
+            except (TypeError, ValueError):
+                return standard
+        aar = _som_tall(aar, today.year) if aar else today.year
+        mnd = _som_tall(mnd, today.month) if mnd else today.month
+        if not (1 <= mnd <= 12):        # ugyldig måned ville sprengt date()
+            mnd = today.month
         start = date(aar, mnd, 1)
         end = date(aar + (mnd == 12), (mnd % 12) + 1, 1) - timedelta(days=1)
         # 🔴 FANGET AV EGEN TEST 22.07 — TIDSSONE-GRENSEN:
