@@ -62,8 +62,12 @@ class HrPayslip(models.Model):
             self.line_ids.filtered(lambda l: l.category_id.code == "BASIC").mapped("total")
         )
 
-    def fiq_aga_belop(self):
+    def fiq_aga_belop(self, grunnlag=None):
         """Arbeidsgiveravgift for denne loennsslippen, i kroner.
+
+        `grunnlag` kan sendes inn for aa regne paa et annet beloep enn
+        loennsslippens eget — brukes av tester og av framskrivninger. Utelates
+        det, brukes slippens faktiske grunnlag.
 
         Haandterer fribeloepet for sone Ia og IVa: redusert sats gjelder bare
         saa lenge differansen mot full sats ligger innenfor fribeloepet. Naar
@@ -75,7 +79,8 @@ class HrPayslip(models.Model):
         forhaandsvisning ha spist av fribeloepet.
         """
         self.ensure_one()
-        grunnlag = self.fiq_aga_grunnlag()
+        if grunnlag is None:
+            grunnlag = self.fiq_aga_grunnlag()
         if not grunnlag:
             return 0.0
 

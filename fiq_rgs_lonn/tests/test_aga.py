@@ -80,10 +80,13 @@ class TestAgaFribelop(TransactionCase):
         })
 
     def _belop(self, grunnlag, brukt=0.0):
+        # Grunnlaget sendes inn som parameter. Metoder paa Odoo-modeller kan
+        # ikke overstyres paa en instans («object attribute is read-only»),
+        # og en beregning som bare kan testes med ekte loennsslipper er
+        # daarlig testbar uansett.
         self.company.fiq_aga_fribelop_brukt = brukt
         slip = self.env["hr.payslip"].new({"company_id": self.company.id})
-        slip.fiq_aga_grunnlag = lambda: grunnlag
-        return slip.fiq_aga_belop()
+        return slip.fiq_aga_belop(grunnlag=grunnlag)
 
     def test_07_under_fribelopet_gir_redusert_sats(self):
         # Besparelse = 1 000 000 x (14,1-10,6)% = 35 000 << 850 000.
