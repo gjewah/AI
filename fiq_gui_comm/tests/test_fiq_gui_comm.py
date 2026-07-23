@@ -107,14 +107,30 @@ class TestKommunikasjon(TransactionCase):
         22.07 («Invalid object: 'label' is not a string»). Skjemaet i shell.js
         låser feltet til String. Vi leser vår egen registrering fra kilden."""
         import os
+        import re
         sti = os.path.join(os.path.dirname(__file__), "..", "static", "src", "comm.js")
         with open(os.path.abspath(sti), encoding="utf-8") as f:
             kilde = f.read()
         self.assertIn('registry.category("fiq_gui_flates")', kilde,
                       "flaten må registrere seg i skallet")
-        blokk = kilde.split('registry.category("fiq_gui_flates")', 1)[1]
-        self.assertIn('label: "', blokk,
-                      "label må være en streng-literal, ikke et objekt")
+
+        # 🔴 NØKKEL-BOMMEN (rettet 23.07): KR slår opp flaten med MENYENS nøkkel
+        # (`control_room.js:1790` → `reg.get(key)`), og den faste lista bruker
+        # «kommunikasjon» (:1478). Registrerte vi kun «komm», ble komponenten aldri
+        # spurt etter → flaten åpnet UTEN ramme. Testen krever begge nøkler.
+        nokler = re.findall(r'fiq_gui_flates"\)\.add\("([a-z_]+)"', kilde)
+        self.assertIn("kommunikasjon", nokler,
+                      "må registreres under menyens nøkkel, ellers åpner flaten uten ramme")
+        self.assertIn("komm", nokler,
+                      "må også beholde «komm» — selvregistreringen og fiq.gui.komm.data bruker den")
+
+        # `label` MÅ være streng-literal uansett hvor i fila den står. Vi sjekker ALLE
+        # forekomster, ikke bare den etter registreringen — feilklasse 10 er at et
+        # objekt {en_US, nb_NO} feller HELE grensesnittet.
+        labels = re.findall(r'label:\s*(.)', kilde)
+        self.assertTrue(labels, "fant ingen label å kontrollere")
+        for tegn in labels:
+            self.assertEqual(tegn, '"', "label må være streng-literal, ikke objekt")
 
     def test_kr_menyoppforing_er_gyldig_json(self):
         """Malformert JSON i selvregistreringen droppes STILLE av
