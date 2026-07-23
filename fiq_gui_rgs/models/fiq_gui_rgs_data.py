@@ -215,11 +215,79 @@ class FiqGuiRgsData(models.AbstractModel):
             "laveste": laveste,
             "kritiske_uker": [p for p in punkter if p["kritisk"]],
             # Ærlighet i selve datasettet, ikke bare i visningen.
-            "mangler": [
-                "Lønnskjøringer", "Arbeidsgiveravgift", "Feriepenger", "Pensjon",
-            ],
+            "mangler": self._mangler_forpliktelser(),
             "grunnlag": "Bokførte, ubetalte bilag med forfallsdato",
         }
+
+    # Forpliktelsene 2.20 HR Lønn eier. Rekkefølgen er deres leveranseplan
+    # (AGA → lønnskostnad → OTP → feriepenger), avtalt 22.07.
+    LONNSTYPER = [
+        ("aga", "Arbeidsgiveravgift"),
+        ("lonn", "Lønnskjøringer"),
+        ("otp", "Pensjon"),
+        ("feriepenger", "Feriepenger"),
+    ]
+
+    @api.model
+    def _mangler_forpliktelser(self):
+        """Hva mangler cashflow-kurven — og HVORFOR.
+
+        🔴 TRE TILSTANDER, IKKE TO (funnet 23.07, løst sammen med 2.20 Lønn):
+            01  Lønn leverer tall            → linja fjernes
+            02  Lønn har ikke levert ennå    → «ikke bygd ennå»
+            03  Lønn LEVERTE, men fant intet → «koblet, men ingen data»
+        Tilstand 03 var usynlig i den gamle lista: den var en flat liste med navn,
+        så en type som var koblet MEN tom ville blitt fjernet — og kurven sett
+        komplett ut mens en hel forpliktelsestype manglet. Nøyaktig det denne
+        lista finnes for å hindre.
+
+        🔑 GRUNNEN HENTES FRA KILDEN, IKKE GJETTES HER. 2.20 Lønn eier lønnsdata
+        og dermed også årsaken til at noe mangler (f.eks. at selskapet ikke har
+        registrert sone for arbeidsgiveravgift). Endrer de oppførsel, følger
+        forklaringen med — vi vedlikeholder ingen egen oversettelse av deres
+        feilmodi.
+
+        🛑 MYKT OPPSLAG: `fiq_rgs_lonn` er IKKE en avhengighet. Er den ikke
+        installert, skal flaten virke som før — ikke krasje. En base uten lønn
+        er en normal base, ikke en feil.
+        """
+        # 🔴 MÅLT 23.07, IKKE ANTATT: `env.get('ukjent.modell')` returnerer et TOMT
+        # RECORDSET, ikke None — «fiq.lonnsforpliktelse()». En None-sjekk ville
+        # derfor sluppet gjennom, og `hasattr` båret hele vekten. Riktig test på
+        # om en modell finnes er oppslag i modellregisteret.
+        Lonn = self.env["ir.model"].sudo().search_count(
+            [("model", "=", "fiq.lonnsforpliktelse")]
+        ) and self.env["fiq.lonnsforpliktelse"] or None
+        if Lonn is None or not hasattr(Lonn, "status_forpliktelser"):
+            # Tilstand 02 for alle: modulen finnes ikke ennå.
+            return [
+                {"type": kode, "navn": navn, "levert": False,
+                 "grunn": "ikke_bygd",
+                 "forklaring": "Ikke koblet til flaten ennå"}
+                for kode, navn in self.LONNSTYPER
+            ]
+
+        i_dag = fields.Date.context_today(self)
+        try:
+            status = Lonn.status_forpliktelser(i_dag, fields.Date.add(i_dag, days=84))
+        except Exception:
+            # Feiler oppslaget, er det ærligere å si «ukjent» enn å utelate
+            # linjene — en tom `mangler` leses som «alt er med».
+            status = {}
+
+        mangler = []
+        for kode, navn in self.LONNSTYPER:
+            info = status.get(kode) or {}
+            if info.get("levert"):
+                continue  # tilstand 01 — tallene er i kurven
+            mangler.append({
+                "type": kode,
+                "navn": navn,
+                "levert": False,
+                "grunn": info.get("grunn") or "ikke_bygd",
+                "forklaring": info.get("forklaring") or "Ikke koblet til flaten ennå",
+            })
+        return mangler
 
     @api.model
     def apne_botte(self, key):

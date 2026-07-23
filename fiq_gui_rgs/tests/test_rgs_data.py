@@ -411,6 +411,50 @@ class TestRgsData(TransactionCase):
                            "Uavstemt betaling må finnes i mønsteret — bruker koden "
                            "reconciled_invoice_ids i stedet for invoice_ids?")
 
+    def test_mangler_sier_hvorfor_ikke_bare_hva(self):
+        """🔴 TRE TILSTANDER, IKKE TO (funnet 23.07 sammen med 2.20 Lønn).
+
+        Den gamle `mangler` var en flat liste med navn. Da kunne en type som var
+        KOBLET, men uten data for selskapet, blitt fjernet — og kurven sett
+        komplett ut mens en hel forpliktelsestype manglet. Nøyaktig det lista
+        finnes for å hindre.
+
+        Konkret tilfelle fra Lønn: et selskap uten registrert sone for
+        arbeidsgiveravgift gir INGEN AGA-linjer — ikke null kroner. «Levert, men
+        tomt» må derfor kunne skilles fra «ikke bygd ennå».
+        """
+        c = self.Data.hent_cashflow()
+        self.assertTrue(c["mangler"], "Lista skal ikke være tom før alt er koblet")
+        for m in c["mangler"]:
+            for felt in ("type", "navn", "grunn", "forklaring"):
+                self.assertIn(felt, m, "mangler-linja mangler feltet %r" % felt)
+            self.assertTrue(m["forklaring"],
+                            "En manglende type må forklares, ikke bare navngis")
+
+    def test_flaten_virker_uten_lonnsmodulen(self):
+        """🛑 `fiq_rgs_lonn` er IKKE en avhengighet — og skal aldri bli det.
+
+        En base uten lønn er en normal base, ikke en feil. Ville flaten krasjet
+        eller returnert tom `mangler` når modulen ikke finnes, hadde vi enten
+        felt regnskapsflaten på alle slike baser, eller — verre — vist en kurve
+        som ser komplett ut fordi ingenting ble meldt som manglende.
+
+        Testen kjører på en base der `fiq_rgs_lonn` ikke er installert, og er
+        derfor beviset i seg selv: kommer vi hit med fire forklarte linjer,
+        virker det myke oppslaget.
+        """
+        # 🔴 MÅLT 23.07: `env.get('ukjent.modell')` gir et TOMT RECORDSET, ikke
+        # None. En None-sjekk her ville vært grønn av feil grunn. Riktig test på
+        # om modellen finnes er modellregisteret.
+        self.assertFalse(
+            self.env["ir.model"].sudo().search_count(
+                [("model", "=", "fiq.lonnsforpliktelse")]),
+            "Forutsetning: lønnsmodulen er ikke installert på denne basen")
+        c = self.Data.hent_cashflow()
+        self.assertEqual(len(c["mangler"]), 4,
+                         "Alle fire lønnstypene skal meldes som manglende")
+        self.assertTrue(all(m["grunn"] == "ikke_bygd" for m in c["mangler"]))
+
     def test_bilag_forsvinner_forst_naar_bekreftet_mot_bank(self):
         """🛑 GJERMUNDS AVGJØRELSE 23.07 (08.10) — låst i test.
 
