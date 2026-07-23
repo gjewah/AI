@@ -51,7 +51,14 @@ class FiqAiKonklusjon(models.Model):
 
     name = fields.Char(
         string="Konklusjon", required=True, index=True, tracking=True,
-        help="ÉN setning. «Bruk native priority — bygg ikke fiq_prioritet.»")
+        # 🔴 RETTET 23.07: eksempelet siterte AI PKs vedtak fra 19.07 om at
+        # `fiq_prioritet` ikke skulle bygges. Det vedtaket ble OPPHEVET 23.07 —
+        # feltet er nå bygget med tre nivåer. Hjelpeteksten sto igjen og beskrev
+        # en verden som ikke lenger gjelder, midt i modellen som skal hindre
+        # nettopp det. Funnet av Prosjekts B-agent, som stoppet opp på den.
+        # 🔑 Eksempler i hjelpetekster eldes som all annen dokumentasjon.
+        # Velg et som ikke kan bli utdatert av en beslutning.
+        help="ÉN setning. «Nøkkelen må hentes fra Odoo.sh i denne økta, aldri fra minnet.»")
     grunnlag = fields.Text(
         string="Grunnlag", tracking=True,
         help="Hva konklusjonen bygger på. «Verifisert i project_task.py:154.»")

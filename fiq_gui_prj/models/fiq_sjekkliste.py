@@ -117,8 +117,20 @@ class FiqSjekkliste(models.Model):
         "fiq.sjekkliste", string="Laget fra mal", ondelete="set null", index=True,
         help="Hvilken mal denne kopien kom fra. Kopien er selvstendig og kan endres fritt.",
     )
+    # 🔴 RETTET 23.07: teksten lovet «Kan rulles tilbake». Det KAN den ikke —
+    # `_bump_versjon()` teller opp, men lagrer ingen forrige tilstand.
+    # Meldt av GUI Prosjekt (00.03), som fant det avgjørende: dette er ikke en
+    # kommentar, det er en HJELPETEKST. Den vises i Odoos grensesnitt når
+    # brukeren peker på feltet. Gjermund kunne lest «Kan rulles tilbake» på
+    # skjermen og lett etter en knapp som ikke finnes.
+    # 🔑 En hjelpetekst som lover mer enn koden holder, blir sitert som fasit —
+    # her av brukeren selv, ikke bare av neste utvikler.
+    # ⏸ Ekte versjonering (historikk + tilbakerulling) er et ÅPENT spørsmål hos
+    # Gjermund: «hvor mye skal denne dokumentasjonen tåle å bli utfordret?»
+    # Blir den bygget, endres teksten da. Til da sier den sant.
     versjon = fields.Char(string="Versjon", default="1.0", readonly=True,
-                          help="ISO 9001: bumpes ved hver endring. Kan rulles tilbake.")
+                          help="Bumpes ved hver endring (1.0 → 1.1). Forrige tilstand "
+                               "lagres ikke — tallet viser AT noe er endret, ikke HVA.")
     punkt_ids = fields.One2many("fiq.sjekkliste.punkt", "sjekkliste_id", string="Punkter")
 
     antall_punkt = fields.Integer(compute="_compute_fremdrift", store=True)
@@ -199,7 +211,14 @@ class FiqSjekkliste(models.Model):
             s.fremdrift = (ok / tot * 100.0) if tot else 0.0
 
     def _bump_versjon(self):
-        """ISO 9001: hver endring gir ny versjon (1.0 -> 1.1)."""
+        """Teller opp versjonsnummeret (1.0 -> 1.1) ved hver endring.
+
+        🛑 Dette er en TELLER, ikke versjonering. Forrige tilstand lagres ikke,
+        og ingenting kan rulles tilbake. Sto tidligere som «ISO 9001» — men
+        ISO 9001 krever at man kan vise hva som gjaldt paa et gitt tidspunkt,
+        og det kan vi ikke. Teksten villedet BEGGE oektene i gaar (AI KR + PRJ).
+        Ekte versjonering er et aapent spoersmaal hos Gjermund.
+        """
         for s in self:
             try:
                 s.versjon = "%.1f" % (float(s.versjon or "1.0") + 0.1)
@@ -324,7 +343,8 @@ class FiqSjekklistePunkt(models.Model):
 
     def write(self, vals):
         res = super().write(vals)
-        # ISO 9001: enhver endring bumper listas versjon
+        # Enhver endring teller opp listas versjon. Se _bump_versjon:
+        # dette er en teller, ikke ekte versjonering.
         if {"utfoert", "krav_dok", "krav_foto", "krav_sign", "name", "beskrivelse"} & set(vals):
             self.mapped("sjekkliste_id")._bump_versjon()
         return res
