@@ -116,6 +116,13 @@
   // Mappetreet: kollaps per nivå (Gjermund 19.07.2026 — treet var flatt og alltid utbrettet).
   // Pilen er en egen klikkflate INNI raden: pil = fold, resten av raden = åpne mappa.
   .sh.trehead{display:flex;align-items:center;gap:8px}
+  // Kollaps på ALLE hovednivåer i venstremenyen (Gjermund 23.07). Hele overskriften er
+  // klikkflate — ikke bare en liten pil. «Lukk alle»-knappen stopper klikket sitt selv,
+  // ellers ville den både lukket alt OG foldet seksjonen den står i.
+  .sh.fold{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none}
+  .sh.fold:hover{color:var(--ink)}
+  .sh .fch{font-size:9px;color:var(--muted);transition:transform .12s;display:inline-block;flex:none}
+  .sh .fch.col{transform:rotate(-90deg)}
   .trealle{margin-left:auto;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);
            border-radius:7px;padding:3px 8px;font-size:10px;font-weight:640;text-transform:none;
            letter-spacing:0;font-family:var(--body)}

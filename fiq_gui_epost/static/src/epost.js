@@ -32,6 +32,7 @@ export class FiqMeldingssenter extends Component {
             // Default = utvidet: en tom lagring skal aldri skjule noe.
             kollaps: this._lesKollaps("kollaps"),
             trekollaps: this._lesKollaps("trekollaps"),   // mappetreet: {kode: true} = foldet
+            seksjoner: this._lesKollaps("seksjoner"),    // venstremenyens hovednivaaer
             ctxTab: "rel",                                   // person-kontekst: rel | hist | week
             trad: { status: "", notater: [] }, nyNotat: "",  // arbeidsstatus + interne notater
             tverrValg: [],                    // gruppene mennesket kan overstyre til
@@ -395,6 +396,36 @@ export class FiqMeldingssenter extends Component {
         if (ev) { ev.stopPropagation(); }
         this.state.trekollaps[kode] = !this.state.trekollaps[kode];
         this._lagreKollaps("trekollaps", this.state.trekollaps);
+    }
+
+    // ---- Kollaps på ALLE hovednivåer i venstremenyen (Gjermund 23.07) --------------
+    // «den trenger også kollaps og utvid på alle hovednivåer»
+    // Før hadde kun «Smarte mapper» en foldeknapp. De fire andre seksjonene — Kanaler,
+    // Postkasse, Møter, Mer — sto alltid åpne. Med 40+ taksonomi-rader måtte man rulle
+    // forbi alt for å nå Møter.
+    // Samme mekanikk som mappetreet allerede bruker (`_lesKollaps`/`_lagreKollaps`), så
+    // folding oppfører seg likt overalt og huskes mellom økter.
+
+    seksjonFoldet(kode) { return !!this.state.seksjoner[kode]; }
+
+    vekslSeksjon(kode) {
+        this.state.seksjoner[kode] = !this.state.seksjoner[kode];
+        this._lagreKollaps("seksjoner", this.state.seksjoner);
+    }
+
+    /** «Lukk alle» / «Åpne alle» for HELE venstremenyen — ett grep, ikke fem klikk. */
+    vekslAlleSeksjoner() {
+        const alle = ["kanaler", "postkasse", "taksonomi", "moter", "mer"];
+        const noenApne = alle.some((k) => !this.state.seksjoner[k]);
+        const s = {};
+        for (const k of alle) { s[k] = noenApne; }
+        this.state.seksjoner = s;
+        this._lagreKollaps("seksjoner", s);
+    }
+
+    alleSeksjonerLabel() {
+        const alle = ["kanaler", "postkasse", "taksonomi", "moter", "mer"];
+        return alle.some((k) => !this.state.seksjoner[k]) ? "Lukk alle" : "Åpne alle";
     }
 
     /** Kollaps/utvid HELE treet på én gang. */

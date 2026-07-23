@@ -46,8 +46,14 @@
                         </button>
 
                         <!-- E-POST = ETT underpunkt under Kommunikasjon (ikke hele flaten) -->
-                        <div class="sh">Kanaler</div>
-                        <div class="nav">
+                        <!-- KOLLAPS PÅ ALLE HOVEDNIVÅER (Gjermund 23.07). Før hadde kun
+                             «Smarte mapper» foldeknapp; de fire andre sto alltid åpne. -->
+                        <div class="sh fold" t-on-click="() => this.vekslSeksjon('kanaler')">
+                            <span t-att-class="'fch' + (seksjonFoldet('kanaler') ? ' col' : '')">▾</span>
+                            <span>Kanaler</span>
+                            <button class="trealle" t-on-click.stop="vekslAlleSeksjoner" t-esc="alleSeksjonerLabel()"/>
+                        </div>
+                        <div class="nav" t-if="!seksjonFoldet('kanaler')">
                             <button t-att-class="'kanal' + (state.view==='inbox'?' on':'')" t-on-click="aapneEpost">
                                 <span class="dot" style="--nc:var(--blaa)"/><b>E-post</b>
                                 <span class="c tnum" t-esc="(state.basis[0] || {}).count || 0"/>
@@ -55,8 +61,11 @@
                         </div>
 
                         <t t-if="state.view==='inbox'">
-                        <div class="sh">E-post — postkasse</div>
-                        <div class="nav">
+                        <div class="sh fold" t-on-click="() => this.vekslSeksjon('postkasse')">
+                            <span t-att-class="'fch' + (seksjonFoldet('postkasse') ? ' col' : '')">▾</span>
+                            <span>E-post — postkasse</span>
+                        </div>
+                        <div class="nav" t-if="!seksjonFoldet('postkasse')">
                             <button t-foreach="state.basis" t-as="b" t-key="b.kode"
                                     t-att-class="(state.aktivBoks===b.kode?'on':'') + ' cd_' + b.farge"
                                     t-on-click="() => this.aapneBoks(b.kode, b.navn)">
@@ -65,11 +74,12 @@
                             </button>
                         </div>
 
-                        <div class="sh trehead">
+                        <div class="sh trehead fold" t-on-click="() => this.vekslSeksjon('taksonomi')">
+                            <span t-att-class="'fch' + (seksjonFoldet('taksonomi') ? ' col' : '')">▾</span>
                             <span>Smarte mapper — taksonomi</span>
-                            <button class="trealle" t-on-click="vekslHeleTreet" t-esc="treLabel()"/>
+                            <button class="trealle" t-on-click.stop="vekslHeleTreet" t-esc="treLabel()"/>
                         </div>
-                        <div class="nav">
+                        <div class="nav" t-if="!seksjonFoldet('taksonomi')">
                             <t t-foreach="state.taks" t-as="b" t-key="b.kode">
                                 <button t-if="!skjult(b.kode)"
                                         t-att-class="(state.view==='inbox' &amp;&amp; state.aktivBoks===b.kode?'on':'') + ' cd_' + b.farge + ' niva' + (b.nivaa || 0)"
@@ -93,14 +103,20 @@
                         </div>
                         </t>
 
-                        <div class="sh">Møter</div>
-                        <div class="nav">
+                        <div class="sh fold" t-on-click="() => this.vekslSeksjon('moter')">
+                            <span t-att-class="'fch' + (seksjonFoldet('moter') ? ' col' : '')">▾</span>
+                            <span>Møter</span>
+                        </div>
+                        <div class="nav" t-if="!seksjonFoldet('moter')">
                             <button class="cd_blaa" t-on-click="aapneKalender"><span class="dot"/>Møter &amp; Kalender</button>
                             <button class="cd_tealx" t-on-click="() => this.aapneBoks('motereferater','Møtereferater')"><span class="dot"/>Møtereferater</button>
                         </div>
 
-                        <div class="sh">Mer</div>
-                        <div class="nav">
+                        <div class="sh fold" t-on-click="() => this.vekslSeksjon('mer')">
+                            <span t-att-class="'fch' + (seksjonFoldet('mer') ? ' col' : '')">▾</span>
+                            <span>Mer</span>
+                        </div>
+                        <div class="nav" t-if="!seksjonFoldet('mer')">
                             <button class="cd_graa" t-on-click="aapneInnstillinger"><span class="dot"/>Innstillinger</button>
                         </div>
                     </div>
