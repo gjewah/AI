@@ -111,6 +111,80 @@ class TestAgaFribelop(TransactionCase):
 
 
 @tagged("post_install", "-at_install")
+class TestFribelopAarsskifte(TransactionCase):
+    """Uten aarsskifte ville et foretak i sone Ia betalt full sats for resten
+    av sin levetid etter foerste aar."""
+
+    def setUp(self):
+        super().setUp()
+        self.company = self.env["res.company"].create({
+            "name": "Årsskifte-firma",
+            "fiq_aga_sone": "1a",
+        })
+
+    def test_13_nytt_aar_gir_fullt_fribelop(self):
+        self.company.write({
+            "fiq_aga_fribelop_brukt": 850_000,
+            "fiq_aga_fribelop_aar": 2025,
+        })
+        self.assertEqual(
+            self.company.fiq_aga_fribelop_gjenstaaende(850_000, 2026), 850_000,
+            "Fribeløpet skal være helt tilbake i et nytt år.",
+        )
+
+    def test_14_samme_aar_beholder_forbruket(self):
+        self.company.write({
+            "fiq_aga_fribelop_brukt": 300_000,
+            "fiq_aga_fribelop_aar": 2026,
+        })
+        self.assertEqual(
+            self.company.fiq_aga_fribelop_gjenstaaende(850_000, 2026), 550_000,
+        )
+
+    def test_15_forbruk_kan_ikke_bli_negativt(self):
+        self.company.write({
+            "fiq_aga_fribelop_brukt": 900_000,
+            "fiq_aga_fribelop_aar": 2026,
+        })
+        self.assertEqual(
+            self.company.fiq_aga_fribelop_gjenstaaende(850_000, 2026), 0.0,
+        )
+
+
+@tagged("post_install", "-at_install")
+class TestStatusForpliktelser(TransactionCase):
+    """🔑 Reist av 2.80 RGS: `mangler`-lista deres kunne ikke skille
+    «ikke bygget» fra «bygget, men ingen data»."""
+
+    def test_16_manglende_sone_gir_grunn_ikke_stillhet(self):
+        company = self.env["res.company"].create({"name": "Uten sone"})
+        status = self.env["fiq.lonnsforpliktelse"].with_company(
+            company
+        ).status_forpliktelser("2026-01-01", "2026-12-31")
+        self.assertFalse(status["aga"]["levert"])
+        self.assertEqual(status["aga"]["grunn"], "mangler_sone")
+        self.assertTrue(
+            status["aga"]["forklaring"],
+            "RGS skal få en forklaring de kan vise, ikke bare et flagg.",
+        )
+
+    def test_17_ikke_bygde_typer_er_merket(self):
+        status = self.env["fiq.lonnsforpliktelse"].status_forpliktelser(
+            "2026-01-01", "2026-12-31",
+        )
+        for type_ in ("lonn", "feriepenger", "otp"):
+            self.assertEqual(status[type_]["grunn"], "ikke_bygget")
+
+    def test_18_alle_fire_typene_har_status(self):
+        # Speiler `mangler`-lista i fiq_gui_rgs. Mangler en type her, kan RGS
+        # ikke avgjøre om den skal stå i lista.
+        status = self.env["fiq.lonnsforpliktelse"].status_forpliktelser(
+            "2026-01-01", "2026-12-31",
+        )
+        self.assertEqual(set(status), {"aga", "lonn", "feriepenger", "otp"})
+
+
+@tagged("post_install", "-at_install")
 class TestPersonvern(TransactionCase):
     """🔒 Re-identifiseringsgrensen. 2.80 RGS har bedt om aa bli holdt til den."""
 

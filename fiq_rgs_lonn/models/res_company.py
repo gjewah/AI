@@ -42,3 +42,26 @@ class ResCompany(models.Model):
              "Naar denne naar fribeloepet, gjelder full sats for det overskytende. "
              "Nullstilles ved aarsskifte.",
     )
+
+    # Hvilket AAR telleren over gjelder for. Uten dette feltet ville
+    # fribeloepet aldri blitt nullstilt — og et foretak i sone Ia ville
+    # betalt full sats for resten av sin levetid etter foerste aar.
+    # Nullstillingen skjer ved foerste bruk i et nytt aar, ikke via en
+    # planlagt jobb: en jobb som ikke kjoerer 1. januar ville gitt feil sats
+    # i januar, og feil sats er avviksmelding fra Skatteetaten.
+    fiq_aga_fribelop_aar = fields.Integer(
+        string="Fribeløpsår",
+        help="Aaret det forbrukte fribeloepet gjelder for. Byttes aaret, "
+             "nullstilles telleren automatisk ved neste loennskjoering.",
+    )
+
+    def fiq_aga_fribelop_gjenstaaende(self, fribelop, aar):
+        """Gjenstaaende fribeloep for `aar`, med automatisk aarsskifte.
+
+        Gjelder telleren et tidligere aar, er den utdatert: hele fribeloepet
+        staar til raadighet paa nytt.
+        """
+        self.ensure_one()
+        if self.fiq_aga_fribelop_aar != aar:
+            return fribelop
+        return max(fribelop - self.fiq_aga_fribelop_brukt, 0.0)

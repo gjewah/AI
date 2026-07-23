@@ -17,6 +17,8 @@
                     <field name="fiq_aga_sone"/>
                     <field name="fiq_aga_fribelop_brukt"
                            invisible="fiq_aga_sone not in ('1a', '4a')"/>
+                    <field name="fiq_aga_fribelop_aar"
+                           invisible="fiq_aga_sone not in ('1a', '4a')"/>
                     <div colspan="2"
                          invisible="fiq_aga_sone not in ('1a', '4a')">
                         <span class="text-muted">

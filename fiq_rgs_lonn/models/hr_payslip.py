@@ -1,9 +1,64 @@
 # -*- coding: utf-8 -*-
-from odoo import models
+from odoo import fields, models
 
 
 class HrPayslip(models.Model):
     _inherit = "hr.payslip"
+
+    def action_payslip_done(self):
+        """Bokfoerer loennsslippen — OG bruker av fribeloepet.
+
+        🔑 Akkumuleringen skjer HER, ikke i `fiq_aga_belop()`. Beregningen
+        leser hvor mye som er brukt; bare bokfoeringen SKRIVER. Ellers ville
+        en forhaandsvisning eller en cashflow-framskrivning spist av
+        fribeloepet uten at noen faktisk hadde kjoert loenn.
+
+        Fribeloepet gjelder PER FORETAK PER AAR — derfor ligger telleren paa
+        selskapet, ikke paa slippen.
+        """
+        res = super().action_payslip_done()
+        for slip in self:
+            slip._fiq_bruk_av_fribelop()
+        return res
+
+    def _fiq_bruk_av_fribelop(self):
+        """Oeker selskapets forbrukte fribeloep med denne slippens besparelse."""
+        self.ensure_one()
+        if not self.company_id.fiq_aga_sone:
+            # Ingen sone -> ingen beregning. Bokfoeringen stoppes ikke av det;
+            # avviket fanges av `status_forpliktelser()` mot 2.80 RGS.
+            return
+
+        try:
+            sats = self.fiq_aga_sats()
+        except ValueError:
+            return
+
+        full_sats = self._rule_parameter("no_aga_full_sats")
+        if sats >= full_sats:
+            return  # Sonen har ingen fribeloepsmekanikk.
+
+        grunnlag = self.fiq_aga_grunnlag()
+        if not grunnlag:
+            return
+
+        aar = self._fiq_aga_aar()
+        fribelop = self._rule_parameter("no_aga_fribelop")
+        gjenstaaende = self.company_id.fiq_aga_fribelop_gjenstaaende(fribelop, aar)
+        brukt = fribelop - gjenstaaende  # 0 hvis aaret er nytt
+
+        # Bare den DELEN av besparelsen som faktisk daekkes av fribeloepet
+        # skal telle — resten er allerede betalt med full sats.
+        besparelse = grunnlag * (full_sats - sats) / 100.0
+        self.company_id.sudo().write({
+            "fiq_aga_fribelop_brukt": brukt + min(besparelse, gjenstaaende),
+            "fiq_aga_fribelop_aar": aar,
+        })
+
+    def _fiq_aga_aar(self):
+        """Aaret loennsslippen hoerer til — styrer hvilket fribeloep som gjelder."""
+        self.ensure_one()
+        return (self.date_to or fields.Date.context_today(self)).year
 
     def fiq_aga_sone(self):
         """Sonen som gjelder for denne loennsslippen.
@@ -91,26 +146,57 @@ class HrPayslip(models.Model):
         if sats >= full_sats:
             return grunnlag * sats / 100.0
 
+        return self._fribelop_belop(grunnlag, sats, full_sats)[0]
+
+    def fiq_aga_fribelop_status(self, grunnlag=None):
+        """Om fribeloepet paavirket denne beregningen — og hvordan.
+
+        Returnerer None naar sonen ikke har fribeloepsmekanikk (alle unntatt
+        Ia og IVa), ellers en av: 'innenfor' | 'delvis' | 'oppbrukt'.
+
+        🔑 Finnes fordi 2.80 RGS spurte hvordan flaten skal forklare at
+        AGA-beloepet HOPPER midt i aaret uten at loenna har endret seg. Svaret
+        kan ikke utledes fra beloepets stoerrelse — det maa komme fra den som
+        vet hvorfor. `periode` («Termin 3 2026») forklarer det ikke.
+        """
+        self.ensure_one()
+        if grunnlag is None:
+            grunnlag = self.fiq_aga_grunnlag()
+        if not grunnlag:
+            return None
+
+        sats = self.fiq_aga_sats()
+        full_sats = self._rule_parameter("no_aga_full_sats")
+        if sats >= full_sats:
+            return None
+        return self._fribelop_belop(grunnlag, sats, full_sats)[1]
+
+    def _fribelop_belop(self, grunnlag, sats, full_sats):
+        """Beloep + status for soner med fribeloep. Returnerer (beloep, status)."""
+        self.ensure_one()
+
         fribelop = self._rule_parameter("no_aga_fribelop")
-        brukt = self.company_id.fiq_aga_fribelop_brukt
-        gjenstaaende = max(fribelop - brukt, 0.0)
+        gjenstaaende = self.company_id.fiq_aga_fribelop_gjenstaaende(
+            fribelop, self._fiq_aga_aar(),
+        )
 
         # Besparelsen ved redusert sats — det er DEN som maales mot fribeloepet,
         # ikke avgiften selv.
         besparelse = grunnlag * (full_sats - sats) / 100.0
 
-        if besparelse <= gjenstaaende:
-            return grunnlag * sats / 100.0
+        if not gjenstaaende:
+            # Fribeloepet var allerede brukt opp foer denne beregningen.
+            return grunnlag * full_sats / 100.0, "oppbrukt"
 
-        # Fribeloepet tar slutt midt i grunnlaget: den delen som daekkes av
+        if besparelse <= gjenstaaende:
+            return grunnlag * sats / 100.0, "innenfor"
+
+        # Fribeloepet tar slutt MIDT i grunnlaget: den delen som daekkes av
         # fribeloepet faar redusert sats, resten full sats.
-        if full_sats > sats:
-            grunnlag_redusert = gjenstaaende / ((full_sats - sats) / 100.0)
-        else:
-            grunnlag_redusert = 0.0
+        grunnlag_redusert = gjenstaaende / ((full_sats - sats) / 100.0)
         grunnlag_full = grunnlag - grunnlag_redusert
 
         return (
             grunnlag_redusert * sats / 100.0
             + grunnlag_full * full_sats / 100.0
-        )
+        ), "delvis"

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Lønn Norge",
-    "version": "19.0.0.3.0",
+    "version": "19.0.0.4.0",
     "summary": "Norsk lønnslokalisering (2.20) — lønnsarter, satser og AA-register. "
                "Regnskapsfunksjon som LESER HR-data.",
     "description": """

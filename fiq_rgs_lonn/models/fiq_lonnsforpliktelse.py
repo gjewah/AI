@@ -53,6 +53,70 @@ class FiqLonnsforpliktelse(models.AbstractModel):
         forpliktelser += self._aga_forpliktelser(fra_dato, til_dato, company)
         return forpliktelser
 
+    @api.model
+    def status_forpliktelser(self, fra_dato, til_dato, company_id=False):
+        """HVORFOR en forpliktelsestype mangler — ikke bare AT den mangler.
+
+        Reist av 2.80 RGS 23.07: `mangler`-lista deres var binaer, mens
+        virkeligheten har TRE tilstander:
+            01  vi leverer linjer                       -> fjern fra `mangler`
+            02  vi har ikke bygget typen ennaa          -> behold
+            03  vi ER ferdige, men selskapet mangler
+                data (f.eks. ingen sone registrert)     -> behold, MED GRUNN
+
+        Uten denne metoden faar RGS samme svar — en tom liste — i tilstand 02 og
+        03, og ville fjernet linja i den tro at typen var koblet. Da ser cashflow
+        komplett ut mens en hel forpliktelsestype er borte.
+
+        🔑 Grunnen kommer fra KILDEN. RGS skal ikke vedlikeholde sin egen
+        oversettelse av vaare feilmodi — endrer vi oppfoersel, foelger teksten med.
+        """
+        company = self.env.company
+        return {
+            "aga": self._aga_status(fra_dato, til_dato, company),
+            "lonn": {
+                "levert": False,
+                "grunn": "ikke_bygget",
+                "forklaring": "Lønnskostnad er ikke tatt i bruk ennå",
+            },
+            "feriepenger": {
+                "levert": False,
+                "grunn": "ikke_bygget",
+                "forklaring": "Feriepengeavsetning er ikke tatt i bruk ennå",
+            },
+            "otp": {
+                "levert": False,
+                "grunn": "ikke_bygget",
+                "forklaring": "Tjenestepensjon er ikke tatt i bruk ennå",
+            },
+        }
+
+    def _aga_status(self, fra_dato, til_dato, company):
+        """Status for arbeidsgiveravgift — bygget, men avhenger av at sone finnes."""
+        if not company.fiq_aga_sone:
+            return {
+                "levert": False,
+                "grunn": "mangler_sone",
+                "forklaring": (
+                    "Selskapet har ingen sone for arbeidsgiveravgift registrert. "
+                    "Sonen kan ikke utledes fra kommunen — etter regionreformen "
+                    "er det ikke lenger én sone per kommune. Den må settes på "
+                    "firmaet."
+                ),
+            }
+
+        linjer = self._aga_forpliktelser(fra_dato, til_dato, company)
+        if not linjer:
+            return {
+                "levert": False,
+                "grunn": "ingen_data",
+                "forklaring": (
+                    "Ingen lønnsslipper i perioden, eller for få ansatte til at "
+                    "tall kan vises uten å identifisere enkeltpersoner."
+                ),
+            }
+        return {"levert": True, "grunn": None, "forklaring": None}
+
     def _aga_forpliktelser(self, fra_dato, til_dato, company):
         """Arbeidsgiveravgift, gruppert per termin.
 
@@ -71,10 +135,14 @@ class FiqLonnsforpliktelse(models.AbstractModel):
             termin = (slip.date_to.month - 1) // 2 + 1
             noekkel = (slip.date_to.year, termin)
             data = per_termin.setdefault(
-                noekkel, {"belop": 0.0, "ansatte": set(), "bokfort": True}
+                noekkel,
+                {"belop": 0.0, "ansatte": set(), "bokfort": True, "fribelop": set()},
             )
             try:
                 data["belop"] += slip.fiq_aga_belop()
+                status = slip.fiq_aga_fribelop_status()
+                if status:
+                    data["fribelop"].add(status)
             except ValueError:
                 # Sone mangler eller er ukjent. Linja utelates HELT heller enn aa
                 # rapporteres med et gjettet tall — et hull som ser ut som en
@@ -96,7 +164,7 @@ class FiqLonnsforpliktelse(models.AbstractModel):
             forfall_aar = aar + 1 if termin == 6 else aar
             forfall = self._forfallsdato(forfall_aar, forfall_mnd)
 
-            linjer.append({
+            linje = {
                 "type": "aga",
                 "label": "Arbeidsgiveravgift",
                 "forfall": forfall,
@@ -104,8 +172,29 @@ class FiqLonnsforpliktelse(models.AbstractModel):
                 "sikkerhet": "bokfort" if data["bokfort"] else "planlagt",
                 "kilde": "Odoo",
                 "periode": "Termin %s %s" % (termin, aar),
-            })
+            }
+
+            # VALGFRITT felt — forklarer hvorfor beloepet HOPPER i sone Ia/IVa.
+            # 2.80 RGS spurte om `periode` var nok; det er den ikke. «Termin 3
+            # 2026» sier ingenting om hvorfor terminen er dobbelt saa dyr som
+            # forrige. Aa la flaten gjette ut fra beloepets stoerrelse ville
+            # vaert nettopp den avledningen vi unngaar.
+            # 🔒 Ren visning, aldri beregning — samme forpliktelse som `periode`.
+            merknad = self._fribelop_merknad(data["fribelop"])
+            if merknad:
+                linje["merknad"] = merknad
+
+            linjer.append(linje)
         return linjer
+
+    def _fribelop_merknad(self, statuser):
+        """Menneskelesbar forklaring paa fribeloeps-hoppet, eller None."""
+        if "delvis" in statuser:
+            return ("Fribeløpet ble brukt opp i denne terminen — "
+                    "full sats for den overskytende delen")
+        if "oppbrukt" in statuser:
+            return "Fribeløpet er brukt opp — full sats fra og med denne terminen"
+        return None
 
     def _forfallsdato(self, aar, mnd):
         """Den 15. i maaneden — AGA-terminens forfallsdag."""
