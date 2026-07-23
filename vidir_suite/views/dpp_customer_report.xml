@@ -1,0 +1,20 @@
+<odoo>
+  <report id="vidir_suite_report_customer_dpp" model="vidir.dpp.report" string="DPP Kunderapport" report_type="qweb-pdf" name="vidir_suite.dpp_customer_report_pdf" file="vidir_suite.dpp_customer_report_pdf"/>
+  <template id="dpp_customer_report_pdf">
+    <t t-call="web.external_layout">
+      <t t-foreach="docs" t-as="o">
+        <div class="page">
+          <h2>DPP‑kunderapport – <t t-esc="o.partner_id.display_name or '-'"/> (<t t-esc="o.year"/>)</h2>
+          <p class="text-muted"><t t-if="o.dpp_id">DPP: <a t-att-href="o.dpp_id.dpp_url"><t t-esc="o.dpp_id.uuid"/></a></t></p>
+          <t t-set="res" t-value="loads(o.result_json or '{}')"/>
+          <p><strong>Totalt:</strong> <t t-esc="('%.2f' % (res.get('total_t') or res.get('activity_t') or 0))"/> t CO₂e</p>
+          <h4>Metode &amp; kilder</h4>
+          <ul>
+            <li>Strøm: NVE (NO) / JRC‑NEEFE (EØS). Transport/fly: DEFRA. GHG‑rammeverk.</li>
+            <li>År: <t t-esc="o.year"/>. Oppdater profiler årlig.</li>
+          </ul>
+        </div>
+      </t>
+    </t>
+  </template>
+</odoo>

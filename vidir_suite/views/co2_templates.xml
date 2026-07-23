@@ -1,0 +1,5 @@
+<odoo>
+  <template id="vidir_co2_snippet" name="Vidir CO2 Calculator">
+    <section class="vidir-co2" id="vidir_co2_mount"/>
+  </template>
+</odoo>

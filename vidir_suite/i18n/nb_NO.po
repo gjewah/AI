@@ -1,0 +1,3 @@
+msgid ""
+msgstr ""
+"Language: nb_NO\n"

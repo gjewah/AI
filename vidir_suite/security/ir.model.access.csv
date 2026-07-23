@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+vidir_co2_request_user,vidir_co2_request_user,model_vidir_co2_request,base.group_user,1,1,1,0
+vidir_dpp_passport_user,vidir_dpp_passport_user,model_vidir_dpp_passport,base.group_user,1,1,1,1
+vidir_dpp_report_user,vidir_dpp_report_user,model_vidir_dpp_report,base.group_user,1,1,1,1
+vidir_industry_user,vidir_industry_user,model_vidir_industry,base.group_system,1,1,1,1
+vidir_industry_profile_user,vidir_industry_profile_user,model_vidir_industry_profile,base.group_system,1,1,1,1
+vidir_industry_factor_user,vidir_industry_factor_user,model_vidir_industry_factor_set,base.group_system,1,1,1,1
+vidir_esg_user,vidir_esg_user,model_vidir_esg_import,base.group_user,1,1,1,1
+vidir_export_map_user,vidir_export_map_user,model_vidir_export_map,base.group_user,1,1,1,1
