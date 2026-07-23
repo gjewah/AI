@@ -194,3 +194,40 @@ class TestFiqControlRoom(TransactionCase):
                 "faller til doAction, og RAMMEN FORSVINNER for brukeren." % (
                     menynokkel, flatenokkel),
             )
+
+    def test_posisjonsdeling_av_som_standard_og_en_bryter(self):
+        """Posisjonsdeling er AV som standard, og ÉN bryter dekker begge flater.
+
+        Gjermund 20.07: «egen toggle som slår av GPS for Odoo OG Claude for brukeren
+        automatisk, men varsler om det og lar brukeren slå den på om hen bevisst ønsker det.»
+
+        🔑 HVORFOR ÉN BRYTER: gjaldt avslaget bare Odoo, ville brukeren tro hen var usynlig
+        mens mobilen fortsatt delte posisjon. Det er den farligste varianten, fordi den ser
+        trygg ut. Testen holder standarden AV — en delings-bryter som er på fra start er
+        et samtykke ingen har gitt.
+        """
+        cfg = self.Config.get_my_config()
+        self.assertIn("del_posisjon", cfg)
+        self.assertFalse(cfg["del_posisjon"], "posisjonsdeling må være AV som standard")
+
+        # Brukerens eget valg skal respekteres begge veier.
+        self.Config.sett_posisjonsdeling(True)
+        self.assertTrue(self.Config.get_my_config()["del_posisjon"])
+        self.Config.sett_posisjonsdeling(False)
+        self.assertFalse(self.Config.get_my_config()["del_posisjon"])
+
+    def test_posisjon_slaas_aldri_paa_automatisk(self):
+        """🛑 Systemet slår ALDRI posisjonsdeling PÅ av seg selv.
+
+        Ferie kan slå den AV. Ingenting skal slå den PÅ — har brukeren bevisst skrudd den
+        på under ferien, skal neste oppslag ikke overstyre det. Automatikk som overkjører
+        et menneskelig valg er verre enn ingen automatikk.
+        """
+        rec = self.Config._get_or_create_current()
+        rec.del_posisjon = False
+        # Flere oppslag skal ikke endre den fra av til på.
+        for _ in range(3):
+            self.Config.get_my_config()
+        rec.invalidate_recordset(["del_posisjon"])
+        self.assertFalse(rec.del_posisjon,
+                         "posisjonsdeling ble slått PÅ av systemet — det skal aldri skje")

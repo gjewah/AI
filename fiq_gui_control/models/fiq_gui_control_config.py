@@ -35,6 +35,31 @@ class FiqControlRoomConfig(models.Model):
         string="Detail level", default="balansert", required=True,
         help="Role-based detail level: Pulse (executive) · Balanced (project manager) · Detailed (power).",
     )
+    # ── POSISJONSDELING — ÉN BRYTER FOR BEGGE FLATER (Gjermund 20.07) ──────────────────
+    #
+    # Gjermunds krav, ordrett: «det skal være en egen toggle som slår av GPS for Odoo OG
+    # Claude for brukeren automatisk, men varsler om det og lar brukeren slå den på om
+    # hen bevisst ønsker det.»
+    #
+    # 🔑 HVORFOR ÉN BRYTER OG IKKE TO — begrunnelsen er viktigere enn feltet:
+    # gjaldt avslaget bare Odoo, ville brukeren tro hen var usynlig mens mobilen fortsatt
+    # delte posisjon. **Det er den farligste varianten, fordi den ser trygg ut.** Én bryter
+    # er det eneste som gjør at brukeren VET hvor hen står.
+    #
+    # 🛑 Feltet sier bare OM posisjon skal deles. Det lagrer ingen posisjon — verken her
+    # eller andre steder i denne modulen. Selve innsamlingen er ikke bygget, og krever
+    # eget rettslig grunnlag ([[fiq-oppmote-lokasjon-gdpr]]). Dette er bryteren, ikke sporet.
+    del_posisjon = fields.Boolean(
+        "Share my location", default=False,
+        help="Off by default. Covers BOTH the control room and the mobile assistant — "
+             "one switch, so you always know where you stand.")
+    # Satt av systemet når ferie slår den av, slik at vi kan VARSLE brukeren om at det
+    # skjedde. Uten dette ville avslaget vært stille — og et stille avslag er like
+    # forvirrende som en stille deling.
+    del_posisjon_auto_av = fields.Boolean(
+        "Turned off automatically", default=False,
+        help="Set when leave switched sharing off, so the user can be told it happened.")
+
     show_kpis = fields.Boolean("KPI row", default=True)
     show_projects = fields.Boolean("Project overview", default=True)
     show_kommunikasjon = fields.Boolean("Communication", default=True)
@@ -129,6 +154,12 @@ class FiqControlRoomConfig(models.Model):
     @api.model
     def get_my_config(self):
         rec = self._get_or_create_current()
+        # Ferie slår av posisjonsdeling HER, ved oppslag — ikke i en nattlig jobb.
+        # En jobb som går én gang i døgnet ville latt posisjonen stå på i timevis etter
+        # at ferien startet, og en bryter som slår av «snart» kan man ikke stole på.
+        # Returverdien brukes til å VARSLE: et stille avslag er like forvirrende som
+        # en stille deling.
+        posisjon_nettopp_av = rec._ferie_slar_av_posisjon()
         comp = self.env.company
         # Logo-kilde: fiq_partner_relasjon gjør firmaets EGEN logo til standard, og lar
         # fiq_control_logo overstyre der den vanlige logoen ikke leses på mørk bakgrunn.
@@ -148,6 +179,11 @@ class FiqControlRoomConfig(models.Model):
         return {
             "id": rec.id,
             "level": rec.level,
+            # Posisjonsdeling: én bryter for BÅDE Kontrollrommet og mobilen.
+            # `posisjon_varsel` er True kun i det oppslaget der ferien slo den av —
+            # da skal brukeren få beskjed én gang, ikke hver gang siden lastes.
+            "del_posisjon": rec.del_posisjon,
+            "posisjon_varsel": posisjon_nettopp_av,
             "show": {w: bool(rec["show_" + w]) for w in WIDGETS},
             "is_admin": self.env.user.has_group("fiq_gui_control.group_admin"),
             # Plattform-nivå (000): styrer om «Alle firmaer» i det hele tatt tilbys.
@@ -1752,6 +1788,62 @@ class FiqControlRoomConfig(models.Model):
     #
     # Lunsj = fritekst med ferdig utfylt tekst og 40 min som forslag (Gjermunds tall).
     # ÉN mekanisme, to knapper — ikke to systemer som må holdes i synk.
+    # ── FERIE SLÅR AV POSISJONSDELING (Gjermund 20.07, punkt 04.06) ───────────────────
+    #
+    # «Er en ansatt på ferie skal GPS kunne slås av — enten automatisk eller ved valg av
+    #  brukeren — eller slås på av brukeren.» Presisert: automatisk ved ferie, brukeren
+    #  varsles, og kan bevisst la den stå.
+    #
+    # 🔑 Kjøres ved OPPSLAG, ikke som bakgrunnsjobb. En jobb som går én gang i døgnet
+    # ville latt posisjonen stå på i timevis etter at ferien startet — og en bryter som
+    # slår av «snart» er ikke en bryter man kan stole på.
+    #
+    # 🛑 Slår ALDRI på igjen automatisk. Har brukeren bevisst skrudd den på under ferien,
+    # skal systemet ikke overstyre det ved neste oppslag. Automatikk som overkjører et
+    # menneskelig valg er verre enn ingen automatikk.
+    def _ferie_slar_av_posisjon(self):
+        """Slå av posisjonsdeling hvis brukeren har godkjent fravær som gjelder nå.
+
+        Returnerer True hvis den nettopp ble slått av (→ brukeren skal varsles).
+        """
+        self.ensure_one()
+        if not self.del_posisjon:
+            return False
+        try:
+            with self.env.cr.savepoint():
+                today = fields.Date.context_today(self)
+                emp = self.env["hr.employee"].sudo().search(
+                    [("user_id", "=", self.user_id.id)], limit=1)
+                if not emp:
+                    return False
+                paa_ferie = self.env["hr.leave"].sudo().search_count([
+                    ("employee_id", "=", emp.id),
+                    ("state", "=", "validate"),
+                    ("date_from", "<=", today), ("date_to", ">=", today),
+                ])
+        except Exception:
+            # hr_holidays er valgfri — mangler den, er ingen på ferie. Ikke en krasj.
+            return False
+        if not paa_ferie:
+            return False
+        self.sudo().write({"del_posisjon": False, "del_posisjon_auto_av": True})
+        return True
+
+    @api.model
+    def sett_posisjonsdeling(self, paa):
+        """Brukerens EGEN bryter. Slår hen den på igjen under ferie, respekteres det.
+
+        🛑 KUN egen bruker — ingen kan endre en kollegas deling.
+        """
+        rec = self._get_or_create_current()
+        rec.sudo().write({
+            "del_posisjon": bool(paa),
+            # Nullstill varselet: har brukeren tatt stilling, skal hen ikke få beskjed
+            # om det samme igjen. Et varsel som gjentar seg blir støy og leses ikke.
+            "del_posisjon_auto_av": False,
+        })
+        return {"paa": bool(paa)}
+
     @api.model
     def sett_min_merknad(self, tekst=False, minutter=False, slutt=False):
         """Sett merknaden på MITT eget oppmøtekort. Tom tekst = fjern merknaden.
