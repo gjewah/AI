@@ -4,7 +4,7 @@
     # E-POST-KANALEN under den → egen etikett, ellers to like app-fliser i Apper.
     # Teknisk modulnavn (fiq_gui_epost) er URØRT — modulen er live på Staging + Production.
     "name": "Kommunikasjon — E-post",
-    "version": "19.0.6.20.0",
+    "version": "19.0.6.20.1",
     "summary": "FIQ Meldingssenter – kommunikasjonsflaten i Kontrollrommet. "
                "V00.04-designet (godkjent) som levende flate: tilstede-topplinje, firmavelger "
                "m/ logo, taksonomi 0–8, kompakte meldingsrader, lesepanel, paring/tildeling og AI-flate.",
@@ -41,7 +41,13 @@ V00.04 bygges først som levende referanse; native OWL-port mot ekte Odoo-data
         "web.assets_backend": [
             # NB: kun static/src bundles. V00.04-flaten bor i static/v0104/ og serveres
             # av controlleren – den skal IKKE inn i asset-bunten.
-            "fiq_gui_epost/static/src/**/*",
+            # Odoo 20-regel 30/31 (Gjermund 23.07): assets deklareres EKSPLISITT.
+            # Wildcard skjuler lasterekkefolgen — og rekkefolgen mellom skall og flate
+            # var nettopp det som felte grensesnittet 18.07. Stil, logikk, maler.
+            "fiq_gui_epost/static/src/epost.scss",
+            "fiq_gui_epost/static/src/epost.js",
+            "fiq_gui_epost/static/src/epost.xml",
+
         ],
     },
     # IKKE lenger egen app-flis: E-post er en KANAL inne i Kommunikasjon-paraplyen,

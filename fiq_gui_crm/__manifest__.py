@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ CRM",
-    "version": "19.0.1.2.1",
+    "version": "19.0.1.2.2",
     "summary": "FIQ GUI-skjelett for flaten CRM – OWL klient-handling "
                "(placeholder-dashbord), menuitem og rettighetsgruppe. Klar for ekte funksjonalitet.",
     "description": """
@@ -26,7 +26,13 @@ Bygd rent og konsistent med Hovedmeny-stilen, klart for å fylles med ekte funks
     ],
     "assets": {
         "web.assets_backend": [
-            "fiq_gui_crm/static/src/**/*",
+            # Odoo 20-regel 30/31 (Gjermund 23.07): assets deklareres EKSPLISITT.
+            # Wildcard skjuler lasterekkefolgen — og rekkefolgen mellom skall og flate
+            # var nettopp det som felte grensesnittet 18.07. Stil, logikk, maler.
+            "fiq_gui_crm/static/src/crm.scss",
+            "fiq_gui_crm/static/src/crm.js",
+            "fiq_gui_crm/static/src/crm.xml",
+
         ],
     },
     "application": True,

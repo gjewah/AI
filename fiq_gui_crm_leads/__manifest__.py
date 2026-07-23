@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Salgsmuligheter",
-    "version": "19.0.1.4.3",
+    "version": "19.0.1.4.4",
     "summary": "AI GUI Salg (6 SALG) — visningen av AI Salg-Rådgiveren: pipeline per "
                "stadium med antall og forventet omsetning, lest fra crm.lead.",
     "description": """
@@ -43,7 +43,13 @@ Harde regler innebygd i flaten
     ],
     "assets": {
         "web.assets_backend": [
-            "fiq_gui_crm_leads/static/src/**/*",
+            # Odoo 20-regel 30/31 (Gjermund 23.07): assets deklareres EKSPLISITT.
+            # Wildcard skjuler lasterekkefolgen — og rekkefolgen mellom skall og flate
+            # var nettopp det som felte grensesnittet 18.07. Stil, logikk, maler.
+            "fiq_gui_crm_leads/static/src/crm_leads.scss",
+            "fiq_gui_crm_leads/static/src/crm_leads.js",
+            "fiq_gui_crm_leads/static/src/crm_leads.xml",
+
         ],
     },
     "application": True,

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Relations",
-    "version": "19.0.1.6.0",
+    "version": "19.0.1.6.1",
     "summary": "Typed, directed relations between contacts, companies, properties and "
                "projects. One person, many affiliations - without duplicate contacts.",
     "description": """
@@ -48,7 +48,13 @@ rewritten.
     ],
     "assets": {
         "web.assets_backend": [
-            "fiq_gui_relations/static/src/**/*",
+            # Odoo 20-regel 30/31 (Gjermund 23.07): assets deklareres EKSPLISITT.
+            # Wildcard skjuler lasterekkefolgen — og rekkefolgen mellom skall og flate
+            # var nettopp det som felte grensesnittet 18.07. Stil, logikk, maler.
+            "fiq_gui_relations/static/src/relations.scss",
+            "fiq_gui_relations/static/src/relations.js",
+            "fiq_gui_relations/static/src/relations.xml",
+
         ],
     },
     "installable": True,

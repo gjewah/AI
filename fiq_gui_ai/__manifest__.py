@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ AI co-worker",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.1.1",
     "summary": "FIQ AI co-worker: an 'Ask AI for help' chat (to Claude) plus Odoo "
                "presence – embeddable in the Control room and openable as its own flate.",
     "description": """
@@ -37,7 +37,13 @@ Key features
     ],
     "assets": {
         "web.assets_backend": [
-            "fiq_gui_ai/static/src/**/*",
+            # Odoo 20-regel 30/31 (Gjermund 23.07): assets deklareres EKSPLISITT.
+            # Wildcard skjuler lasterekkefolgen — og rekkefolgen mellom skall og flate
+            # var nettopp det som felte grensesnittet 18.07. Stil, logikk, maler.
+            "fiq_gui_ai/static/src/coworker.scss",
+            "fiq_gui_ai/static/src/coworker.js",
+            "fiq_gui_ai/static/src/coworker.xml",
+
         ],
     },
     "application": True,

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ AI KR – AI Kontrollrom",
-    "version": "19.0.3.1.1",
+    "version": "19.0.3.1.2",
     "summary": "FIQ AI Kontrollrom (AI KR) – operatør-cockpit: oversikt over alle AI-økter "
                "(Claude Code + Cowork), AI-organisasjonskart, redigerbare roller/skills, "
                "ressursbruk og ROI. Snippet-basert (firma → rolle → person).",
@@ -54,7 +54,16 @@ som flate i det delte skallet (Vei C).
     ],
     "assets": {
         "web.assets_backend": [
-            "fiq_gui_ai_kr/static/src/**/*",
+            # Odoo 20-regel 30/31 (Gjermund 23.07): assets deklareres EKSPLISITT.
+            # Wildcard skjuler lasterekkefolgen — og rekkefolgen mellom skall og flate
+            # var nettopp det som felte grensesnittet 18.07. Stil, logikk, maler.
+            "fiq_gui_ai_kr/static/src/ai_kr.scss",
+            "fiq_gui_ai_kr/static/src/styring/styring.scss",
+            "fiq_gui_ai_kr/static/src/ai_kr.js",
+            "fiq_gui_ai_kr/static/src/styring/styring.js",
+            "fiq_gui_ai_kr/static/src/ai_kr.xml",
+            "fiq_gui_ai_kr/static/src/styring/styring.xml",
+
         ],
     },
     "application": False,

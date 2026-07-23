@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Control room",
-    "version": "19.0.7.7.0",
+    "version": "19.0.7.7.1",
     "summary": "Control room – the unified OWL shell (dashboard/landing) that hosts every "
                "main menu as a navigation view: company picker, Simple/Full mode, per-company "
                "accent/logo, KPIs from real Odoo data, communication and dynamic widgets.",
@@ -37,7 +37,14 @@ Key features
     ],
     "assets": {
         "web.assets_backend": [
-            "fiq_gui_control/static/src/**/*",
+            # Odoo 20-regel 30/31 (Gjermund 23.07): assets deklareres EKSPLISITT.
+            # Wildcard skjuler lasterekkefolgen — og rekkefolgen mellom skall og flate
+            # var nettopp det som felte grensesnittet 18.07. Stil, logikk, maler.
+            "fiq_gui_control/static/src/control_room.scss",
+            "fiq_gui_control/static/src/control_room.js",
+            "fiq_gui_control/static/src/systray.js",
+            "fiq_gui_control/static/src/control_room.xml",
+
         ],
     },
     "application": True,

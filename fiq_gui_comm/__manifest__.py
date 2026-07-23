@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Kommunikasjon",
-    "version": "19.0.1.10.2",
+    "version": "19.0.1.10.3",
     "summary": "FIQ Kommunikasjon – paraply-flaten for ALL kommunikasjon. "
                "E-post, WhatsApp, Teams og chat er KANALER inne i denne flaten.",
     "description": """
@@ -40,7 +40,13 @@ Kommunikasjon = paraply. E-post = ÉN kanal inne i den, vises ikke i hovedmenyen
     ],
     "assets": {
         "web.assets_backend": [
-            "fiq_gui_comm/static/src/**/*",
+            # Odoo 20-regel 30/31 (Gjermund 23.07): assets deklareres EKSPLISITT.
+            # Wildcard skjuler lasterekkefolgen — og rekkefolgen mellom skall og flate
+            # var nettopp det som felte grensesnittet 18.07. Stil, logikk, maler.
+            "fiq_gui_comm/static/src/comm.scss",
+            "fiq_gui_comm/static/src/comm.js",
+            "fiq_gui_comm/static/src/comm.xml",
+
         ],
     },
     "application": True,
