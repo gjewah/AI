@@ -47,13 +47,31 @@ class DocumentsTag(models.Model):
         return beste
 
     def _samme_selskap(self, user):
-        """Sant hvis området hører til et selskap brukeren har tilgang til.
+        """Sant hvis området er knyttet til et selskap brukeren har tilgang til.
 
-        Et område uten selskap (`company_id = False`) er generisk og deles av alle —
-        samme regel som for maler ellers i huset."""
+        🔴 MÅLT 23.07.2026: `documents.tag` har INGEN `company_id` i Odoo 19 — feltlista
+        er `name · parent_id · child_ids · color · sequence · tooltip · document_ids`.
+        Området kan altså ikke selv fortelle hvilket selskap det tilhører.
+
+        Tilknytningen utledes derfor fra REGLENE som peker på området (og på
+        forfedrene, siden tilgang arves nedover). Er ingen regel bundet til et
+        selskap, er området generisk og deles av alle — samme mønster som malene i
+        `fiq_mgmtsystem`. Finnes det regler for ett eller flere selskap, må brukeren
+        høre til minst ett av dem for at «Global admin (selskap)» skal gjelde her.
+
+        🛑 Uten dette var «per selskap» bare et NAVN på gruppa: en admin i firma B fikk
+        administrer-tilgang på firma A sitt område, uten feilmelding."""
         self.ensure_one()
-        eier = getattr(self, "company_id", False)
-        return (not eier) or eier.id in user.company_ids.ids
+        noder = self
+        node = self._forelder()
+        while node:
+            noder |= node
+            node = node._forelder()
+        eiere = self.env["fiq.tilgang.regel"].sudo().search([
+            ("ressurs_id", "in", noder.ids),
+            ("company_id", "!=", False),
+        ]).mapped("company_id")
+        return (not eiere) or bool(set(eiere.ids) & set(user.company_ids.ids))
 
     def _forelder(self):
         """Forelderen i områdehierarkiet, eller tomt recordset.
