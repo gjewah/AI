@@ -94,11 +94,20 @@
                     t-att-value="state.svarUtkast[q.id] or ''"
                     t-on-input="(ev) => state.svarUtkast[q.id] = ev.target.value"/>
 
+          <!-- 🔴 RETTET 23.07: her sto `and not q.kan_alltid`. QWeb oversetter
+               `and`/`or` til JavaScript, men IKKE `not` — den ble lest som et
+               VARIABELNAVN (`ctx['not']`), og hele malen ble ugyldig JS:
+               «missing ) after argument list». Gjermund fikk OwlError og
+               flaten var HELT DØD i nettleseren.
+               🔑 36 tester var grønne samtidig: en QWeb-mal kompileres først
+               NÅR NETTLESEREN LASTER DEN. Ingen server-test rører malen, og
+               modulen installerer feilfritt. Port 7 i sin reneste form.
+               👉 Bruk `!`, aldri `not`, i QWeb-uttrykk. -->
           <div class="styr_knapper">
             <button t-foreach="q.knapper" t-as="k" t-key="k.valg"
                     t-attf-class="styr_svar styr_{{k.farge}}"
-                    t-att-disabled="k.valg === 'alltid' and not q.kan_alltid"
-                    t-att-title="k.valg === 'alltid' and not q.kan_alltid
+                    t-att-disabled="k.valg === 'alltid' &amp;&amp; !q.kan_alltid"
+                    t-att-title="k.valg === 'alltid' &amp;&amp; !q.kan_alltid
                                  ? 'Dette spørsmålet kan ikke huskes — det mangler en nøkkel'
                                  : ''"
                     t-on-click="() => this.svar(q, k.valg)">
