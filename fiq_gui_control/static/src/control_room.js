@@ -68,7 +68,7 @@ const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj
 // ⚠️ MÅ FØLGE __manifest__.py sin "version" — ellers tror KR at fanen kjører gammel
 // kode og viser «A new version is installed»-banneret som ALDRI forsvinner, uansett
 // hvor mange ganger brukeren laster på nytt. Bump denne i SAMME commit som manifestet.
-const GUI_BUILD = "19.0.7.9.0";
+const GUI_BUILD = "19.0.7.9.1";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -1998,9 +1998,14 @@ export class FiqControlRoom extends Component {
               n: mottatt.filter((k) => k.ktype === "epost" || k.kind === "E-post").length },
             { nr: "0.2", key: "ai", label: _t("AI messages"),
               n: mottatt.filter((k) => k.ktype === "ai").length },
-            { nr: "0.3", key: "oppgaver", label: _t("Tasks"),
-              n: (this.state.cp && this.state.cp.krever ? this.state.cp.krever.length : 0) },
-            { nr: "0.4", key: "aktiviteter", label: _t("Activities"),
+            // 🛑 «Oppgaver» FJERNET (Gjermund 23.07.2026): «fjern den helt, den skal ikke være der».
+            // 7.9.0 koblet den til Odoos EGEN oppgaveliste (`project.action_view_task`) og gjorde den
+            // dermed til det ENESTE punktet som åpnet noe — fordi den pekte UT av Kontrollrommet, på
+            // noe Odoo alltid har installert.
+            // 🔑 Det gjorde den verre enn de andre, ikke bedre: den virket, og skjulte at resten av
+            // menyen manglet kobling. Et punkt som fungerer og fører feil sted koster mer enn ett
+            // som ikke fungerer — det ene blir meldt, det andre blir trodd.
+            { nr: "0.3", key: "aktiviteter", label: _t("Activities"),
               n: (this.state.kal && this.state.kal.aktiviteter ? this.state.kal.aktiviteter.length : 0) },
         ];
     }

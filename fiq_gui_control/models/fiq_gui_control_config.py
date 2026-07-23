@@ -1351,17 +1351,25 @@ class FiqControlRoomConfig(models.Model):
             # Kalender + aktiviteter (MVP: native views; den todelte «Dagens møter»-flaten kommer)
             "kalender": "calendar.action_calendar_event",
             "aktivitet": "mail.mail_activity_action",
-            # 🔴 INNBOKSENS FIRE KILDER (0.1–0.4) — la de MANGLE en handling.
+            # 🔴 INNBOKSENS KILDER (0.1–0.3) — la de MANGLE en handling.
             # Gjermund klikket dem 23.07 og fikk «under utvikling» tre ganger. Jeg bygde
             # menypunktene i 7.1.0, men ga dem aldri noe å åpne: `navDo("epost")` slo opp
             # i denne tabellen, fant ingenting, og falt til varselet.
             # 🔑 Menypunktet SÅ ferdig ut. Det er verre enn et manglende punkt — et punkt
             # som ikke finnes, savner ingen; et som svarer «under utvikling» ser ut som
             # en halvferdig leveranse.
-            # Alle fire peker på handlinger som ALLEREDE fantes i denne tabellen.
+            #
+            # 🛑 «oppgaver» FJERNET 23.07 (Gjermund: «fjern den helt, den skal ikke være der»).
+            # Den pekte på `project.action_view_task` — Odoos EGEN oppgaveliste. Det gjorde den
+            # til det eneste innboks-punktet som åpnet noe, fordi den forlot Kontrollrommet og
+            # landet på noe Odoo alltid har installert.
+            # 🔑 Lærdommen er ikke «feil handling», men RETNING: de andre punktene peker på
+            # FIQ-flater som må være installert i basen; denne pekte ut av huset. At den virket
+            # skjulte at resten manglet kobling — den fungerende menyen var kamuflasjen.
+            # Nøkkelen fjernes helt, ikke bare menypunktet: en ledig nøkkel i denne tabellen
+            # blir tatt i bruk igjen av neste økt som leter etter noe som «finnes fra før».
             "epost": "fiq_gui_epost.action_fiq_gui_epost",
             "ai": "fiq_gui_ai_kr.action_fiq_ai_kr",
-            "oppgaver": "project.action_view_task",
             "aktiviteter": "mail.mail_activity_action",
             # De andre kontrollpanelene (fiq_gui_*-flatene) — vises i Styring-menyen når installert
             "gui_prj": "fiq_gui_prj.action_fiq_gui_prj",
