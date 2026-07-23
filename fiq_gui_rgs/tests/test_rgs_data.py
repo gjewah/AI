@@ -130,14 +130,23 @@ class TestRgsData(TransactionCase):
         ).create({})
         wizard.action_create_payments()
 
-        self.assertEqual(faktura.payment_state, "in_payment",
-                         "Veiviseren gir «in_payment» — «paid» krever bankavstemming")
-        self.assertNotEqual(faktura.amount_residual, 0.0,
-                            "Restbeløpet står urørt til betalingen er avstemt")
-
+        # 🔴 MILJØAVHENGIG (målt 23.07 på to baser): utfallet av veiviseren
+        # avhenger av bankjournalens utestående-konto, ikke av vår kode.
+        #   fiqas Production:  in_payment · residual urørt
+        #   Dev 35326209:      paid       · residual 0
+        # Regelen vi låser er derfor SAMMENHENGEN, ikke den ene verdien:
+        # er bilaget ikke bekreftet betalt, skal det bli stående i utestående.
         etter = self.Data.hent_grunnbilde()["botter"][4]["verdi"]
-        self.assertGreaterEqual(etter, for_,
-                                "Uavstemt betaling skal fortsatt telle som utestående")
+        if faktura.payment_state == "in_payment":
+            self.assertNotEqual(faktura.amount_residual, 0.0,
+                                "Restbeløpet står urørt til betalingen er avstemt")
+            self.assertGreaterEqual(etter, for_,
+                                    "Uavstemt betaling skal fortsatt telle som utestående")
+        else:
+            self.assertEqual(faktura.payment_state, "paid",
+                             "Enten in_payment (uavstemt) eller paid (avstemt)")
+            self.assertEqual(faktura.amount_residual, 0.0,
+                             "Bekreftet betaling nullstiller restbeløpet")
         # Men flaten MÅ forklare hvorfor tallet ser høyt ut — ellers leses det
         # som manglende innbetaling. Det er halve forklaringen på likviditets-
         # bildet i Production, der 19 av 20 bilag ligger slik.
