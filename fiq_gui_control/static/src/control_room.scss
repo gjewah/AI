@@ -55,7 +55,50 @@
     }
 
     .fiq_hm_wrap { display: grid; grid-template-columns: 288px 1fr; gap: 12px; flex: 1 1 auto; min-height: 0; }
-    @media (max-width: 760px) { .fiq_hm_wrap { grid-template-columns: 1fr; } }
+    // ── RESPONSIV RAMME (Gjermund 23.07) ──────────────────────────────────────────
+    // «Løsningen vet om den er på en mobil eller på en større GUI-flate.»
+    // 🔑 Vi måler BREDDE, ikke enhetstype. En telefon i landskap og et smalt vindu på
+    // PC har samme problem: for lite plass til meny ved siden av innhold. Enhets-
+    // gjetting («er dette en mobil?») bommer på begge.
+    .fiq_hm_menyknapp {
+        display: none;            // skjult på PC — menyen står jo allerede der
+        background: transparent; border: 0; cursor: pointer;
+        font-size: 20px; line-height: 1; padding: 4px 10px 4px 4px;
+        color: var(--fiq-ink, #22303c);
+    }
+
+    @media (max-width: 760px) {
+        .fiq_hm_wrap { grid-template-columns: 1fr; }
+        .fiq_hm_menyknapp { display: inline-block; }
+
+        // Menyen er BORTE til du ber om den. Før la den seg over innholdet i full
+        // høyde, så du måtte skrolle forbi hele menyen for å se noe.
+        .fiq_hm_side {
+            display: none;
+            &.aapen {
+                display: block;
+                // Aldri høyere enn skjermen: en meny som er lengre enn viewporten
+                // skyver innholdet ut av syne i stedet for å scrolle selv.
+                max-height: 70vh;
+                overflow-y: auto;
+            }
+        }
+
+        // Berøringsmål: en finger treffer ikke en 20px-knapp. 40px er minimum for
+        // at folk slutter å bomme — og bomming på en liten skjerm oppleves som at
+        // flaten ikke virker, ikke som at man traff feil.
+        .fiq_hm_nav, .fiq_hm_grp, .fiq_hm_firma, .fiq_hm_pseg button {
+            min-height: 40px;
+        }
+
+        // Firmavelgeren brytes til flere linjer i stedet for å presse teksten sammen
+        // til den blir uleselig.
+        .fiq_hm_firmavelger { flex-wrap: wrap; }
+
+        // Toppraden stables: hilsen, velger og knapper får plass hver for seg i
+        // stedet for å krympe hverandre til ingenting.
+        .fiq_hm_top { flex-wrap: wrap; row-gap: 8px; }
+    }
 
     .fiq_hm_side {
         background: var(--fiq-side); border-radius: 12px; padding: 10px; color: #c4ccd4; min-height: 0; overflow-y: auto; overflow-x: hidden;

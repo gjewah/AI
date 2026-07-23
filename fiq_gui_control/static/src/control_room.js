@@ -68,7 +68,7 @@ const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj
 // ⚠️ MÅ FØLGE __manifest__.py sin "version" — ellers tror KR at fanen kjører gammel
 // kode og viser «A new version is installed»-banneret som ALDRI forsvinner, uansett
 // hvor mange ganger brukeren laster på nytt. Bump denne i SAMME commit som manifestet.
-const GUI_BUILD = "19.0.7.7.2";
+const GUI_BUILD = "19.0.7.8.0";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -179,6 +179,14 @@ export class FiqControlRoom extends Component {
             // stå åpen mens du jobber i et fagområde.
             // Default: Innboks åpen (den du tømmer fra) + Fagområder åpen (hovednavigasjonen).
             grpAapen: this._lastGrp(),
+            // ── MOBIL: menyen foldes bort på små skjermer ──────────────────────────
+            // Gjermund 23.07: «løsningen vet om den er på en mobil eller en større flate.»
+            // 🔑 Standard er LUKKET på mobil, ÅPEN på PC. Grunnen: på en liten skjerm
+            // legger menyen seg over innholdet i full høyde — du må skrolle forbi hele
+            // menyen for å se noe. På PC står den ved siden av og er ren gevinst.
+            // Målt ved oppstart, ikke gjettet ut fra enhetstype: bredden er det som
+            // faktisk avgjør om det er plass, ikke om det er en telefon.
+            menyAapen: (typeof window !== "undefined" && window.innerWidth > 760),
             har000: false,        // kryss-firma-innsyn (server-avgjort, fail-closed) — sendes til flater i sloten
             presence: [],         // «Til stede nå» – interne brukere + tilgjengelighets-status
             kal: { moter: [], aktiviteter: [], mnd: [] }, // Møter/aktiviteter-panelet (periode-styrt)
@@ -1524,6 +1532,9 @@ export class FiqControlRoom extends Component {
     navDo(key) {
         const it = this.navItems.find((d) => d.key === key);
         if (it && it.view) { this.setView(it.view); } else { this.runAction(key); }
+        // Menyen dekker hele skjermen på mobil. Uten dette ville den blitt stående
+        // OVER det du nettopp valgte — og det ser ut som klikket ikke virket.
+        this._lukkMenyPaaMobil();
     }
 
     navLabel(key) {
@@ -1937,6 +1948,18 @@ export class FiqControlRoom extends Component {
     // 🔑 Foldetilstanden lagres per bruker (localStorage), ikke i minnet: menyen skal se
     // lik ut når du kommer tilbake i morgen. Uten det ville hver sidelasting nullstilt
     // valget ditt — og da lærer man seg aldri hvor ting er.
+    // Menyknappen på mobil. Lukkes når du velger noe — ellers ville menyen blitt
+    // stående over innholdet du nettopp valgte, og det ser ut som klikket ikke virket.
+    toggleMeny() {
+        this.state.menyAapen = !this.state.menyAapen;
+    }
+
+    _lukkMenyPaaMobil() {
+        if (typeof window !== "undefined" && window.innerWidth <= 760) {
+            this.state.menyAapen = false;
+        }
+    }
+
     toggleGrp(key) {
         const aapen = this.state.grpAapen[key];
         if (!aapen && key !== "innboks") {

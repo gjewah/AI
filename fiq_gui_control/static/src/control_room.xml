@@ -24,6 +24,13 @@
         <div t-att-class="'fiq_hm' + (isDark ? ' fiq_hm_dark' : '') + (state.mode === 'enkel' ? ' fiq_hm_enkel' : '')" t-att-style="rootStyle">
             <!-- Topplinje -->
             <div class="fiq_hm_top">
+                <!-- MENYKNAPP — kun på små skjermer (skjules i CSS over 760px).
+                     På mobil legger venstremenyen seg OVER innholdet i full høyde: du må
+                     skrolle forbi hele menyen for å se noe. Her folder den seg bort.
+                     Gjermund 23.07: «løsningen vet om den er på en mobil eller en større flate.» -->
+                <button class="fiq_hm_menyknapp" t-on-click="() =&gt; this.toggleMeny()"
+                        t-att-title="state.menyAapen ? tr('Hide menu') : tr('Show menu')"
+                        t-esc="state.menyAapen ? '✕' : '☰'"/>
                 <div class="fiq_hm_brand">
                     <img src="/fiq_gui_control/static/img/vidir_v.png" class="fiq_hm_logo" alt="Vídir"/>
                 </div>
@@ -151,7 +158,7 @@
             </div>
             <div class="fiq_hm_wrap">
                 <!-- Mørk sidemeny -->
-                <aside class="fiq_hm_side">
+                <aside t-att-class="state.menyAapen ? &quot;fiq_hm_side aapen&quot; : &quot;fiq_hm_side&quot;">
                     <!-- ═══ GRUNNSTRUKTUR: TRE FOLDBARE HOVEDPUNKTER ═══════════════════════
                          Utkast 15, godkjent av Gjermund 20.07.2026:
                            0 INNBOKS · KR-MENYER · FAGOMRÅDER

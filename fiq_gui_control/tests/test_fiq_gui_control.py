@@ -231,3 +231,34 @@ class TestFiqControlRoom(TransactionCase):
         rec.invalidate_recordset(["del_posisjon"])
         self.assertFalse(rec.del_posisjon,
                          "posisjonsdeling ble slått PÅ av systemet — det skal aldri skje")
+
+    def test_responsiv_ramme_har_mobilhaandtering(self):
+        """Rammen må fungere på mobil (Gjermund 23.07).
+
+        «Løsningen vet om den er på en mobil eller på en større GUI-flate.»
+        Befaringen blir ÉN responsiv flate, ikke en PC/mobil-velger — da må rammen
+        under den også virke på liten skjerm.
+
+        🔑 Vi måler BREDDE, ikke enhetstype: en telefon i landskap og et smalt vindu på
+        PC har samme problem. Enhetsgjetting bommer på begge.
+
+        Testen holder tre ting i live: menyknappen finnes, menyen kan foldes bort, og
+        berøringsmålene er store nok. Alle tre er lette å miste ved en opprydding —
+        og feilen ville først vist seg på en telefon, der ingen av oss tester daglig.
+        """
+        from odoo.tools import file_path
+        with open(file_path("fiq_gui_control/static/src/control_room.scss"),
+                  "r", encoding="utf-8") as f:
+            scss = f.read()
+        with open(file_path("fiq_gui_control/static/src/control_room.xml"),
+                  "r", encoding="utf-8") as f:
+            xml = f.read()
+
+        self.assertIn("fiq_hm_menyknapp", xml, "menyknappen mangler i malen")
+        self.assertIn("fiq_hm_menyknapp", scss, "menyknappen mangler stil")
+        self.assertRegex(
+            scss, r"@media\s*\(max-width:\s*760px\)",
+            "ingen bruddpunkt for liten skjerm",
+        )
+        self.assertIn("min-height: 40px", scss,
+                      "berøringsmål under 40px — en finger treffer ikke en 20px-knapp")
