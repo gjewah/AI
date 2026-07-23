@@ -142,3 +142,55 @@ class TestFiqControlRoom(TransactionCase):
             "Kontrollrommet «A new version is installed»-banneret som aldri forsvinner, "
             "og Gjermund ser en leveranse som ser ødelagt ut." % (m.group(1), manifest),
         )
+
+    def test_nokkel_alias_dekker_menyens_faste_noekler(self):
+        """Hver fast menynøkkel MÅ finne flatens komponent — direkte eller via alias.
+
+        🔴 FUNNET AV AI PK 23.07.2026. Menyen og flatene brukte ULIKE navn for SAMME flate:
+            meny «gui_prj»  ↔  flaten registrerte «prj»
+            meny «gui_fin»  ↔  «finans»    ·  «gui_rgs» ↔ «regnskap»
+            meny «kommunikasjon» ↔ «komm»  ·  «airmm»   ↔ «ai_kr»
+        `registry.get()` slår opp EKSAKT → ingen av dem ble funnet. `runAction` falt til
+        `doAction`, og RAMMEN FORSVANT. Prosjekt meldte symptomet; dette var årsaken.
+
+        🛑 Dedup-koden fra v6.92 SKJULTE det: den fjernet dubletter fra menyen, men sa
+        ingenting om hvorvidt oppføringen pekte på noe som finnes. «Ingen dubletter» ble
+        lest som «alt stemmer» — i fire dager.
+
+        Testen leser BEGGE lister fra kildekoden og krever at hver fast nøkkel som har en
+        registrert motpart, faktisk finner den. Legger noen til et menypunkt uten alias,
+        feiler dette FØR push i stedet for at rammen forsvinner hos Gjermund.
+        """
+        import re
+        from odoo.tools import file_path
+        with open(file_path("fiq_gui_control/static/src/control_room.js"),
+                  "r", encoding="utf-8") as f:
+            js = f.read()
+
+        # De faste menynøklene (navItems)
+        faste = set(re.findall(r'key:\s*"([a-z_]+)"', js))
+        # Aliastabellen
+        blokk = re.search(r"NOKKEL_ALIAS\s*=\s*\{(.*?)\}", js, re.S)
+        self.assertTrue(blokk, "NOKKEL_ALIAS mangler — nøkkelsplittelsen er ikke håndtert")
+        alias = dict(re.findall(r"(\w+):\s*\"([a-z_]+)\"", blokk.group(1)))
+
+        # Nøkler vi VET flatene registrerer under et annet navn (målt 23.07).
+        kjent_splittelse = {
+            "kommunikasjon": "komm",
+            "gui_rgs": "regnskap",
+            "gui_fin": "finans",
+            "gui_prj": "prj",
+            "airmm": "ai_kr",
+        }
+        for menynokkel, flatenokkel in kjent_splittelse.items():
+            self.assertIn(
+                menynokkel, faste,
+                "menynøkkelen «%s» er borte fra navItems — er den omdøpt, må aliaset "
+                "oppdateres i samme commit" % menynokkel,
+            )
+            self.assertEqual(
+                alias.get(menynokkel), flatenokkel,
+                "«%s» mangler alias til «%s». Uten det finner runAction ingen komponent, "
+                "faller til doAction, og RAMMEN FORSVINNER for brukeren." % (
+                    menynokkel, flatenokkel),
+            )

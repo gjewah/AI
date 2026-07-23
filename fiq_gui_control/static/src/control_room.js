@@ -68,7 +68,7 @@ const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj
 // ⚠️ MÅ FØLGE __manifest__.py sin "version" — ellers tror KR at fanen kjører gammel
 // kode og viser «A new version is installed»-banneret som ALDRI forsvinner, uansett
 // hvor mange ganger brukeren laster på nytt. Bump denne i SAMME commit som manifestet.
-const GUI_BUILD = "19.0.7.3.0";
+const GUI_BUILD = "19.0.7.4.0";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -1787,11 +1787,50 @@ export class FiqControlRoom extends Component {
     //
     // `doAction` beholdes som fallback for NATIVE Odoo-handlinger (Kunnskap, dashbord) —
     // dit SKAL man forlate Kontrollrommet.
+    // 🔴 NØKKEL-SPLITTELSEN — rettet 23.07.2026, funnet av AI PK.
+    //
+    // Den faste menylista og flatenes selvregistrering bruker ULIKE navn for SAMME flate.
+    // Målt i koden:
+    //     meny sier          flaten registrerte
+    //     kommunikasjon  →   komm
+    //     gui_rgs        →   regnskap
+    //     gui_fin        →   finans
+    //     gui_prj        →   prj
+    //     airmm          →   (ikke registrert ennå)
+    //
+    // `registry.get(key)` slår opp EKSAKT. Ingen av de fire registrerte flatene ble
+    // derfor funnet — `runAction` falt til `doAction`, og RAMMEN FORSVANT. Prosjekt
+    // meldte symptomet («sju action-ledd i adressen»); dette er årsaken, for alle fire.
+    //
+    // 🛑 Dedup-koden min (v6.92) skjulte det: den fjernet dubletten fra menyen, men
+    // sa ingenting om hvorvidt den gjenværende oppføringen pekte på noe som finnes.
+    // «Ingen dubletter» ble lest som «alt stemmer».
+    //
+    // Løses HER, i oppslaget — ikke ved å døpe om nøkler i fem andre moduler. Da ville
+    // hver flate-eier måttet endre kode, og en glemt modul ville gitt samme stille feil.
+    static NOKKEL_ALIAS = {
+        kommunikasjon: "komm",
+        gui_rgs: "regnskap",
+        gui_fin: "finans",
+        gui_prj: "prj",
+        airmm: "ai_kr",
+        gui_crm: "crm",
+        gui_leads: "crm_leads",
+        gui_so: "crm_so",
+    };
+
     _slotKomponent(key) {
         try {
             const reg = registry.category("fiq_gui_flates");
-            const e = reg && reg.get(key, null);
-            return e && e.Component ? e : null;
+            if (!reg) { return null; }
+            // Prøv nøkkelen som den er, deretter flatens eget navn. Begge veier, slik at
+            // en flate som senere bytter til menyens navn fortsatt blir funnet.
+            for (const k of [key, FiqControlRoom.NOKKEL_ALIAS[key]]) {
+                if (!k) { continue; }
+                const e = reg.get(k, null);
+                if (e && e.Component) { return e; }
+            }
+            return null;
         } catch (_e) {
             return null;   // registeret finnes ikke (skallet ikke installert) — bruk doAction
         }
