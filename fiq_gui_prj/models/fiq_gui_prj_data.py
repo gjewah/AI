@@ -262,6 +262,98 @@ class FiqGuiPrjData(models.AbstractModel):
             return "folg"
         return "rute"
 
+    def _risiko_dom(self, fort, budsjett, fremdrift, naermeste_frist, i_dag,
+                    ferdig=False):
+        """Én dom om et prosjekt: er det trangt på penger eller tid?
+
+        🔑 FASITEN KREVER EN DOM, IKKE ET TALL (AI KR + AI PK 23.07):
+
+            26_042 Kabelgata   62 % brukt / 62 % fremdrift        → i balanse
+            26_015 BUF         0,9M / 2,1M · men EM-frist i dag   → tett tid
+            24_055 Oscarsgate  tilbud ute — frist i dag kl 15     → avgjøres i dag
+            26_014 Rådhusgata  0,6M / 1,8M · Per sykmeldt tor-fre → bemanning
+
+        Vi HADDE tallene (`forbruk_prosent`, `budsjett_status`) og trodde det var
+        levert. Det var det ikke: Gjermund skal ikke lese to tall og regne selv.
+        Fasitens egen fotnote sier hvorfor flaten finnes i det hele tatt —
+        «med det Odoo IKKE gir: … risiko når budsjett eller tid er trangt».
+        En Gantt som gir det Odoo alt gir, trenger vi ikke.
+
+        🛑 DOMMEN ER IKKE SAMME AKSE SOM `budsjett_status`. Den er en TREDJE akse:
+            TID   (i rute / følg opp / kritisk)      — rekker vi fristen
+            KOST  (innenfor / over / ferdig)         — holder budsjettet
+            RISIKO (denne)                           — hva bør du GJØRE noe med
+        Et prosjekt kan ligge under budsjett og likevel være det som haster mest,
+        fordi fristen er i morgen. Å slå dem sammen ville skjult nettopp det.
+
+        `bemanning` returneres ALDRI herfra. Fasiten viser den, men den bygger på
+        ressursdata (sykefravær, dobbeltbooking) som krever
+        `planlegging_ressurs_spec` — UTKAST 01 siden 04.07, ubesvart. Å gjette
+        bemanning fra timeføring ville vært å presentere en antagelse som en dom.
+        📌 Blokkeringen er meldt AI PK som større enn tidligere rapportert.
+        """
+        if ferdig:
+            return "ferdig"
+
+        # Frist først: en frist i dag eller passert slår alt annet. Det er den
+        # eneste dommen som ikke tåler å vente til i morgen.
+        if naermeste_frist:
+            dager = (naermeste_frist - i_dag).days
+            if dager <= 0:
+                return "avgjores"
+            if dager <= 3:
+                return "tett_tid"
+
+        # Så penger: brukt mer enn budsjettet er alltid rødt.
+        if budsjett > 0:
+            brukt = (fort / budsjett) * 100.0
+            if brukt > 100.0:
+                return "over_budsjett"
+            # 🔑 KJERNEN I DOMMEN: forbruk mot FREMDRIFT, ikke mot budsjett alene.
+            # 62 % brukt av 62 % ferdig = i balanse. 62 % brukt av 20 % ferdig er
+            # på vei mot sprekk selv om ingen grense er passert ennå. Det er
+            # nettopp dette Odoo ikke sier fra om.
+            if fremdrift > 0 and brukt - fremdrift >= 20.0:
+                return "tett_budsjett"
+
+        return "i_balanse"
+
+    def _risiko_hvorfor(self, fort, budsjett, fremdrift, naermeste_frist, i_dag,
+                        ferdig=False):
+        """Begrunnelsen bak dommen, i klartekst.
+
+        Fasiten viser ALDRI merket alene — den viser hvorfor:
+            «62 % brukt / 62 % fremdrift»   «EM-frist i dag»   «0,4M / 0,9M»
+
+        🔑 Et merke uten begrunnelse er bare et nytt tall å tolke. Gjermund skal
+        kunne lese linja og vite hva han skal gjøre — ikke måtte åpne prosjektet
+        for å finne ut hvorfor det er rødt. Plain språk, ingen forkortelser.
+        """
+        if ferdig:
+            return "alle oppgaver ferdige"
+
+        deler = []
+        if naermeste_frist:
+            dager = (naermeste_frist - i_dag).days
+            if dager < 0:
+                deler.append("frist passert for %d dager siden" % abs(dager))
+            elif dager == 0:
+                deler.append("frist i dag")
+            elif dager == 1:
+                deler.append("frist i morgen")
+            elif dager <= 3:
+                deler.append("frist om %d dager" % dager)
+
+        if budsjett > 0:
+            brukt = (fort / budsjett) * 100.0
+            deler.append("%.0f %% brukt / %.0f %% fremdrift" % (brukt, fremdrift))
+        elif fort > 0:
+            # Timer ført uten budsjett: ikke en dom, men verdt å si. Uten dette
+            # ville linja stått tom og sett ut som manglende data.
+            deler.append("%.1f timer ført, uten budsjett" % fort)
+
+        return " · ".join(deler) if deler else "ingen frist eller budsjett satt"
+
     @api.model
     def get_oppgaver_over_tid(self, firma_id=None, fra_uke=None, antall=7,
                               oppløsning="uke", grupper="prosjekt", grense=400):
@@ -640,6 +732,10 @@ class FiqGuiPrjData(models.AbstractModel):
         domene = self._prosjekt_domene(firma_id)
         prosjekter = Project.search(domene, limit=int(grense), order="name")
 
+        # Brukerens dato, ikke serverens. En frist «i dag» skal bety i dag der
+        # brukeren sitter — serveren kjører UTC og ligger to timer bak om sommeren.
+        i_dag = fields.Date.context_today(self)
+
         rader = []
         for p in prosjekter:
             oppgaver = p.task_ids
@@ -667,6 +763,16 @@ class FiqGuiPrjData(models.AbstractModel):
                 round((len(ferdige) / len(oppgaver)) * 100.0, 1) if oppgaver else 0.0
             )
 
+            # Nærmeste frist blant oppgaver som IKKE er ferdige. En passert frist på
+            # en avsluttet oppgave er ikke en risiko — den er historie.
+            # `.date()` FØR sammenligning: date_deadline er Datetime (Odoo 19).
+            frister = [
+                t.date_deadline.date()
+                for t in (oppgaver - ferdige)
+                if t.date_deadline
+            ]
+            naermeste = min(frister) if frister else None
+
             rader.append({
                 "id": p.id,
                 "navn": p.display_name,
@@ -685,6 +791,20 @@ class FiqGuiPrjData(models.AbstractModel):
                 "andel_ferdig": andel_ferdig,
                 "fremdrift_kilde": kilde,
                 "frist": fields.Date.to_string(p.date) if p.date else False,
+                # ── RISIKO-DOMMEN (krav 7) ───────────────────────────────────
+                # Nærmeste frist blant UFERDIGE oppgaver — ikke prosjektets egen
+                # `date`. 🔴 `project.project.date` er en **Date**, mens
+                # `project.task.date_deadline` er **Datetime**. Motsatt av hva
+                # navnene antyder; verifisert i kilden. Blandes de, får vi samme
+                # TypeError som felte Staging 21.07.
+                # Prosjektets `date` er ofte tom mens oppgavene har ekte frister —
+                # da ville dommen sagt «i balanse» om noe som forfaller i morgen.
+                "risiko": self._risiko_dom(
+                    fort, est, andel_ferdig, naermeste, i_dag, alt_ferdig,
+                ),
+                "risiko_hvorfor": self._risiko_hvorfor(
+                    fort, est, andel_ferdig, naermeste, i_dag, alt_ferdig,
+                ),
             })
         return {
             "prosjekter": rader,

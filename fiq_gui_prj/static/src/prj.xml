@@ -108,7 +108,8 @@
                         <span><i class="fiq_prj_prikk fiq_prj_t_rute"/> i rute</span>
                         <span><i class="fiq_prj_prikk fiq_prj_t_folg"/> følg opp</span>
                         <span><i class="fiq_prj_prikk fiq_prj_t_krit"/> kritisk</span>
-                        <span>◆ frist</span>
+                        <span>▲ frist/milepæl</span>
+                        <span>▨ planlagt (mulig)</span>
                     </div>
                 </div>
 
@@ -180,16 +181,23 @@
                                     <div class="fiq_prj_naa_strek" t-if="iDagStrek !== null"
                                          t-att-style="'left:' + iDagStrek + '%'"/>
                                     <t t-set="s" t-value="soyle(o)"/>
-                                    <div t-if="s" class="fiq_prj_soyle" t-att-class="tidKlasse(o.tid_status)"
+                                    <div t-if="s" class="fiq_prj_soyle"
+                                         t-att-class="soyleKlasse(o, s)"
                                          t-att-style="'left:' + s.venstre + '%;width:' + s.bredde + '%'"
+                                         t-att-title="s.planlagt ? 'Mulig oppstart — startdato ikke satt' : ''"
                                          t-on-click.stop="() => this.apneOppgave(o.id)">
-                                        <span class="fiq_prj_fyll"
+                                        <span t-if="!s.planlagt" class="fiq_prj_fyll"
                                               t-att-style="'width:' + barBredde(o.fremdrift) + '%'"/>
-                                        <span class="fiq_prj_slab"><t t-esc="o.fremdrift"/> %</span>
+                                        <span class="fiq_prj_slab">
+                                            <t t-if="s.planlagt">Mulig oppstart</t>
+                                            <t t-else=""><t t-esc="o.fremdrift"/> %</t>
+                                        </span>
                                     </div>
                                     <t t-set="fp" t-value="fristPunkt(o)"/>
                                     <div t-if="fp !== null" class="fiq_prj_frist"
-                                         t-att-style="'left:' + fp + '%'" title="Frist"/>
+                                         t-att-class="tidKlasse(o.tid_status)"
+                                         t-att-style="'left:' + fp + '%'"
+                                         t-att-title="'Frist ' + o.frist"/>
                                 </div>
                             </div>
                         </t>
@@ -231,7 +239,7 @@
                                         <t t-esc="o.wbs"/> · <t t-esc="o.oppgavenr"/> · <t t-esc="o.prosjekt"/>
                                     </span>
                                 </div>
-                                <span class="fiq_prj_frist_txt" t-if="o.frist">◆ <t t-esc="o.frist"/></span>
+                                <span class="fiq_prj_frist_txt" t-if="o.frist">▲ <t t-esc="o.frist"/></span>
                                 <span class="fiq_prj_frist_txt fiq_prj_dempet" t-else="">ingen frist</span>
                                 <span class="fiq_prj_timer" t-att-class="budsjettKlasse(o.budsjett_status)"
                                       t-if="o.budsjett_timer">

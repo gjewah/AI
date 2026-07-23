@@ -423,16 +423,41 @@
     }
 
     // Frist-diamant
+    // Frist/milepæl — ▲ TREKANT, ikke ◆ rombe (fasitens legende: «▲ frist/milepæl»).
+    // Sto som et 45°-rotert kvadrat = rombe. Formen bærer mening her: fasiten bruker
+    // ▲ for frist og reserverer skravur for det uavklarte. Én form per betydning.
+    //
+    // Fargen følger TID-aksen, ikke en fast rød: en frist som holder skal ikke rope.
+    // Fasiten viser grønn ▲ på 26_042 og rød ▲ på 26_015 i samme bilde.
     .fiq_prj_frist {
         position: absolute;
         top: 13px;
-        width: 11px;
-        height: 11px;
-        margin-left: -5px;
-        background: var(--fiq-crit);
-        transform: rotate(45deg);
-        border-radius: 2px;
+        width: 0;
+        height: 0;
+        margin-left: -6px;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-bottom: 10px solid var(--fiq-c, var(--fiq-crit));
         z-index: 3;
+    }
+
+    // «Planlagt (mulig)» — skravert søyle for oppgave UTEN bekreftet startdato.
+    // Fasitens `▨ planlagt` / «Mulig oppstart». Stripene sier at plasseringen er
+    // et anslag: vi vet fristen, ikke når arbeidet begynner. Blek + stiplet kant
+    // så den aldri forveksles med en bekreftet søyle på avstand.
+    .fiq_prj_soyle.fiq_prj_planlagt {
+        background: repeating-linear-gradient(
+            45deg,
+            var(--fiq-surface-2) 0 6px,
+            var(--fiq-line-soft) 6px 12px
+        );
+        border: 1px dashed var(--fiq-line);
+        box-shadow: none;
+
+        .fiq_prj_slab {
+            color: var(--fiq-muted);
+            font-style: italic;
+        }
     }
 
     // ---------- felles rad-elementer ----------

@@ -10,6 +10,8 @@ ingenting. Derfor tester vi mot forholdene som faktisk finnes i basen: maler bla
 inn blant prosjekter, og prosjekter uten timeestimat.
 """
 
+from datetime import timedelta
+
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
 
@@ -593,3 +595,130 @@ class TestPrjData(TransactionCase):
         if "is_template" in self.Project._fields:
             d += [("is_template", "=", False)]
         return d
+
+    # ---------- RISIKO-DOMMEN (krav 7) ----------
+    #
+    # 🔑 Fasitens fire eksempler ER testdataene. AI KR/AI PK 23.07: «Dere har
+    # tallet. Fasiten vil ha dommen.» Testene under sjekker at vi feller den
+    # samme dommen som fasiten viser — ikke bare at metoden svarer noe.
+    #
+    # 📌 Alle regner på egen tilstand (kanon 4i): ingen påstand her avhenger av
+    # hva som tilfeldigvis står i basen. En test som leser Dev-demodata og
+    # konkluderer om FIQ er nettopp feilen vi ble tatt for i dag.
+
+    def test_risiko_i_balanse_naar_forbruk_foelger_fremdrift(self):
+        """Fasiten: «26_042 Kabelgata · 62 % brukt / 62 % fremdrift → i balanse»."""
+        i_dag = fields.Date.today()
+        dom = self.Data._risiko_dom(
+            fort=62.0, budsjett=100.0, fremdrift=62.0,
+            naermeste_frist=None, i_dag=i_dag,
+        )
+        self.assertEqual(
+            dom, "i_balanse",
+            "62 % brukt av 62 % ferdig er sunt — det skal ikke merkes som risiko",
+        )
+
+    def test_risiko_tett_budsjett_naar_forbruk_loeper_fra_fremdriften(self):
+        """Pengene brukes fortere enn arbeidet blir gjort.
+
+        🔑 Dette er hele poenget med dommen: INGEN grense er passert (62 < 100),
+        så både `budsjett_status` og et rent forbrukstall sier «innenfor». Odoo
+        sier ingenting. Men 62 % brukt på 20 % arbeid er på vei mot sprekk, og
+        det er nettopp det Gjermund skal få vite FØR det smeller.
+        """
+        i_dag = fields.Date.today()
+        dom = self.Data._risiko_dom(
+            fort=62.0, budsjett=100.0, fremdrift=20.0,
+            naermeste_frist=None, i_dag=i_dag,
+        )
+        self.assertEqual(
+            dom, "tett_budsjett",
+            "62 % brukt på 20 % fremdrift skal varsles, ikke passere som «innenfor»",
+        )
+
+    def test_risiko_frist_i_dag_slaar_sunt_budsjett(self):
+        """Fasiten: «24_055 Oscarsgate · tilbud avgjøres i dag kl 15 → avgjøres».
+
+        Budsjettet er helt sunt. Dommen skal likevel være «avgjøres» — en frist
+        i dag tåler ikke å vente til i morgen, uansett hvor bra økonomien er.
+        Det er derfor risiko er en EGEN akse og ikke en omskriving av budsjett.
+        """
+        i_dag = fields.Date.today()
+        dom = self.Data._risiko_dom(
+            fort=10.0, budsjett=100.0, fremdrift=10.0,
+            naermeste_frist=i_dag, i_dag=i_dag,
+        )
+        self.assertEqual(dom, "avgjores", "Frist i dag skal slå gjennom alt annet")
+
+    def test_risiko_passert_frist_gir_avgjores(self):
+        """En frist som er passert er ikke «tett tid» — den er forbi."""
+        i_dag = fields.Date.today()
+        dom = self.Data._risiko_dom(
+            fort=1.0, budsjett=100.0, fremdrift=90.0,
+            naermeste_frist=i_dag - timedelta(days=5), i_dag=i_dag,
+        )
+        self.assertEqual(dom, "avgjores", "Passert frist må aldri se ut som i balanse")
+
+    def test_risiko_over_budsjett_er_alltid_roedt(self):
+        """Brukt mer enn budsjettet: rødt uansett fremdrift."""
+        i_dag = fields.Date.today()
+        dom = self.Data._risiko_dom(
+            fort=159.3, budsjett=1.0, fremdrift=100.0,
+            naermeste_frist=None, i_dag=i_dag,
+        )
+        self.assertEqual(dom, "over_budsjett", "15 931 % forbruk skal aldri passere")
+
+    def test_risiko_ferdig_prosjekt_er_ikke_risiko(self):
+        """Alt ferdig = ingen dom å felle, uansett hvor galt det gikk underveis."""
+        i_dag = fields.Date.today()
+        dom = self.Data._risiko_dom(
+            fort=999.0, budsjett=1.0, fremdrift=100.0,
+            naermeste_frist=i_dag - timedelta(days=30), i_dag=i_dag, ferdig=True,
+        )
+        self.assertEqual(dom, "ferdig", "Et avsluttet prosjekt er historie, ikke risiko")
+
+    def test_risiko_hvorfor_forklarer_dommen_i_klartekst(self):
+        """🔑 Et merke uten begrunnelse er bare et nytt tall å tolke.
+
+        Fasiten viser ALDRI merket alene: «62 % brukt / 62 % fremdrift»,
+        «EM-frist i dag». Gjermund skal kunne lese linja og vite hva han skal
+        gjøre — ikke måtte åpne prosjektet for å finne ut hvorfor det er rødt.
+        """
+        i_dag = fields.Date.today()
+        tekst = self.Data._risiko_hvorfor(
+            fort=62.0, budsjett=100.0, fremdrift=20.0,
+            naermeste_frist=i_dag, i_dag=i_dag,
+        )
+        self.assertIn("frist i dag", tekst.lower(), "Fristen må stå i klartekst")
+        self.assertIn("%", tekst, "Forbruk mot fremdrift må vises som tall")
+
+    def test_risiko_hvorfor_er_aldri_tom(self):
+        """Uten frist og budsjett skal linja forklare seg, ikke stå tom.
+
+        En tom celle ser ut som manglende data. «ingen frist eller budsjett satt»
+        er et svar — og det er ofte selve funnet.
+        """
+        tekst = self.Data._risiko_hvorfor(
+            fort=0.0, budsjett=0.0, fremdrift=0.0,
+            naermeste_frist=None, i_dag=fields.Date.today(),
+        )
+        self.assertTrue(tekst.strip(), "Begrunnelsen skal aldri være tom")
+
+    def test_prosjektoversikt_har_risiko_paa_hver_rad(self):
+        """Dommen skal FAKTISK nå flaten — ikke bare finnes som metode.
+
+        🔴 Denne testen finnes fordi jeg 22.07 bygde sjekkliste-datalaget i
+        1.21.0 og aldri koblet det til flaten. AI KRs sidemannskontroll fant
+        det: 0 treff i prj.xml/prj.js. «Metoden finnes» og «flaten viser det»
+        er to forskjellige påstander.
+        """
+        res = self.Data.get_prosjektoversikt(grense=20)
+        if not res["prosjekter"]:
+            self.skipTest("Ingen prosjekter å teste mot")
+        for p in res["prosjekter"]:
+            self.assertIn("risiko", p, "Hver prosjektrad må bære en risiko-dom")
+            self.assertIn("risiko_hvorfor", p, "Dommen må ha en begrunnelse")
+            self.assertTrue(
+                str(p["risiko_hvorfor"]).strip(),
+                "Begrunnelsen var tom for %s" % p["navn"],
+            )

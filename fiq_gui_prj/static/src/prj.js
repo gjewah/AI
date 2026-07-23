@@ -289,19 +289,51 @@ export class FiqGuiPrj extends Component {
     // brukeren har bladd fram.
     soyle(o) {
         const k = this.state.kolonner;
-        if (!k.length || !o.fra) { return null; }
+        if (!k.length) { return null; }
         const start = new Date(k[0].fra).getTime();
         const slutt = new Date(k[k.length - 1].til).getTime();
         const spenn = slutt - start;
         if (spenn <= 0) { return null; }
 
-        const f = new Date(o.fra).getTime();
-        const t = o.til ? new Date(o.til).getTime() : f;
+        // 🔴 PRODUCTION-FEIL RETTET 23.07: her sto `if (!o.fra) return null`.
+        //
+        // `fra` er `planned_date_begin` — Enterprise-planlegging. Gjermunds
+        // oppgaver har den ikke utfylt; de har bare `date_deadline`. Resultatet
+        // var 109 rader i Gantt UTEN en eneste søyle. Flaten så ut som den virket
+        // (rader, navn, kolonner tegnet seg) og var likevel tom der det gjaldt.
+        //
+        // Jeg bygde mot et felt jeg antok var i bruk. Samme grunnform som
+        // nøkkelfeilen: koden var riktig for en virkelighet som ikke var deres.
+        //
+        // 🔑 FASITEN HADDE SVARET HELE TIDEN — legenden har `▨ planlagt` som egen
+        // kategori, og `24_055 Oscarsgate 20 (tilbud)` vises som en skravert boks
+        // «Mulig oppstart». Uten bekreftet startdato skal oppgaven TEGNES, men
+        // merkes ubekreftet. Å skjule den er å late som den ikke finnes.
+        const bekreftet = !!o.fra;
+        let f;
+        if (bekreftet) {
+            f = new Date(o.fra).getTime();
+        } else if (o.frist) {
+            // Ingen startdato: vis en kort, skravert boks som ender på fristen.
+            // Bredden er en ANTAGELSE og skal se sånn ut — derfor stripet.
+            // Vi later ikke som vi vet når arbeidet begynner.
+            f = new Date(o.frist).getTime() - 3 * 86400000;
+        } else {
+            return null;   // verken start eller frist — ingenting å plassere
+        }
+        const t = o.til ? new Date(o.til).getTime()
+            : (o.frist ? new Date(o.frist).getTime() : f);
         if (t < start || f > slutt) { return null; }
 
         const v = Math.max(0, ((f - start) / spenn) * 100);
         const h = Math.min(100, ((t - start) / spenn) * 100);
-        return { venstre: v, bredde: Math.max(1.5, h - v) };
+        return { venstre: v, bredde: Math.max(1.5, h - v), planlagt: !bekreftet };
+    }
+
+    // Fargeakse + evt. «planlagt»-skravering i ett. Malen skal ikke regne.
+    soyleKlasse(o, s) {
+        const k = this.tidKlasse(o.tid_status);
+        return s && s.planlagt ? k + " fiq_prj_planlagt" : k;
     }
 
     fristPunkt(o) {
