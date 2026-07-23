@@ -1,11 +1,18 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.32.2",
+    "version": "19.0.1.34.0",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
-    "description": """19.0.1.24.0 - TOUCH-MAAL PAA MOBILFLATEN (44px minstemaal):
+    "description": """19.0.1.34.0 - TESTENE DELT ETTER EIER (datalag vs flate):
+* AI PK delte sporet 23.07: datalaget (fiq_gui_prj_data.py) og flaten (prj.js/xml/scss) fikk hver sin eier. En delt testfil ville gitt samme feil som en delt gren - to skrivere som overskriver hverandre stille.
+* NY FIL tests/test_prj_data_lag.py: 20 tester paa datalagets BEREGNINGER. Ni flyttet fra test_prj_data.py (_risiko_dom, _risiko_hvorfor, _budsjett_status, _forbruk_prosent), elleve nye.
+* SKILLET er ikke hvilken metode som kalles, men HVA PAASTANDEN HANDLER OM: oppdiktede tall inn -> dom ut = beregning (her). get_prosjektoversikt() -> nokkelen finnes = flatens kontrakt (blir hos flate-eier).
+* 29 tester staar igjen i test_prj_data.py. De to risiko-testene som krever at dommen FAKTISK NAAR RADENE ble bevisst ikke flyttet - de maaler koblingen til flaten, og det var noeyaktig den paastanden som sviktet 23.07 (dommen bygget i 1.26.0, vist i null versjoner).
+* ELLEVE NYE TESTER dekker kodeveier ingen tidligere test hadde vaert i: negativt budsjett, timer uten budsjett (dom OG begrunnelse), tett_tid-grensa paa tre dager, dager talt begge veier (passert/i morgen/i dag - et fortegnsfeil ville gitt beroligende tekst paa noe som alt gikk galt), og en som kjorer 60 tilstandskombinasjoner gjennom dommen og krever at svaret alltid er en verdi flaten kan farge.
+* EN TEST PAA SAMMENHENGEN: _risiko_dom og _risiko_hvorfor regner UAVHENGIG paa samme tall. Endres grensa i den ene uten den andre, faar Gjermund et rodt merke med en beroligende begrunnelse - ingen feilmelding, bare en flate som motsier seg selv.
+19.0.1.24.0 - TOUCH-MAAL PAA MOBILFLATEN (44px minstemaal):
 * AI KR meldte at mobilflate for arbeider manglet helt. MAALT: den FINNES (sjekkliste_flate, deres arbeid) med bygg/kvitter-modus, portal-default og store trykkflater. Det som manglet var STOERRELSEN.
 * Haken var 34px (40px paa mobil). 44px er minstemaal for touch (Apple HIG + Material). En snekker med hansker bommer paa 34px - og bommer han, treffer han raden UNDER og kvitterer feil punkt uten aa merke det.
 * Haken: 34 -> 44px, mobil 40 -> 52px. Opplastingsknapp: min-height 44px, mobil 48px.

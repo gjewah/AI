@@ -110,29 +110,11 @@ class TestPrjData(TransactionCase):
                     "skal være «over» (rød)." % (p["navn"], fort, budsjett, p["budsjett_status"]),
                 )
 
-    def test_forbruk_regnes_uten_kapping(self):
-        """Regnestykket direkte: 215,9 timer mot budsjett 10 = 2159 %, ikke 100.
-
-        Uavhengig av hva som ligger i basen — dette er tallet fra det ekte funnet,
-        og det skal aldri kappes igjen.
-        """
-        self.assertEqual(self.Data._forbruk_prosent(215.9, 10.0), 2159.0)
-        self.assertEqual(self.Data._forbruk_prosent(50.0, 100.0), 50.0)
-        # Uten budsjett er en prosentandel meningsløs — ikke null, men «ingen».
-        self.assertEqual(self.Data._forbruk_prosent(80.0, 0.0), 0.0)
-
-    def test_budsjett_status_er_rod_ved_overforbruk(self):
-        """Fargeaksen i batch 15: blå innenfor · rød over · grønn ferdig.
-
-        🔴 Ferdig SLÅR IKKE UT over rødt: en ferdig aktivitet som brukte 3x
-        budsjettet er ikke en suksess å farge grønn — det er erfaringen neste
-        kalkyle skal bygge på.
-        """
-        self.assertEqual(self.Data._budsjett_status(5.0, 10.0, False), "innenfor")
-        self.assertEqual(self.Data._budsjett_status(15.0, 10.0, False), "over")
-        self.assertEqual(self.Data._budsjett_status(8.0, 10.0, True), "ferdig")
-        self.assertEqual(self.Data._budsjett_status(30.0, 10.0, True), "over")
-        self.assertEqual(self.Data._budsjett_status(0.0, 0.0, False), "plan")
+    # 📌 FLYTTET til tests/test_prj_data_lag.py (23.07, datalags-delingen):
+    #    test_forbruk_regnes_uten_kapping · test_budsjett_status_er_rod_ved_overforbruk
+    #    Begge regner på oppdiktede tall og rører aldri flaten. Testen over
+    #    (test_overforbruk_vises_ekte_og_kappes_aldri) blir HER — den krever at
+    #    de ekte radene flaten viser er ærlige, som er flatens kontrakt.
 
     def test_fremdrift_kilde_er_alltid_oppgitt(self):
         """Brukeren skal alltid kunne se om tallet er fasit eller anslag."""
@@ -596,113 +578,18 @@ class TestPrjData(TransactionCase):
             d += [("is_template", "=", False)]
         return d
 
-    # ---------- RISIKO-DOMMEN (krav 7) ----------
+    # ---------- RISIKO-DOMMEN (krav 7) — flatens side ----------
     #
-    # 🔑 Fasitens fire eksempler ER testdataene. AI KR/AI PK 23.07: «Dere har
-    # tallet. Fasiten vil ha dommen.» Testene under sjekker at vi feller den
-    # samme dommen som fasiten viser — ikke bare at metoden svarer noe.
+    # 📌 FLYTTET til tests/test_prj_data_lag.py (23.07, datalags-delingen):
+    #    de ni rene beregningstestene på `_risiko_dom` og `_risiko_hvorfor`
+    #    (i_balanse · tett_budsjett · avgjores ×2 · over_budsjett · ferdig ·
+    #     penger uten fremdrift · hvorfor-i-klartekst · hvorfor-aldri-tom).
+    #    De regner på oppdiktede tall og rører aldri flaten.
     #
-    # 📌 Alle regner på egen tilstand (kanon 4i): ingen påstand her avhenger av
-    # hva som tilfeldigvis står i basen. En test som leser Dev-demodata og
-    # konkluderer om FIQ er nettopp feilen vi ble tatt for i dag.
-
-    def test_risiko_i_balanse_naar_forbruk_foelger_fremdrift(self):
-        """Fasiten: «26_042 Kabelgata · 62 % brukt / 62 % fremdrift → i balanse»."""
-        i_dag = fields.Date.today()
-        dom = self.Data._risiko_dom(
-            fort=62.0, budsjett=100.0, fremdrift=62.0,
-            naermeste_frist=None, i_dag=i_dag,
-        )
-        self.assertEqual(
-            dom, "i_balanse",
-            "62 % brukt av 62 % ferdig er sunt — det skal ikke merkes som risiko",
-        )
-
-    def test_risiko_tett_budsjett_naar_forbruk_loeper_fra_fremdriften(self):
-        """Pengene brukes fortere enn arbeidet blir gjort.
-
-        🔑 Dette er hele poenget med dommen: INGEN grense er passert (62 < 100),
-        så både `budsjett_status` og et rent forbrukstall sier «innenfor». Odoo
-        sier ingenting. Men 62 % brukt på 20 % arbeid er på vei mot sprekk, og
-        det er nettopp det Gjermund skal få vite FØR det smeller.
-        """
-        i_dag = fields.Date.today()
-        dom = self.Data._risiko_dom(
-            fort=62.0, budsjett=100.0, fremdrift=20.0,
-            naermeste_frist=None, i_dag=i_dag,
-        )
-        self.assertEqual(
-            dom, "tett_budsjett",
-            "62 % brukt på 20 % fremdrift skal varsles, ikke passere som «innenfor»",
-        )
-
-    def test_risiko_frist_i_dag_slaar_sunt_budsjett(self):
-        """Fasiten: «24_055 Oscarsgate · tilbud avgjøres i dag kl 15 → avgjøres».
-
-        Budsjettet er helt sunt. Dommen skal likevel være «avgjøres» — en frist
-        i dag tåler ikke å vente til i morgen, uansett hvor bra økonomien er.
-        Det er derfor risiko er en EGEN akse og ikke en omskriving av budsjett.
-        """
-        i_dag = fields.Date.today()
-        dom = self.Data._risiko_dom(
-            fort=10.0, budsjett=100.0, fremdrift=10.0,
-            naermeste_frist=i_dag, i_dag=i_dag,
-        )
-        self.assertEqual(dom, "avgjores", "Frist i dag skal slå gjennom alt annet")
-
-    def test_risiko_passert_frist_gir_avgjores(self):
-        """En frist som er passert er ikke «tett tid» — den er forbi."""
-        i_dag = fields.Date.today()
-        dom = self.Data._risiko_dom(
-            fort=1.0, budsjett=100.0, fremdrift=90.0,
-            naermeste_frist=i_dag - timedelta(days=5), i_dag=i_dag,
-        )
-        self.assertEqual(dom, "avgjores", "Passert frist må aldri se ut som i balanse")
-
-    def test_risiko_over_budsjett_er_alltid_roedt(self):
-        """Brukt mer enn budsjettet: rødt uansett fremdrift."""
-        i_dag = fields.Date.today()
-        dom = self.Data._risiko_dom(
-            fort=159.3, budsjett=1.0, fremdrift=100.0,
-            naermeste_frist=None, i_dag=i_dag,
-        )
-        self.assertEqual(dom, "over_budsjett", "15 931 % forbruk skal aldri passere")
-
-    def test_risiko_ferdig_prosjekt_er_ikke_risiko(self):
-        """Alt ferdig = ingen dom å felle, uansett hvor galt det gikk underveis."""
-        i_dag = fields.Date.today()
-        dom = self.Data._risiko_dom(
-            fort=999.0, budsjett=1.0, fremdrift=100.0,
-            naermeste_frist=i_dag - timedelta(days=30), i_dag=i_dag, ferdig=True,
-        )
-        self.assertEqual(dom, "ferdig", "Et avsluttet prosjekt er historie, ikke risiko")
-
-    def test_risiko_hvorfor_forklarer_dommen_i_klartekst(self):
-        """🔑 Et merke uten begrunnelse er bare et nytt tall å tolke.
-
-        Fasiten viser ALDRI merket alene: «62 % brukt / 62 % fremdrift»,
-        «EM-frist i dag». Gjermund skal kunne lese linja og vite hva han skal
-        gjøre — ikke måtte åpne prosjektet for å finne ut hvorfor det er rødt.
-        """
-        i_dag = fields.Date.today()
-        tekst = self.Data._risiko_hvorfor(
-            fort=62.0, budsjett=100.0, fremdrift=20.0,
-            naermeste_frist=i_dag, i_dag=i_dag,
-        )
-        self.assertIn("frist i dag", tekst.lower(), "Fristen må stå i klartekst")
-        self.assertIn("%", tekst, "Forbruk mot fremdrift må vises som tall")
-
-    def test_risiko_hvorfor_er_aldri_tom(self):
-        """Uten frist og budsjett skal linja forklare seg, ikke stå tom.
-
-        En tom celle ser ut som manglende data. «ingen frist eller budsjett satt»
-        er et svar — og det er ofte selve funnet.
-        """
-        tekst = self.Data._risiko_hvorfor(
-            fort=0.0, budsjett=0.0, fremdrift=0.0,
-            naermeste_frist=None, i_dag=fields.Date.today(),
-        )
-        self.assertTrue(tekst.strip(), "Begrunnelsen skal aldri være tom")
+    # 🔑 DE TO UNDER BLIR HER. De påstår ikke noe om regnestykket — de påstår
+    #    at dommen FAKTISK NÅR RADENE flaten tegner. Det er flatens kontrakt,
+    #    og det var nettopp den påstanden som sviktet 23.07: dommen var bygget
+    #    i 1.26.0 og vist i null versjoner.
 
     def test_prosjektoversikt_har_risiko_paa_hver_rad(self):
         """Dommen skal FAKTISK nå flaten — ikke bare finnes som metode.
@@ -723,26 +610,8 @@ class TestPrjData(TransactionCase):
                 "Begrunnelsen var tom for %s" % p["navn"],
             )
 
-    def test_risiko_penger_brukt_uten_fremdrift_er_ikke_i_balanse(self):
-        """🔴 REGRESJON — funnet 23.07 på ekte rader ETTER at ni tester var grønne.
-
-        Dommen meldte «i_balanse» om «36 % brukt / 0 % fremdrift». Vakten
-        `fremdrift > 0` var ment mot manglende data, men slapp gjennom det
-        VERSTE tilfellet: penger brukt uten at noe er gjort.
-
-        🔑 Ingen av de ni testene hadde fremdrift = 0. De var grønne på en sak
-        de aldri stilte. Det er hele grunnen til at jeg leste ekte rader etter
-        at testene passerte — «grønn» og «riktig» er to påstander.
-        """
-        i_dag = fields.Date.today()
-        dom = self.Data._risiko_dom(
-            fort=36.0, budsjett=100.0, fremdrift=0.0,
-            naermeste_frist=None, i_dag=i_dag,
-        )
-        self.assertEqual(
-            dom, "tett_budsjett",
-            "36 % av budsjettet brukt uten en eneste ferdig oppgave er ikke balanse",
-        )
+    # 📌 FLYTTET til tests/test_prj_data_lag.py:
+    #    test_risiko_penger_brukt_uten_fremdrift_er_ikke_i_balanse
 
     # ---------- KR-BOKSEN — mine fire tall til forsiden ----------
 
