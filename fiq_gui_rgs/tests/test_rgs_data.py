@@ -493,6 +493,55 @@ class TestRgsData(TransactionCase):
                 "Flaten melder «%s» for %s, men Lønn sier «%s» — koblingen er brutt"
                 % (mine.get(kode), kode, info.get("grunn")))
 
+    def test_lonnslinjer_plasseres_etter_forfall_ikke_periode(self):
+        """🔑 Lønn plasseres etter FORFALL — `periode` er ren visning.
+
+        Avtalt med 2.20 Lønn 22.07: augustlønn betalt 15. september hører i
+        septemberuka, uansett hva perioden heter. Forveksles de, forskyves
+        hele likviditetsbildet — og det er nettopp derfor `periode` aldri får
+        røre en beregning.
+
+        Testen bruker kurvens egne uker, så den er sann uansett dagens dato.
+        """
+        c = self.Data.hent_cashflow(uker=12)
+        for p in c["punkter"]:
+            for linje in p["lonn_linjer"]:
+                fra = fields.Date.to_date(p["fra"])
+                til = fields.Date.add(fra, days=7)
+                self.assertTrue(
+                    fra <= linje["forfall"] < til,
+                    "Lønnslinje med forfall %s havnet i uka som starter %s"
+                    % (linje["forfall"], p["fra"]))
+
+    def test_planlagt_lonn_ser_aldri_ut_som_bokfort(self):
+        """🛑 «ALDRI gjett — regnskap er juridisk bindende.»
+
+        2.20 Lønn merker hver linje `bokfort` · `planlagt` · `estimat`. En
+        validert lønnskjøring som ikke er utbetalt er `planlagt` — en fremtidig
+        utbetaling, ikke et bokført tall. Feltet må følge helt ut i flaten;
+        mistes det, ser en framskrivning ut som fakta.
+
+        Mangler `sikkerhet` på en linje, settes den til `estimat` — det
+        forsiktige valget. Aldri `bokfort` for sikkerhets skyld.
+        """
+        gyldige = {"bokfort", "planlagt", "estimat"}
+        for p in self.Data.hent_cashflow()["punkter"]:
+            for linje in p["lonn_linjer"]:
+                self.assertIn(linje["sikkerhet"], gyldige,
+                              "Ukjent sikkerhetsnivå %r" % linje["sikkerhet"])
+
+    def test_lonn_teller_med_i_ut_og_saldo(self):
+        """Lønn er penger UT — den må påvirke saldoen, ikke bare vises.
+
+        `lonn_ut` finnes for at flaten skal kunne forklare et brått hopp (f.eks.
+        når AGA-fribeløpet er brukt opp). Men den skal være en DEL av `ut`, ikke
+        et sidespor — ellers viser kurven en likviditet firmaet ikke har.
+        """
+        for p in self.Data.hent_cashflow()["punkter"]:
+            self.assertGreaterEqual(
+                p["ut"], p["lonn_ut"],
+                "Lønnsbeløpet må være inkludert i ukas «ut», ikke stå utenfor")
+
     def test_flaten_virker_uten_lonnsmodulen(self):
         """🛑 `fiq_rgs_lonn` er IKKE en avhengighet — og skal aldri bli det.
 

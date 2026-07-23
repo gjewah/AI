@@ -161,10 +161,14 @@ class FiqGuiRgsData(models.AbstractModel):
         (bokførte, ubetalte bilag med forfallsdato), men sier noe om FRAMTIDA —
         og framtida er en antagelse. Flaten merker den som framskrivning.
 
-        🛑 UFULLSTENDIG, OG DET SKAL STÅ: lønnskjøring, arbeidsgiveravgift,
-        feriepenger og pensjon er IKKE med. Ingen AI-rolle eier lønn ennå, og
-        et gjettet lønnstall i en likviditetsprognose er verre enn ingen prognose.
-        `mangler` i returverdien forteller flaten hva som ikke er tatt høyde for.
+        🛑 LØNNSFORPLIKTELSER KOBLET 23.07 (2.20 HR Lønn): lønnskjøring,
+        arbeidsgiveravgift, feriepenger og pensjon hentes nå som AGGREGATER —
+        aldri persondata. Kurven er dermed ikke lenger blind for dem.
+
+        🛑 MEN `mangler` GJELDER FORTSATT, og er nå mer presis: den skiller
+        «ikke bygd ennå» fra «bygd, men ingen data for dette selskapet» (f.eks.
+        når sone for arbeidsgiveravgift ikke er registrert). Grunnen hentes fra
+        2.20 Lønn — de eier lønnsdata og dermed også årsaken.
         Fjernes ALDRI uten at tallene faktisk er koblet.
         """
         i_dag = fields.Date.context_today(self)
@@ -183,6 +187,10 @@ class FiqGuiRgsData(models.AbstractModel):
         forfalt_ut = sum(b["amount_residual"] for b in bilag
                          if b["invoice_date_due"] < i_dag and b["move_type"] in self.UT_TYPER)
 
+        # Lønnsforpliktelser fra 2.20 HR Lønn — aggregater, aldri persondata.
+        # Positivt `belop` = utbetaling ut av konto (deres punkt 03).
+        lonnslinjer = self._hent_lonnslinjer(i_dag, fields.Date.add(i_dag, days=7 * uker))
+
         punkter = []
         saldo = forfalt_inn - forfalt_ut
         laveste = {"saldo": saldo, "uke": 0, "dato": fields.Date.to_string(i_dag)}
@@ -194,6 +202,12 @@ class FiqGuiRgsData(models.AbstractModel):
                       if fra <= b["invoice_date_due"] < til and b["move_type"] in self.INN_TYPER)
             ut = sum(b["amount_residual"] for b in bilag
                      if fra <= b["invoice_date_due"] < til and b["move_type"] in self.UT_TYPER)
+            # Lønn plasseres etter FORFALL, aldri etter `periode` — periode er
+            # ren visning (avtalt med 2.20 Lønn 22.07). Augustlønn betalt 15.
+            # september hører i septemberuka, uansett hva perioden heter.
+            uke_lonn = [l for l in lonnslinjer if fra <= l["forfall"] < til]
+            lonn_ut = sum(l["belop"] for l in uke_lonn)
+            ut += lonn_ut
             saldo += inn - ut
             punkter.append({
                 "uke": u,
@@ -203,6 +217,10 @@ class FiqGuiRgsData(models.AbstractModel):
                 "saldo": saldo,
                 # Kritisk = saldoen går under null. Det er «når blir det tight».
                 "kritisk": saldo < 0,
+                # Hva av «ut» som er lønnsforpliktelser — så flaten kan forklare
+                # et brått hopp (f.eks. når fribeløpet for AGA er brukt opp).
+                "lonn_ut": lonn_ut,
+                "lonn_linjer": uke_lonn,
             })
             if saldo < laveste["saldo"]:
                 laveste = {"saldo": saldo, "uke": u, "dato": fields.Date.to_string(fra)}
@@ -227,6 +245,71 @@ class FiqGuiRgsData(models.AbstractModel):
         ("otp", "Pensjon"),
         ("feriepenger", "Feriepenger"),
     ]
+
+    @api.model
+    def _lonn_modell(self):
+        """Mykt oppslag mot 2.20 HR Lønn. Returnerer modellen eller None.
+
+        🔴 TO RECORDSET-FELLER, begge målt 23.07 — ikke antatt:
+          1. `env.get('ukjent.modell')` gir et TOMT RECORDSET, ikke None.
+             En `is None`-sjekk slår derfor aldri til.
+          2. `finnes and env[modell] or None` faller ALLTID til None, fordi et
+             tomt recordset er FALSKT i Python. Min første kobling brukte
+             nettopp det — og meldte «ikke bygd» selv når Lønn svarte
+             «mangler_sone». 26 tester var grønne mens koblingen var død.
+        Derfor: eksplisitt oppslag i modellregisteret, ingen and/or-triks.
+
+        🛑 `fiq_rgs_lonn` er IKKE en avhengighet og skal aldri bli det. En base
+        uten lønn er en normal base, ikke en feil.
+        """
+        if not self.env["ir.model"].sudo().search_count(
+                [("model", "=", "fiq.lonnsforpliktelse")]):
+            return None
+        return self.env["fiq.lonnsforpliktelse"]
+
+    @api.model
+    def _hent_lonnslinjer(self, fra_dato, til_dato):
+        """Lønnsforpliktelser fra 2.20 HR Lønn — aggregater, aldri persondata.
+
+        🔒 PERSONVERN: vi mottar KUN summer. Ingen `employee_id`, ingen navn,
+        og aldri en linje som representerer færre enn tre ansatte — 2.20 Lønn
+        håndhever grensen på sin side og melder da `ingen_data` i stedet.
+        Vi ber aldri om underlaget, uansett hvor nyttig det måtte være.
+
+        🛑 Feiler kallet, returneres tom liste — og `mangler` melder «ukjent»
+        i stedet for å utelate typen. En kurve som stille mister en hel
+        forpliktelsestype er nøyaktig det vakten finnes for å hindre.
+        """
+        Lonn = self._lonn_modell()
+        if Lonn is None or not hasattr(Lonn, "hent_lonnsforpliktelser"):
+            return []
+        try:
+            linjer = Lonn.hent_lonnsforpliktelser(fra_dato, til_dato) or []
+        except Exception:
+            return []
+
+        rene = []
+        for l in linjer:
+            forfall = l.get("forfall")
+            if not forfall or l.get("belop") in (None, False):
+                continue  # en linje uten dato kan ikke plasseres i en uke
+            if isinstance(forfall, str):
+                forfall = fields.Date.to_date(forfall)
+            rene.append({
+                "type": l.get("type"),
+                "label": l.get("label") or "",
+                "forfall": forfall,
+                "belop": l["belop"],
+                # `sikkerhet` følger helt ut i flaten: en `planlagt` linje skal
+                # ALDRI se ut som et bokført tall. Rollens egen regel.
+                "sikkerhet": l.get("sikkerhet") or "estimat",
+                "kilde": l.get("kilde") or "",
+                "periode": l.get("periode") or "",
+                # Valgfritt hos Lønn — forklarer f.eks. at fribeløpet er brukt
+                # opp og at satsen derfor hopper. Ren visning, aldri beregning.
+                "merknad": l.get("merknad") or "",
+            })
+        return rene
 
     @api.model
     def _mangler_forpliktelser(self):
@@ -255,18 +338,7 @@ class FiqGuiRgsData(models.AbstractModel):
         # RECORDSET, ikke None — «fiq.lonnsforpliktelse()». En None-sjekk ville
         # derfor sluppet gjennom, og `hasattr` båret hele vekten. Riktig test på
         # om en modell finnes er oppslag i modellregisteret.
-        # 🔴 TO FELLER MED TOMME RECORDSETS, begge målt 23.07 — ikke antatt:
-        #   1. `env.get('ukjent.modell')` gir et TOMT RECORDSET, ikke None.
-        #      En `is None`-sjekk slår derfor aldri til.
-        #   2. `finnes and env[modell] or None` faller ALLTID til None, fordi et
-        #      tomt recordset er FALSKT i Python. Min forrige versjon brukte
-        #      nettopp det — og meldte «ikke bygd» selv når Lønn svarte
-        #      «mangler_sone». Testene var grønne; koblingen var død.
-        # Derfor: eksplisitt if/else, ingen and/or-triks på recordsets.
-        Lonn = None
-        if self.env["ir.model"].sudo().search_count(
-                [("model", "=", "fiq.lonnsforpliktelse")]):
-            Lonn = self.env["fiq.lonnsforpliktelse"]
+        Lonn = self._lonn_modell()
         if Lonn is None or not hasattr(Lonn, "status_forpliktelser"):
             # Tilstand 02 for alle: modulen finnes ikke ennå.
             return [
