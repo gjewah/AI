@@ -152,6 +152,11 @@
                                 </span>
                             </div>
                             <div class="fiq_prj_spor">
+                                <!-- Rutenettet: én celle per kolonne, samme kilde som hodet.
+                                     Erstatter gradienten som brøt SCSS-kompileringen 20.07
+                                     og som uansett var låst til sju kolonner. -->
+                                <div t-foreach="state.kolonner" t-as="k" t-key="k_index"
+                                     class="fiq_prj_rute"/>
                                 <div class="fiq_prj_naa_strek" t-if="iDagStrek !== null"
                                      t-att-style="'left:' + iDagStrek + '%'"/>
                             </div>
@@ -178,6 +183,8 @@
                                     </span>
                                 </div>
                                 <div class="fiq_prj_spor">
+                                    <div t-foreach="state.kolonner" t-as="k" t-key="k_index"
+                                         class="fiq_prj_rute"/>
                                     <div class="fiq_prj_naa_strek" t-if="iDagStrek !== null"
                                          t-att-style="'left:' + iDagStrek + '%'"/>
                                     <t t-set="s" t-value="soyle(o)"/>

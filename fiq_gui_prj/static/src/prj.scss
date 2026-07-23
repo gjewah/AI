@@ -374,17 +374,38 @@
         }
     }
 
+    // 🔴🔴 BRØT STILEN FOR HELE DEV-BASEN 20.07-23.07. Rettet 23.07.
+    //
+    // Her sto `calc(14.2857% - 1px)` i en gradient. Sass regner calc() SELV ved
+    // kompilering og kaster «Incompatible units: '%' and 'px'». Nettleseren ville
+    // taklet det — men Sass kommer aldri så langt. Og når SCSS-kompileringen
+    // feiler, faller HELE basen tilbake på gammel stil: Gjermund fikk «Style
+    // error» på Odoos startskjerm, ikke bare på min flate.
+    //
+    // 🔑 GYLDIG CSS ≠ KOMPILERBAR SCSS. Feilen er semantisk, ikke syntaktisk —
+    // derfor så den korrekt ut i diff, og derfor fanget ingenting i kjeden den:
+    // testene måler Python, bygget blir ikke rødt (det er en advarsel), og ingen
+    // hadde åpnet Dev i nettleser på tre dager. Gjermund fant den på sekunder.
+    // Samme familie som `min(px, vw)`-fella øverst i fila — jeg noterte den der
+    // og gikk i den ved siden av.
+    //
+    // 📌 Jeg valgte IKKE `calc(100% / 7 - 1px)`, som ellers ville kompilert:
+    // gradienten var uansett låst til SJU kolonner. I månedsvisning tegnes andre
+    // antall, og linjene ville stått feil. Kolonnene finnes allerede som ekte
+    // elementer i malen — la dem bære sin egen linje, så følger den alltid
+    // oppløsningen. Én sannhet om kolonnebredde, ikke to.
     .fiq_prj_spor {
         position: relative;
         min-height: 38px;
-        // Kolonnelinjer som bakgrunn — ingen DOM-elementer per kolonne.
-        background-image: repeating-linear-gradient(
-            to right,
-            transparent,
-            transparent calc(14.2857% - 1px),
-            var(--fiq-line-soft) calc(14.2857% - 1px),
-            var(--fiq-line-soft) 14.2857%
-        );
+        display: flex;
+    }
+
+    // Rutenettet bak søylene. Én celle per kolonne, samme kilde som hodet.
+    .fiq_prj_rute {
+        flex: 1 1 0;
+        border-right: 1px solid var(--fiq-line-soft);
+
+        &:last-child { border-right: 0; }
     }
 
     .fiq_prj_naa_strek {
