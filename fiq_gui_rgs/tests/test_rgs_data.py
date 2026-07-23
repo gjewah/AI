@@ -461,6 +461,38 @@ class TestRgsData(TransactionCase):
             self.assertTrue(m["forklaring"],
                             "En manglende type må forklares, ikke bare navngis")
 
+    def test_grunnen_hentes_fra_lonn_naar_modulen_finnes(self):
+        """🔴 REGRESJON (min egen feil, 1.22.3 → 1.22.4) — koblingen var DØD.
+
+        Alle 26 tester var grønne mens flaten meldte «ikke bygd» for alle fire
+        typene, samtidig som 2.20 Lønn svarte `mangler_sone` på AGA. Ingen test
+        sammenlignet de to sidene, så feilen var usynlig.
+
+        Årsak: `finnes and env[modell] or None` faller ALLTID til None — et tomt
+        recordset er falskt i Python. Oppslaget slo derfor aldri til.
+
+        Denne testen sammenligner flatens `grunn` med Lønns egen status. Er de
+        ulike, er koblingen brutt — uansett hva de andre testene sier.
+        """
+        if not self.env["ir.model"].sudo().search_count(
+                [("model", "=", "fiq.lonnsforpliktelse")]):
+            self.skipTest("Lønnsmodulen er ikke installert på denne basen")
+
+        i_dag = fields.Date.context_today(self.Data)
+        status = self.env["fiq.lonnsforpliktelse"].status_forpliktelser(
+            i_dag, fields.Date.add(i_dag, days=84))
+        mine = {m["type"]: m["grunn"] for m in self.Data.hent_cashflow()["mangler"]}
+
+        for kode, info in status.items():
+            if info.get("levert"):
+                self.assertNotIn(kode, mine,
+                                 "%s er levert av Lønn og skal være ute av lista" % kode)
+                continue
+            self.assertEqual(
+                mine.get(kode), info.get("grunn"),
+                "Flaten melder «%s» for %s, men Lønn sier «%s» — koblingen er brutt"
+                % (mine.get(kode), kode, info.get("grunn")))
+
     def test_flaten_virker_uten_lonnsmodulen(self):
         """🛑 `fiq_rgs_lonn` er IKKE en avhengighet — og skal aldri bli det.
 

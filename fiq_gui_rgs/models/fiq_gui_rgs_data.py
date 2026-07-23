@@ -255,9 +255,18 @@ class FiqGuiRgsData(models.AbstractModel):
         # RECORDSET, ikke None — «fiq.lonnsforpliktelse()». En None-sjekk ville
         # derfor sluppet gjennom, og `hasattr` båret hele vekten. Riktig test på
         # om en modell finnes er oppslag i modellregisteret.
-        Lonn = self.env["ir.model"].sudo().search_count(
-            [("model", "=", "fiq.lonnsforpliktelse")]
-        ) and self.env["fiq.lonnsforpliktelse"] or None
+        # 🔴 TO FELLER MED TOMME RECORDSETS, begge målt 23.07 — ikke antatt:
+        #   1. `env.get('ukjent.modell')` gir et TOMT RECORDSET, ikke None.
+        #      En `is None`-sjekk slår derfor aldri til.
+        #   2. `finnes and env[modell] or None` faller ALLTID til None, fordi et
+        #      tomt recordset er FALSKT i Python. Min forrige versjon brukte
+        #      nettopp det — og meldte «ikke bygd» selv når Lønn svarte
+        #      «mangler_sone». Testene var grønne; koblingen var død.
+        # Derfor: eksplisitt if/else, ingen and/or-triks på recordsets.
+        Lonn = None
+        if self.env["ir.model"].sudo().search_count(
+                [("model", "=", "fiq.lonnsforpliktelse")]):
+            Lonn = self.env["fiq.lonnsforpliktelse"]
         if Lonn is None or not hasattr(Lonn, "status_forpliktelser"):
             # Tilstand 02 for alle: modulen finnes ikke ennå.
             return [
