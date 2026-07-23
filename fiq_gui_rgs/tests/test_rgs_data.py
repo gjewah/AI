@@ -188,8 +188,11 @@ class TestRgsData(TransactionCase):
         """
         c = self.Data.hent_cashflow(uker=12)
         self.assertEqual(len(c["punkter"]), 12)
-        self.assertIn("Lønnskjøringer", c["mangler"])
-        self.assertIn("Feriepenger", c["mangler"])
+        # `mangler` ble strukturert i 1.22.0 (navn → navn + grunn + forklaring),
+        # så typene sjekkes på `navn`-feltet i stedet for på rå strenger.
+        navn = [m["navn"] for m in c["mangler"]]
+        self.assertIn("Lønnskjøringer", navn)
+        self.assertIn("Feriepenger", navn)
         self.assertTrue(c["grunnlag"], "Kurven må oppgi hva den bygger på")
 
     def test_cashflow_saldo_akkumulerer(self):
@@ -381,12 +384,24 @@ class TestRgsData(TransactionCase):
         self._betal(faktura, 5)
 
         d = self.Data.hent_grunnbilde()
-        self.assertEqual(faktura.payment_state, "in_payment",
-                         "Forutsetning: uavstemt betaling gir in_payment, ikke paid")
-        self.assertGreater(d["i_betaling_antall"], 0,
-                           "Grunnbildet må si fra om bilag som er registrert betalt")
-        self.assertTrue(d["i_betaling_merknad"],
-                        "Merknaden må stå i datasettet, ikke bare i visningen")
+        # 🔴 MÅLT 23.07 — `in_payment` vs `paid` er MILJØAVHENGIG, ikke universelt:
+        #   fiqas Production (www.fiq.no):      in_payment · residual urørt
+        #   Dev 35326209 (ny demodata-base):    paid       · residual 0
+        # Forskjellen ligger i bankjournalens oppsett (utestående-konto), ikke i
+        # vår kode. En test som krever «in_payment» låser derfor et MILJØ, ikke en
+        # regel — og feiler når basen bygges på nytt. Min forrige versjon gjorde
+        # nettopp det. Vi tester i stedet det som ALLTID er sant: er bilaget
+        # fortsatt utestående, MÅ flaten forklare hvorfor.
+        if faktura.payment_state == "in_payment":
+            self.assertGreater(d["i_betaling_antall"], 0,
+                               "Grunnbildet må si fra om bilag som er registrert betalt")
+            self.assertTrue(d["i_betaling_merknad"],
+                            "Merknaden må stå i datasettet, ikke bare i visningen")
+        else:
+            # Basen avstemmer automatisk → bilaget er ute av bildet. Da skal det
+            # heller ikke meldes som ventende. Feltene må uansett finnes.
+            self.assertIn("i_betaling_antall", d)
+            self.assertIn("i_betaling_merknad", d)
 
     def test_uavstemt_betaling_finnes_i_monsteret(self):
         """🔴 REGRESJON (min egen feil, v1.19.0 → v1.19.2).
@@ -444,16 +459,28 @@ class TestRgsData(TransactionCase):
         virker det myke oppslaget.
         """
         # 🔴 MÅLT 23.07: `env.get('ukjent.modell')` gir et TOMT RECORDSET, ikke
-        # None. En None-sjekk her ville vært grønn av feil grunn. Riktig test på
-        # om modellen finnes er modellregisteret.
-        self.assertFalse(
-            self.env["ir.model"].sudo().search_count(
-                [("model", "=", "fiq.lonnsforpliktelse")]),
-            "Forutsetning: lønnsmodulen er ikke installert på denne basen")
+        # None. En None-sjekk ville vært grønn av feil grunn. Riktig test på om
+        # en modell finnes er modellregisteret.
+        #
+        # 🔴 OG: min forrige versjon KREVDE at modulen ikke var installert. Det
+        # var å låse et miljø, ikke en regel — Dev `35326209` har den installert,
+        # Production har den ikke. Testen må gjelde BEGGE veier, ellers feiler
+        # den på annenhver base.
+        finnes = bool(self.env["ir.model"].sudo().search_count(
+            [("model", "=", "fiq.lonnsforpliktelse")]))
         c = self.Data.hent_cashflow()
-        self.assertEqual(len(c["mangler"]), 4,
-                         "Alle fire lønnstypene skal meldes som manglende")
-        self.assertTrue(all(m["grunn"] == "ikke_bygd" for m in c["mangler"]))
+
+        self.assertIsInstance(c["mangler"], list,
+                              "Flaten må svare uansett om lønnsmodulen finnes")
+        for m in c["mangler"]:
+            self.assertTrue(m["forklaring"], "Hver manglende type må forklares")
+
+        if not finnes:
+            # Uten modulen: alle fire meldes som ikke bygd — aldri en tom liste,
+            # for en tom `mangler` leses som «alt er med i kurven».
+            self.assertEqual(len(c["mangler"]), 4,
+                             "Uten lønnsmodulen skal alle fire meldes som manglende")
+            self.assertTrue(all(m["grunn"] == "ikke_bygd" for m in c["mangler"]))
 
     def test_bilag_forsvinner_forst_naar_bekreftet_mot_bank(self):
         """🛑 GJERMUNDS AVGJØRELSE 23.07 (08.10) — låst i test.
@@ -472,12 +499,20 @@ class TestRgsData(TransactionCase):
         for_ = self.Data.hent_grunnbilde()["botter"][4]["verdi"]
         self._betal(faktura, 3)
 
-        self.assertEqual(faktura.payment_state, "in_payment")
         etter = self.Data.hent_grunnbilde()["botter"][4]["verdi"]
-        self.assertGreaterEqual(
-            etter, for_,
-            "Registrert-men-ubekreftet betaling skal IKKE fjerne bilaget "
-            "fra utestående (Gjermund 08.10)")
+        # Miljøavhengig (målt 23.07): Production gir `in_payment`, en fersk
+        # demodata-base gir `paid` fordi bankjournalen er satt opp ulikt.
+        # Regelen vi låser er Gjermunds: er betalingen IKKE bekreftet, skal
+        # bilaget bli stående. Er den bekreftet, skal det ut.
+        if faktura.payment_state == "in_payment":
+            self.assertGreaterEqual(
+                etter, for_,
+                "Registrert-men-ubekreftet betaling skal IKKE fjerne bilaget "
+                "fra utestående (Gjermund 08.10)")
+        else:
+            self.assertLessEqual(
+                etter, for_,
+                "Bekreftet betaling skal ta bilaget UT av utestående")
 
     def test_flaten_sier_om_bankavstemming_er_mulig(self):
         """Tallet må kunne forklare seg selv — ellers leses det som slurv.
