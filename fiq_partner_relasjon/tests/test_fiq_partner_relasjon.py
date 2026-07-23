@@ -360,13 +360,6 @@ class TestFiqPartnerRelasjon(TransactionCase):
         sett_fra_annet = partner.with_company(annet).fiq_brand_logo
         self.assertEqual(sett_fra_annet, partner.fiq_brand_logo)
 
-    # MIDLERTIDIG KANARIFUGL - SKAL FJERNES.
-    def test_kanari_skal_feile(self):
-        partner = self._partner("Kanari")
-        self.assertEqual(
-            partner.fiq_relation_type, "agreement_partner",
-            "KANARI: skal feile med vilje")
-
     # =================================================================
     #  Hjelpere
     # =================================================================

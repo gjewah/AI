@@ -63,6 +63,30 @@ class TestFiqGuiGantt(TransactionCase):
         return self.Task.create(
             dict({"name": navn, "project_id": prosjekt.id}, **vals))
 
+    def _sett_fremdrift(self, oppgave, andel):
+        """Sett `progress` via de EKTE driverne — den kan ikke skrives direkte.
+
+        🔴 Lærdom fra første kjøring 23.07: `progress` er et lagret COMPUTE-felt
+        (hr_timesheet, `_compute_progress_hours`). En `progress=45.0` i create()
+        blir stille forkastet og feltet forblir 0.0 — testen ville da bevist noe
+        helt annet enn den påstod.
+
+        Riktig vei er allokerte timer + førte timer:
+            progress = (effective + subtask_effective) / allocated
+
+        Vi allokerer 10 timer og fører `andel * 10` av dem.
+        """
+        oppgave.allocated_hours = 10.0
+        oppgave.project_id.allow_timesheets = True
+        self.env["account.analytic.line"].create({
+            "name": "FIQ testtimer",
+            "task_id": oppgave.id,
+            "project_id": oppgave.project_id.id,
+            "unit_amount": 10.0 * andel,
+        })
+        oppgave.invalidate_recordset(["progress", "effective_hours"])
+        return oppgave
+
     # =================================================================
     #  project.task.time_status — NULL-TILFELLENE FØRST
     # =================================================================
@@ -152,8 +176,8 @@ class TestFiqGuiGantt(TransactionCase):
         opg = self._oppgave(
             self._prosjekt(), "I rute",
             planned_date_begin=self.naa - timedelta(days=5),
-            date_deadline=self.naa + timedelta(days=5),
-            progress=100.0)
+            date_deadline=self.naa + timedelta(days=5))
+        self._sett_fremdrift(opg, 1.0)
         self.assertEqual(opg.time_status, "gronn")
 
     def test_oppgave_bak_skjema_midt_i_vinduet(self):
@@ -161,8 +185,8 @@ class TestFiqGuiGantt(TransactionCase):
         opg = self._oppgave(
             self._prosjekt(), "Bak skjema",
             planned_date_begin=self.naa - timedelta(days=5),
-            date_deadline=self.naa + timedelta(days=5),
-            progress=0.0)
+            date_deadline=self.naa + timedelta(days=5))
+        self.assertEqual(opg.progress, 0.0)
         self.assertEqual(opg.time_status, "oransje")
 
     def test_oppgave_innenfor_marginen_er_gronn(self):
@@ -174,8 +198,31 @@ class TestFiqGuiGantt(TransactionCase):
         opg = self._oppgave(
             self._prosjekt(), "Innenfor margin",
             planned_date_begin=self.naa - timedelta(days=5),
-            date_deadline=self.naa + timedelta(days=5),
-            progress=45.0)
+            date_deadline=self.naa + timedelta(days=5))
+        self._sett_fremdrift(opg, 0.45)
+        self.assertEqual(opg.time_status, "gronn")
+
+    def test_progress_tolkes_som_ANDEL_ikke_prosent(self):
+        """🔴 REGRESJON (funnet 23.07, første testkjøring).
+
+        `progress` fra hr_timesheet er en ANDEL 0..1, ikke prosent:
+        `round((effective + subtask_effective) / allocated, 2)`
+        (hr_timesheet/models/project_task.py:100).
+
+        Verifisert mot EKTE data på Dev: 50 timer brukt av 15 allokerte gir
+        progress = 3.33 — ikke 333. Koden delte likevel på 100, slik at en
+        oppgave med 100 % fremdrift ble regnet som 1 % gjort og flagget
+        «bak skjema» så snart ~16 % av vinduet var gått. Fargen var altså
+        oransje for nesten alt — den sa ingenting.
+
+        Testen låser tolkningen: FULL fremdrift midt i vinduet er grønn.
+        """
+        opg = self._oppgave(
+            self._prosjekt(), "Andel ikke prosent",
+            planned_date_begin=self.naa - timedelta(days=5),
+            date_deadline=self.naa + timedelta(days=5))
+        self._sett_fremdrift(opg, 1.0)
+        self.assertEqual(opg.progress, 1.0, "progress skal vaere en andel (1.0 = 100 %)")
         self.assertEqual(opg.time_status, "gronn")
 
     def test_oppgave_med_null_lang_vindu_deler_ikke_paa_null(self):
@@ -189,8 +236,7 @@ class TestFiqGuiGantt(TransactionCase):
         opg = self._oppgave(
             self._prosjekt(), "Null-vindu",
             planned_date_begin=tidspunkt,
-            date_deadline=tidspunkt,
-            progress=0.0)
+            date_deadline=tidspunkt)
         self.assertEqual(opg.time_status, "gronn")
 
     def test_oppgave_uten_fremdrift_behandles_som_null(self):
@@ -293,13 +339,16 @@ class TestFiqGuiGantt(TransactionCase):
         til = self._prosjekt("Til-prosjekt")
         a = self._oppgave(fra, "A", sequence=10)
         b = self._oppgave(fra, "B", sequence=20)
-        self._oppgave(til, "X", sequence=10)
+        # X får LAVERE sequence enn A, slik at rekkefølgen i mottakerprosjektet
+        # er entydig bestemt av sequence og ikke av id. (Med lik sequence
+        # avgjør id-en, og da ville A — opprettet først — havnet foran X.)
+        self._oppgave(til, "X", sequence=5)
         self.assertEqual(b.wbs_number, "02")
 
         a.project_id = til.id
         # Avgiver: B er nå eneste oppgave og rykker opp til 01.
         self.assertEqual(b.wbs_number, "01")
-        # Mottaker: A er nå nr. 2 i det NYE treet (X lå der fra før).
+        # Mottaker: X (sequence 5) er 01, A (sequence 10) blir 02.
         self.assertEqual(a.wbs_number, "02")
 
     def test_wbs_forelder_i_annet_prosjekt_teller_som_rot(self):
@@ -418,18 +467,30 @@ class TestFiqGuiGantt(TransactionCase):
             "Endagsprosjekt", date_start=dagen, date=dagen)
         self.assertEqual(prosjekt.time_status, "gronn")
 
-    def test_prosjekt_med_slutt_for_start_deler_ikke_paa_null(self):
-        """🔴 NULL/RANDTILFELLE: negativt vindu (slutt FØR start).
+    def test_prosjekt_kan_ikke_ha_slutt_foer_start(self):
+        """🔴 RANDTILFELLE: negativt vindu er UMULIG — Postgres nekter det.
 
-        Datafeil som absolutt finnes i ekte baser. `slutt > start`-vernet skal
-        gjøre at vi ikke regner en negativ andel — men den passerte fristen
-        skal fortsatt vises.
+        Første kjøring 23.07 forsøkte å lage et bakvendt prosjekt for å teste
+        `slutt > start`-vernet i computen. Basen svarte:
+        «new row for relation "project_project" violates check constraint
+        "project_project_project_date_greater"» (skranken bor i
+        project/models/project_project.py:186).
+
+        Lærdommen er verdt å beholde: vernet i computen kan ikke nås via
+        create/write, fordi databasen stopper tilstanden før den oppstår. Vi
+        tester derfor det som FAKTISK gjelder — at skranken håndheves — i
+        stedet for å påstå noe om en gren ingen data kan nå.
         """
-        prosjekt = self._prosjekt(
-            "Bakvendt",
-            date_start=self.i_dag + timedelta(days=10),
-            date=self.i_dag - timedelta(days=10))
-        self.assertEqual(prosjekt.time_status, "rod")
+        from psycopg2 import IntegrityError
+
+        from odoo.tools.misc import mute_logger
+
+        with mute_logger("odoo.sql_db"), self.assertRaises(IntegrityError):
+            with self.env.cr.savepoint():
+                self._prosjekt(
+                    "Bakvendt",
+                    date_start=self.i_dag + timedelta(days=10),
+                    date=self.i_dag - timedelta(days=10))
 
     def test_prosjekt_time_status_paa_tomt_recordset(self):
         """🔴 NULL: tomt recordset skal ikke kaste."""
@@ -571,11 +632,6 @@ class TestFiqGuiGantt(TransactionCase):
         b1 = self._oppgave(b, "B1")
         self.assertEqual(a1.wbs_number, "01")
         self.assertEqual(b1.wbs_number, "01")
-
-    # MIDLERTIDIG KANARIFUGL - SKAL FJERNES.
-    def test_kanari_skal_feile(self):
-        opg = self._oppgave(self._prosjekt(), "Kanari")
-        self.assertEqual(opg.time_status, "rod", "KANARI: skal feile med vilje")
 
     # =================================================================
     #  Hjelpere

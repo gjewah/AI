@@ -79,7 +79,14 @@ class ProjectTask(models.Model):
                 total = (deadline - begin).total_seconds()
                 if total > 0:
                     forventet = (now - begin).total_seconds() / total  # 0..1
-                    faktisk = (task.progress or 0.0) / 100.0
+                    # 🔴 progress fra hr_timesheet er en ANDEL (0..1), IKKE prosent:
+                    #   progress = round((effective + subtask_effective) / allocated, 2)
+                    #   (hr_timesheet/models/project_task.py:100)
+                    # Verifisert mot ekte data paa Dev 23.07: 50 timer brukt av 15
+                    # allokerte gir progress = 3.33 — ikke 333. Aa dele paa 100 her
+                    # gjorde en 100 %-ferdig oppgave til «1 % gjort», slik at ALT
+                    # ble flagget «bak skjema» saa snart ~16 % av vinduet var gaatt.
+                    faktisk = task.progress or 0.0
                     # 15 %-poeng margin før vi flagger «bak skjema».
                     if faktisk + 0.15 < forventet:
                         status = "oransje"

@@ -27,7 +27,7 @@ Two concerns, one model area (res.partner / res.company):
    - `fiq_brand_logo`: resolves the logo to use, preferring the native company/partner
      image, with an optional Control-room-specific override for dark backgrounds.
 """,
-    "version": "19.0.1.0.2",
+    "version": "19.0.1.1.0",
     "author": "FIQ AS",
     "website": "https://www.fiq.no",
     "license": "LGPL-3",
