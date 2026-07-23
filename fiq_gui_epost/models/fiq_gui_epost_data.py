@@ -961,7 +961,15 @@ class FiqMeldingssenterData(models.AbstractModel):
                ("email_from", "=ilike", adresser[0] if adresser else "___ingen___")]
         for a in adresser[1:]:
             dom = ["|"] + dom + [("email_from", "=ilike", a)]
-        dom = dom + self._firma_domene(False)
+        # 🔴 FANGET AV EGEN TEST: `record_company_id in [...]` utestenger meldinger UTEN
+        # firma — og en UPART melding har ikke noe firma, siden feltet arves fra elementet
+        # meldingen henger på. Personens tidligste e-poster er nettopp de uparede, så
+        # filteret skjulte det brukeren helst vil se. Tredje gang samme mønster treffer
+        # meg (søk 22.07, kalender 22.07, her): **et firmafilter må alltid slippe gjennom
+        # de firmaløse.**
+        firma = self._firma_domene(False)
+        if firma:
+            dom = dom + ["|", ("record_company_id", "=", False)] + firma
 
         ut = []
         for m in self.env["mail.message"].search(dom, order="date desc", limit=int(limit)):
@@ -1007,13 +1015,19 @@ class FiqMeldingssenterData(models.AbstractModel):
         if epost:
             ut.append({"kode": "epost", "navn": "E-post", "verdi": epost, "ikon": "✉"})
 
-        mobil = next((m for m in alle.mapped("mobile") if m), "")
-        if mobil:
-            # `tel:`-lenke — ringer fra mobil, åpner programvaretelefon på PC.
-            ut.append({"kode": "mobil", "navn": "Mobil", "verdi": mobil, "ikon": "📱"})
-        fasttlf = next((t for t in alle.mapped("phone") if t), "")
-        if fasttlf and fasttlf != mobil:
-            ut.append({"kode": "telefon", "navn": "Telefon", "verdi": fasttlf, "ikon": "☎"})
+        # 🔴 VERIFISERT MOT ODOO 19 (ikke antatt): `res.partner.mobile` FINNES IKKE lenger
+        # — kolonnen er borte fra tabellen; kun `phone` står igjen. Testen fanget det.
+        # Feltet sjekkes derfor FØR bruk: `mapped("mobile")` kaster KeyError i 19.
+        # Samme lærdom som «ID-er overlever ikke oppgradering» — felt gjør det heller ikke.
+        felt = alle._fields
+        for kode, navn, ikon in (("mobil", "Mobil", "📱"), ("telefon", "Telefon", "☎")):
+            f = "mobile" if kode == "mobil" else "phone"
+            if f not in felt:
+                continue
+            nr = next((v for v in alle.mapped(f) if v), "")
+            if nr and nr not in [k["verdi"] for k in ut]:
+                # `tel:`-lenke — ringer fra mobil, åpner programvaretelefon på PC.
+                ut.append({"kode": kode, "navn": navn, "verdi": nr, "ikon": ikon})
 
         # Intern chat: kun for personer som HAR en Odoo-bruker. Eksterne kontakter kan
         # ikke chattes med — å vise knappen ville lovet noe systemet ikke kan holde.
