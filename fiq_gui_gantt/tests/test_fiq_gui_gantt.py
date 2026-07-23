@@ -78,10 +78,26 @@ class TestFiqGuiGantt(TransactionCase):
         """
         oppgave.allocated_hours = 10.0
         oppgave.project_id.allow_timesheets = True
-        self.env["account.analytic.line"].create({
+        # hr_timesheet krever en AKTIV ansatt i prosjektets firma
+        # («Timesheets must be created with an active employee in the selected
+        # companies», hr_timesheet/models/hr_timesheet.py:332). Vi lager vaar
+        # egen ansatt for testbrukeren i stedet for aa anta at det finnes en.
+        firma = oppgave.company_id or oppgave.project_id.company_id or self.env.company
+        ansatt = self.env["hr.employee"].search([
+            ("user_id", "=", self.env.user.id),
+            ("company_id", "=", firma.id),
+        ], limit=1)
+        if not ansatt:
+            ansatt = self.env["hr.employee"].create({
+                "name": "FIQ testansatt",
+                "user_id": self.env.user.id,
+                "company_id": firma.id,
+            })
+        self.env["account.analytic.line"].with_company(firma).create({
             "name": "FIQ testtimer",
             "task_id": oppgave.id,
             "project_id": oppgave.project_id.id,
+            "employee_id": ansatt.id,
             "unit_amount": 10.0 * andel,
         })
         oppgave.invalidate_recordset(["progress", "effective_hours"])
