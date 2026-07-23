@@ -21,15 +21,15 @@
                         Expand all
                     </button>
                     <span class="fiq-rel-tall">
-                        <t t-esc="state.noder.length"/> kontakter ·
-                        <t t-esc="state.kanter.length"/> relasjoner
+                        <t t-esc="state.noder.length"/> contacts ·
+                        <t t-esc="state.kanter.length"/> relations
                     </span>
                 </div>
 
                 <div t-if="state.utenfor" class="fiq-rel-utenfor">
                     <strong><t t-esc="state.utenfor"/></strong>
-                    <t t-if="state.utenfor === 1"> relasjon peker</t>
-                    <t t-else=""> relasjoner peker</t>
+                    <t t-if="state.utenfor === 1"> relation points</t>
+                    <t t-else=""> relations point</t>
                     at companies you do not have access to, and are not shown here.
                     The graph below is therefore not the whole picture.
                 </div>
@@ -73,7 +73,7 @@
                         <span class="fiq-rel-type" t-esc="r.label"/>
                         <span class="fiq-rel-motpart" t-esc="r.partner_name"/>
                         <span t-if="r.periode" class="fiq-rel-periode" t-esc="r.periode"/>
-                        <span t-if="!r.is_current" class="fiq-rel-avsluttet">avsluttet</span>
+                        <span t-if="!r.is_current" class="fiq-rel-avsluttet">ended</span>
                     </div>
                 </div>
             </t>

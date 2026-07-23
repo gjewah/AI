@@ -587,3 +587,23 @@ msgstr ""
 #: code:addons/fiq_gui_relations/static/src/relations.xml:0
 msgid "relasjoner peker"
 msgstr ""
+
+#. module: fiq_gui_relations
+#: model_terms:ir.ui.view,arch_db:fiq_gui_relations.Flate
+msgid "contacts ·"
+msgstr "kontakter ·"
+
+#. module: fiq_gui_relations
+#: model_terms:ir.ui.view,arch_db:fiq_gui_relations.Flate
+msgid "relations"
+msgstr "relasjoner"
+
+#. module: fiq_gui_relations
+#: model_terms:ir.ui.view,arch_db:fiq_gui_relations.Flate
+msgid "relation points"
+msgstr "relasjon peker"
+
+#. module: fiq_gui_relations
+#: model_terms:ir.ui.view,arch_db:fiq_gui_relations.Flate
+msgid "relations point"
+msgstr "relasjoner peker"
