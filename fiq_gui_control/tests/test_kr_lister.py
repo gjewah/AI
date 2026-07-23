@@ -204,7 +204,22 @@ class TestKrLister(TransactionCase):
     # ------------------------------------------------------------------
     def _lag_oppgave(self, navn, frist_om_dager=None):
         prosjekt = self.env["project.project"].create({"name": "KR-lister test"})
-        vals = {"name": navn, "project_id": prosjekt.id}
+        # 🔴 STADIUM ER IKKE VALGFRITT I EN TEST FOR «ÅPNE OPPGAVER».
+        # `get_kr_apne_oppgaver` filtrerer på `("stage_id.fold", "=", False)` — åpen =
+        # ikke i en foldet (avsluttet) fase. En fersk task i et NYTT prosjekt har intet
+        # stadium (`stage_id` tom), og en tom `stage_id` matcher ikke `fold = False`.
+        # Da faller oppgaven ut av lista, og en test som forventer å se den feiler med [].
+        #
+        # 🔑 Dette er samme feilklasse som slo til tre ganger 23.07: testdata som ligger
+        # UTENFOR domenet koden bruker. En slik test er grønn når koden er tom og rød når
+        # den virker — den beviser det motsatte av det den later som. Fiksen hører i
+        # testdataen, ikke i domenet: å løsne `stage_id.fold = False` ville vist LUKKEDE
+        # oppgaver i «åpne oppgaver». Målt mot dev-bygg 35368345, ikke antatt.
+        aapen = self.env["project.task.type"].create({
+            "name": "Åpen (test)", "fold": False,
+            "project_ids": [(4, prosjekt.id)],
+        })
+        vals = {"name": navn, "project_id": prosjekt.id, "stage_id": aapen.id}
         if frist_om_dager is not None:
             # `date_deadline` er Datetime i Odoo 19 — ikke Date.
             vals["date_deadline"] = fields.Datetime.now() + timedelta(days=frist_om_dager)
