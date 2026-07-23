@@ -1202,9 +1202,9 @@
                          «Til stede nå» står urørt — det er hele poenget. Registeret
                          (fiq_gui_flates) er skallets, med vilje: da kan skallet overta
                          rammen senere uten at flate-eierne må endre noe. -->
-                    <div t-if="!state.loading and state.view === 'flate' and slotComponent" class="fiq_hm_card fiq_hm_slot">
-                        <div class="fiq_hm_slot_bar">
-                            <span class="fiq_hm_slot_back" t-on-click="() => this.lukkFlate()"
+                    <div t-if="!state.loading and state.view === 'flate' and slotComponent" class="fiq_hm_card fiq_hm_flateslot">
+                        <div class="fiq_hm_flateslot_bar">
+                            <span class="fiq_hm_flateslot_back" t-on-click="() => this.lukkFlate()"
                                   t-att-title="tr('Back to the control room')">←</span>
                             <strong t-esc="slotLabel"/>
                         </div>

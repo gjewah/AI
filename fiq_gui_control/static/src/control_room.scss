@@ -1154,11 +1154,31 @@
 
 // ── SLOT: flaten som åpnes INNE i Kontrollrommet ────────────────────────────────
 // Rammen (meny, firmavelger, «Til stede nå») står — bare innmaten byttes.
-.fiq_hm_slot {
+// 🔴 DØPT OM 23.07: het `fiq_hm_slot`, som ALT var i bruk (linje 364) til utvid-pilene
+// i prosjekttreet — `width: 16px`. Min flate-slot arvet den bredden. Navnekollisjon i
+// CSS gir ingen feilmelding; den bare setter feil verdi. Samme klasse som nøkkel-
+// splittelsen: to ting med samme navn, og ingen som sier fra.
+//
+// 🔑 HØYDEKONTRAKTEN HÅNDHEVES HER (Gjermund 23.07: PRJ-flaten manglet scroll).
+// Skallet låser seg med `overflow: hidden` og forventet at HVER flate scroller internt.
+// Den forventningen sto ingen steder: Kommunikasjon oppfylte den, Prosjekt ikke — begge
+// trodde de gjorde det riktig. En udokumentert kontrakt er ingen kontrakt.
+// Nå eier slot-containeren scrollen, så en flate ikke KAN glemme den.
+.fiq_hm_flateslot {
     padding: 0;
-    overflow: hidden;
+    // Fyller tilgjengelig høyde og scroller selv. Flatene trenger ikke lenger sette
+    // `height: 100%` — gjør de det likevel, er det harmløst.
+    display: flex;
+    flex-direction: column;
+    min-height: 0;          // uten denne vokser flex-barn forbi forelderen og scroll dør
+    max-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;     // vidt innhold scroller i sin egen beholder, ikke sideveis her
 
-    .fiq_hm_slot_bar {
+    // Flaten under skal fylle resten, uansett hva den selv setter.
+    > *:not(.fiq_hm_flateslot_bar) { flex: 1 1 auto; min-height: 0; }
+
+    .fiq_hm_flateslot_bar {
         display: flex;
         align-items: center;
         gap: 10px;
@@ -1172,7 +1192,7 @@
         background: var(--fiq-card-bg, #fff);
     }
 
-    .fiq_hm_slot_back {
+    .fiq_hm_flateslot_back {
         cursor: pointer;
         font-size: 18px;
         line-height: 1;
