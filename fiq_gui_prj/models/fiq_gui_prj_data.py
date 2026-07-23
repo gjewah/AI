@@ -74,6 +74,37 @@ class FiqGuiPrjData(models.AbstractModel):
             domene = domene + [("is_template", "=", False)]
         return domene
 
+    # ---------- prioritet: ÉN sannhet, én form ----------
+
+    # Lovlige verdier flaten kan tegne (prj.js prioSymbol: h ▴ · m ▪ · l ▾).
+    # Alt annet må falle til «m» — en ukjent verdi ville gitt et symbol-fall
+    # uten feilmelding, som er den stille varianten av en feil.
+    PRIORITET_LOVLIG = ("h", "m", "l")
+
+    def _prioritet(self, task):
+        """Prioritet i ÉN form: «h» · «m» · «l». Aldri Odoos rå «0»/«1».
+
+        🔴 RETTET 23.07: datalaget sendte TO ULIKE FORMER for samme begrep —
+        `get_oppgaver_over_tid` mappet til «h»/«m», mens `get_oppgaver` sendte
+        `t.priority` rått («0»/«1»). Klienten kunne ikke vite hvilken den fikk.
+        `prioSymbol("1")` traff verken «h» eller «l» og falt til ▪ — feil
+        symbol, ingen feilmelding, ingen som merket det.
+
+        🔑 Samme klasse som kortslutningene i 1.31.0: to utganger, to former.
+        Fiksen er den samme — ÉN metode som alle utganger går gjennom, så en
+        endring i formen ikke kan treffe det ene stedet og ikke det andre.
+
+        Feltet er `required=True` med default «m», så en tom verdi skal ikke
+        finnes. Vakten står likevel: et felt som er påkrevd i dag kan bli
+        valgfritt i morgen, og da skal flaten fortsatt tegne noe riktig.
+        """
+        if "fiq_prioritet" not in task._fields:
+            # Modulen som eier feltet er ikke lastet (skal ikke kunne skje her,
+            # men datalaget skal aldri felle flaten på en manglende nabo).
+            return "m"
+        verdi = task.fiq_prioritet
+        return verdi if verdi in self.PRIORITET_LOVLIG else "m"
+
     # ---------- budsjett-aksen (kravspek batch 15) ----------
 
     def _budsjett_status(self, fort, budsjett, ferdig):
@@ -518,10 +549,10 @@ class FiqGuiPrjData(models.AbstractModel):
                 "fra": fields.Date.to_string(b) if b else False,
                 "til": fields.Date.to_string(e) if e else False,
                 "frist": fields.Date.to_string(t.date_deadline.date()) if t.date_deadline else False,
-                # Odoos `priority` er BINÆR (0/1) — verifisert i core. Fasiten viser
-                # tre nivåer (▴▪▾). Vi leser det som finnes og lar flaten vise to
-                # inntil et eget felt evt. besluttes (spørsmål til AI PK 19.07).
-                "prioritet": "h" if t.priority == "1" else "m",
+                # Tre nivåer (▴▪▾) fra vårt eget felt — AI PK avgjorde 23.07 at
+                # Odoos binære `priority` ikke kan bære dem. Se
+                # models/project_task_prioritet.py.
+                "prioritet": self._prioritet(t),
                 "fremdrift": round(min(100.0, t.progress or 0.0), 1),
                 "forte_timer": round(fort, 1),
                 "budsjett_timer": round(budsjett, 1),
@@ -935,7 +966,12 @@ class FiqGuiPrjData(models.AbstractModel):
                 "stadium": t.stage_id.display_name or "",
                 "ferdig": ferdig,
                 "frist": fields.Date.to_string(frist_dato) if frist_dato else False,
-                "prioritet": t.priority,
+                # 🔴 SAMME FORM SOM get_oppgaver_over_tid. Sto tidligere som rå
+                # `t.priority` («0»/«1») mens den andre utgangen ga «h»/«m» —
+                # to former for samme begrep fra samme datalag. Klienten kunne
+                # ikke vite hvilken den fikk, og `prioSymbol("1")` traff ingen
+                # gren og falt stille til ▪. Ingen feilmelding.
+                "prioritet": self._prioritet(t),
                 "budsjett_timer": round(budsjett, 1),
                 "forte_timer": round(fort, 1),
                 "forbruk_prosent": self._forbruk_prosent(fort, budsjett),

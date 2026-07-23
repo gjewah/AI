@@ -1,11 +1,22 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.34.2",
+    "version": "19.0.1.34.3",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
-    "description": """19.0.1.34.0 - TESTENE DELT ETTER EIER (datalag vs flate):
+    "description": """19.0.1.34.3 - EGET FELT FOR PRIORITET (fiq_prioritet, tre nivaaer):
+* AI PK avgjorde kravspek-sporsmaal 4 den 23.07: eget felt. Odoos binaere priority (0/1) kan ikke baere tre nivaaer, og Gantt-specen forutsetter tre.
+* NYTT FELT fiq_prioritet paa project.task: h Hoy / m Normal / l Lav. Norske etiketter, default m, required, indeksert, tracking.
+* ODOOS priority ROERES IKKE. Vi legger til, vi erstatter ikke - andre moduler leser den som boolsk. Egen test krever at FIQ-feltet aldri endrer Odoos.
+* EGEN FIL models/project_task_prioritet.py, ikke project_task.py: den fila eies av flate-sporet. To agenter i samme fil overskriver hverandre stille - samme klasse som to spor paa samme gren. Odoo bryr seg ikke om hvilken fil et _inherit staar i; filskillet er for menneskene.
+* 🔴 EEN SANNHET OM PRIORITET: datalaget sendte TO ULIKE FORMER for samme begrep. get_oppgaver_over_tid ga h/m (mappet), get_oppgaver ga t.priority raatt (0/1). Flatens prioSymbol leser h og l - en raa 1 traff ingen gren og falt til normal-symbolet. Feil symbol, ingen feilmelding, ingen som merket det. Samme klasse som kortslutningene i 1.31.0.
+* NAA gaar BEGGE utganger gjennom _prioritet(). En endring i formen kan ikke lenger treffe det ene stedet og ikke det andre.
+* MIGRERING 19.0.1.34.3/post-migrate.py: priority=1 -> h, resten m. Uten den ville Odoo fylt default paa ALLE rader og dagens viktig-markeringer forsvunnet stille - ingen feilmelding, bare en flate der alt ser like viktig ut.
+* 🔑 LAV KAN IKKE UTLEDES. Odoos felt har ingen verdi som betyr lav - det er nettopp derfor feltet ble bygget. Alt som ikke er viktig-markert lander paa Normal, ikke Lav. AErlig startverdi: vi vet at oppgaven ikke er viktig-markert, vi vet ikke at den er nedprioritert. Lav settes av mennesker etterpaa.
+* Migreringen er IDEMPOTENT og skriver ALDRI over et menneskes valg - kun rader som staar paa default roeres.
+* 5 NYE TESTER i test_prj_data_lag.py, en av dem oppretter en oppgave med fiq_prioritet=l og Odoo-priority=0 (port 6): leses Odoos felt, gaar lav tapt, og ingen eksisterende test hadde fanget det.
+19.0.1.34.0 - TESTENE DELT ETTER EIER (datalag vs flate):
 * AI PK delte sporet 23.07: datalaget (fiq_gui_prj_data.py) og flaten (prj.js/xml/scss) fikk hver sin eier. En delt testfil ville gitt samme feil som en delt gren - to skrivere som overskriver hverandre stille.
 * NY FIL tests/test_prj_data_lag.py: 20 tester paa datalagets BEREGNINGER. Ni flyttet fra test_prj_data.py (_risiko_dom, _risiko_hvorfor, _budsjett_status, _forbruk_prosent), elleve nye.
 * SKILLET er ikke hvilken metode som kalles, men HVA PAASTANDEN HANDLER OM: oppdiktede tall inn -> dom ut = beregning (her). get_prosjektoversikt() -> nokkelen finnes = flatens kontrakt (blir hos flate-eier).

@@ -38,6 +38,112 @@ class TestPrjDataLag(TransactionCase):
         super().setUpClass()
         cls.Data = cls.env["fiq.gui.prj.data"]
 
+    # ---------- PRIORITET: ÉN SANNHET, ÉN FORM ----------
+
+    def test_prioritet_er_alltid_en_form_flaten_kan_tegne(self):
+        """🔴 REGRESJON: datalaget sendte TO ULIKE FORMER for samme begrep.
+
+            get_oppgaver_over_tid  →  "h" / "m"      (mappet)
+            get_oppgaver           →  t.priority     ("0" / "1", rått)
+
+        Flaten (prj.js prioSymbol) leser «h» → ▴, «l» → ▾, alt annet → ▪.
+        En rå «1» traff ingen av grenene og falt til ▪ — feil symbol, ingen
+        feilmelding, ingen som merket det.
+
+        🔑 Samme klasse som kortslutningene i 1.31.0: to utganger fra samme
+        datalag med hver sin form. Testen låser at BEGGE gir samme sett.
+        """
+        for verdi in ("h", "m", "l"):
+            self.assertIn(verdi, self.Data.PRIORITET_LOVLIG)
+        self.assertEqual(len(self.Data.PRIORITET_LOVLIG), 3)
+
+    def test_prioritet_leser_det_egne_feltet_ikke_odoos(self):
+        """Tre nivåer skal komme fra `fiq_prioritet`, ikke fra Odoos binære felt.
+
+        🔑 Testen OPPRETTER tilstanden den verner mot (port 6): en oppgave med
+        `fiq_prioritet = "l"` og Odoos `priority = "0"`. Leste vi Odoos felt,
+        ville svaret blitt «m» — «lav» finnes ikke der. Da ville hele grunnen
+        til at feltet ble bygget vært borte, og ingen eksisterende test hadde
+        fanget det.
+        """
+        prosjekt = self.env["project.project"].search([], limit=1)
+        if not prosjekt:
+            self.skipTest("Ingen prosjekter å henge testoppgaven på")
+
+        oppgave = self.env["project.task"].create({
+            "name": "TEST lav prioritet",
+            "project_id": prosjekt.id,
+            "fiq_prioritet": "l",
+        })
+        self.assertEqual(
+            self.Data._prioritet(oppgave), "l",
+            "«Lav» finnes bare i vårt eget felt — leses Odoos priority, går den tapt",
+        )
+
+        oppgave.fiq_prioritet = "h"
+        self.assertEqual(self.Data._prioritet(oppgave), "h")
+
+    def test_prioritet_defaulter_til_normal(self):
+        """En ny oppgave uten valgt prioritet skal være «Normal», ikke tom.
+
+        🔑 `required=True` + `default="m"` er valgt framfor et valgfritt felt
+        nettopp for å slippe å tolke tomhet ETT sted til. «Tom betyr normal»
+        er den parallelle tolkningen AI PK avviste da han valgte eget felt.
+        """
+        prosjekt = self.env["project.project"].search([], limit=1)
+        if not prosjekt:
+            self.skipTest("Ingen prosjekter å henge testoppgaven på")
+
+        oppgave = self.env["project.task"].create({
+            "name": "TEST uten valgt prioritet",
+            "project_id": prosjekt.id,
+        })
+        self.assertEqual(oppgave.fiq_prioritet, "m")
+        self.assertEqual(self.Data._prioritet(oppgave), "m")
+
+    def test_prioritet_roerer_aldri_odoos_eget_felt(self):
+        """🛑 Odoos `priority` er Odoos. Vi legger til, vi erstatter ikke.
+
+        Andre moduler leser `priority` som boolsk. Skrev vi i den, ville en
+        «lav» FIQ-prioritet kunnet endre hva Odoos stjerne viser — og en
+        modul vi ikke eier ville lest et tall vi hadde funnet på.
+        """
+        prosjekt = self.env["project.project"].search([], limit=1)
+        if not prosjekt:
+            self.skipTest("Ingen prosjekter å henge testoppgaven på")
+
+        oppgave = self.env["project.task"].create({
+            "name": "TEST uavhengighet", "project_id": prosjekt.id,
+        })
+        for verdi in ("h", "l", "m"):
+            oppgave.fiq_prioritet = verdi
+            self.assertEqual(
+                oppgave.priority, "0",
+                "FIQ-prioritet «%s» endret Odoos eget priority-felt — "
+                "de skal være uavhengige" % verdi,
+            )
+
+    def test_prioritet_ukjent_verdi_faller_til_normal(self):
+        """En verdi flaten ikke kan tegne skal aldri nå den.
+
+        Feltet er `required` i dag, så dette skal ikke kunne skje. Vakten står
+        likevel: et felt som er påkrevd i dag kan bli valgfritt i morgen, og da
+        skal flaten fortsatt få noe den kan tegne i stedet for et blankt symbol.
+        """
+        class FalskOppgave:
+            _fields = {"fiq_prioritet": True}
+            fiq_prioritet = "tull"
+
+        self.assertEqual(self.Data._prioritet(FalskOppgave()), "m")
+
+        class UtenFelt:
+            _fields = {}
+
+        self.assertEqual(
+            self.Data._prioritet(UtenFelt()), "m",
+            "Mangler feltet, skal datalaget svare «m» — ikke felle flaten",
+        )
+
     # ---------- FORBRUK: ALDRI KAPPET ----------
 
     def test_forbruk_regnes_uten_kapping(self):
