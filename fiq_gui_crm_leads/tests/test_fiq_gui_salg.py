@@ -15,7 +15,11 @@ from odoo import fields
 from odoo.tests import TransactionCase, tagged
 
 
-@tagged("-at_install", "post_install")
+# 🛑 «fiq» er PÅKREVD i tillegg til post_install: CI kjører --test-tags=fiq.
+#    Uten den hoppes testene over, resultatet blir «0 of 0 tests», og gaten
+#    melder grønt uten at én test har kjørt. Disse åtte testene sto uten
+#    taggen fram til 24.07 — de ville aldri kjørt i CI.
+@tagged("post_install", "-at_install", "fiq")
 class TestFiqGuiSalg(TransactionCase):
 
     @classmethod
