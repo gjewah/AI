@@ -33,5 +33,6 @@
       "/vidir_suite/static/src/js/co2_calculator.js"
     ]
   },
-  "installable": true
+  "installable": True,
+  "application": True,
 }
