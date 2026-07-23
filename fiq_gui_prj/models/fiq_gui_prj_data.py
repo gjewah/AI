@@ -588,7 +588,11 @@ class FiqGuiPrjData(models.AbstractModel):
         """
         Sjekk = self.env.get("fiq.sjekkliste")
         if Sjekk is None:
-            return {"tilgjengelig": False, "lister": []}
+            # 🔴 Samme feil som i get_ai_arbeid, funnet i samme gjennomgang:
+            # denne grenen manglet `oppgave`, mens de to andre returnerte den.
+            # Tre utganger, tre ulike former. Klienten må kunne lese samme
+            # nøkler uansett hvilken vei den gikk.
+            return {"tilgjengelig": False, "lister": [], "oppgave": False}
 
         domene = self._firma_domene(firma_id) + [("id", "=", int(oppgave_id))]
         oppgave = self.env["project.task"].search(domene, limit=1)
@@ -682,7 +686,24 @@ class FiqGuiPrjData(models.AbstractModel):
         Spor = self.env.get("fiq.ai.spor")
         if Spor is None:
             # fiq_gui_ai_kr ikke installert — flaten skal ikke falle av det.
-            return {"spor": [], "tilgjengelig": False}
+            #
+            # 🔴 RETTET 23.07: kortslutningen manglet `valgt_firma` og
+            # `antall_koblet`, så metoden returnerte TO ULIKE FORMER avhengig av
+            # om en annen modul var installert. Klienten kan ikke skrive
+            # `res.valgt_firma` uten å vite hvilken gren den havnet i.
+            #
+            # 🔑 Fanget av en test som krevde nøkkelen alltid — på et FERSKT
+            # bygg der AI KR sto uinstallert. På det gamle bygget var AI KR
+            # installert, så grenen ble aldri kjørt og testen alltid grønn.
+            # Samme klasse som `fremdrift = 0`: kodeveien fantes, men ingen
+            # test hadde vært i den. Et tomt bygg er ikke en ulempe — det er
+            # den eneste måten å oppdage hva som bare virker ved flaks.
+            return {
+                "spor": [],
+                "tilgjengelig": False,
+                "valgt_firma": False,
+                "antall_koblet": 0,
+            }
 
         firmaer = self._tillatte_firmaer()
         valgt = int(firma_id) if firma_id and int(firma_id) in firmaer else False

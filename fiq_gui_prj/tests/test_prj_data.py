@@ -785,3 +785,27 @@ class TestPrjData(TransactionCase):
         b = self.Data.get_kr_boks()
         self.assertEqual(b["slot"], "gui_prj")
         self.assertNotIn(".", b["slot"], "En xmlid har punktum; en slot-nøkkel har ikke")
+
+    def test_kortslutninger_returnerer_SAMME_form(self):
+        """🔴 REGRESJON funnet 23.07 på et FERSKT bygg.
+
+        `get_ai_arbeid()` returnerte `{spor, tilgjengelig}` når AI KR manglet,
+        men `{spor, tilgjengelig, valgt_firma, antall_koblet}` ellers. TO ULIKE
+        FORMER fra samme metode — klienten kan ikke lese `res.valgt_firma` uten
+        å vite hvilken gren den havnet i.
+
+        🔑 Hvorfor den overlevde: på det gamle bygget var AI KR installert, så
+        kortslutningen ble ALDRI kjørt. Testen var grønn i ukevis fordi
+        kodeveien aldri ble besøkt. Et tomt bygg avslørte den på første forsøk.
+
+        Samme klasse som `fremdrift = 0`: koden fantes, ingen test hadde vært
+        i den. Et ferskt bygg er ikke en ulempe — det er den eneste måten å
+        oppdage hva som bare virker ved flaks.
+        """
+        ai = self.Data.get_ai_arbeid(firma_id=999999)
+        for n in ("spor", "tilgjengelig", "valgt_firma", "antall_koblet"):
+            self.assertIn(n, ai, "get_ai_arbeid mangler «%s» i en av utgangene" % n)
+
+        sj = self.Data.get_sjekklister(oppgave_id=999999999)
+        for n in ("tilgjengelig", "lister", "oppgave"):
+            self.assertIn(n, sj, "get_sjekklister mangler «%s» i en av utgangene" % n)
