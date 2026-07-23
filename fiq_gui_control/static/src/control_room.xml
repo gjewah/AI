@@ -84,6 +84,29 @@
                 <button t-att-class="state.customize ? 'btn fiq_hm_gear fiq_hm_gear_on' : 'btn fiq_hm_gear'" t-on-click="() => this.toggleCustomize()" t-esc="state.customize ? tr('✔ Save and close') : tr('⚙ Settings')"/>
             </div>
 
+            <!-- ═══ AVDELING — eget filterbånd UNDER rammen (utkast 08) ══════════════════
+                 «Alle · Drift · Prosjekt · Administrasjon»
+
+                 🔑 Hvorfor her og ikke i rammen, selv om den ligner firmavelgeren:
+                 firma bestemmer HVOR du er, avdeling snevrer inn HVA du ser (spec 2.3).
+                 Firmabytte laster siden på nytt fordi Odoos aktive selskap endres;
+                 avdeling rører ingen kontekst og skal aldri koste en sidelast.
+
+                 🛑 Vises KUN når det finnes avdelinger. Uten personalmodulen i basen
+                 svarer serveren tom liste og hele båndet forsvinner — ingen tom rad,
+                 ingen feilmelding. Et filter uten valg er støy. -->
+            <div t-if="state.avdelinger.length" class="fiq_hm_avdrad">
+                <span class="fiq_hm_avdlbl" t-esc="tr('DEPARTMENT')"/>
+                <button t-att-class="!state.avdelingId ? 'fiq_hm_avd on' : 'fiq_hm_avd'"
+                        t-on-click="() =&gt; this.velgAvdeling(false)"
+                        t-att-title="tr('All departments')" t-esc="tr('All')"/>
+                <t t-foreach="state.avdelinger" t-as="av" t-key="av.id">
+                    <button t-att-class="state.avdelingId === av.id ? 'fiq_hm_avd on' : 'fiq_hm_avd'"
+                            t-on-click="() =&gt; this.velgAvdeling(av.id)"
+                            t-att-title="av.name" t-esc="av.name"/>
+                </t>
+            </div>
+
             <!-- 🚨 Utdatert GUI: fanen kjører eldre kode enn installert versjon -->
             <div t-if="state.staleGui" class="fiq_hm_stale" t-on-click="() =&gt; this.reloadGui()">
                 ⚠ <b>A new version is installed</b> — you are viewing an older one. Click here to reload.

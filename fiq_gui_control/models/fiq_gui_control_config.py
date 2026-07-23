@@ -523,6 +523,49 @@ class FiqControlRoomConfig(models.Model):
         return out
 
     @api.model
+    def get_avdelinger(self, company_id=False):
+        """AVDELING-raden i utkast 08: «Alle · Drift · Prosjekt · Administrasjon».
+
+        🔑 ODOO EIER BEGREPET — vi bygger ikke et FIQ-felt. Avdeling er `hr.department`,
+        Odoos egen modell. Tre ganger på én uke ble det bygget et parallelt FIQ-felt for noe
+        Odoo allerede eide (møtestatus `show_as`, brukerstatus `manual_im_status`, arbeidssted
+        `work_location_type`) — hver gang oppdaget FØRST etter at koden var skrevet.
+
+        🛑 MEN `hr` står IKKE i `depends` (kun `web` + `project`), og det skal den ikke:
+        Kontrollrommet må virke i en base uten personalmodulen. Derfor `env.get()` + savepoint,
+        samme fail-closed-mønster som oppmøte bruker for `hr.attendance` og `bus.presence`.
+        Uten HR: tom liste → raden vises ikke i det hele tatt. **Ingen tom rad, ingen feilmelding
+        — et filter uten valg er støy.**
+
+        Forskjellen fra firmavelgeren er bevisst (spec 2.3): firma bestemmer HVOR du er,
+        avdeling snevrer inn HVA du ser. Derfor ligger denne i innholdet, ikke i rammen.
+        """
+        Dep = self.env.get("hr.department")
+        if Dep is None:
+            return []
+        out = []
+        try:
+            with self.env.cr.savepoint():
+                domain = []
+                # Firma-scope: samme regel som sidemenyen. Uten dette viser raden avdelinger
+                # fra firmaer brukeren ikke står i — nøyaktig feilen `get_areas()` hadde
+                # (17 treff, én ekte rot) og som ble rettet i 7.2.0.
+                if company_id:
+                    domain = ["|", ("company_id", "=", int(company_id)),
+                              ("company_id", "=", False)]
+                for d in Dep.sudo().search(domain, order="complete_name"):
+                    out.append({"id": d.id, "name": d.complete_name or d.name or ""})
+        except Exception:
+            # Personalmodulen finnes, men spørringen feilet (rettigheter, halvinstallert
+            # modul). Filteret er pynt på forsiden — aldri verdt en hvit skjerm.
+            _logger.warning(
+                "FIQ control room: get_avdelinger failed — hiding the department row.",
+                exc_info=True,
+            )
+            return []
+        return out
+
+    @api.model
     def get_areas(self):
         """Sidemeny: fagområde-treet lest fra Odoo prosjekt-hierarkiet (SSOT — speiler
         SP-strukturen, ingen hardkodet liste). Områder = barn av toppnivå-prosjektene
@@ -1946,3 +1989,370 @@ class FiqControlRoomConfig(models.Model):
                 if locked:
                     locked.write({"action_id": False})
         return True
+
+    # =========================================================================
+    #  KR-LISTER — de fire datadrevne seksjonene fra utkast 15
+    #  Eier: B-sporet (19.0.7.11.x). Kalles av kr_lister.js.
+    #
+    #  🔑 HVORFOR EGNE METODER OG IKKE `get_kr_bokser`:
+    #  Boks-kontrakten leverer linjer som {"tekst": str, "res_id": int} — ÉN ferdig
+    #  sammensatt setning per linje. Fasiten
+    #  (`docs/mockups/0.00 IQ kontrollrom_utkast15_2026-07-20.html`, linje 817-851,
+    #  lest i kilden 23.07 — ikke gjenfortalt) krever FIRE ADSKILTE kolonner per rad:
+    #  kilde-etikett · dokumentnr · beskrivelse · alder/tid til høyre.
+    #  De kolonnene finnes ikke i `tekst`; de er allerede smeltet sammen til én streng.
+    #  Å plukke dem ut igjen med regex ville vært gjetning på en ANNEN flates
+    #  formatering — og den formateringen kan endres uten at vi får vite det.
+    #  👉 Derfor spør vi modellene direkte og lar hver flate beholde sin egen boks.
+    #
+    #  🛑 SAVEPOINT PER KILDE — ikke bare try/except. PostgreSQL avbryter HELE
+    #  transaksjonen ved en SQL-feil; et bart `except` gir «current transaction is
+    #  aborted» på alt som kommer etterpå, og ÉN ødelagt kilde tar ned hele forsiden.
+    #  Samme mønster som `get_kr_bokser` og core (account/models/chart_template.py:248).
+    # =========================================================================
+
+    def _kr_kilde_etikett(self, kode):
+        """Kilde-etikettene i fasiten («Finans», «Regnskap», «Kommunikasjon» …).
+
+        Kildespråk er engelsk, nb_NO er oversettelse — derfor `_()` og aldri en
+        hardkodet norsk streng.
+        """
+        return {
+            "fin": _("Finance"),
+            "rgs": _("Accounting"),
+            "comm": _("Communication"),
+            "prj": _("Projects"),
+            "salg": _("Sales"),
+        }.get(kode, kode)
+
+    def _kr_maaned_navn(self, mnd):
+        """Månedsnavn 1-12, oversettbart.
+
+        🛑 Vi bruker IKKE `strftime("%B")`: den følger serverens locale, ikke brukerens
+        språk. Da ville en norsk bruker fått «May 2026» fordi serveren står på C-locale
+        — en stille feil som først synes i grensesnittet.
+        """
+        return [
+            _("January"), _("February"), _("March"), _("April"), _("May"), _("June"),
+            _("July"), _("August"), _("September"), _("October"), _("November"),
+            _("December"),
+        ][mnd - 1]
+
+    def _kr_tid_tekst(self, naa, tidspunkt):
+        """«i dag 08:41» · «i går 16:03» · «18.07.2026» — fasitens tre former.
+
+        🛑 ALLTID ÅRSTALL på den absolutte formen (`%d.%m.%Y`). En dato uten år er en
+        felle Gjermund har funnet to ganger — «18.07» kan være hvilket som helst år.
+        """
+        if not tidspunkt:
+            return ""
+        lokal = fields.Datetime.context_timestamp(self, tidspunkt)
+        i_dag = naa.date()
+        d = lokal.date()
+        if d == i_dag:
+            return _("today %s") % lokal.strftime("%H:%M")
+        if d == i_dag - timedelta(days=1):
+            return _("yesterday %s") % lokal.strftime("%H:%M")
+        return lokal.strftime("%d.%m.%Y")
+
+    @api.model
+    def get_kr_krever_handling(self, company_id=False, grense=12):
+        """Seksjon 1 — «Krever handling — på tvers av rom». ÉN RAD PER SAK.
+
+        Fasit (utkast 15, linje 817-822): Finans og Regnskap gir én rad per faktura med
+        dokumentnr + motpart + alder i dager. Kommunikasjon gir ÉN SAMLERAD
+        («7 meldinger uten svar — eldste 4 dager») fordi ubesvart post ikke har et
+        dokumentnummer. Den forskjellen er fasitens, ikke min forenkling.
+
+        Dagens `get handlingsposter()` i control_room.js gir 2 samlekategorier; dette
+        er raden-per-sak den mangler.
+
+        Returnerer {"totalt": int, "rader": [{kilde, kode, tekst, naar, model, res_id}]}.
+        `totalt` er antall saker — tallet som står i overskriften (5 i fasiten).
+        """
+        selv = self.with_company(company_id) if company_id else self
+        i_dag = fields.Date.context_today(selv)
+        rader = []
+
+        # --- Finans + Regnskap: forfalte, bokførte fakturaer ------------------
+        # Begge leser account.move. Skillet i fasiten er hvilken FLATE saken hører
+        # til (kundefaktura = Finans 2.70, leverandørfaktura = Regnskap 2.80),
+        # ikke to ulike tabeller.
+        try:
+            with selv.env.cr.savepoint():
+                Move = selv.env["account.move"]
+                forfalte = Move.search_read(
+                    [
+                        ("move_type", "in", ("out_invoice", "in_invoice",
+                                             "out_refund", "in_refund")),
+                        ("state", "=", "posted"),
+                        ("payment_state", "in", ("not_paid", "partial")),
+                        ("invoice_date_due", "<", i_dag),
+                    ],
+                    ["name", "partner_id", "invoice_date_due", "move_type"],
+                    order="invoice_date_due asc",
+                    limit=grense,
+                )
+                for m in forfalte:
+                    dager = (i_dag - m["invoice_date_due"]).days if m["invoice_date_due"] else 0
+                    kode = "fin" if m["move_type"] in ("out_invoice", "out_refund") else "rgs"
+                    rader.append({
+                        "kilde": selv._kr_kilde_etikett(kode),
+                        "kode": m["name"] or "—",
+                        "tekst": m["partner_id"][1] if m["partner_id"] else "—",
+                        "naar": _("%s days") % dager,
+                        "sort": dager,
+                        "model": "account.move",
+                        "res_id": m["id"],
+                    })
+        except Exception:
+            _logger.warning(
+                "FIQ KR-lister: «krever handling» — Finans/Regnskap feilet, hopper over "
+                "den kilden. Resten av seksjonen vises.", exc_info=True)
+
+        # --- Kommunikasjon: ÉN samlerad, slik fasiten viser den ---------------
+        try:
+            with selv.env.cr.savepoint():
+                DATA = "fiq.meldingssenter.data"
+                if DATA in selv.env:
+                    meldinger = selv.env[DATA].get_messages(
+                        boks="uleste", firm=company_id or False, period="alle") or []
+                    if meldinger:
+                        naa_dt = fields.Datetime.now()
+                        eldste_dager = 0
+                        for m in meldinger:
+                            raa = m.get("dato") or m.get("date")
+                            if not raa:
+                                continue
+                            try:
+                                d = fields.Datetime.to_datetime(raa)
+                            except (ValueError, TypeError):
+                                # En melding med ubrukelig dato skal ikke felle raden.
+                                continue
+                            if d:
+                                eldste_dager = max(eldste_dager, (naa_dt - d).days)
+                        rader.append({
+                            "kilde": selv._kr_kilde_etikett("comm"),
+                            "kode": "—",
+                            "tekst": _("%s messages awaiting reply") % len(meldinger),
+                            "naar": _("oldest %s days") % eldste_dager,
+                            "sort": eldste_dager,
+                            "model": False,
+                            "res_id": False,
+                        })
+        except Exception:
+            _logger.warning(
+                "FIQ KR-lister: «krever handling» — Kommunikasjon feilet, hopper over "
+                "den kilden.", exc_info=True)
+
+        # Eldst først: i denne seksjonen ER alder hastegraden.
+        rader.sort(key=lambda r: r["sort"], reverse=True)
+        for r in rader:
+            r.pop("sort", None)
+        return {"totalt": len(rader), "rader": rader[:grense]}
+
+    @api.model
+    def get_kr_siste_aktivitet(self, company_id=False, grense=12):
+        """Seksjon 2 — «Siste aktivitet». 12 rader på tvers av flatene.
+
+        Fasit (utkast 15, linje 830-838): modul-etikett · nr · tekst · tid til høyre.
+        Nummeret er flatens EGET saksnummer der det finnes (`T0412`, `INV/2025/00009`),
+        ellers «—». Vi finner aldri opp et nummer.
+
+        🔑 Oppgavenummeret er `code` (STABILT), ikke WBS (dynamisk) — de skal aldri
+        blandes. Feltet finnes bare når fiq_gui_prj er installert, derfor sjekkes
+        `_fields` før det spørres om.
+        """
+        selv = self.with_company(company_id) if company_id else self
+        naa = fields.Datetime.context_timestamp(selv, fields.Datetime.now())
+        rader = []
+
+        # --- Prosjekt: sist endrede oppgaver ----------------------------------
+        try:
+            with selv.env.cr.savepoint():
+                Task = selv.env["project.task"]
+                felter = ["name", "write_date"]
+                if "code" in Task._fields:
+                    felter.append("code")
+                for r in Task.search_read([], felter, order="write_date desc", limit=grense):
+                    rader.append({
+                        "kilde": selv._kr_kilde_etikett("prj"),
+                        "kode": r.get("code") or "—",
+                        "tekst": r.get("name") or "—",
+                        "naar": selv._kr_tid_tekst(naa, r.get("write_date")),
+                        "sort": r.get("write_date") or False,
+                        "model": "project.task",
+                        "res_id": r["id"],
+                    })
+        except Exception:
+            _logger.warning("FIQ KR-lister: «siste aktivitet» — Prosjekt feilet.",
+                            exc_info=True)
+
+        # --- Finans + Regnskap: sist bokførte fakturaer -----------------------
+        try:
+            with selv.env.cr.savepoint():
+                rows = selv.env["account.move"].search_read(
+                    [("state", "=", "posted")],
+                    ["name", "partner_id", "write_date", "move_type"],
+                    order="write_date desc", limit=grense,
+                )
+                for r in rows:
+                    kode = "fin" if r["move_type"] in ("out_invoice", "out_refund") else "rgs"
+                    rader.append({
+                        "kilde": selv._kr_kilde_etikett(kode),
+                        "kode": r["name"] or "—",
+                        "tekst": r["partner_id"][1] if r["partner_id"] else "—",
+                        "naar": selv._kr_tid_tekst(naa, r["write_date"]),
+                        "sort": r["write_date"] or False,
+                        "model": "account.move",
+                        "res_id": r["id"],
+                    })
+        except Exception:
+            _logger.warning("FIQ KR-lister: «siste aktivitet» — Finans/Regnskap feilet.",
+                            exc_info=True)
+
+        # --- Salg: sist endrede ordrer ----------------------------------------
+        try:
+            with selv.env.cr.savepoint():
+                if "sale.order" in selv.env:
+                    rows = selv.env["sale.order"].search_read(
+                        [], ["name", "partner_id", "write_date"],
+                        order="write_date desc", limit=grense,
+                    )
+                    for r in rows:
+                        rader.append({
+                            "kilde": selv._kr_kilde_etikett("salg"),
+                            "kode": r["name"] or "—",
+                            "tekst": r["partner_id"][1] if r["partner_id"] else "—",
+                            "naar": selv._kr_tid_tekst(naa, r["write_date"]),
+                            "sort": r["write_date"] or False,
+                            "model": "sale.order",
+                            "res_id": r["id"],
+                        })
+        except Exception:
+            _logger.warning("FIQ KR-lister: «siste aktivitet» — Salg feilet.", exc_info=True)
+
+        # Nyest først. Rader uten dato havner sist i stedet for å krasje sorteringen.
+        rader.sort(key=lambda r: r["sort"] or fields.Datetime.to_datetime("1970-01-01 00:00:00"),
+                   reverse=True)
+        for r in rader:
+            r.pop("sort", None)
+        return {"totalt": len(rader), "rader": rader[:grense]}
+
+    @api.model
+    def get_kr_apne_oppgaver(self, company_id=False, sok=False, grense=12):
+        """Seksjon 3 — «Åpne oppgaver — 6.02 SO». Rader med frist.
+
+        Fasit (utkast 15, linje 844-851): etikett · nr · tekst · «frist 22.07.2026».
+        Overskriften bærer det aktive søkefilteret — derfor returneres `filter` tilbake,
+        så klienten viser DET som faktisk ble brukt og ikke det brukeren tror ble brukt.
+
+        `sok` avgrenser på prosjektnavn/-nummer (fasitens «6.02 SO» er et prosjekt).
+        🛑 Fritekst brukes ALDRI rått i SQL — den går inn som en ORM-domeneverdi, der
+        Odoo parametriserer den selv.
+        """
+        selv = self.with_company(company_id) if company_id else self
+        rader = []
+        sok = (sok or "").strip()
+
+        try:
+            with selv.env.cr.savepoint():
+                Task = selv.env["project.task"]
+                # Åpen = ikke i en foldet (avsluttet) fase. `fold` er Odoos eget begrep
+                # for «denne fasen er ferdig» — vi finner ikke opp en egen statusliste.
+                domene = [("stage_id.fold", "=", False)]
+                if sok:
+                    domene += ["|", ("project_id.name", "ilike", sok),
+                               ("name", "ilike", sok)]
+                felter = ["name", "date_deadline", "project_id"]
+                if "code" in Task._fields:
+                    felter.append("code")
+                # Nærmeste frist først; oppgaver uten frist sist (Odoo sorterer NULL sist
+                # på ASC i PostgreSQL).
+                for r in Task.search_read(domene, felter,
+                                          order="date_deadline asc, id asc", limit=grense):
+                    frist = r.get("date_deadline")
+                    if frist:
+                        # 🛑 `date_deadline` er Datetime i Odoo 19 — konverter FØR bruk,
+                        # ellers formaterer vi et klokkeslett som om det var en dato.
+                        d = fields.Datetime.context_timestamp(
+                            selv, fields.Datetime.to_datetime(frist)).date()
+                        naar = _("due %s") % d.strftime("%d.%m.%Y")
+                    else:
+                        naar = _("no due date")
+                    rader.append({
+                        "kilde": selv._kr_kilde_etikett("prj"),
+                        "kode": r.get("code") or "—",
+                        "tekst": r.get("name") or "—",
+                        "naar": naar,
+                        "model": "project.task",
+                        "res_id": r["id"],
+                    })
+        except Exception:
+            _logger.warning("FIQ KR-lister: «åpne oppgaver» feilet — seksjonen står tom.",
+                            exc_info=True)
+
+        return {"totalt": len(rader), "filter": sok, "rader": rader}
+
+    @api.model
+    def get_kr_akt_perioder(self, company_id=False, grense=200):
+        """Seksjon 4 — periode-bottene for grupperte aktiviteter (høyre kolonne).
+
+        Fasit (utkast 15, linje 925-940): «Denne uken · Uke 23 · 2026 · Mai 2026 ·
+        4. kvartal 2025 · Uten forfall», hver med et antall.
+
+        🔑 GRUPPERINGEN OG FOLDINGEN FINNES ALLEREDE (`toggleAktGrp`, `isHead` i
+        control_room.js — A-sporets fil). Denne metoden leverer BARE bottene med tall;
+        den rører ikke fold-mekanikken.
+
+        Bøtte-logikken er grovkornet med vilje, og blir grovere jo lenger tilbake du ser:
+        denne uken → ukenummer (inneværende år) → måned → kvartal → år. Det speiler
+        hvordan man faktisk leter: det nære er presist, det gamle er omtrentlig.
+        """
+        selv = self.with_company(company_id) if company_id else self
+        i_dag = fields.Date.context_today(selv)
+        uke_start = i_dag - timedelta(days=i_dag.weekday())
+        uke_slutt = uke_start + timedelta(days=6)
+
+        # Rekkefølgen bevares: nyeste botte først, «Uten forfall» alltid sist.
+        botter = []
+        indeks = {}
+
+        def _botte(nokkel, navn, rang):
+            if nokkel not in indeks:
+                indeks[nokkel] = {"key": nokkel, "navn": navn, "antall": 0, "rang": rang}
+                botter.append(indeks[nokkel])
+            indeks[nokkel]["antall"] += 1
+
+        try:
+            with selv.env.cr.savepoint():
+                akt = selv.env["mail.activity"].search_read(
+                    [("user_id", "=", selv.env.uid)], ["date_deadline"], limit=grense)
+                for a in akt:
+                    frist = a.get("date_deadline")
+                    if not frist:
+                        # Egen botte — «uten forfall» er en ekte tilstand, ikke en feil.
+                        _botte("ingen", _("No due date"), -1)
+                        continue
+                    d = fields.Date.to_date(frist)
+                    if uke_start <= d <= uke_slutt:
+                        _botte("denne_uken", _("This week"), 100)
+                    elif d.year == i_dag.year:
+                        uke = d.isocalendar()[1]
+                        _botte("uke-%s-%s" % (d.year, uke),
+                               _("Week %(week)s · %(year)s", week=uke, year=d.year), 90)
+                    elif d.year == i_dag.year - 1 and d.month >= 10:
+                        _botte("kv4-%s" % d.year,
+                               _("Q4 %(year)s", year=d.year), 50)
+                    else:
+                        _botte("mnd-%s-%s" % (d.year, d.month),
+                               _("%(month)s %(year)s",
+                                 month=selv._kr_maaned_navn(d.month), year=d.year), 70)
+        except Exception:
+            _logger.warning("FIQ KR-lister: periode-bottene feilet — høyre kolonne "
+                            "viser ingen grupper.", exc_info=True)
+
+        botter.sort(key=lambda b: b["rang"], reverse=True)
+        for b in botter:
+            b.pop("rang", None)
+        return {"totalt": sum(b["antall"] for b in botter), "botter": botter}

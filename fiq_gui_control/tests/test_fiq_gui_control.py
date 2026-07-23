@@ -262,3 +262,67 @@ class TestFiqControlRoom(TransactionCase):
         )
         self.assertIn("min-height: 40px", scss,
                       "berøringsmål under 40px — en finger treffer ikke en 20px-knapp")
+
+    # ── AVDELING-raden (utkast 08) ────────────────────────────────────────────────────
+
+    def test_avdelinger_svarer_uten_aa_krasje(self):
+        """Avdelingsraden skal ALDRI felle forsiden — uansett om personalmodulen finnes.
+
+        🔑 Dette er hele poenget med testen: `hr` står IKKE i modulens `depends` (kun `web`
+        og `project`), og skal ikke gjøre det — Kontrollrommet må virke i en base uten
+        personalmodulen. Metoden må derfor svare en LISTE i begge tilfeller: med HR gir den
+        avdelingene, uten HR gir den tom liste, og malen skjuler raden.
+
+        🛑 En `except` som svarer `None` i stedet for `[]` ville gitt en tom rad med bare
+        etiketten «AVDELING» stående — et filter uten valg. Testen låser returtypen.
+        """
+        ut = self.Config.get_avdelinger()
+        self.assertIsInstance(
+            ut, list,
+            "get_avdelinger må returnere en liste også når personalmodulen mangler",
+        )
+        for rad in ut:
+            self.assertIn("id", rad)
+            self.assertIn("name", rad)
+
+    def test_avdelinger_er_firma_scopet(self):
+        """Raden skal speile firmaet du står i — ikke vise alle firmaers avdelinger.
+
+        Samme feil som `get_areas()` hadde før 7.2.0: den hentet alle toppnivå-prosjekter
+        og ga 17 treff der bare ett var en ekte firma-rot. Sendes en firma-id inn, skal
+        svaret aldri inneholde en avdeling som tilhører et ANNET firma.
+        """
+        if self.env.get("hr.department") is None:
+            self.skipTest("personalmodulen er ikke installert i denne basen")
+        firma = self.env.company
+        for rad in self.Config.get_avdelinger(company_id=firma.id):
+            dep = self.env["hr.department"].sudo().browse(rad["id"])
+            self.assertIn(
+                dep.company_id.id, (False, firma.id),
+                "avdeling fra et annet firma lekket inn i raden",
+            )
+
+    def test_avdelingsraden_skjules_naar_tom(self):
+        """Malen må skjule HELE båndet når det ikke finnes avdelinger.
+
+        Uten `t-if` ville en base uten personalmodulen vist et tomt filterbånd med bare
+        ordet «AVDELING» — det ser ut som noe som er i stykker, ikke som noe som ikke
+        gjelder. **Ingen tom rad, ingen feilmelding.**
+        Berøringsmålet er med her fordi avdelingsknappene er de minste på flaten.
+        """
+        from odoo.tools import file_path
+        with open(file_path("fiq_gui_control/static/src/control_room.xml"),
+                  "r", encoding="utf-8") as f:
+            xml = f.read()
+        with open(file_path("fiq_gui_control/static/src/control_room.scss"),
+                  "r", encoding="utf-8") as f:
+            scss = f.read()
+        self.assertIn(
+            't-if="state.avdelinger.length"', xml,
+            "avdelingsbåndet mangler t-if — det ville stått tomt uten personalmodulen",
+        )
+        self.assertIn("fiq_hm_avdrad", scss, "avdelingsbåndet mangler stil")
+        self.assertRegex(
+            scss, r"\.fiq_hm_nav,[^\n]*\.fiq_hm_avd,",
+            "fiq_hm_avd mangler i 40px-regelen — de minste knappene på flaten",
+        )

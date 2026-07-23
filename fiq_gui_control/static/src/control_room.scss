@@ -87,7 +87,10 @@
         // Berøringsmål: en finger treffer ikke en 20px-knapp. 40px er minimum for
         // at folk slutter å bomme — og bomming på en liten skjerm oppleves som at
         // flaten ikke virker, ikke som at man traff feil.
-        .fiq_hm_nav, .fiq_hm_grp, .fiq_hm_firma, .fiq_hm_pseg button {
+        // .fiq_hm_avd er med her fordi avdelingsknappene er blant de MINSTE på flaten
+        // (4px padding mot firmavelgerens 5px). Uten regelen ville nettopp de blitt
+        // vanskeligst å treffe — testen i test_responsiv låser dette.
+        .fiq_hm_nav, .fiq_hm_grp, .fiq_hm_firma, .fiq_hm_avd, .fiq_hm_pseg button {
             min-height: 40px;
         }
 
@@ -439,6 +442,24 @@
         font-size: 13px; font-weight: 600; color: var(--fiq-side); white-space: nowrap;
         &:hover { border-color: var(--fiq-accent); }
         &.on { border-color: var(--fiq-accent); background: rgba(56,180,74,.10); box-shadow: 0 0 0 2px rgba(56,180,74,.18); } }
+
+    // ============ AVDELING-båndet (utkast 08) ============
+    // Eget bånd UNDER rammen. Arver firmavelgerens pilleform bevisst: for brukeren ER det
+    // samme slags valg, og to ulike utseender for samme handling er nettopp det som ga oss
+    // to fargekart og seks kollaps-løsninger.
+    // 🔑 Men den er visuelt roligere (lys flate, mindre skrift) enn firmavelgeren — firma er
+    // et kontekstbytte, avdeling bare et filter. Vekten skal speile konsekvensen av klikket.
+    .fiq_hm_avdrad { display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+        padding: 8px 12px; margin-bottom: 10px; background: #fff;
+        border: 1px solid var(--fiq-bd); border-radius: 10px; }
+    .fiq_hm_avdlbl { font-size: 10.5px; font-weight: 700; letter-spacing: .06em;
+        color: var(--fiq-mut); margin-right: 4px; }
+    .fiq_hm_avd { border: 1px solid var(--fiq-bd); background: #f7fafc; border-radius: 999px;
+        padding: 4px 12px; cursor: pointer; font: inherit; font-size: 12px; font-weight: 600;
+        color: var(--fiq-side); white-space: nowrap;
+        &:hover { border-color: var(--fiq-accent); }
+        &.on { border-color: var(--fiq-accent); background: rgba(56,180,74,.10);
+               box-shadow: 0 0 0 2px rgba(56,180,74,.18); } }
 
     // ============ Filter-stripe ============
     .fiq_hm_filter { display: flex; align-items: center; gap: 10px; margin-bottom: 0; flex-wrap: wrap;

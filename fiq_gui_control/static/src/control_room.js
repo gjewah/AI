@@ -68,7 +68,7 @@ const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj
 // ⚠️ MÅ FØLGE __manifest__.py sin "version" — ellers tror KR at fanen kjører gammel
 // kode og viser «A new version is installed»-banneret som ALDRI forsvinner, uansett
 // hvor mange ganger brukeren laster på nytt. Bump denne i SAMME commit som manifestet.
-const GUI_BUILD = "19.0.7.9.1";
+const GUI_BUILD = "19.0.7.10.0";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -150,6 +150,11 @@ export class FiqControlRoom extends Component {
             projArea: "",         // fagområde-filter (fagområdenr, f.eks. "6" el. "2.20") – tom = alle
             projAreaId: false,    // område-PROSJEKTETS id → hierarki-filter (child_of via project_parent)
             areas: [],            // fagområde-treet fra Odoo prosjekt-hierarkiet (get_areas)
+            // AVDELING (utkast 08): Odoos egen hr.department. Tom liste = personalmodulen
+            // finnes ikke i basen → raden vises ikke. Firma sier HVOR du er, avdeling
+            // snevrer inn HVA du ser — derfor i innholdet, ikke i rammen (spec 2.3).
+            avdelinger: [],       // [{id, name}] fra get_avdelinger
+            avdelingId: false,    // false = «Alle» (ingen avgrensning)
             areaOpen: {},         // {nr: true} = nedtrekk åpent i sidemenyen
             expanded: {},         // utvid-funksjon: {"model:id": true} = utvidet
             treeClosed: {},       // prosjekt-treet: {prosjektId: true} = forelderens barn foldet inn
@@ -1151,15 +1156,21 @@ export class FiqControlRoom extends Component {
         // ⚡ Andre parallelle bolk: dashbord · flater · presence · kalender · fagområder ·
         // handlinger. Ingen av dem leser hverandres resultat, så de hentes samtidig.
         // Kalenderen henger på fordi den bare fyller state selv (_loadKalender).
-        const [dashboards, fiqFlater, presence, raaAreas, actions] = await Promise.all([
+        const [dashboards, fiqFlater, presence, raaAreas, actions, avdelinger] = await Promise.all([
             this.orm.call("fiq.gui.control.config", "get_dashboards", []).catch(() => []),
             this.orm.call("fiq.gui.control.config", "get_fiq_flater", []).catch(() => []),
             this.orm.call("fiq.gui.control.config", "get_presence", []).catch(() => []),
             this.orm.call("fiq.gui.control.config", "get_areas", []).catch(() => []),
             this.orm.call("fiq.gui.control.config", "get_actions", []).catch(() => ({})),
+            // Avdelingsraden (utkast 08). Legges i DENNE bolken, ikke som eget kall: den
+            // leser ingen av de andres resultat, så den koster null ekstra rundturer.
+            // Uten personalmodulen svarer den tom liste og raden vises ikke.
+            this.orm.call("fiq.gui.control.config", "get_avdelinger",
+                [], { company_id: this.state.companyId || false }).catch(() => []),
             this._loadKalender().catch(() => {}),
         ]);
         this.state.fiqFlater = fiqFlater;
+        this.state.avdelinger = avdelinger || [];
         // Fagområde-treet får kanoniske farger her, ikke i kallet — spColor er ren
         // klient-logikk og skal ikke holde nettverket åpent.
         this.state.areas = (raaAreas || []).map((a) => ({
@@ -1321,6 +1332,25 @@ export class FiqControlRoom extends Component {
             const cids = new URL(window.location.href).searchParams.get("cids") || "";
             return cids.includes(",") && cids.split(",").length >= (this.state.companies || []).length;
         } catch (e) { return false; }
+    }
+
+    // ── AVDELING: et FILTER, ikke et kontekstbytte ────────────────────────────────────
+    //
+    // 🔑 Bevisst ULIK firmavelgeren rett over, selv om de ser like ut i grensesnittet.
+    // Firmabytte laster HELE siden på nytt (`window.location.href`) fordi det endrer Odoos
+    // aktive selskap — resten av Odoo må se samme firma som Kontrollrommet viser.
+    // Avdeling endrer INGEN Odoo-kontekst. Den snevrer bare inn det som allerede er hentet.
+    // 🛑 Full sidelast her ville kastet bort alt lastet data og gjort et filterklikk like
+    // dyrt som et firmabytte — for noe brukeren skifter mange ganger i minuttet.
+    velgAvdeling(id) {
+        this.state.avdelingId = id || false;
+    }
+
+    // Navnet på valgt avdeling — til overskrifter og etiketter. Tom = «Alle».
+    get avdelingNavn() {
+        if (!this.state.avdelingId) { return ""; }
+        const d = (this.state.avdelinger || []).find((x) => x.id === this.state.avdelingId);
+        return d ? d.name : "";
     }
 
     // 📝 Fritekst-notat (vbox + Detaljer) → chatter som internt notat

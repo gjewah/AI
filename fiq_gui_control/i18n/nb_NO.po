@@ -3034,3 +3034,15 @@ msgstr "AI-kontrollrom"
 #: code:addons/fiq_gui_control/models/fiq_gui_control_config.py:0
 msgid "Project overview"
 msgstr "Prosjektoversikt"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "DEPARTMENT"
+msgstr "AVDELING"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.xml:0
+msgid "All departments"
+msgstr "Alle avdelinger"
