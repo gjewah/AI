@@ -82,24 +82,29 @@ registry.category("actions").add("fiq_gui_crm_leads_dashboard", FiqGuiCrmLeads);
 
 // Registrering i det delte skallet, slik at flaten åpner INNI Kontrollrommet
 // (sloten, KR v6.95) og rammen står. Kontrakt: shell.js + fiq_gui_fin/fin.js.
-// Nøkkelen «salg» er unik — to moduler med samme nøkkel gir DuplicatedKeyError
-// og blank skjerm for hele grensesnittet, og ingen server-test fanger den.
 // Farge #D80000 = 6 SALG i det kanoniske fargekartet (brand/fiq_fargekart_omrader.md).
-// 🛑 NØKKELEN MÅ VÆRE «crm_leads» — IKKE «salg».
 //
-// Kontrollrommet slår opp flaten via NOKKEL_ALIAS (control_room.js): menyens nøkkel
-// «gui_leads» oversettes til «crm_leads». Jeg registrerte «salg» fordi det er navnet
-// på området (6 SALG). Da fant oppslaget INGENTING, og KR falt tilbake på doAction —
-// som bytter HELE siden. Resultatet: salgsflaten åpnet UTENFOR rammen, uten
-// venstremeny, firmavelger eller vei tilbake. Gjermund 23.07: «bortsett fra salg har
-// de klart å innarbeide KR shell.» Fire av fem flater sto riktig; denne var den siste.
+// 🛑 NØKKELEN ER «salg» — OG DEN MÅ MATCHE DATAMODELLEN.
 //
-// 🔑 Feilen ga INGEN feilmelding. Oppslaget returnerer null, fallback overtar, og alt
-// «virker» — bare i feil ramme. Samme klasse som resten av uka: ingen krasj, bare et
-// stille galt svar. Et navn som betyr noe for mennesker er ikke nødvendigvis nøkkelen
-// maskinen leter etter.
-registry.category("fiq_gui_flates").add("crm_leads", {
-    key: "crm_leads",
+// Kontrollrommet bygger BÅDE rom-boksen OG datamodell-navnet fra nøkkelen
+// (fiq_gui_control_config.py:1653):
+//     model_name = "fiq.gui.%s.data" % flate["key"]
+// Datamodellen vår heter fiq.gui.SALG.data (fiq_gui_salg_data.py:38). Nøkkelen
+// og modellen må være samme ord, ellers finner get_kr_bokser ingen get_kr_boks
+// → ingen rom-boks for Salg.
+//
+// Jeg bommet 23.07: byttet «salg» → «crm_leads» for å treffe NOKKEL_ALIAS
+// (gui_leads → crm_leads). Men aliaset gjelder den GAMLE handlingsveien
+// (get_actions), IKKE rom-boksene — de leser nøkkelen direkte. Med «crm_leads»
+// ville kjernen lett etter fiq.gui.crm_leads.data, som ikke finnes.
+// KR (01.03) målte det i koden og bekreftet: «salg» er kanonisk, ingen bro.
+//
+// 🔑 Lærdom: et navn kan matche ETT oppslag (aliaset) og bryte et ANNET
+// (datamodellen). Jeg rettet symptomet jeg så og skapte ett jeg ikke så.
+// «salg» er unik i registeret — to moduler med samme nøkkel gir
+// DuplicatedKeyError og blank skjerm; ingen server-test fanger den.
+registry.category("fiq_gui_flates").add("salg", {
+    key: "salg",
     label: "Sales",
     color: "#D80000",
     sequence: 40,
