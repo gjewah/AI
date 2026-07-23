@@ -43,8 +43,28 @@
     color: var(--fiq-ink);
     font-size: 13.5px;
     line-height: 1.45;
+
+    // 🔴 PORT 7-FEIL RETTET 23.07: flaten kunne ikke scrolles.
+    // Gjermund, første gang han faktisk åpnet den: «vanskelig å forholde seg
+    // til da den mangler scroll funksjon».
+    //
+    // Her sto `min-height: 100%` + `overflow: auto` UTEN `height`.
+    // `min-height` alene betyr «minst så høy, gjerne høyere» — containeren
+    // VOKSER i stedet for å begrenses, og `overflow` får aldri en grense å
+    // reagere på. Innholdet forsvant ut av skjermen uten vei tilbake.
+    //
+    // 🔑 Skallet låser seg selv med vilje (fiq_gui_control scss:12-17:
+    // `height: 100%; overflow: hidden` — «låst topp; scroll skjer i wrap»)
+    // og FORVENTER at flaten scroller internt. Min gjorde ikke sin del av
+    // avtalen. Kommunikasjon (comm.scss:30) har mønsteret riktig; jeg hadde
+    // kopiert halvparten av det.
+    //
+    // ⚠️ `box-sizing: border-box` er ikke pynt: paddingen over er opptil 22px.
+    // Uten border-box legges den UTENPÅ 100 %, og scrollen når aldri bunnen.
     min-height: 100%;
-    overflow: auto;
+    height: 100%;
+    overflow-y: auto;
+    box-sizing: border-box;
 
     @media (prefers-color-scheme: dark) {
         --fiq-ground: #0D1218;
@@ -695,6 +715,14 @@
     }
 
     // ---------- mobil ----------
+    //
+    // 🔑 Gjermund 23.07: «Den bør ligge under samme flate som prosjekt. og
+    // løsningen vet om den er på en mobil eller på en større GUI Flate.»
+    //
+    // Fasiten (`aa2c8d1d`) har «Velg flate: PC / Mobil» som to knapper. Det
+    // BYGGER VI IKKE. Han vil ikke ta et valg — han vil at flaten vet det selv.
+    // Én flate som kjenner igjen enheten, ikke to flater med en velger foran.
+    // Derfor `@media`, ikke `__pickPc()`/`__pickMobil()`.
     @media (max-width: 860px) {
         --fiq-navn: 190px;
 
@@ -707,6 +735,51 @@
         }
 
         .fiq_prj_li_midt { flex-basis: 100%; }
+
+        // Gantt er en tabell: navnekolonne + tidsakse. På en telefon får ikke
+        // begge plass. Vi krymper ikke tidsaksen til uleselighet — vi lar hele
+        // rutenettet scrolle vannrett inne i sitt eget kort.
+        //
+        // 📌 Skrev først en regel for `.fiq_prj_gantt_rull` — en klasse som
+        // ikke finnes i malen. En død CSS-regel som ser ut som en løsning er
+        // nøyaktig feilen jeg har påpekt hos andre denne uka. Verifisert med
+        // grep mot prj.xml: det som finnes er `.fiq_prj_kort` + `.fiq_prj_grid`.
+        .fiq_prj_kort {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        // Rutenettet må ikke krympe til under lesbar bredde — da hjelper ikke
+        // scrollen. Navnekolonne + sju kolonner à 62px er minstemålet.
+        .fiq_prj_grid {
+            min-width: 620px;
+        }
+
+        // Nøkkeltallene: fem kort på rad blir fem uleselige striper. To i bredden
+        // holder tallet stort nok til å leses på armlengdes avstand.
+        .fiq_prj_kpi {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        // Kontrollinjene brekker uansett — men knappene må fortsatt kunne
+        // treffes med tommelen. 44px er Apples og Googles felles minstemål,
+        // og det gjelder ikke bare knapper: nedtrekkslistene like mye.
+        .fiq_prj_vb,
+        .fiq_prj_ub,
+        .fiq_prj_nav,
+        .fiq_prj_velg {
+            min-height: 44px;
+        }
+    }
+
+    // Telefon i portrett: her er tidsaksen uansett tapt. Gantt-visningen har
+    // ingen verdi på 380px — men vi SKJULER den ikke, for da ville brukeren
+    // trykke «Gantt» og få en tom skjerm uten forklaring. Vi lar den scrolle
+    // og stoler på at han bytter til Liste selv.
+    @media (max-width: 480px) {
+        .fiq_prj_kpi {
+            grid-template-columns: 1fr;
+        }
     }
 
     @media (prefers-reduced-motion: reduce) {
