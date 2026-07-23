@@ -52,14 +52,32 @@ class TestStadie(TransactionCase):
         self.assertEqual(self.Type.search_count([("fiq_ai_kode", "=", "ko")]), 1)
 
     def test_eksisterende_stadium_med_samme_navn_merkes_ikke_dupliseres(self):
-        """Finnes stadiet fra før uten kode, skal det MERKES — ikke få en tvilling."""
-        eget = self.Type.create({"name": "Kvalitetssikring", "fiq_ai_kode": False})
-        eget.write({"fiq_ai_kode": False})
-        self.Type.search([("fiq_ai_kode", "=", "ks")]).write({"fiq_ai_kode": False})
+        """Finnes stadiet fra før uten kode, skal det MERKES — ikke få en tvilling.
+
+        🔴 TESTEN VAR FEIL SKREVET (rettet 23.07, fanget på DEV 35275074):
+        Første utgave opprettet et NYTT «Kvalitetssikring» ved siden av det
+        `setUpClass` allerede hadde seedet, avmerket begge, og forventet så ÉN
+        post. Da var det to før koden i det hele tatt kjørte — testen målte sin
+        egen oppsett-feil, ikke `sikre_stadier()`.
+
+        Riktig oppsett: ta stadiet som ALT finnes, fjern kodemerket, og se at
+        seedingen finner det igjen på navn framfor å lage et nytt.
+        Samme feilklasse som huset har brukt uka på: målt noe annet enn det som
+        skulle måles.
+        """
+        fantes = self.Type.search([("fiq_ai_kode", "=", "ks")], limit=1)
+        self.assertTrue(fantes, "setUpClass seedet ikke «Kvalitetssikring».")
+        antall_for = self.Type.search_count([("name", "=ilike", "Kvalitetssikring")])
+
+        fantes.write({"fiq_ai_kode": False})     # nå ser det ut som et vanlig Odoo-stadium
         self.S.sikre_stadier()
+
         self.assertEqual(
-            self.Type.search_count([("name", "=ilike", "Kvalitetssikring")]), 1,
+            self.Type.search_count([("name", "=ilike", "Kvalitetssikring")]), antall_for,
             "Det ble laget et duplikat av et stadium som allerede fantes.")
+        self.assertEqual(
+            fantes.fiq_ai_kode, "ks",
+            "Det eksisterende stadiet ble ikke merket — da er gjenbruken bare tilsynelatende.")
 
     # ── FLYTTING ────────────────────────────────────────────────────────────
     def test_flytt_setter_native_stage_id(self):
