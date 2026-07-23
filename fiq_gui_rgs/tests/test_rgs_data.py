@@ -12,7 +12,7 @@ Testene her speiler ekte datamønstre fra Staging 19.07: forfalte fakturaer oppt
 1248 dager gamle, kreditnotaer, og bilag som er betalt (amount_residual = 0).
 """
 
-from odoo import fields
+from odoo import api, fields
 from odoo.tests import TransactionCase, tagged
 
 
@@ -493,6 +493,36 @@ class TestRgsData(TransactionCase):
                 "Flaten melder «%s» for %s, men Lønn sier «%s» — koblingen er brutt"
                 % (mine.get(kode), kode, info.get("grunn")))
 
+    def _falsk_lonn(self, dager_frem, belop=50000.0, sikkerhet="planlagt"):
+        """Setter inn en kjent lønnsforpliktelse i kurven, uten lønnsmodulen.
+
+        🔴 HVORFOR DENNE FINNES (2.20 Lønn, 23.07): deres kontrakttester
+        itererte over en TOM liste — løkka kjørte aldri, testen passerte alltid.
+        Mine tre første kurve-tester hadde nøyaktig samme feil: målt på Dev ga
+        `lonn_linjer` 0 elementer, så alle tre var grønne uten å teste noe.
+
+        Vi kan ikke opprette ekte lønnsslipper her — det er 2.20 Lønns domene,
+        og en test som krever deres modul ville brutt det myke oppslaget. Vi
+        overstyrer derfor henteren med kjente linjer, og tester VÅR plassering
+        og merking av dem. Deres side testes hos dem (test 25 hos Lønn).
+        """
+        i_dag = fields.Date.context_today(self.Data)
+        linjer = [{
+            "type": "aga", "label": "Arbeidsgiveravgift",
+            "forfall": fields.Date.add(i_dag, days=dager_frem),
+            "belop": belop, "sikkerhet": sikkerhet, "kilde": "Odoo",
+            "periode": "Termin 1 2026", "merknad": "",
+        }]
+        Data = type(self.Data)
+        original = Data._hent_lonnslinjer
+
+        def falsk(self_, fra, til):
+            return [l for l in linjer if fra <= l["forfall"] < til]
+
+        Data._hent_lonnslinjer = api.model(falsk)
+        self.addCleanup(setattr, Data, "_hent_lonnslinjer", original)
+        return linjer[0]
+
     def test_lonnslinjer_plasseres_etter_forfall_ikke_periode(self):
         """🔑 Lønn plasseres etter FORFALL — `periode` er ren visning.
 
@@ -503,7 +533,14 @@ class TestRgsData(TransactionCase):
 
         Testen bruker kurvens egne uker, så den er sann uansett dagens dato.
         """
+        self._falsk_lonn(dager_frem=17)  # midt i uke 2
         c = self.Data.hent_cashflow(uker=12)
+
+        # 🔴 VAKTPOST: uten denne itererer testen over en tom liste og passerer
+        # alltid — feilen 2.20 Lønn fant i sine egne kontrakttester 23.07.
+        antall = sum(len(p["lonn_linjer"]) for p in c["punkter"])
+        self.assertEqual(antall, 1, "Testen må ha data å måle på, ellers beviser den ingenting")
+
         for p in c["punkter"]:
             for linje in p["lonn_linjer"]:
                 fra = fields.Date.to_date(p["fra"])
@@ -524,11 +561,19 @@ class TestRgsData(TransactionCase):
         Mangler `sikkerhet` på en linje, settes den til `estimat` — det
         forsiktige valget. Aldri `bokfort` for sikkerhets skyld.
         """
+        self._falsk_lonn(dager_frem=10, sikkerhet="planlagt")
         gyldige = {"bokfort", "planlagt", "estimat"}
+        funnet = []
         for p in self.Data.hent_cashflow()["punkter"]:
             for linje in p["lonn_linjer"]:
                 self.assertIn(linje["sikkerhet"], gyldige,
                               "Ukjent sikkerhetsnivå %r" % linje["sikkerhet"])
+                funnet.append(linje["sikkerhet"])
+
+        # Vaktpost mot tom-liste-fella, og bevis på at nivået faktisk bæres helt
+        # ut i kurven — ikke bare at det er gyldig når det finnes.
+        self.assertEqual(funnet, ["planlagt"],
+                         "«planlagt» må følge uendret ut i flaten, ikke bli bokført")
 
     def test_lonn_teller_med_i_ut_og_saldo(self):
         """Lønn er penger UT — den må påvirke saldoen, ikke bare vises.
@@ -537,10 +582,23 @@ class TestRgsData(TransactionCase):
         når AGA-fribeløpet er brukt opp). Men den skal være en DEL av `ut`, ikke
         et sidespor — ellers viser kurven en likviditet firmaet ikke har.
         """
-        for p in self.Data.hent_cashflow()["punkter"]:
+        self._falsk_lonn(dager_frem=10, belop=50000.0)
+        punkter = self.Data.hent_cashflow()["punkter"]
+
+        # Vaktpost: uten lønn i kurven ville løkka under ikke bevist noe.
+        self.assertGreater(sum(p["lonn_ut"] for p in punkter), 0,
+                           "Testen må ha et lønnsbeløp å måle på")
+
+        for p in punkter:
             self.assertGreaterEqual(
                 p["ut"], p["lonn_ut"],
                 "Lønnsbeløpet må være inkludert i ukas «ut», ikke stå utenfor")
+
+        # Og saldoen må faktisk trekkes ned — ellers vises likviditet firmaet
+        # ikke har. `lonn_ut` skal være en del av regnestykket, ikke pynt.
+        uke = next(p for p in punkter if p["lonn_ut"] > 0)
+        self.assertGreaterEqual(uke["ut"], 50000.0,
+                                "Lønnsutbetalingen må slå ut i ukas «ut»")
 
     def test_flaten_virker_uten_lonnsmodulen(self):
         """🛑 `fiq_rgs_lonn` er IKKE en avhengighet — og skal aldri bli det.
