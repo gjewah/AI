@@ -30,10 +30,16 @@ export class FiqGuiRelations extends Component {
     setup() {
         this.orm = useService("orm");
         this.state = useState({
+            // "kort" first, deliberately: the card view answers who manages what and who
+            // owns it, which is the question people actually arrive with. The graph
+            // answers how everything hangs together, which is the follow-up.
+            visning: "kort",
             laster: true,
             feil: false,
             noder: [],
             kanter: [],
+            forvaltere: [],
+            forvalterId: false,
             utenfor: 0,
             valgt: null,
             // Fold state is keyed on ID, never on name. In this surface that is not a
@@ -49,12 +55,19 @@ export class FiqGuiRelations extends Component {
         this.state.laster = true;
         this.state.feil = false;
         try {
-            const data = await this.orm.call(
-                "fiq.gui.relation", "get_graf", [], { firma_id: this.props.firm || false }
-            );
-            this.state.noder = data.noder || [];
-            this.state.kanter = data.kanter || [];
-            this.state.utenfor = data.utenfor || 0;
+            const firma = { firma_id: this.props.firm || false };
+            // Both payloads in parallel: the user switches between the two views often,
+            // and a second round-trip on every toggle would be felt.
+            const [graf, kort] = await Promise.all([
+                this.orm.call("fiq.gui.relation", "get_graf", [], firma),
+                this.orm.call("fiq.gui.relation", "get_kort", [], firma),
+            ]);
+            this.state.noder = graf.noder || [];
+            this.state.kanter = graf.kanter || [];
+            this.state.forvaltere = kort.forvaltere || [];
+            // The graph sees every relation; the card view only the managed ones. The
+            // larger count is the honest one - it is what the user cannot see at all.
+            this.state.utenfor = Math.max(graf.utenfor || 0, kort.utenfor || 0);
         } catch {
             // One broken surface must never take down the control room. A failed load
             // shows a message here; the frame and the other surfaces keep working.
@@ -63,6 +76,24 @@ export class FiqGuiRelations extends Component {
             this.state.kanter = [];
         }
         this.state.laster = false;
+    }
+
+    byttVisning(v) {
+        this.state.visning = v;
+        this.state.valgt = null;
+    }
+
+    /** The manager currently shown in the card view; the first one until asked otherwise. */
+    get valgtForvalter() {
+        const f = this.state.forvaltere;
+        if (!f.length) {
+            return null;
+        }
+        return f.find((x) => x.id === this.state.forvalterId) || f[0];
+    }
+
+    velgForvalter(id) {
+        this.state.forvalterId = id;
     }
 
     /** Nodes grouped by kind, so the surface reads as a list of groups rather than a blob. */

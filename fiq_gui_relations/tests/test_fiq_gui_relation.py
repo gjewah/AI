@@ -384,6 +384,65 @@ class TestFiqGuiRelation(TransactionCase):
         })
         self.assertEqual(len(self.Relation.get_graf()["kanter"]), 0)
 
+    # ---- the card view --------------------------------------------------------------
+
+    def _forvalter_oppsett(self):
+        """Manager -> property, property -> owner. The shape the card view renders."""
+        eiendom = self.env["res.partner"].create(
+            {"name": "Oscarsgate 20", "is_company": True})
+        eier = self.env["res.partner"].create({"name": "Bufetat", "is_company": True})
+        self.Relation.create({
+            "partner_a_id": self.company_a.id,
+            "partner_b_id": eiendom.id,
+            "type_id": self.env.ref("fiq_gui_relations.type_property_manager").id,
+        })
+        self.Relation.create({
+            "partner_a_id": eier.id,
+            "partner_b_id": eiendom.id,
+            "type_id": self.env.ref("fiq_gui_relations.type_owner").id,
+        })
+        return eiendom, eier
+
+    def test_kort_shows_manager_with_properties(self):
+        eiendom, _eier = self._forvalter_oppsett()
+        kort = self.Relation.get_kort()
+        managers = [f for f in kort["forvaltere"] if f["id"] == self.company_a.id]
+        self.assertEqual(len(managers), 1)
+        self.assertEqual(
+            [e["adresse"] for e in managers[0]["eiendommer"]], [eiendom.display_name])
+
+    def test_kort_separates_manager_from_owner(self):
+        """The whole reason this view exists: the manager is rarely the owner. If the
+        two collapsed into one field, the distinction the view is built to show would
+        be gone."""
+        _eiendom, eier = self._forvalter_oppsett()
+        kort = self.Relation.get_kort()
+        manager = next(f for f in kort["forvaltere"] if f["id"] == self.company_a.id)
+        prop = manager["eiendommer"][0]
+        self.assertEqual(prop["eier"], eier.display_name)
+        self.assertNotEqual(prop["eier"], manager["navn"])
+
+    def test_kort_counts_what_it_cannot_show(self):
+        """Same honesty rule as the graph: a managed property outside the user's scope
+        is counted, not silently missing."""
+        other = self._foreign_company()
+        self._uten_000()
+        eiendom = self.env["res.partner"].create(
+            {"name": "Hidden Property", "is_company": True})
+        self.Relation.create({
+            "partner_a_id": self.company_b.id,
+            "partner_b_id": eiendom.id,
+            "type_id": self.env.ref("fiq_gui_relations.type_property_manager").id,
+            "company_id": other.id,
+        })
+        kort = self.Relation.get_kort()
+        self.assertEqual(kort["utenfor"], 1)
+        self.assertNotIn(
+            self.company_b.id, [f["id"] for f in kort["forvaltere"]])
+
+    def test_kort_empty_without_managers(self):
+        self.assertEqual(self.Relation.get_kort()["forvaltere"], [])
+
     # ---- the daily refresh ---------------------------------------------------------
 
     def test_cron_fixes_expired_relation(self):

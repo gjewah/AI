@@ -43,6 +43,184 @@
         color: #4a5060;
     }
 
+    // ---- card view ----------------------------------------------------------------
+
+    .fiq-rel-seg {
+        display: inline-flex;
+        border: 1px solid #d9dfe8;
+        border-radius: 8px;
+        overflow: hidden;
+
+        button {
+            font: inherit;
+            font-size: 12.5px;
+            font-weight: 650;
+            padding: 6px 14px;
+            border: none;
+            background: transparent;
+            color: #465060;
+            cursor: pointer;
+
+            &.on {
+                background: #0078cc;
+                color: #fff;
+            }
+        }
+    }
+
+    .fiq-rel-chips {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+    }
+
+    .fiq-rel-chip {
+        font: inherit;
+        font-size: 13px;
+        font-weight: 650;
+        padding: 8px 15px;
+        border-radius: 9px;
+        border: 1px solid #d9dfe8;
+        background: #fff;
+        color: #465060;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+
+        &.on {
+            background: #0078cc;
+            border-color: #0078cc;
+            color: #fff;
+        }
+    }
+
+    .fiq-rel-cnt {
+        font-size: 11px;
+        opacity: 0.75;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .fiq-rel-fcard {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        flex-wrap: wrap;
+        padding: 15px 18px;
+        border: 1px solid #cfdaec;
+        background: #e4ebf5;
+        border-radius: 11px;
+        font-size: 17px;
+    }
+
+    .fiq-rel-badge-f {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: #fff;
+        background: #26558c;
+        padding: 4px 9px;
+        border-radius: 100px;
+    }
+
+    .fiq-rel-kontakt {
+        margin-left: auto;
+        font-size: 13px;
+        color: #465060;
+    }
+
+    // The point the whole card view exists to make: the manager is not the owner.
+    .fiq-rel-insight {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 13px 16px;
+        margin-top: 12px;
+        background: #fff;
+        border: 1px dashed #d8cfe8;
+        border-radius: 10px;
+
+        p {
+            margin: 0;
+            font-size: 13px;
+            color: #465060;
+        }
+    }
+
+    .fiq-rel-i {
+        width: 24px;
+        height: 24px;
+        border-radius: 7px;
+        background: #6b4e9e;
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        font-weight: 800;
+        flex: none;
+    }
+
+    .fiq-rel-estate {
+        margin-top: 12px;
+        padding: 15px 18px;
+        border: 1px solid #e0e4ea;
+        border-radius: 11px;
+        background: #fff;
+        border-left: 3px solid #26558c;
+    }
+
+    .fiq-rel-ehead {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        flex-wrap: wrap;
+        font-size: 16px;
+    }
+
+    .fiq-rel-eier {
+        margin-left: auto;
+        font-size: 12px;
+        font-weight: 640;
+        color: #6b4e9e;
+        background: #ede8f4;
+        border: 1px solid #d8cfe8;
+        padding: 4px 10px;
+        border-radius: 100px;
+    }
+
+    .fiq-rel-lbl {
+        font-size: 9.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        opacity: 0.8;
+        margin-right: 4px;
+    }
+
+    .fiq-rel-prosjekter {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 11px;
+    }
+
+    .fiq-rel-pchip {
+        font-size: 12.5px;
+        padding: 6px 11px;
+        border-radius: 8px;
+        border: 1px solid #cadfd1;
+        background: #e1f0e8;
+        color: #245038;
+    }
+
+    .fiq-rel-pnr {
+        font-weight: 700;
+        color: #1f7a54;
+        margin-right: 6px;
+        font-variant-numeric: tabular-nums;
+    }
+
     .fiq-rel-gruppe {
         border: 1px solid #e0e4ea;
         border-radius: 8px;

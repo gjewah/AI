@@ -167,6 +167,104 @@ class FiqGuiRelation(models.Model):
             "utenfor": len(alle) - len(synlige),
         }
 
+    @api.model
+    def get_kort(self, firma_id=False):
+        """The card view: managers, each with the properties they look after.
+
+        Structure taken from the fasit (docs/mockups/0.00 IQ demo_samlet_pc_mobil.html,
+        renderRelasjoner + FORVR): manager -> property -> projects, with "owned by" and
+        the responsible person on each property. The point it makes is in the banner
+        text: the manager is rarely the owner. Invoices and contact go through the
+        manager, while the building belongs to someone else - and that distinction is
+        exactly what a flat contact list loses.
+
+        Built from relations, not from a table of its own: a property is a partner, the
+        manager link is a relation of type property_manager, ownership a relation of
+        type owner. Same scope rules as get_graf - what the user may not see is counted,
+        never silently dropped.
+        """
+        try:
+            config = self.env["fiq.gui.control.config"]
+            lovlige = config.tillatte_firmaer().ids
+        except Exception:
+            lovlige = self.env.company.ids
+        if firma_id and int(firma_id) in lovlige:
+            lovlige = [int(firma_id)]
+
+        def i_scope(rel):
+            return not rel.company_id or rel.company_id.id in lovlige
+
+        forvalter_alle = self.search([
+            ("type_id.code", "=", "property_manager"), ("is_current", "=", True)])
+        forvalter_rel = forvalter_alle.filtered(i_scope)
+
+        # Ownership and contact persons, looked up once and indexed by property/manager
+        # rather than queried per row - a card view over a few hundred properties would
+        # otherwise issue a query per property.
+        eier_rel = self.search([
+            ("type_id.code", "=", "owner"), ("is_current", "=", True)]).filtered(i_scope)
+        eier_av = {r.partner_b_id.id: r.partner_a_id for r in eier_rel}
+
+        kontakt_rel = self.search([
+            ("type_id.code", "=", "contact_person"), ("is_current", "=", True)
+        ]).filtered(i_scope)
+        kontakt_hos = {}
+        for r in kontakt_rel:
+            kontakt_hos.setdefault(r.partner_b_id.id, r.partner_a_id)
+
+        forvaltere = {}
+        for rel in forvalter_rel:
+            forvalter, eiendom = rel.partner_a_id, rel.partner_b_id
+            f = forvaltere.setdefault(forvalter.id, {
+                "id": forvalter.id,
+                "navn": forvalter.display_name or "",
+                "kontakt": "",
+                "kontakt_id": False,
+                "telefon": "",
+                "eiendommer": [],
+            })
+            if not f["kontakt"] and forvalter.id in kontakt_hos:
+                k = kontakt_hos[forvalter.id]
+                f["kontakt"], f["kontakt_id"] = k.display_name or "", k.id
+                f["telefon"] = k.mobile or k.phone or ""
+
+            eier = eier_av.get(eiendom.id)
+            f["eiendommer"].append({
+                "id": eiendom.id,
+                "adresse": eiendom.display_name or "",
+                "eier": eier.display_name if eier else "",
+                "eier_id": eier.id if eier else False,
+                "prosjekter": self._prosjekter_for(eiendom),
+            })
+
+        for f in forvaltere.values():
+            f["eiendommer"].sort(key=lambda e: e["adresse"])
+
+        return {
+            "forvaltere": sorted(forvaltere.values(), key=lambda f: f["navn"]),
+            "utenfor": len(forvalter_alle) - len(forvalter_rel),
+        }
+
+    def _prosjekter_for(self, eiendom):
+        """Projects running on a property, newest first.
+
+        Read defensively: project may not be installed, and a card view must not fail
+        because an optional module is absent. No projects is a valid answer.
+        """
+        Project = self.env.get("project.project")
+        if Project is None:
+            return []
+        try:
+            projects = Project.search(
+                [("partner_id", "=", eiendom.id)], order="id desc", limit=10)
+        except Exception:
+            return []
+        return [{
+            "id": p.id,
+            "nr": (p.sequence_code if "sequence_code" in p._fields else "") or "",
+            "navn": p.name or "",
+        } for p in projects]
+
     def _periode_tekst(self, rel):
         """Human-readable validity, or empty when the relation has no dates at all."""
         if not rel.date_start and not rel.date_end:
