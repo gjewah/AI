@@ -1300,6 +1300,12 @@ class FiqControlRoomConfig(models.Model):
             # alle tre handlingene finnes i ir_model_data.
             "kommunikasjon": "fiq_gui_comm.action_fiq_gui_comm",
             "airmm": "fiq_gui_ai_kr.action_fiq_ai_kr",
+            # «Styring» — AI KRs egen flate (fiq_gui_ai_kr 19.0.3.0.0, bedt om 23.07).
+            # 🔑 Merk: AI KR registrerer seg BEVISST ikke i `fiq_gui_flates`. Gjermund
+            # 22.07: «feil ramme — den skal bruke AI KR sin ramme.» Skall-registrering
+            # ville gjort flaten til innmat i KRs ramme. For dem gjelder to lag, ikke tre,
+            # og `doAction` er DA riktig vei — ikke en mangel.
+            "ai_styring": "fiq_gui_ai_kr.action_fiq_ai_styring",
             "gui_fin": "fiq_gui_fin.action_fiq_gui_fin",
             # Kunnskap: artikler/maler (Odoo Knowledge — hjemmesiden)
             "kunnskap": "knowledge.ir_actions_server_knowledge_home_page",
