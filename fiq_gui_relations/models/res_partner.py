@@ -22,6 +22,15 @@ class ResPartner(models.Model):
     fiq_relation_count = fields.Integer(
         compute="_compute_fiq_relation_count", string="Relations")
 
+    # Absorbed from partner_short_name (Loym) 24.07.2026, per the consolidation map.
+    # It belongs here rather than in a module of its own: a short name is what a
+    # relation graph shows on a node. "SDV Prosjekt as" does not fit in a box; "SDVp"
+    # does. Keeping an 18-line module alive for one field is upkeep without benefit.
+    short_name = fields.Char(
+        "Short name", index=True,
+        help="Compact name used where the full one does not fit - graph nodes, cards, "
+             "narrow columns. Falls back to the ordinary name when empty.")
+
     # Search-only fields: they hold nothing and display nothing. Their whole purpose is
     # to let a user filter contacts BY their relations - "everyone employed at Pecunia",
     # "everyone who had a relation to us in 2024". Without them the model can store

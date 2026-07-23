@@ -46,6 +46,19 @@
     </record>
 
 
+    <!-- Absorbed from partner_short_name (Loym). Same placement as the source module
+         used, so nothing moves for anyone already used to the field. -->
+    <record id="view_partner_form_fiq_short_name" model="ir.ui.view">
+        <field name="name">res.partner.form.fiq.short.name</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <span name="address_name" position="before">
+                <field name="short_name"/>
+            </span>
+        </field>
+    </record>
+
     <!-- Search-only fields exposed in the contact search view. Without this the
          fields exist but nothing can reach them: a filter nobody can find is the
          same as no filter. Bare <group> - expand= does not exist in Odoo 19. -->

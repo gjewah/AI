@@ -140,7 +140,11 @@ class FiqGuiRelation(models.Model):
             ):
                 node = noder.setdefault(partner.id, {
                     "id": partner.id,
-                    "navn": partner.display_name or "",
+                    # short_name where it exists: a graph node is a small box, and
+                    # "SDV Prosjekt as" does not fit where "SDVp" does. The full name
+                    # stays available for the detail panel.
+                    "navn": partner.short_name or partner.display_name or "",
+                    "fullt_navn": partner.display_name or "",
                     "kind": "company" if partner.is_company else "person",
                     "kind_navn": _("Companies") if partner.is_company else _("People"),
                     "antall": 0,

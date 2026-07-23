@@ -14,7 +14,7 @@ from odoo.tests import TransactionCase, tagged
 #
 # Every test below creates res.partner records, so all of them would hit it.
 # Odoo core does the same thing - project/tests/test_project_mail_features.py:9.
-@tagged("-at_install", "post_install")
+@tagged("-at_install", "post_install", "fiq")
 class TestFiqGuiRelation(TransactionCase):
 
     @classmethod
@@ -383,6 +383,41 @@ class TestFiqGuiRelation(TransactionCase):
             "date_end": "2021-01-01",
         })
         self.assertEqual(len(self.Relation.get_graf()["kanter"]), 0)
+
+    # ---- short name (absorbed from partner_short_name) ------------------------------
+
+    def test_short_name_stored_on_partner(self):
+        """The field the absorbed module provided. It had no tests of its own, so the
+        coverage has to come from this side."""
+        self.company_a.short_name = "Alpha"
+        self.assertEqual(self.company_a.short_name, "Alpha")
+
+    def test_graph_prefers_short_name(self):
+        """A graph node is a small box: the short name is what fits in it. The full name
+        must still travel with the node, or the detail panel would show the abbreviation
+        as if it were the real name."""
+        self.company_a.short_name = "Alpha"
+        self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_a.id,
+            "type_id": self.type_employee.id,
+        })
+        node = next(n for n in self.Relation.get_graf()["noder"]
+                    if n["id"] == self.company_a.id)
+        self.assertEqual(node["navn"], "Alpha")
+        self.assertEqual(node["fullt_navn"], self.company_a.display_name)
+
+    def test_graph_falls_back_to_full_name(self):
+        """Most contacts will never get a short name. They must not render blank."""
+        self.assertFalse(self.company_b.short_name)
+        self.Relation.create({
+            "partner_a_id": self.person.id,
+            "partner_b_id": self.company_b.id,
+            "type_id": self.type_employee.id,
+        })
+        node = next(n for n in self.Relation.get_graf()["noder"]
+                    if n["id"] == self.company_b.id)
+        self.assertEqual(node["navn"], self.company_b.display_name)
 
     # ---- the card view --------------------------------------------------------------
 
