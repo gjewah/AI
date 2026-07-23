@@ -822,3 +822,12 @@ class FiqGuiAiKrData(models.AbstractModel):
     def sikre_stadier(self):
         """Opprett de fem stadiene hvis de mangler. Idempotent."""
         return self.env["fiq.ai.stadie"].sikre_stadier()
+
+    # ════════════════════════════════════════════════════════════════════════
+    # REGLENE — Gjermund-ordre 23.07: «dette er første gangen jeg ser disse»
+    # Oversatt fra brain/00_FERDIG.md. Spoersmaalet er overskriften, nummeret er
+    # en merkelapp. To av elleve er hans; resten er AI-ens.
+    # ════════════════════════════════════════════════════════════════════════
+    @api.model
+    def get_regler(self):
+        return self.env["fiq.ai.regel"].get_regler()

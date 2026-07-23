@@ -21,7 +21,13 @@
           <h1>Styring</h1>
         </div>
         <span class="styr_fyll"/>
-        <label class="styr_bryter">
+        <!-- Reglene: Gjermund 23.07 «dette er første gangen jeg ser disse».
+             Egen fane, ikke gjemt i en meny — han skal finne dem uten å lete. -->
+        <button t-att-class="'styr_fane' + (state.fane === 'arbeid' ? ' aktiv' : '')"
+                t-on-click="() => this.settFane('arbeid')">Arbeidet</button>
+        <button t-att-class="'styr_fane' + (state.fane === 'regler' ? ' aktiv' : '')"
+                t-on-click="() => this.settFane('regler')">Regler</button>
+        <label t-if="state.fane === 'arbeid'" class="styr_bryter">
           <input type="checkbox" t-att-checked="state.skjul_ferdig"
                  t-on-change="() => this.vekslFerdig()"/>
           Skjul Ferdige
@@ -29,6 +35,37 @@
         <button class="styr_ub" t-on-click="() => this.tilbake()">‹ AI Kontrollrom</button>
       </div>
 
+      <!-- ══ REGLER ══════════════════════════════════════════════════════════
+           Spørsmålet er overskriften. Nummeret er en liten merkelapp — øktene
+           trenger det for å snakke sammen, Gjermund skal slippe å lære det. -->
+      <div t-if="state.fane === 'regler'" class="styr_regler">
+        <p class="styr_regel_intro">
+          Dette er kontrollene AI-øktene går gjennom før noe meldes ferdig.
+          <b><t t-esc="state.regler.krever_deg"/> av <t t-esc="state.regler.totalt"/></b>
+          kan bare du svare på — de er merket <b>Krever deg</b>.
+        </p>
+
+        <div t-foreach="state.regler.regler" t-as="r" t-key="r.nr"
+             t-att-class="'styr_regel' + (r.hvem === 'gjermund' ? ' din' : '')">
+          <div class="styr_regel_topp">
+            <h3 t-esc="r.sporsmaal"/>
+            <span t-if="r.hvem === 'gjermund'" class="styr_regel_din">Krever deg</span>
+            <span class="styr_regel_nr" t-esc="r.nr"/>
+          </div>
+          <p class="styr_regel_hvorfor" t-esc="r.hvorfor"/>
+          <p class="styr_regel_larte">
+            <b>Slik lærte vi det:</b> <t t-esc="r.larte_vi"/>
+          </p>
+        </div>
+
+        <h2 class="styr_h2">Ord Vi Bruker</h2>
+        <div t-foreach="state.regler.ordliste" t-as="o" t-key="o.ord" class="styr_ord">
+          <b t-esc="o.ord"/>
+          <span t-esc="o.forklaring"/>
+        </div>
+      </div>
+
+      <t t-if="state.fane === 'arbeid'">
       <!-- STADIE-PILLER. Gjermunds egne farger; hvit uthevet skrift oppå. -->
       <div class="styr_stadier">
         <button t-foreach="state.stadier" t-as="s" t-key="s.kode"
@@ -94,6 +131,7 @@
         <span t-if="o.frist" class="styr_frist" t-esc="o.frist"/>
         <span t-if="o.kommentarer" class="styr_komm" t-esc="o.kommentarer"/>
       </div>
+      </t><!-- /fane: arbeid -->
     </t>
 
     <!-- OPPGAVEPANEL: stadier + beskrivelse + kommentarlogg -->

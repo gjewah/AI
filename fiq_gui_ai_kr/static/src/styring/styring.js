@@ -31,6 +31,10 @@ export class FiqAiStyring extends Component {
             stadier: [], spor: [], oppgaver: [], sporsmaal: [],
             valgt: null,          // oppgaven som er åpen i panelet
             logg: [],             // kommentarloggen for den oppgaven
+            // Gjermund 23.07: «dette er første gangen jeg ser disse» — om reglene
+            // øktene har kvittert mot i to dager. Egen fane, ikke gjemt i en meny.
+            fane: "arbeid",
+            regler: { regler: [], ordliste: [], krever_deg: 0, totalt: 0 },
             skjul_ferdig: false,
             stadiefilter: "",     // klikk på en stadie-pille filtrerer
             nyKommentar: "",
@@ -63,6 +67,14 @@ export class FiqAiStyring extends Component {
             oppgave.stadium = kode;
             oppgave.stadium_navn = r.stadium;
             await this.last();
+        }
+    }
+
+    /** Bytt mellom Arbeidet og Regler. Reglene hentes én gang. */
+    async settFane(f) {
+        this.state.fane = f;
+        if (f === "regler" && !this.state.regler.regler.length) {
+            this.state.regler = await this.orm.call(DATA, "get_regler", []);
         }
     }
 

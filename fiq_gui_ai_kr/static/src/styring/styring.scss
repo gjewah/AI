@@ -251,5 +251,65 @@
     display: flex; gap: 10px; flex-wrap: wrap;
   }
 
+
+  // ══ REGLER ══════════════════════════════════════════════════════════════
+  // Gjermund 23.07: «dette er første gangen jeg ser disse».
+  // Spørsmålet er overskriften — nummeret er en liten merkelapp til høyre.
+  // Reglene som krever HAM skal skille seg ut uten at han må lete.
+  .styr_fane {
+    border: 1px solid var(--st-line); background: var(--st-panel);
+    color: var(--st-mut); border-radius: 9px; padding: 7px 15px;
+    font-size: 12.5px; font-weight: 600;
+    &:hover { color: var(--st-tekst); border-color: var(--st-violet-line); }
+    &.aktiv { background: var(--st-violet); color: #161327; border-color: var(--st-violet);
+              font-weight: 700; }
+  }
+
+  .styr_regel_intro {
+    font-size: 13.5px; color: var(--st-mut); line-height: 1.6;
+    margin: 0 0 18px; max-width: 70ch;
+    b { color: var(--st-tekst); }
+  }
+
+  .styr_regel {
+    background: var(--st-panel); border: 1px solid var(--st-line);
+    border-left: 3px solid var(--st-line);
+    border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
+    // Krever Gjermund: to av elleve. Skal ses med en gang.
+    &.din { border-left-color: var(--st-warn); background: var(--st-warn-dim); }
+  }
+  .styr_regel_topp {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 7px;
+    h3 { margin: 0; font-size: 15px; font-weight: 650; line-height: 1.35; flex: 1;
+         min-width: 240px; }
+  }
+  .styr_regel_din {
+    font-size: 10.5px; font-weight: 700; color: #2a1d05;
+    background: var(--st-warn); border-radius: 5px; padding: 2px 9px;
+    white-space: nowrap;
+  }
+  .styr_regel_nr {
+    font-family: var(--st-mono); font-size: 11px; color: var(--st-mut2);
+    background: var(--st-panel2); border: 1px solid var(--st-line);
+    border-radius: 5px; padding: 1px 7px; flex: none;
+  }
+  .styr_regel_hvorfor {
+    margin: 0 0 8px; font-size: 13px; line-height: 1.6; color: var(--st-tekst);
+  }
+  .styr_regel_larte {
+    margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--st-mut);
+    b { color: var(--st-violet); font-weight: 600; }
+  }
+
+  .styr_ord {
+    display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap;
+    padding: 9px 0; border-bottom: 1px solid var(--st-line);
+    font-size: 13px; line-height: 1.55;
+    &:last-child { border-bottom: 0; }
+    b { color: var(--st-violet); font-weight: 650; min-width: 105px; flex: none; }
+    span { color: var(--st-mut); flex: 1; min-width: 240px; }
+  }
+
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 }
