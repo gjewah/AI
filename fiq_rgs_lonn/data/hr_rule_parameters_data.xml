@@ -96,4 +96,79 @@
         <field name="parameter_value">14.1</field>
     </record>
 
+    <!-- ================================================================
+         04 · FERIEPENGER — satser etter ferieloven § 10
+
+         KILDE: ferieloven (LOV-1988-04-29-21) § 10, verifisert mot lovdata
+         + skatteetaten.no 23.07.2026.
+
+         🔴 SATSEN AVHENGER AV ALDER — og alder er PERSONOPPLYSNING.
+         Aggregatet til 2.80 RGS leverer derfor KUN summer, aldri fordelingen
+         mellom satsene. Se brain/kontrakt_lonn_2_20_til_rgs_2_80.md.
+         ================================================================ -->
+    <record id="rule_parameter_no_feriepenger_satser" model="hr.rule.parameter">
+        <field name="name">Norge: feriepenger — satser</field>
+        <field name="code">no_feriepenger_satser</field>
+        <field name="country_id" ref="base.no"/>
+        <field name="description" type="html">
+            <p>Feriepengesatser i prosent av feriepengegrunnlaget, ferieloven § 10.</p>
+            <ul>
+                <li><b>ordinaer</b> 10,2 % — lovens minstekrav (4 uker + 1 dag)</li>
+                <li><b>fem_uker</b> 12 % — der 5 ukers ferie er avtalt (tariff/avtale)</li>
+                <li><b>over_60</b> 12,5 % — lovens 10,2 % + 2,3 prosentpoeng ekstraferie</li>
+                <li><b>over_60_fem_uker</b> 14,3 % — 12 % + 2,3 prosentpoeng</li>
+            </ul>
+            <p>🛑 <b>Tillegget for ansatte over 60 gjelder KUN opp til 6 G</b>
+            (folketrygdens grunnbeloep per 31.12. i opptjeningsaaret). Over den
+            grensen brukes ordinaer sats. Feriepenger opptjenes i ett aar og
+            utbetales aaret etter, normalt i juni.</p>
+        </field>
+    </record>
+
+    <record id="rule_parameter_no_feriepenger_satser_2026" model="hr.rule.parameter.value">
+        <field name="rule_parameter_id" ref="rule_parameter_no_feriepenger_satser"/>
+        <field name="date_from" eval="datetime(2026, 1, 1).date()"/>
+        <field name="parameter_value">{
+    'ordinaer':         10.2,
+    'fem_uker':         12.0,
+    'over_60':          12.5,
+    'over_60_fem_uker': 14.3,
+}</field>
+    </record>
+
+    <!-- Grensen for det forhoeyede tillegget: 6 G. Egen parameter fordi
+         grunnbeloepet endres HVERT AAR (1. mai), uavhengig av satsene. -->
+    <record id="rule_parameter_no_feriepenger_6g" model="hr.rule.parameter">
+        <field name="name">Norge: feriepenger — 6 G-grense for over 60</field>
+        <field name="code">no_feriepenger_6g</field>
+        <field name="country_id" ref="base.no"/>
+        <field name="description" type="html">
+            <p>Seks ganger folketrygdens grunnbeloep, per 31.12. i
+            opptjeningsaaret. Tillegget paa 2,3 prosentpoeng for ansatte over
+            60 gjelder kun for grunnlag opp til denne grensen.</p>
+            <p>⚠️ <b>Grunnbeloepet justeres 1. mai hvert aar.</b> Verdien under
+            maa oppdateres naar nytt G fastsettes — den er IKKE beregnet.</p>
+        </field>
+    </record>
+
+    <!-- Grensen knyttes til G per 31.12. i OPPTJENINGSAARET (ferieloven § 10).
+         Feriepenger utbetalt i 2026 er opptjent i 2025 → G per 31.12.2025
+         = 130 160 kr (satt 01.05.2025) → 6 G = 780 960 kr. -->
+    <record id="rule_parameter_no_feriepenger_6g_2025" model="hr.rule.parameter.value">
+        <field name="rule_parameter_id" ref="rule_parameter_no_feriepenger_6g"/>
+        <field name="date_from" eval="datetime(2025, 1, 1).date()"/>
+        <field name="parameter_value">780960</field>
+    </record>
+
+    <!-- G justert 01.05.2026 til 136 549 kr (verifisert mot nav.no 23.07.2026)
+         → 6 G = 819 294 kr. Gjelder feriepenger opptjent i 2026, som utbetales
+         i 2027.
+         ⚠️ G justeres 1. MAI hvert aar etter trygdeoppgjoeret. Legg til ny
+         record naar neste G fastsettes — ALDRI regn den ut eller framskriv. -->
+    <record id="rule_parameter_no_feriepenger_6g_2026" model="hr.rule.parameter.value">
+        <field name="rule_parameter_id" ref="rule_parameter_no_feriepenger_6g"/>
+        <field name="date_from" eval="datetime(2026, 5, 1).date()"/>
+        <field name="parameter_value">819294</field>
+    </record>
+
 </odoo>

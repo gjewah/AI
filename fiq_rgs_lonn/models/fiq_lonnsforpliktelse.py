@@ -60,7 +60,58 @@ class FiqLonnsforpliktelse(models.AbstractModel):
         forpliktelser = []
         forpliktelser += self._lonn_forpliktelser(fra_dato, til_dato, company)
         forpliktelser += self._aga_forpliktelser(fra_dato, til_dato, company)
+        forpliktelser += self._feriepenger_forpliktelser(fra_dato, til_dato, company)
         return forpliktelser
+
+    def _feriepenger_forpliktelser(self, fra_dato, til_dato, company):
+        """Feriepenger — opptjent ETT aar, utbetalt DET NESTE.
+
+        🔑 Dette er den stoerste periodeforskyvningen i hele kontrakten:
+        feriepenger opptjent gjennom hele 2025 forlater konto i JUNI 2026.
+        `periode` sier «Opptjent 2025», `forfall` sier 2026-06-15 — og begge
+        er sanne. Det er nettopp derfor 2.80 RGS ba om `periode`-feltet.
+
+        🔒 Satsen avhenger av ALDER (ferieloven § 10), men aggregatet leverer
+        KUN summen. Fordelingen mellom satsene forlater aldri HR — den ville
+        roepet hvem som er over 60.
+        """
+        slipper = self.env["hr.payslip"].search([
+            ("company_id", "=", company.id),
+            ("state", "in", ("validated", "paid")),
+            ("date_to", ">=", fra_dato),
+            ("date_to", "<=", til_dato),
+        ])
+
+        per_aar = {}
+        for slip in slipper:
+            aar = slip.date_to.year
+            data = per_aar.setdefault(
+                aar, {"belop": 0.0, "ansatte": set(), "bokfort": True}
+            )
+            data["belop"] += slip.fiq_feriepenger_avsetning(opptjeningsaar=aar)
+            data["ansatte"].add(slip.employee_id.id)
+            if slip.state != "paid":
+                data["bokfort"] = False
+
+        from datetime import date
+        linjer = []
+        for aar, data in sorted(per_aar.items()):
+            if len(data["ansatte"]) < MIN_ANSATTE or not data["belop"]:
+                continue
+            linjer.append({
+                "type": "feriepenger",
+                "label": "Feriepenger",
+                # Utbetales normalt i juni AARET ETTER opptjening
+                # (ferieloven § 11: siste vanlige loenningsdag foer ferien).
+                "forfall": date(aar + 1, 6, 15),
+                "belop": data["belop"],
+                # Avsetningen er alltid et ESTIMAT foer ferieaaret: grunnlaget
+                # vokser med hver loennskjoering ut opptjeningsaaret.
+                "sikkerhet": "estimat",
+                "kilde": "Odoo",
+                "periode": "Opptjent %s" % aar,
+            })
+        return linjer
 
     def _lonn_forpliktelser(self, fra_dato, til_dato, company):
         """Loennskostnad — det som faktisk forlater konto til de ansatte.
@@ -141,11 +192,7 @@ class FiqLonnsforpliktelse(models.AbstractModel):
         return {
             "aga": self._aga_status(fra_dato, til_dato, company),
             "lonn": self._lonn_status(fra_dato, til_dato, company),
-            "feriepenger": {
-                "levert": False,
-                "grunn": "ikke_bygget",
-                "forklaring": "Feriepengeavsetning er ikke tatt i bruk ennå",
-            },
+            "feriepenger": self._feriepenger_status(fra_dato, til_dato, company),
             "otp": {
                 "levert": False,
                 "grunn": "ikke_bygget",
@@ -164,6 +211,20 @@ class FiqLonnsforpliktelse(models.AbstractModel):
             "forklaring": (
                 "Ingen lønnskjøringer i perioden, eller for få ansatte til at "
                 "tall kan vises uten å identifisere enkeltpersoner."
+            ),
+        }
+
+    def _feriepenger_status(self, fra_dato, til_dato, company):
+        """Status for feriepengeavsetning."""
+        if self._feriepenger_forpliktelser(fra_dato, til_dato, company):
+            return {"levert": True, "grunn": None, "forklaring": None}
+        return {
+            "levert": False,
+            "grunn": "ingen_data",
+            "forklaring": (
+                "Ingen lønnskjøringer å beregne feriepenger av i perioden, "
+                "eller for få ansatte til at tall kan vises uten å "
+                "identifisere enkeltpersoner."
             ),
         }
 

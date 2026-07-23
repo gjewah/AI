@@ -55,6 +55,75 @@ class HrPayslip(models.Model):
             "fiq_aga_fribelop_aar": aar,
         })
 
+    # ==================================================================
+    # FERIEPENGER — ferieloven § 10
+    # ==================================================================
+    def fiq_feriepenger_sats(self, opptjeningsaar=None):
+        """Feriepengesats i prosent for denne ansatte.
+
+        🔴 SATSEN AVHENGER AV ALDER — og alder er personopplysning. Derfor
+        beregnes den HER, i HR, og bare summen forlater modulen.
+
+        Ferieloven § 10: 10,2 % ordinaert · 12 % ved fem ukers ferie ·
+        + 2,3 prosentpoeng for arbeidstaker over 60 med ekstraferie.
+
+        🛑 «Over 60» er ikke alder paa utbetalingsdagen: retten til ekstraferie
+        gjelder fra og med det AARET arbeidstakeren FYLLER 60. Bruker vi alder
+        i dag, faar en som fyller 60 i desember feil sats hele aaret.
+        """
+        self.ensure_one()
+        if opptjeningsaar is None:
+            opptjeningsaar = self._fiq_aga_aar()
+
+        satser = self._rule_parameter("no_feriepenger_satser")
+        fem_uker = self.version_id.fiq_ferie_fem_uker
+        if self._fiq_fyller_60_eller_mer(opptjeningsaar):
+            return satser["over_60_fem_uker" if fem_uker else "over_60"]
+        return satser["fem_uker" if fem_uker else "ordinaer"]
+
+    def _fiq_fyller_60_eller_mer(self, opptjeningsaar):
+        """Om arbeidstakeren fyller 60 eller mer I LOEPET AV opptjeningsaaret.
+
+        Returnerer False naar foedselsdato mangler — da brukes ordinaer sats.
+        Det er det forsiktige valget: aa gjette paa hoeyere sats ville gitt en
+        for stor avsetning, og aa gjette i det hele tatt er forbudt naar
+        grunnlaget er juridisk bindende.
+        """
+        self.ensure_one()
+        fodselsdato = self.employee_id.birthday
+        if not fodselsdato:
+            return False
+        return (opptjeningsaar - fodselsdato.year) >= 60
+
+    def fiq_feriepenger_avsetning(self, grunnlag=None, opptjeningsaar=None):
+        """Feriepengeavsetning for denne loennsslippen, i kroner.
+
+        Haandterer 6 G-taket: tillegget for over 60 gjelder KUN for grunnlag
+        opp til seks ganger grunnbeloepet (ferieloven § 10). Over taket brukes
+        ordinaer sats paa det overskytende.
+        """
+        self.ensure_one()
+        if grunnlag is None:
+            grunnlag = self.fiq_aga_grunnlag()
+        if not grunnlag:
+            return 0.0
+        if opptjeningsaar is None:
+            opptjeningsaar = self._fiq_aga_aar()
+
+        sats = self.fiq_feriepenger_sats(opptjeningsaar)
+        if not self._fiq_fyller_60_eller_mer(opptjeningsaar):
+            return grunnlag * sats / 100.0
+
+        # Over 60: forhoeyet sats kun opp til 6 G.
+        tak = self._rule_parameter("no_feriepenger_6g")
+        satser = self._rule_parameter("no_feriepenger_satser")
+        ordinaer = satser["fem_uker" if self.version_id.fiq_ferie_fem_uker
+                          else "ordinaer"]
+
+        if grunnlag <= tak:
+            return grunnlag * sats / 100.0
+        return tak * sats / 100.0 + (grunnlag - tak) * ordinaer / 100.0
+
     def _fiq_aga_aar(self):
         """Aaret loennsslippen hoerer til — styrer hvilket fribeloep som gjelder."""
         self.ensure_one()

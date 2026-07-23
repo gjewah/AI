@@ -36,6 +36,16 @@ class HrVersion(models.Model):
     )
 
 
+    # FERIEPENGER — ferieuker avgjoer satsen (ferieloven § 10).
+    # Lovens minstekrav er 4 uker + 1 dag (10,2 %). Fem uker er AVTALT, ikke
+    # lovbestemt — derfor et felt og ikke en antakelse.
+    fiq_ferie_fem_uker = fields.Boolean(
+        string="Fem ukers ferie avtalt",
+        help="Gir 12 % feriepenger i stedet for lovens 10,2 %. Foelger av "
+             "tariffavtale eller individuell avtale, ikke av ferieloven.",
+    )
+
+
 class HrEmployee(models.Model):
     _inherit = "hr.employee"
 
@@ -45,6 +55,13 @@ class HrEmployee(models.Model):
     fiq_aga_sone_override = fields.Selection(
         readonly=False,
         related="version_id.fiq_aga_sone_override",
+        inherited=True,
+        groups="hr_payroll.group_hr_payroll_user",
+    )
+
+    fiq_ferie_fem_uker = fields.Boolean(
+        readonly=False,
+        related="version_id.fiq_ferie_fem_uker",
         inherited=True,
         groups="hr_payroll.group_hr_payroll_user",
     )

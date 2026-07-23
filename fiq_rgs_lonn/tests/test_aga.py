@@ -361,6 +361,116 @@ class TestLonnskostnad(TransactionCase):
 
 
 @tagged("post_install", "-at_install")
+class TestFeriepenger(TransactionCase):
+    """Type 03. Satsene er ferieloven § 10, verifisert mot lovdata + skatteetaten.
+
+    🔴 Den vanskeligste typen: SATSEN AVHENGER AV ALDER, og alder er
+    personopplysning. Beregningen skjer i HR; bare summen forlater modulen.
+    """
+
+    def setUp(self):
+        super().setUp()
+        from datetime import date
+        self.date = date
+        self.company = self.env["res.company"].create({
+            "name": "Feriefirma", "fiq_aga_sone": "2",
+        })
+        self.struktur = self.env.ref(
+            "fiq_rgs_lonn.hr_payroll_structure_no_employee")
+
+    def _slip(self, fodselsaar=1990, fem_uker=False, aar=2026):
+        vals = {"name": "Ferieansatt", "company_id": self.company.id}
+        if fodselsaar:
+            vals["birthday"] = "%s-03-15" % fodselsaar
+        ansatt = self.env["hr.employee"].create(vals)
+        slip = self.env["hr.payslip"].create({
+            "name": "Slipp",
+            "employee_id": ansatt.id,
+            "company_id": self.company.id,
+            "date_from": "%s-01-01" % aar,
+            "date_to": "%s-01-31" % aar,
+            "struct_id": self.struktur.id,
+        })
+        slip.version_id.fiq_ferie_fem_uker = fem_uker
+        return slip
+
+    def _param(self, kode, aar=2026, mnd=6):
+        return self.env["hr.rule.parameter"]._get_parameter_from_code(
+            kode, self.date(aar, mnd, 1))
+
+    def test_33_satsene_stemmer_med_ferieloven(self):
+        self.assertEqual(self._param("no_feriepenger_satser"), {
+            "ordinaer": 10.2, "fem_uker": 12.0,
+            "over_60": 12.5, "over_60_fem_uker": 14.3,
+        }, "Satsene er ferieloven § 10 — ikke en preferanse.")
+
+    def test_34_ordinaer_sats_er_10_2(self):
+        self.assertEqual(self._slip().fiq_feriepenger_sats(2026), 10.2)
+
+    def test_35_fem_uker_gir_12(self):
+        self.assertEqual(
+            self._slip(fem_uker=True).fiq_feriepenger_sats(2026), 12.0)
+
+    def test_36_over_60_gir_12_5(self):
+        # Foedt 1966 → fyller 60 i 2026.
+        self.assertEqual(
+            self._slip(fodselsaar=1966).fiq_feriepenger_sats(2026), 12.5)
+
+    def test_37_fyller_60_I_LOPET_av_aaret_teller(self):
+        """🔑 «Over 60» er IKKE alder paa utbetalingsdagen. Retten gjelder fra
+        og med AARET arbeidstakeren fyller 60 — en som fyller 60 i desember
+        skal ha forhoeyet sats hele det aaret."""
+        slip = self._slip(fodselsaar=1966)
+        slip.employee_id.birthday = "1966-12-31"
+        self.assertEqual(
+            slip.fiq_feriepenger_sats(2026), 12.5,
+            "Fyller 60 i desember — skal ha forhøyet sats fra januar.",
+        )
+
+    def test_38_manglende_fodselsdato_gir_ORDINAER_sats(self):
+        """Det forsiktige valget. Aa gjette paa hoeyere sats ville gitt for
+        stor avsetning — og gjetning er forbudt naar grunnlaget er juridisk
+        bindende."""
+        self.assertEqual(
+            self._slip(fodselsaar=None).fiq_feriepenger_sats(2026), 10.2)
+
+    def test_39_avsetning_under_60(self):
+        """🛡️ Bevis-vaktpost: 500 000 x 10,2 % = 51 000."""
+        self.assertAlmostEqual(
+            self._slip().fiq_feriepenger_avsetning(500_000, 2026),
+            51_000.0, 2,
+            "Avsetningen er ikke grunnlag x sats — testen måler noe annet.",
+        )
+
+    def test_40_over_60_under_6G_faar_full_forhoyet_sats(self):
+        # 6 G for 2026 = 819 294. Grunnlag 500 000 ligger under taket.
+        self.assertAlmostEqual(
+            self._slip(fodselsaar=1966).fiq_feriepenger_avsetning(500_000, 2026),
+            62_500.0, 2,   # 500 000 x 12,5 %
+        )
+
+    def test_41_over_60_OVER_6G_splitter_ved_taket(self):
+        """🔑 Ferieloven § 10: tillegget gjelder KUN opp til 6 G. Over taket
+        brukes ordinaer sats paa det overskytende."""
+        tak = self._param("no_feriepenger_6g")
+        forventet = tak * 0.125 + 100_000 * 0.102
+        self.assertAlmostEqual(
+            self._slip(fodselsaar=1966).fiq_feriepenger_avsetning(
+                tak + 100_000, 2026),
+            forventet, 2,
+        )
+
+    def test_42_6g_folger_opptjeningsaaret(self):
+        """G justeres 1. mai hvert aar. Grensen for feriepenger opptjent i
+        2025 er 6 G per 31.12.2025 — ikke dagens G."""
+        g2025 = self._param("no_feriepenger_6g", aar=2025)
+        g2026 = self._param("no_feriepenger_6g", aar=2026)
+        self.assertEqual(g2025, 780960)
+        self.assertEqual(g2026, 819294)
+        self.assertNotEqual(g2025, g2026, "G endres årlig — begge må finnes.")
+
+
+@tagged("post_install", "-at_install")
 class TestPersonvern(TransactionCase):
     """🔒 Re-identifiseringsgrensen. 2.80 RGS har bedt om aa bli holdt til den."""
 
