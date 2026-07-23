@@ -111,21 +111,19 @@ registry.category("actions").add("fiq_gui_comm_dashboard", FiqKommunikasjon);
 // Menypunktene speiler flatens egne visninger — de samme brukeren allerede kjenner
 // fra sidemenyen: oversikt, e-postkanalen og kalenderen. Ingen nye begreper.
 //
-// 🔴 TO NØKLER, MED VILJE (rettet 23.07.2026 — meldt av AI PK, bevist i Prosjekt-flaten):
-// KR slår opp flaten med MENYENS nøkkel: `_slotKomponent(key)` → `reg.get(key)`
-// (`control_room.js:1790`). Den faste menylista bruker **"kommunikasjon"** (:1478), mens
-// selvregistreringen her brukte **"komm"**. `reg.get("kommunikasjon")` fant da ingenting →
-// flaten åpnet UTEN ramme, og hovedmenyen forsvant. Symptomet er stille: menypunktet
-// vises, noe åpnes — men rammen er borte. Nøyaktig samme feil felte `fiq_gui_prj`.
-// KRs egen kommentar (:1502) navngir kollisjonen: «kommunikasjon/komm».
-//
-// Vi registrerer derfor under BEGGE nøkler, med samme objekt:
-//   "kommunikasjon" — det menyen faktisk kaller (KR-oppslaget)
-//   "komm"          — matcher selvregistreringen i `fiq_gui_comm_flate.xml` og `fiq.gui.komm.data`
-// KRs dedup går på HANDLINGEN (xmlid), ikke nøkkelen, så dette gir ingen dublett i menyen.
-// 🛑 Fiksen hører i MIN modul — `fiq_gui_control` røres ikke.
-const FLATE_KOMM = {
-    key: "kommunikasjon",
+// 🔑 NØKKELEN ER «komm» — og skal FORBLI det (avklart 23.07.2026).
+// Menyen kaller «kommunikasjon», registeret her heter «komm». Det ser ut som en bom, og
+// jeg registrerte en stund under BEGGE nøkler for å være sikker. Det var feil vei:
+// KR løser oversettelsen SELV i `_slotKomponent()` via `NOKKEL_ALIAS`
+// (`control_room.js:1811`, KR 19.0.7.4.0) — den prøver menyens nøkkel først, så flatens
+// eget navn. Aliaset dekker alle åtte flatene.
+// 🛑 Døper hver flate-eier om sin nøkkel på egen hånd, får vi fem uavhengige fikser på et
+//    DELT register — og en glemt modul gir samme stille feil om igjen. Én oversettelse ett
+//    sted er riktig; `fiq_gui_control` eier den.
+// 📌 «komm» matcher dessuten selvregistreringen i `fiq_gui_comm_flate.xml` og modellnavnet
+//    `fiq.gui.komm.data`. Å bytte her ville brutt de to.
+registry.category("fiq_gui_flates").add("komm", {
+    key: "komm",
     label: "Kommunikasjon",
     color: "#0078CC",          // 2 Admin-blå, kanonisk fargekart
     sequence: 40,              // samme plass som i KR-menyen (mellom 35 og 45)
@@ -135,6 +133,4 @@ const FLATE_KOMM = {
         { key: "epost", label: "E-post" },
         { key: "kalender", label: "Møter og kalender" },
     ],
-};
-registry.category("fiq_gui_flates").add("kommunikasjon", FLATE_KOMM);
-registry.category("fiq_gui_flates").add("komm", { ...FLATE_KOMM, key: "komm" });
+});

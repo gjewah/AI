@@ -114,15 +114,15 @@ class TestKommunikasjon(TransactionCase):
         self.assertIn('registry.category("fiq_gui_flates")', kilde,
                       "flaten må registrere seg i skallet")
 
-        # 🔴 NØKKEL-BOMMEN (rettet 23.07): KR slår opp flaten med MENYENS nøkkel
-        # (`control_room.js:1790` → `reg.get(key)`), og den faste lista bruker
-        # «kommunikasjon» (:1478). Registrerte vi kun «komm», ble komponenten aldri
-        # spurt etter → flaten åpnet UTEN ramme. Testen krever begge nøkler.
+        # 🔑 NØKKELEN SKAL VÆRE «komm» (avklart 23.07). Menyen kaller «kommunikasjon»,
+        # men KR oversetter selv i `_slotKomponent()` via `NOKKEL_ALIAS`
+        # (`control_room.js:1811`). Døper flate-eierne om hver sin nøkkel, får vi fem
+        # uavhengige fikser på et delt register. «komm» matcher dessuten
+        # `fiq_gui_comm_flate.xml` og modellen `fiq.gui.komm.data` — bytter vi her,
+        # brytes de to.
         nokler = re.findall(r'fiq_gui_flates"\)\.add\("([a-z_]+)"', kilde)
-        self.assertIn("kommunikasjon", nokler,
-                      "må registreres under menyens nøkkel, ellers åpner flaten uten ramme")
         self.assertIn("komm", nokler,
-                      "må også beholde «komm» — selvregistreringen og fiq.gui.komm.data bruker den")
+                      "nøkkelen må være «komm» — KR oversetter menyens navn via NOKKEL_ALIAS")
 
         # `label` MÅ være streng-literal uansett hvor i fila den står. Vi sjekker ALLE
         # forekomster, ikke bare den etter registreringen — feilklasse 10 er at et

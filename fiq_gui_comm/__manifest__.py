@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Kommunikasjon",
-    "version": "19.0.1.10.1",
+    "version": "19.0.1.10.2",
     "summary": "FIQ Kommunikasjon – paraply-flaten for ALL kommunikasjon. "
                "E-post, WhatsApp, Teams og chat er KANALER inne i denne flaten.",
     "description": """
