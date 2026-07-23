@@ -123,6 +123,9 @@ export class FiqGuiPrj extends Component {
             kolonner: [],
             oppgaver: [],
             kpi: {},
+            // Risiko & budsjett — fylles i last(). Tom liste, aldri undefined:
+            // malen leser .length før første kall er ferdig.
+            risiko: [],
             firmaer: [],
             iDag: null,
             avkortet: false,
@@ -162,6 +165,37 @@ export class FiqGuiPrj extends Component {
             this.state.oppgaver = [];
             this.state.feil = _t("Could not load tasks.");
         }
+
+        // ── RISIKO & BUDSJETT (fasitens `risk`-seksjon under Gantt) ──────────
+        //
+        // 🔴 Jeg bygde `_risiko_dom()` i 1.26.0 og VISTE DEN ALDRI. Null treff på
+        // «risiko» i prj.xml, prj.js og prj.scss. Nøyaktig feilen AI KR tok meg i
+        // 22.07 med sjekklistene: datalaget ferdig, flaten urørt. Jeg kritiserte
+        // det hos andre og gjentok det fjorten dager senere.
+        //
+        // 🔑 Egen try: risikoseksjonen skal ALDRI kunne felle Gantt. Feiler den,
+        // står den tom mens resten av flaten virker. En sekundær seksjon som
+        // river med seg hovedinnholdet er verre enn ingen seksjon.
+        try {
+            const p = await this.orm.call(DATA, "get_prosjektoversikt", [], {
+                firma_id: this.state.valgtFirma || null,
+                grense: 200,
+            });
+            // Bare prosjekter det er noe å SI om. Et prosjekt uten frist, timer
+            // og budsjett gir «ingen frist eller budsjett satt» — ærlig, men det
+            // hører ikke hjemme i en risikoliste. Den skal vise hva som krever
+            // noe av deg, ikke alt som finnes.
+            this.state.risiko = (p.prosjekter || []).filter(
+                (r) => r.risiko && r.risiko !== "i_balanse" && r.risiko !== "ferdig"
+            );
+            // Sorter etter hvor mye det haster. Rekkefølgen er en beslutning:
+            // fasiten viser «avgjøres i dag» øverst, ikke det største beløpet.
+            const rang = { avgjores: 0, tett_tid: 1, over_budsjett: 2, tett_budsjett: 3 };
+            this.state.risiko.sort((a, b) => (rang[a.risiko] ?? 9) - (rang[b.risiko] ?? 9));
+        } catch (e) {
+            this.state.risiko = [];
+        }
+
         this.state.laster = false;
     }
 
@@ -328,6 +362,35 @@ export class FiqGuiPrj extends Component {
         const v = Math.max(0, ((f - start) / spenn) * 100);
         const h = Math.min(100, ((t - start) / spenn) * 100);
         return { venstre: v, bredde: Math.max(1.5, h - v), planlagt: !bekreftet };
+    }
+
+    // ---------- risiko: dommen fra modellen, oversatt til farge og ord ----------
+    //
+    // 🛑 JS TOLKER IKKE, JS OVERSETTER. Dommen felles i `_risiko_dom()` på
+    // serveren — her gjør vi den bare lesbar. Regnet klienten på timer og
+    // frister selv, ville vi hatt to steder som kan være uenige om samme
+    // prosjekt, og Odoo 20-regelen sier forretningslogikk hører i modellen.
+    risikoKlasse(r) {
+        return {
+            avgjores: "fiq_prj_r_krit",
+            over_budsjett: "fiq_prj_r_krit",
+            tett_tid: "fiq_prj_r_warn",
+            tett_budsjett: "fiq_prj_r_warn",
+        }[r] || "fiq_prj_r_ok";
+    }
+
+    // Norsk, i den formen fasiten bruker: «avgjøres i dag», ikke «AVGJORES».
+    // Ukjent verdi returneres som den er — da ser man at noe nytt har kommet
+    // fra serveren, i stedet for at det stille blir til «ukjent».
+    risikoTekst(r) {
+        return {
+            avgjores: "avgjøres i dag",
+            tett_tid: "tett tid",
+            over_budsjett: "over budsjett",
+            tett_budsjett: "tett budsjett",
+            i_balanse: "i balanse",
+            ferdig: "ferdig",
+        }[r] || r;
     }
 
     // Fargeakse + evt. «planlagt»-skravering i ett. Malen skal ikke regne.

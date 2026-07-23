@@ -809,3 +809,33 @@ class TestPrjData(TransactionCase):
         sj = self.Data.get_sjekklister(oppgave_id=999999999)
         for n in ("tilgjengelig", "lister", "oppgave"):
             self.assertIn(n, sj, "get_sjekklister mangler «%s» i en av utgangene" % n)
+
+    def test_risiko_dommen_er_KOBLET_til_flaten(self):
+        """🔴 REGRESJON: jeg bygde dommen i 1.26.0 og VISTE DEN ALDRI.
+
+        Null treff på «risiko» i prj.xml, prj.js og prj.scss i fem versjoner.
+        Nøyaktig feilen AI KR tok meg i 22.07 med sjekklistene: datalaget
+        ferdig, flaten urørt. Jeg kritiserte det hos andre og gjentok det
+        fjorten dager senere.
+
+        🔑 Denne testen kan ikke lese JS-filene, men den kan låse kontrakten
+        flaten bygger på: feltene MÅ finnes på hver rad, ellers har flaten
+        ingenting å vise. Den fanger at noen fjerner feltene fra serveren —
+        ikke at noen fjerner dem fra malen. Halv dekning er ærligere enn
+        ingen, men jeg noterer grensen.
+        """
+        res = self.Data.get_prosjektoversikt(grense=10)
+        if not res["prosjekter"]:
+            self.skipTest("Ingen prosjekter å teste mot")
+        lovlige = {
+            "i_balanse", "tett_budsjett", "over_budsjett",
+            "tett_tid", "avgjores", "ferdig",
+        }
+        for p in res["prosjekter"]:
+            self.assertIn(
+                p["risiko"], lovlige,
+                "«%s» har ukjent dom «%s» — flaten kan ikke farge den"
+                % (p["navn"], p["risiko"]),
+            )
+            self.assertIn("nummer", p, "Risikoraden viser prosjektnummer")
+            self.assertIn("forbruk_prosent", p, "Risikoraden viser en stolpe")

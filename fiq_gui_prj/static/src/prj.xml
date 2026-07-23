@@ -312,6 +312,35 @@
                         </div>
                     </t>
                 </div>
+                <!-- ═══ RISIKO OG BUDSJETT ═══
+                     Fasitens `risk`-seksjon (demo_samlet_pc_mobil.html:910), som
+                     ligger UNDER tidslinjen. Vises i alle tre visningene: dommen
+                     gjelder prosjektet, ikke måten du ser oppgavene på.
+
+                     🔑 Fasitens egen begrunnelse for at flaten finnes:
+                     «med det Odoo ikke gir: … risiko når budsjett/tid er trangt».
+                     Tallet har Odoo. Dommen har det ikke. -->
+                <div t-if="state.risiko.length" class="fiq_prj_kort">
+                    <div class="fiq_prj_kh">
+                        <span>⚠ RISIKO OG BUDSJETT</span>
+                        <span class="fiq_prj_kc">
+                            <t t-esc="state.risiko.length"/> krever noe av deg
+                        </span>
+                    </div>
+                    <div t-foreach="state.risiko" t-as="r" t-key="r.id"
+                         class="fiq_prj_rrad"
+                         t-on-click="() => this.apneProsjekt(r.id)">
+                        <span class="fiq_prj_rnr" t-esc="r.nummer"/>
+                        <span class="fiq_prj_rnavn" t-esc="r.navn"/>
+                        <span class="fiq_prj_rbar">
+                            <i t-att-class="risikoKlasse(r.risiko)"
+                               t-att-style="'width:' + barBredde(r.forbruk_prosent) + '%'"/>
+                        </span>
+                        <span class="fiq_prj_rhvorfor" t-esc="r.risiko_hvorfor"/>
+                        <span class="fiq_prj_rmerke" t-att-class="risikoKlasse(r.risiko)"
+                              t-esc="risikoTekst(r.risiko)"/>
+                    </div>
+                </div>
             </t>
 
             <div class="fiq_prj_fot">
