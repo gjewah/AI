@@ -139,24 +139,48 @@ class TestKrLister(TransactionCase):
         self.assertNotIn(oppgave.id, [r["res_id"] for r in res["rader"]],
                          "en oppgave i foldet fase skal ikke stå som åpen")
 
-    def test_perioder_teller_uten_forfall_for_seg(self):
-        """«Uten forfall» er en egen bøtte — ikke en tom rad blant datoene."""
-        self.env["mail.activity"].create({
-            "res_model_id": self.env["ir.model"]._get_id("res.partner"),
-            "res_id": self.env.user.partner_id.id,
-            "activity_type_id": self.env.ref("mail.mail_activity_data_todo").id,
-            "user_id": self.env.uid,
-            "summary": "Uten forfall (test)",
-            "date_deadline": False,
-        })
+    def test_perioder_grupperer_paa_frist(self):
+        """Aktiviteter havner i riktig periode-bøtte etter fristen sin.
+
+        🔴 DENNE TESTEN PRØVDE OPPRINNELIG Å OPPRETTE EN AKTIVITET UTEN FRIST — og det
+        felte hele bygget: `mail.activity.date_deadline` har en NOT NULL-skranke i basen
+        i Odoo 19 (`NotNullViolation` ved `create` med `False`). Målt på dev-bygg
+        `35365875`, ikke antatt.
+
+        🔑 Lærdommen er en ny vri på port 6: «testen må opprette tilstanden den verner
+        mot» — men her KAN ikke tilstanden eksistere. En aktivitet uten frist finnes
+        ikke i denne modellen, så en test som lager en er ikke en streng test, den er
+        en umulig test. Den ville ha feilet for alltid, uansett hvor riktig koden var.
+
+        «Uten forfall»-grenen i `get_kr_akt_perioder` (`if not frist`) er likevel korrekt
+        og defensiv: `search_read` gir `False` for et tomt datofelt uansett skranke, og
+        andre modeller (project.task) HAR nullbar frist. Grenen testes derfor der den kan
+        oppstå — i `test_oppgave_uten_frist_krasjer_ikke` over — mens DENNE testen låser
+        det bøtte-logikken faktisk gjør for aktiviteter: gruppering på ekte frist.
+        """
+        Akt = self.env["mail.activity"]
+        modell = self.env["ir.model"]._get_id("res.partner")
+        todo = self.env.ref("mail.mail_activity_data_todo").id
+        pid = self.env.user.partner_id.id
+        # To aktiviteter denne uken → skal ende i SAMME bøtte med antall 2.
+        for n in ("A", "B"):
+            Akt.create({
+                "res_model_id": modell, "res_id": pid, "activity_type_id": todo,
+                "user_id": self.env.uid, "summary": "Denne uken " + n,
+                "date_deadline": fields.Date.context_today(self.Config),
+            })
         res = self.Config.get_kr_akt_perioder()
         self.assertIsInstance(res["botter"], list)
         for b in res["botter"]:
-            self.assertIn("key", b)
-            self.assertIn("navn", b)
-            self.assertIn("antall", b)
+            for felt in ("key", "navn", "antall"):
+                self.assertIn(felt, b)
             self.assertGreater(b["antall"], 0,
                                "en bøtte med 0 skal ikke vises i det hele tatt")
+        denne_uken = [b for b in res["botter"] if b["key"] == "denne_uken"]
+        self.assertTrue(denne_uken, "de to aktivitetene skulle gitt en «denne uken»-bøtte")
+        self.assertGreaterEqual(
+            denne_uken[0]["antall"], 2,
+            "begge aktivitetene skulle telt i samme bøtte")
 
     def test_krever_handling_teller_saker_ikke_kategorier(self):
         """`totalt` skal være antall SAKER — det var nettopp feilen i dagens kode.
