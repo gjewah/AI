@@ -2,7 +2,7 @@
 from odoo.tests import TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install")
+@tagged("post_install", "-at_install", "fiq")
 class TestAgaSatser(TransactionCase):
     """Satsene er juridisk bindende. Testene sjekker at TALLENE stemmer med
     Stortingsvedtak FOR-2025-12-18-2748 § 3 — ikke bare at koden kjoerer."""
@@ -44,7 +44,7 @@ class TestAgaSatser(TransactionCase):
         )
 
 
-@tagged("post_install", "-at_install")
+@tagged("post_install", "-at_install", "fiq")
 class TestAgaSone(TransactionCase):
 
     def setUp(self):
@@ -67,7 +67,7 @@ class TestAgaSone(TransactionCase):
             slip.fiq_aga_sats()
 
 
-@tagged("post_install", "-at_install")
+@tagged("post_install", "-at_install", "fiq")
 class TestAgaFribelop(TransactionCase):
     """Sone Ia er IKKE en ren sats — redusert sats gjelder bare til fribeloepet
     er brukt opp. Det er den vanskeligste delen av regelverket."""
@@ -141,7 +141,7 @@ class TestAgaFribelop(TransactionCase):
         )
 
 
-@tagged("post_install", "-at_install")
+@tagged("post_install", "-at_install", "fiq")
 class TestFribelopAarsskifte(TransactionCase):
     """Uten aarsskifte ville et foretak i sone Ia betalt full sats for resten
     av sin levetid etter foerste aar."""
@@ -182,7 +182,7 @@ class TestFribelopAarsskifte(TransactionCase):
         )
 
 
-@tagged("post_install", "-at_install")
+@tagged("post_install", "-at_install", "fiq")
 class TestStatusForpliktelser(TransactionCase):
     """🔑 Reist av 2.80 RGS: `mangler`-lista deres kunne ikke skille
     «ikke bygget» fra «bygget, men ingen data»."""
@@ -215,7 +215,7 @@ class TestStatusForpliktelser(TransactionCase):
         self.assertEqual(set(status), {"aga", "lonn", "feriepenger", "otp"})
 
 
-@tagged("post_install", "-at_install")
+@tagged("post_install", "-at_install", "fiq")
 class TestOdoo19Tilstander(TransactionCase):
     """🔴 Fanger Odoo 18-navn som ser riktige ut men aldri matcher.
 
@@ -247,7 +247,7 @@ class TestOdoo19Tilstander(TransactionCase):
         )
 
 
-@tagged("post_install", "-at_install")
+@tagged("post_install", "-at_install", "fiq")
 class TestLonnskostnad(TransactionCase):
     """Type 02 i den avtalte rekkefoelgen mot cashflow.
 
@@ -360,7 +360,7 @@ class TestLonnskostnad(TransactionCase):
         self.assertEqual(self._lonnslinjer(), [])
 
 
-@tagged("post_install", "-at_install")
+@tagged("post_install", "-at_install", "fiq")
 class TestFeriepenger(TransactionCase):
     """Type 03. Satsene er ferieloven § 10, verifisert mot lovdata + skatteetaten.
 
@@ -470,7 +470,7 @@ class TestFeriepenger(TransactionCase):
         self.assertNotEqual(g2025, g2026, "G endres årlig — begge må finnes.")
 
 
-@tagged("post_install", "-at_install")
+@tagged("post_install", "-at_install", "fiq")
 class TestOtp(TransactionCase):
     """Type 04 — obligatorisk tjenestepensjon (OTP-loven § 4).
 
@@ -562,7 +562,7 @@ class TestOtp(TransactionCase):
         self.assertEqual(self._param("no_otp_12g", aar=2026), 1638588)
 
 
-@tagged("post_install", "-at_install")
+@tagged("post_install", "-at_install", "fiq")
 class TestPersonvern(TransactionCase):
     """🔒 Re-identifiseringsgrensen. 2.80 RGS har bedt om aa bli holdt til den."""
 
@@ -588,7 +588,7 @@ class TestPersonvern(TransactionCase):
             )
 
 
-@tagged("post_install", "-at_install")
+@tagged("post_install", "-at_install", "fiq")
 class TestKontraktMedEkteData(TransactionCase):
     """🔴 Testene over itererer over en TOM liste og passerer uansett.
 
