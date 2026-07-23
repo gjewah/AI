@@ -594,7 +594,19 @@
                                             </span>
                                             <span class="fiq_hm_pcol">
                                                 <span class="fiq_hm_pnavn" t-esc="pr.navn"/>
-                                                <span class="fiq_hm_pstat" t-esc="pr.tekst"/>
+                                                <span class="fiq_hm_pstat">
+                                                    <t t-esc="pr.tekst"/>
+                                                    <!-- ARBEIDSSTED — etter statusen, dempet.
+                                                         Statusen svarer «kan jeg nå deg»,
+                                                         stedet «kan vi møtes fysisk». To ulike
+                                                         spørsmål, derfor ikke samme vekt.
+                                                         🏠 hjemme · 🏢 kontor · 📍 annet.
+                                                         Ikke satt = ingenting vises. -->
+                                                    <span t-if="pr.sted" class="fiq_hm_psted">
+                                                        <t t-esc="pr.sted_type === 'home' ? ' · 🏠 ' : (pr.sted_type === 'office' ? ' · 🏢 ' : ' · 📍 ')"/>
+                                                        <t t-esc="pr.sted"/>
+                                                    </span>
+                                                </span>
                                             </span>
                                             <span t-if="state.selPerson and state.selPerson.id === pr.id" class="fiq_hm_pvalgt" title="Selected person">✓</span>
                                             <!-- Kun MITT eget kort: sett merknad. Ingen kan merke en kollega. -->

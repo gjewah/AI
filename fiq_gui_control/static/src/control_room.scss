@@ -533,6 +533,11 @@
     // Grått er bevisst NØYTRALT — det skal ikke rope, for det melder ingen hendelse.
     .fiq_hm_pres_grey   { border-width: 1px; border-left-width: 5px; border-color: #94a3b8; background: #f1f5f9;
         .fiq_hm_pnavn { color: #334155; } .fiq_hm_pstat { color: #64748b; } }
+    // ARBEIDSSTED på statuslinja — dempet med vilje. Statusen svarer «kan jeg nå deg»,
+    // stedet «kan vi møtes fysisk». Stedet er tilleggsinformasjon, ikke en ny status —
+    // derfor lavere kontrast enn teksten det står ved siden av.
+    .fiq_hm_psted { opacity: .78; font-weight: 400; }
+
     // ── MERKNAD-BANNER over navnet (Gjermund 20.07: «kan det bare være et banner») ──────
     // Eget lag over kortet. Statusen under er UENDRET — farge og tilgjengelighet røres ikke.
     // Nøytral grå med vilje: dette er en OPPLYSNING, ikke et varsel. Roper den, leses den

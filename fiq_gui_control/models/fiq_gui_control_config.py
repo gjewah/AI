@@ -1252,12 +1252,42 @@ class FiqControlRoomConfig(models.Model):
             except Exception:
                 merknad, merknad_til = "", ""
 
+            # ── ARBEIDSSTED (punkt 04.04, Gjermund 20.07) ────────────────────────────
+            # «Sitter du på hjemmekontor i Drøbak og sjefen vil møtes fysisk på
+            # hovedkontoret, hjelper det ikke at du står som pålogget.»
+            # Samme for utearbeider: anleggsplassen ER arbeidsstedet.
+            #
+            # ⭐ ODOO EIER DETTE ALLEREDE — ikke et parallelt FIQ-felt.
+            # `hr.employee.work_location_id` + `work_location_name` + `work_location_type`
+            # (hr/models/hr_employee.py:173, hr_work_location.py:15).
+            # Typene er nøyaktig de Gjermund beskrev: home · office · other.
+            #
+            # 🛑 IKKE SPORING. Dette er stedet den ansatte selv har registrert i HR —
+            # ikke en måling av hvor telefonen befinner seg. Frivillig, gjenkallbart,
+            # og allerede synlig i Odoo for den som har tilgang. Vi VISER det, samler
+            # det ikke inn. GPS-sporing er en annen sak med langt høyere terskel.
+            sted, sted_type = "", ""
+            try:
+                with self.env.cr.savepoint():
+                    emp = self.env["hr.employee"].sudo().search(
+                        [("user_id", "=", u.id)], limit=1)
+                    if emp and "work_location_name" in emp._fields:
+                        sted = (emp.work_location_name or "")[:40]
+                    if emp and "work_location_type" in emp._fields:
+                        sted_type = emp.work_location_type or ""
+            except Exception:
+                # hr er valgfri, og feltene kom i ulike versjoner. Mangler de, vises
+                # ingen sted — ikke en krasj.
+                sted, sted_type = "", ""
+
             out.append({
                 "id": u.id,
                 "partner_id": u.partner_id.id,
                 "navn": name,
                 "merknad": merknad,
                 "merknad_til": merknad_til,
+                "sted": sted,
+                "sted_type": sted_type,
                 "er_meg": u.id == self.env.uid,
                 "initialer": initialer,
                 "status": im,        # bakoverkomp (dot)
