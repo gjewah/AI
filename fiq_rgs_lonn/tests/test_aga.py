@@ -271,3 +271,125 @@ class TestPersonvern(TransactionCase):
                 paakrevd - set(linje), set(),
                 "Kontrakten med 2.80 RGS krever alle sju feltene.",
             )
+
+
+@tagged("post_install", "-at_install")
+class TestKontraktMedEkteData(TransactionCase):
+    """🔴 Testene over itererer over en TOM liste og passerer uansett.
+
+    2.80 RGS meldte 23.07 at 26 gronne tester skjulte en DOED kobling: de
+    testet at `mangler` hadde riktig FORM, ingen sammenlignet svaret med
+    2.20s faktiske status. «Virker, men galt» er den verste klassen i dette
+    loepet.
+
+    Samme svakhet var her: uten loennsslipper i basen beviser test_11 og
+    test_12 ingenting. Denne klassen lager ekte data foerst.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.company = self.env["res.company"].create({
+            "name": "Kontraktfirma",
+            "fiq_aga_sone": "2",          # 10,6 % — ingen fribeloepsmekanikk
+        })
+        struktur = self.env.ref("fiq_rgs_lonn.hr_payroll_structure_no_employee")
+        # Tre ansatte: under grensen ville linja blitt utelatt (GDPR).
+        self.slipper = self.env["hr.payslip"]
+        for i in range(3):
+            ansatt = self.env["hr.employee"].create({
+                "name": "Testansatt %s" % i,
+                "company_id": self.company.id,
+            })
+            slip = self.env["hr.payslip"].create({
+                "name": "Slipp %s" % i,
+                "employee_id": ansatt.id,
+                "company_id": self.company.id,
+                "date_from": "2026-01-01",
+                "date_to": "2026-01-31",
+                "struct_id": struktur.id,
+            })
+            # Loennslinjer MAA finnes — uten dem er grunnlaget 0 og aggregatet
+            # gir ingen linjer. Det var nettopp det testene avslørte foerste
+            # gang: beregningen leste linjer som ingenting skrev.
+            self.env["hr.payslip.line"].create({
+                "name": "Grunnlønn",
+                "code": "BASIC",
+                # salary_rule_id er PAAKREVD (NOT NULL i hr_payslip_line) —
+                # en loennslinje maa peke paa loennsarten som skapte den.
+                "salary_rule_id": self.env.ref("fiq_rgs_lonn.rule_no_basic").id,
+                "category_id": self.env.ref("hr_payroll.BASIC").id,
+                "slip_id": slip.id,
+                "amount": 40000.0,
+                "quantity": 1.0,
+                "rate": 100.0,
+            })
+            self.slipper |= slip
+
+    def _linjer(self):
+        return self.env["fiq.lonnsforpliktelse"].with_company(
+            self.company
+        ).hent_lonnsforpliktelser("2026-01-01", "2026-12-31")
+
+    def test_21_draft_slipper_gir_ingen_linjer(self):
+        """Utkast er ikke en forpliktelse. Kommer de med, blaeses cashflow opp."""
+        self.assertEqual(self._linjer(), [])
+
+    def test_22_validerte_slipper_gir_linjer_merket_planlagt(self):
+        """🔑 Testen som ville fanget Odoo 18-tilstanden.
+
+        Med filteret ('done','paid','verify') ga dette 0 linjer — stille, uten
+        feilmelding. Her feiler den hoeylytt i stedet.
+        """
+        self.slipper.write({"state": "validated"})
+        linjer = self._linjer()
+        self.assertTrue(
+            linjer,
+            "Validerte lønnskjøringer nådde ikke cashflow. Sjekk at "
+            "tilstandsnavnene i filteret finnes i denne Odoo-versjonen.",
+        )
+        for linje in linjer:
+            self.assertEqual(
+                linje["sikkerhet"], "planlagt",
+                "Bekreftet, men ikke utbetalt lønn er PLANLAGT — ikke bokført.",
+            )
+
+    def test_23_utbetalte_slipper_er_bokfort(self):
+        self.slipper.write({"state": "paid"})
+        for linje in self._linjer():
+            self.assertEqual(linje["sikkerhet"], "bokfort")
+
+    def test_24_alle_sju_feltene_paa_EKTE_linjer(self):
+        """Det test_12 skulle bevist, men ikke gjorde uten data."""
+        self.slipper.write({"state": "paid"})
+        linjer = self._linjer()
+        self.assertTrue(linjer, "Ingen linjer å teste kontrakten mot.")
+        paakrevd = {"type", "label", "forfall", "belop", "sikkerhet", "kilde", "periode"}
+        for linje in linjer:
+            self.assertEqual(paakrevd - set(linje), set())
+            self.assertEqual(linje["kilde"], "Odoo")
+            self.assertEqual(linje["forfall"].day, 15, "AGA forfaller den 15.")
+
+    def test_25_status_og_linjer_er_enige(self):
+        """🤝 Motstykket til RGS' kryss-test: sier status at vi leverer,
+        MÅ det finnes linjer — og omvendt. Spriker de, er kontrakten brutt
+        selv om begge sider ser riktige ut hver for seg."""
+        self.slipper.write({"state": "paid"})
+        modell = self.env["fiq.lonnsforpliktelse"].with_company(self.company)
+        status = modell.status_forpliktelser("2026-01-01", "2026-12-31")
+        linjer = [l for l in self._linjer() if l["type"] == "aga"]
+        self.assertEqual(
+            bool(linjer), status["aga"]["levert"],
+            "status_forpliktelser() sier «%s», men aggregatet ga %s AGA-linjer."
+            % (status["aga"]["levert"], len(linjer)),
+        )
+
+    def test_26_faerre_enn_tre_ansatte_gir_ingen_linje(self):
+        """🔒 Re-identifiseringsgrensen, testet med EKTE data."""
+        self.slipper.write({"state": "paid"})
+        self.assertTrue(self._linjer(), "Tre ansatte skal gi linjer.")
+        # Fjern én slipp -> to ansatte igjen -> linja skal forsvinne HELT.
+        self.slipper[0].unlink()
+        self.assertEqual(
+            self._linjer(), [],
+            "En sum for under tre ansatte er personopplysning selv uten navn.",
+        )
