@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from odoo import fields, models
 
 
@@ -50,10 +49,12 @@ class HrPayslip(models.Model):
         # Bare den DELEN av besparelsen som faktisk daekkes av fribeloepet
         # skal telle — resten er allerede betalt med full sats.
         besparelse = grunnlag * (full_sats - sats) / 100.0
-        self.company_id.sudo().write({
-            "fiq_aga_fribelop_brukt": brukt + min(besparelse, gjenstaaende),
-            "fiq_aga_fribelop_aar": aar,
-        })
+        self.company_id.sudo().write(
+            {
+                "fiq_aga_fribelop_brukt": brukt + min(besparelse, gjenstaaende),
+                "fiq_aga_fribelop_aar": aar,
+            }
+        )
 
     # ==================================================================
     # FERIEPENGER — ferieloven § 10
@@ -117,8 +118,9 @@ class HrPayslip(models.Model):
         # Over 60: forhoeyet sats kun opp til 6 G.
         tak = self._rule_parameter("no_feriepenger_6g")
         satser = self._rule_parameter("no_feriepenger_satser")
-        ordinaer = satser["fem_uker" if self.version_id.fiq_ferie_fem_uker
-                          else "ordinaer"]
+        ordinaer = satser[
+            "fem_uker" if self.version_id.fiq_ferie_fem_uker else "ordinaer"
+        ]
 
         if grunnlag <= tak:
             return grunnlag * sats / 100.0
@@ -130,8 +132,7 @@ class HrPayslip(models.Model):
     def fiq_otp_sats(self):
         """Selskapets OTP-sats, eller lovens minstekrav om ingen er satt."""
         self.ensure_one()
-        return self.company_id.fiq_otp_sats or self._rule_parameter(
-            "no_otp_minstesats")
+        return self.company_id.fiq_otp_sats or self._rule_parameter("no_otp_minstesats")
 
     def fiq_otp_omfattet(self):
         """Om denne ansatte skal ha pensjonsinnskudd.
@@ -194,7 +195,11 @@ class HrPayslip(models.Model):
         se `fiq_aga_sats`.
         """
         self.ensure_one()
-        return self.version_id.fiq_aga_sone_override or self.company_id.fiq_aga_sone or None
+        return (
+            self.version_id.fiq_aga_sone_override
+            or self.company_id.fiq_aga_sone
+            or None
+        )
 
     def fiq_aga_sats(self):
         """Satsen i prosent for denne loennsslippen, slaatt opp per dato.
@@ -212,16 +217,16 @@ class HrPayslip(models.Model):
         sone = self.fiq_aga_sone()
         if not sone:
             raise ValueError(
-                "Sone for arbeidsgiveravgift mangler for %s. Sett sonen paa "
+                f"Sone for arbeidsgiveravgift mangler for {self.company_id.display_name}. Sett sonen paa "
                 "selskapet, eller paa ansattes kontrakt ved ambulerende arbeid."
-                % (self.company_id.display_name,)
             )
 
         satser = self._rule_parameter("no_aga_sonesatser")
         if sone not in satser:
             raise ValueError(
-                "Ukjent sone %r for arbeidsgiveravgift. Kjente soner: %s"
-                % (sone, ", ".join(sorted(satser)))
+                "Ukjent sone {!r} for arbeidsgiveravgift. Kjente soner: {}".format(
+                    sone, ", ".join(sorted(satser))
+                )
             )
         return satser[sone]
 
@@ -234,7 +239,9 @@ class HrPayslip(models.Model):
         """
         self.ensure_one()
         return sum(
-            self.line_ids.filtered(lambda l: l.category_id.code == "BASIC").mapped("total")
+            self.line_ids.filtered(lambda l: l.category_id.code == "BASIC").mapped(
+                "total"
+            )
         )
 
     def fiq_aga_belop(self, grunnlag=None):
@@ -297,7 +304,8 @@ class HrPayslip(models.Model):
 
         fribelop = self._rule_parameter("no_aga_fribelop")
         gjenstaaende = self.company_id.fiq_aga_fribelop_gjenstaaende(
-            fribelop, self._fiq_aga_aar(),
+            fribelop,
+            self._fiq_aga_aar(),
         )
 
         # Besparelsen ved redusert sats — det er DEN som maales mot fribeloepet,
@@ -317,6 +325,5 @@ class HrPayslip(models.Model):
         grunnlag_full = grunnlag - grunnlag_redusert
 
         return (
-            grunnlag_redusert * sats / 100.0
-            + grunnlag_full * full_sats / 100.0
+            grunnlag_redusert * sats / 100.0 + grunnlag_full * full_sats / 100.0
         ), "delvis"

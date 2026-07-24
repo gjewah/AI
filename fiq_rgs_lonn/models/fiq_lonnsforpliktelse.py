@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from dateutil.relativedelta import relativedelta
-
 from odoo import api, models
 
 # 🔒 GDPR — RE-IDENTIFISERINGSGRENSE. Ikke en preferanse, en hard regel.
@@ -18,8 +15,17 @@ AGA_TERMIN_MND = {1: 3, 2: 5, 3: 7, 4: 9, 5: 11, 6: 1}
 # `periode` skal vaere MENNESKELESBAR, aldri en maskindato (kontrakt-krav fra
 # 2.80 RGS). «August 2026» — ikke «2026-08».
 MAANEDER = {
-    1: "Januar", 2: "Februar", 3: "Mars", 4: "April", 5: "Mai", 6: "Juni",
-    7: "Juli", 8: "August", 9: "September", 10: "Oktober", 11: "November",
+    1: "Januar",
+    2: "Februar",
+    3: "Mars",
+    4: "April",
+    5: "Mai",
+    6: "Juni",
+    7: "Juli",
+    8: "August",
+    9: "September",
+    10: "Oktober",
+    11: "November",
     12: "Desember",
 }
 
@@ -72,12 +78,14 @@ class FiqLonnsforpliktelse(models.AbstractModel):
         standard og merker linjene `estimat` — de er ikke bokfoerte krav slik
         AGA-terminene er.
         """
-        slipper = self.env["hr.payslip"].search([
-            ("company_id", "=", company.id),
-            ("state", "in", ("validated", "paid")),
-            ("date_to", ">=", fra_dato),
-            ("date_to", "<=", til_dato),
-        ])
+        slipper = self.env["hr.payslip"].search(
+            [
+                ("company_id", "=", company.id),
+                ("state", "in", ("validated", "paid")),
+                ("date_to", ">=", fra_dato),
+                ("date_to", "<=", til_dato),
+            ]
+        )
 
         per_kvartal = {}
         for slip in slipper:
@@ -88,12 +96,14 @@ class FiqLonnsforpliktelse(models.AbstractModel):
                 continue
             kvartal = (slip.date_to.month - 1) // 3 + 1
             data = per_kvartal.setdefault(
-                (slip.date_to.year, kvartal), {"belop": 0.0, "ansatte": set()},
+                (slip.date_to.year, kvartal),
+                {"belop": 0.0, "ansatte": set()},
             )
             data["belop"] += innskudd
             data["ansatte"].add(slip.employee_id.id)
 
         from datetime import date
+
         linjer = []
         for (aar, kvartal), data in sorted(per_kvartal.items()):
             if len(data["ansatte"]) < MIN_ANSATTE or not data["belop"]:
@@ -104,15 +114,17 @@ class FiqLonnsforpliktelse(models.AbstractModel):
             if forfall_mnd > 12:
                 forfall_mnd, forfall_aar = 1, aar + 1
 
-            linjer.append({
-                "type": "otp",
-                "label": "Tjenestepensjon",
-                "forfall": date(forfall_aar, forfall_mnd, 15),
-                "belop": data["belop"],
-                "sikkerhet": "estimat",
-                "kilde": "Odoo",
-                "periode": "Q%s %s" % (kvartal, aar),
-            })
+            linjer.append(
+                {
+                    "type": "otp",
+                    "label": "Tjenestepensjon",
+                    "forfall": date(forfall_aar, forfall_mnd, 15),
+                    "belop": data["belop"],
+                    "sikkerhet": "estimat",
+                    "kilde": "Odoo",
+                    "periode": f"Q{kvartal} {aar}",
+                }
+            )
         return linjer
 
     def _feriepenger_forpliktelser(self, fra_dato, til_dato, company):
@@ -127,12 +139,14 @@ class FiqLonnsforpliktelse(models.AbstractModel):
         KUN summen. Fordelingen mellom satsene forlater aldri HR — den ville
         roepet hvem som er over 60.
         """
-        slipper = self.env["hr.payslip"].search([
-            ("company_id", "=", company.id),
-            ("state", "in", ("validated", "paid")),
-            ("date_to", ">=", fra_dato),
-            ("date_to", "<=", til_dato),
-        ])
+        slipper = self.env["hr.payslip"].search(
+            [
+                ("company_id", "=", company.id),
+                ("state", "in", ("validated", "paid")),
+                ("date_to", ">=", fra_dato),
+                ("date_to", "<=", til_dato),
+            ]
+        )
 
         per_aar = {}
         for slip in slipper:
@@ -146,23 +160,26 @@ class FiqLonnsforpliktelse(models.AbstractModel):
                 data["bokfort"] = False
 
         from datetime import date
+
         linjer = []
         for aar, data in sorted(per_aar.items()):
             if len(data["ansatte"]) < MIN_ANSATTE or not data["belop"]:
                 continue
-            linjer.append({
-                "type": "feriepenger",
-                "label": "Feriepenger",
-                # Utbetales normalt i juni AARET ETTER opptjening
-                # (ferieloven § 11: siste vanlige loenningsdag foer ferien).
-                "forfall": date(aar + 1, 6, 15),
-                "belop": data["belop"],
-                # Avsetningen er alltid et ESTIMAT foer ferieaaret: grunnlaget
-                # vokser med hver loennskjoering ut opptjeningsaaret.
-                "sikkerhet": "estimat",
-                "kilde": "Odoo",
-                "periode": "Opptjent %s" % aar,
-            })
+            linjer.append(
+                {
+                    "type": "feriepenger",
+                    "label": "Feriepenger",
+                    # Utbetales normalt i juni AARET ETTER opptjening
+                    # (ferieloven § 11: siste vanlige loenningsdag foer ferien).
+                    "forfall": date(aar + 1, 6, 15),
+                    "belop": data["belop"],
+                    # Avsetningen er alltid et ESTIMAT foer ferieaaret: grunnlaget
+                    # vokser med hver loennskjoering ut opptjeningsaaret.
+                    "sikkerhet": "estimat",
+                    "kilde": "Odoo",
+                    "periode": f"Opptjent {aar}",
+                }
+            )
         return linjer
 
     def _lonn_forpliktelser(self, fra_dato, til_dato, company):
@@ -176,12 +193,14 @@ class FiqLonnsforpliktelse(models.AbstractModel):
         ÉN LINJE PER FORFALL — loenn utbetales den 15., og hver maaned er en
         egen utbetaling. En sum for hele aaret kan ikke plasseres i en kurve.
         """
-        slipper = self.env["hr.payslip"].search([
-            ("company_id", "=", company.id),
-            ("state", "in", ("validated", "paid")),
-            ("date_to", ">=", fra_dato),
-            ("date_to", "<=", til_dato),
-        ])
+        slipper = self.env["hr.payslip"].search(
+            [
+                ("company_id", "=", company.id),
+                ("state", "in", ("validated", "paid")),
+                ("date_to", ">=", fra_dato),
+                ("date_to", "<=", til_dato),
+            ]
+        )
 
         per_maaned = {}
         for slip in slipper:
@@ -200,15 +219,17 @@ class FiqLonnsforpliktelse(models.AbstractModel):
             if len(data["ansatte"]) < MIN_ANSATTE or not data["belop"]:
                 continue
 
-            linjer.append({
-                "type": "lonn",
-                "label": "Lønnskjøring",
-                "forfall": self._lonn_forfall(aar, mnd),
-                "belop": data["belop"],
-                "sikkerhet": "bokfort" if data["bokfort"] else "planlagt",
-                "kilde": "Odoo",
-                "periode": "%s %s" % (MAANEDER[mnd], aar),
-            })
+            linjer.append(
+                {
+                    "type": "lonn",
+                    "label": "Lønnskjøring",
+                    "forfall": self._lonn_forfall(aar, mnd),
+                    "belop": data["belop"],
+                    "sikkerhet": "bokfort" if data["bokfort"] else "planlagt",
+                    "kilde": "Odoo",
+                    "periode": f"{MAANEDER[mnd]} {aar}",
+                }
+            )
         return linjer
 
     def _lonn_forfall(self, aar, mnd):
@@ -220,6 +241,7 @@ class FiqLonnsforpliktelse(models.AbstractModel):
         likviditeten, forklarlig for leseren.
         """
         from datetime import date
+
         return date(aar + 1, 1, 15) if mnd == 12 else date(aar, mnd + 1, 15)
 
     @api.model
@@ -322,16 +344,18 @@ class FiqLonnsforpliktelse(models.AbstractModel):
         ÉN LINJE PER FORFALL — ikke én sum per type. En kurve kan ikke plassere
         «AGA totalt 550 000»; den maa vite naar.
         """
-        slipper = self.env["hr.payslip"].search([
-            ("company_id", "=", company.id),
-            # Odoo 19-tilstander: draft | validated | paid | cancel.
-            # 🔴 IKKE 'done'/'verify' — de er Odoo 18-navn. Verifisert i
-            # hr_payroll/models/hr_payslip.py. Med de gamle navnene ville
-            # VALIDERTE loennskjoeringer aldri naadd cashflow.
-            ("state", "in", ("validated", "paid")),
-            ("date_to", ">=", fra_dato),
-            ("date_to", "<=", til_dato),
-        ])
+        slipper = self.env["hr.payslip"].search(
+            [
+                ("company_id", "=", company.id),
+                # Odoo 19-tilstander: draft | validated | paid | cancel.
+                # 🔴 IKKE 'done'/'verify' — de er Odoo 18-navn. Verifisert i
+                # hr_payroll/models/hr_payslip.py. Med de gamle navnene ville
+                # VALIDERTE loennskjoeringer aldri naadd cashflow.
+                ("state", "in", ("validated", "paid")),
+                ("date_to", ">=", fra_dato),
+                ("date_to", "<=", til_dato),
+            ]
+        )
 
         per_termin = {}
         for slip in slipper:
@@ -379,7 +403,7 @@ class FiqLonnsforpliktelse(models.AbstractModel):
                 "belop": data["belop"],
                 "sikkerhet": "bokfort" if data["bokfort"] else "planlagt",
                 "kilde": "Odoo",
-                "periode": "Termin %s %s" % (termin, aar),
+                "periode": f"Termin {termin} {aar}",
             }
 
             # VALGFRITT felt — forklarer hvorfor beloepet HOPPER i sone Ia/IVa.
@@ -398,8 +422,10 @@ class FiqLonnsforpliktelse(models.AbstractModel):
     def _fribelop_merknad(self, statuser):
         """Menneskelesbar forklaring paa fribeloeps-hoppet, eller None."""
         if "delvis" in statuser:
-            return ("Fribeløpet ble brukt opp i denne terminen — "
-                    "full sats for den overskytende delen")
+            return (
+                "Fribeløpet ble brukt opp i denne terminen — "
+                "full sats for den overskytende delen"
+            )
         if "oppbrukt" in statuser:
             return "Fribeløpet er brukt opp — full sats fra og med denne terminen"
         return None
@@ -407,4 +433,5 @@ class FiqLonnsforpliktelse(models.AbstractModel):
     def _forfallsdato(self, aar, mnd):
         """Den 15. i maaneden — AGA-terminens forfallsdag."""
         from datetime import date
+
         return date(aar, mnd, 15)
