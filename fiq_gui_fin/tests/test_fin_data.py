@@ -381,44 +381,63 @@ class TestFinData(TransactionCase):
         Testen: be om et firma brukeren IKKE har tilgang til, og verifiser at
         vi ikke får det firmaets tall.
         """
-        annet = self.env["res.company"].create({"name": "FIQ Testfirma Uten Tilgang"})
+        # 🔴 TO GANGER RETTET — historikken er verdt å kjenne, for begge feilene
+        # var i TESTEN, ikke i koden:
+        #
+        # 1. Første utgave opprettet et nytt firma og antok at brukeren ikke
+        #    hadde tilgang. Odoo 19 legger et NYOPPRETTET firma automatisk til
+        #    den som oppretter det → `54 unexpectedly found in [54, 3, 2, 4, 1]`.
+        #    Testen kom aldri til å måle lekkasje.
+        # 2. Andre utgave fjernet koblingen, men prøvde så å BOKFØRE en faktura
+        #    i det tomme firmaet → `No journal could be found in company
+        #    "FIQ Testfirma Uten Tilgang" for any of those types: sale`.
+        #    Et nyopprettet firma har verken kontoplan eller journaler.
+        #
+        # Løsningen er å ikke bygge et firma i det hele tatt: bruk et som ALT
+        # finnes med regnskapsoppsett, og fjern brukerens tilgang til det.
+        # Testen måler lekkasje — ikke Odoos firmaoppsett.
+        eget = self.env.company
+        andre = self.env["res.company"].search([("id", "!=", eget.id)], limit=1)
+        if not andre:
+            self.skipTest("Basen har bare ett firma — kryss-firma kan ikke måles")
 
-        # 🔴 RETTET 24.07: Odoo 19 legger et NYOPPRETTET firma automatisk til den
-        # brukeren som oppretter det. Første utgave antok at et nytt firma var
-        # utilgjengelig — det er det ikke når du selv lager det, og testen feilet
-        # på sin egen forutsetning (`54 unexpectedly found in [54, 3, 2, 4, 1]`)
-        # uten å måle lekkasje i det hele tatt.
-        self.env.user.company_ids = [(3, annet.id)]  # fjern koblingen igjen
+        # Ta bort brukerens tilgang til det andre firmaet for denne testen.
+        self.env.user.company_ids = [(3, andre.id)]
 
-        # Forutsetningssjekk — den skal STÅ. Den fanget nettopp at oppsettet ikke
-        # holdt; uten den ville testen sett grønn ut mens den målte ingenting.
+        # Forutsetningssjekk — skal STÅ. Den fanget feil 1; uten den ville
+        # testen sett grønn ut mens den målte ingenting.
         self.assertNotIn(
-            annet.id,
+            andre.id,
             self.env.user.company_ids.ids,
             "Forutsetningen holder ikke: brukeren har fortsatt tilgang til firmaet",
         )
 
+        # Faktura i DET ANDRE firmaet — som har journaler, siden det er ekte.
         kunde = self._kunde("FIQ Test Annet Firma AS")
-        faktura = self.Move.with_company(annet).create(
-            {
-                "move_type": "out_invoice",
-                "partner_id": kunde.id,
-                "invoice_date": self.i_dag,
-                "invoice_date_due": fields.Date.add(self.i_dag, days=-90),
-                "company_id": annet.id,
-                "invoice_line_ids": [
-                    (
-                        0,
-                        0,
-                        {
-                            "product_id": self.produkt.id,
-                            "quantity": 1,
-                            "price_unit": 80000.0,
-                            "tax_ids": [(6, 0, [])],
-                        },
-                    )
-                ],
-            }
+        faktura = (
+            self.Move.with_company(andre)
+            .with_context(allowed_company_ids=[andre.id])
+            .create(
+                {
+                    "move_type": "out_invoice",
+                    "partner_id": kunde.id,
+                    "invoice_date": self.i_dag,
+                    "invoice_date_due": fields.Date.add(self.i_dag, days=-90),
+                    "company_id": andre.id,
+                    "invoice_line_ids": [
+                        (
+                            0,
+                            0,
+                            {
+                                "product_id": self.produkt.id,
+                                "quantity": 1,
+                                "price_unit": 80000.0,
+                                "tax_ids": [(6, 0, [])],
+                            },
+                        )
+                    ],
+                }
+            )
         )
         faktura.action_post()
 
