@@ -23,6 +23,7 @@ from urllib.parse import quote
 # `markupsafe.escape` brukes av odoo/tools/translate.py:33 og er det samme som
 # `odoo.tools.misc.html_escape` (misc.py:1305). Vi tar den direkte fra markupsafe.
 from markupsafe import escape
+
 from odoo import api, fields, models
 
 # Basisfilter: ekte kommunikasjon PÅ et element, ikke Discuss-kanaler.
@@ -1252,14 +1253,16 @@ class FiqMeldingssenterData(models.AbstractModel):
         """«Siste hos oss»: nyeste salg/oppgaver/helpdesk knyttet til kontakten. Defensivt."""
         out = []
         if "crm.lead" in self.env:
-            for l in self.env["crm.lead"].search(
+            for lead in self.env["crm.lead"].search(
                 [("partner_id", "=", partner.id)], order="write_date desc", limit=3
             ):
                 out.append(
                     {
                         "type": "salg",
-                        "navn": l.name or "",
-                        "dato": l.write_date.strftime("%d.%m") if l.write_date else "",
+                        "navn": lead.name or "",
+                        "dato": lead.write_date.strftime("%d.%m")
+                        if lead.write_date
+                        else "",
                     }
                 )
         for t in self.env["project.task"].search(
