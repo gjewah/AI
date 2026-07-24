@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Datakilde for AI GUI Regnskap (2.80) — likviditets-grunnbildet.
 
 Rolle bak, flate foran: dette er VISNINGEN av «0.00 2.80 AI Regnskap-Rådgiver».
