@@ -1,6 +1,6 @@
 {
     "name": "FIQ Relations",
-    "version": "19.0.1.8.0",
+    "version": "19.0.1.8.1",
     "summary": "Typed, directed relations between contacts, companies, properties and "
     "projects. One person, many affiliations - without duplicate contacts.",
     "description": """

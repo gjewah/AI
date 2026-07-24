@@ -6,6 +6,7 @@ Odoo-native first: these are ordinary Odoo fields on res.partner. They are reada
 and editable in the standard partner form, with no dependency on the Control room.
 The Control room only *reads* them.
 """
+
 from odoo import api, fields, models
 
 # Relation of a partner to the FIQ AI platform. Plain customer by default: a partner
@@ -34,15 +35,15 @@ class ResPartner(models.Model):
         default="customer",
         index=True,
         help="What this partner is to the FIQ AI platform. A plain customer uses the "
-             "platform for itself. An agreement partner delivers services to other "
-             "customers under an agreement. Classification only — it grants no access.",
+        "platform for itself. An agreement partner delivers services to other "
+        "customers under an agreement. Classification only — it grants no access.",
     )
     fiq_relation_level = fields.Selection(
         selection=RELATION_LEVELS,
         string="Partner level",
         help="How deep the service relationship is. Only meaningful for agreement "
-             "partners. Grants no access on its own: cross-company access requires a "
-             "separate two-party agreement per company and domain.",
+        "partners. Grants no access on its own: cross-company access requires a "
+        "separate two-party agreement per company and domain.",
     )
     fiq_brand_logo = fields.Binary(
         string="Brand logo",

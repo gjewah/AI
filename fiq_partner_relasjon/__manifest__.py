@@ -3,7 +3,7 @@
 {
     "name": "FIQ Partner Relations",
     "summary": "Native partner/company relation type, level and branding source "
-               "(works without the Control room)",
+    "(works without the Control room)",
     "description": """
 FIQ Partner Relations
 =====================
@@ -27,7 +27,7 @@ Two concerns, one model area (res.partner / res.company):
    - `fiq_brand_logo`: resolves the logo to use, preferring the native company/partner
      image, with an optional Control-room-specific override for dark backgrounds.
 """,
-    "version": "19.0.1.1.1",
+    "version": "19.0.1.1.2",
     "author": "FIQ AS",
     "website": "https://www.fiq.no",
     "license": "OPL-1",

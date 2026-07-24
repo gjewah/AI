@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tester for fiq_partner_relasjon (relasjonstype/-nivå + merkelogo-kilde).
 
 Hvorfor testene finnes: modulen hadde NULL tester. `--test-enable` ga da
@@ -23,12 +22,11 @@ Testene lager SIN EGEN tilstand (egne partnere) og leser aldri bare eksisterende
 data — et treff på en tilfeldig eksisterende rad beviser ingenting.
 """
 
-from odoo.tests import TransactionCase, tagged
-
 from odoo.addons.fiq_partner_relasjon.models.res_partner import (
     RELATION_LEVELS,
     RELATION_TYPES,
 )
+from odoo.tests import TransactionCase, tagged
 
 
 # post_install er PÅKREVD her, ikke en preferanse.
@@ -43,7 +41,6 @@ from odoo.addons.fiq_partner_relasjon.models.res_partner import (
 # Odoo-kjernen gjør det samme: project/tests/test_project_mail_features.py:9.
 @tagged("post_install", "-at_install", "fiq_partner")
 class TestFiqPartnerRelasjon(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -83,8 +80,7 @@ class TestFiqPartnerRelasjon(TransactionCase):
         """
         for value, _label in RELATION_TYPES:
             with self.subTest(relation_type=value):
-                partner = self._partner(
-                    "Type %s" % value, fiq_relation_type=value)
+                partner = self._partner(f"Type {value}", fiq_relation_type=value)
                 self.assertEqual(partner.fiq_relation_type, value)
                 # Lest på nytt fra basen, ikke bare fra cachen.
                 partner.invalidate_recordset(["fiq_relation_type"])
@@ -101,7 +97,7 @@ class TestFiqPartnerRelasjon(TransactionCase):
         for value, _label in RELATION_LEVELS:
             with self.subTest(level=value):
                 partner = self._partner(
-                    "Nivaa %s" % value,
+                    f"Nivaa {value}",
                     fiq_relation_type="agreement_partner",
                     fiq_relation_level=value,
                 )
@@ -161,10 +157,11 @@ class TestFiqPartnerRelasjon(TransactionCase):
     def test_onchange_haandterer_flere_poster(self):
         """Metoden itererer over self — den må virke på et recordset, ikke bare én."""
         a = self._partner(
-            "Flere A", fiq_relation_type="customer", fiq_relation_level="1")
+            "Flere A", fiq_relation_type="customer", fiq_relation_level="1"
+        )
         b = self._partner(
-            "Flere B", fiq_relation_type="agreement_partner",
-            fiq_relation_level="3")
+            "Flere B", fiq_relation_type="agreement_partner", fiq_relation_level="3"
+        )
         (a | b)._onchange_fiq_relation_type()
         self.assertFalse(a.fiq_relation_level)
         self.assertEqual(b.fiq_relation_level, "3")
@@ -175,11 +172,13 @@ class TestFiqPartnerRelasjon(TransactionCase):
         En compute/onchange som bare er prøvd på lagrede poster kan feile i
         skjemaet uten at noen enhetstest merker det.
         """
-        ny = self.Partner.new({
-            "name": "Ulagret",
-            "fiq_relation_type": "agreement_partner",
-            "fiq_relation_level": "3",
-        })
+        ny = self.Partner.new(
+            {
+                "name": "Ulagret",
+                "fiq_relation_type": "agreement_partner",
+                "fiq_relation_level": "3",
+            }
+        )
         ny.fiq_relation_type = "customer"
         ny._onchange_fiq_relation_type()
         self.assertFalse(ny.fiq_relation_level)
@@ -331,13 +330,17 @@ class TestFiqPartnerRelasjon(TransactionCase):
             ("id", "in", (egen | fremmed).ids),
         ]
         # Søk med KUN eget firma i allowed_company_ids: den fremmede skal falle ut.
-        funnet = self.Partner.with_context(
-            allowed_company_ids=[self.env.company.id]
-        ).with_company(self.env.company).search(
-            domene + [
-                "|", ("company_id", "=", False),
-                ("company_id", "in", [self.env.company.id]),
-            ]
+        funnet = (
+            self.Partner.with_context(allowed_company_ids=[self.env.company.id])
+            .with_company(self.env.company)
+            .search(
+                domene
+                + [
+                    "|",
+                    ("company_id", "=", False),
+                    ("company_id", "in", [self.env.company.id]),
+                ]
+            )
         )
         self.assertIn(egen, funnet)
         self.assertNotIn(fremmed, funnet, "partner fra annet firma lekket inn i søket")
@@ -405,5 +408,6 @@ class TestFiqPartnerRelasjon(TransactionCase):
         annet = self.Company.search([("id", "!=", self.env.company.id)], limit=1)
         if not annet:
             self.skipTest(
-                "trenger et firma nr. 2; oppretting er blokkert paa denne basen")
+                "trenger et firma nr. 2; oppretting er blokkert paa denne basen"
+            )
         return annet

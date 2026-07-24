@@ -9,6 +9,7 @@ should be the exception, not the thing you have to fill in for every company.
 Hence: the native company logo is the source, and a Control-room-specific override
 only wins when someone deliberately uploaded one.
 """
+
 from odoo import api, fields, models
 
 
@@ -19,7 +20,7 @@ class ResCompany(models.Model):
         string="Brand logo",
         compute="_compute_fiq_brand_logo",
         help="The logo to display for this company: the Control room override when set, "
-             "otherwise the company's own logo.",
+        "otherwise the company's own logo.",
     )
 
     @api.depends("logo")
