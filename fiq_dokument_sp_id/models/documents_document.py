@@ -4,7 +4,7 @@ Prinsipp (Gjermund 2026-07-05): SharePoint eier filene — Odoo eier metadata + 
 Feltene her bærer den FASTE referansen, som overlever omdøping og flytting.
 """
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 
@@ -58,6 +58,9 @@ class DocumentsDocument(models.Model):
     def _sp_referanse_felt(self):
         return ("sp_drive_id", "sp_item_id")
 
+    # depends er PÅKREVD: feltet er store=True, og uten den beregnes det aldri
+    # på nytt når ID-ene settes — verdien fra opprettelsen (tom) blir stående.
+    @api.depends("sp_drive_id", "sp_item_id")
     def _compute_sp_har_referanse(self):
         for doc in self:
             doc.sp_har_referanse = bool(doc.sp_drive_id and doc.sp_item_id)

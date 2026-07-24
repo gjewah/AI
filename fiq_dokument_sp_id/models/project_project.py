@@ -6,7 +6,7 @@ og at sp_folder_name der er BEREGNET fra mappas display_name. Feltene her
 erstatter ingenting av det — de legger identiteten ved siden av navnet.
 """
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 
@@ -37,6 +37,7 @@ class ProjectProject(models.Model):
         store=True,
     )
 
+    @api.depends("sp_mappe_drive_id", "sp_mappe_item_id")
     def _compute_sp_har_mappe(self):
         for prosjekt in self:
             prosjekt.sp_har_mappe = bool(

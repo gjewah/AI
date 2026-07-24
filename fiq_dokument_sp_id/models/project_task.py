@@ -5,7 +5,7 @@ mappenavn-felt og en «Opprett mappe»-knapp. Knappen og Graph-kallet hører i
 broen; her ligger BÆREREN — feltene som holder mappas identitet.
 """
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 
@@ -42,6 +42,7 @@ class ProjectTask(models.Model):
         store=True,
     )
 
+    @api.depends("sp_mappe_drive_id", "sp_mappe_item_id")
     def _compute_sp_har_mappe(self):
         for task in self:
             task.sp_har_mappe = bool(task.sp_mappe_drive_id and task.sp_mappe_item_id)

@@ -1,6 +1,6 @@
 {
     "name": "FIQ Dokument SP-ID — stabil SharePoint-referanse på dokument",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "summary": "Bærer SharePoints faste drive-/item-ID på documents.document, project.task og "
     "project.project. ID overlever omdøping og flytting — URL gjør ikke. Ren "
     "datamodell: ingen Graph-klient, ingen views, ingen ruting. Fundamentet "
