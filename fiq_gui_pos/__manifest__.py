@@ -1,7 +1,7 @@
 # Part of FIQ AI. Norsk kassasystem — X- og Z-rapport (kassasystemforskrifta § 2-8-2 / § 2-8-3).
 {
     "name": "FIQ POS — Norsk kassasystem (X/Z-rapport)",
-    "version": "19.0.1.0.2",
+    "version": "19.0.1.0.3",
     "category": "Accounting/Localizations/Point of Sale",
     "summary": "X- og Z-rapport etter norsk kassasystemforskrift",
     "description": """
@@ -19,7 +19,7 @@ Odoos egen franske sertifisering (`l10n_fr_pos_cert`).
 **Merk:** dette dekker rapport-kravene. Uforanderlig journal (§ 2-6(2), § 2-7(1)),
 SAF-T Kassasystem-eksport (§ 2-7(1)) og kassaskuff-sperrer (§ 2-6(5)) er egne krav.
     """,
-    "author": "FIQ AS",
+    "author": "FIQ as",
     "website": "https://www.fiq.no",
     "license": "OPL-1",
     "depends": [

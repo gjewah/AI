@@ -4,10 +4,12 @@
 Testene OPPRETTER tilstanden de verner mot — de leser ikke bare eksisterende data.
 """
 
+from psycopg2 import IntegrityError
+
 from odoo import fields
+from odoo.addons.point_of_sale.tests.common import TestPoSCommon
 from odoo.exceptions import UserError
 from odoo.tests import tagged
-from odoo.addons.point_of_sale.tests.common import TestPoSCommon
 
 
 @tagged("-at_install", "post_install")
@@ -73,16 +75,28 @@ class TestFiqPosRapport(TestPoSCommon):
         self._lag_ordre()
         rapport = self.env["fiq.pos.rapport"].lag_rapport(okt, "z")
 
-        with self.assertRaises(Exception):
-            self.env["fiq.pos.rapport"].create(
-                {
-                    "type": "z",
-                    "session_id": okt.id,
-                    "nummer": rapport.nummer,
-                    "dato": fields.Datetime.now(),
-                }
-            )
-            self.env.flush_all()
+        # 🔴 To feil rettet 24.07 (lint flagget kun den ene):
+        #
+        # 1. B017 — `Exception` fanger ALT. Testen ville bestått også om `create()`
+        #    feilet av en helt annen grunn (manglende felt, tilgang), og vi ville
+        #    trodd at forskriftskravet var bevist.
+        # 2. 🛑 ALVORLIGERE, ikke flagget: `flush_all()` sto INNE i blokken, etter
+        #    `create()`. `assertRaises` avslutter blokken ved første unntak — så den
+        #    linja ble aldri kjørt. SQL-skranken utløses først ved flush, og testen
+        #    besto derfor UANSETT om skranken fantes. Den målte ikke det den påsto.
+        #
+        # `IntegrityError` er det psycopg2 kaster når en unique-skranke brytes.
+        with self.assertRaises(IntegrityError):
+            with self.cr.savepoint():
+                self.env["fiq.pos.rapport"].create(
+                    {
+                        "type": "z",
+                        "session_id": okt.id,
+                        "nummer": rapport.nummer,
+                        "dato": fields.Datetime.now(),
+                    }
+                )
+                self.env.flush_all()
 
     def test_x_rapport_far_ikke_nummer(self):
         """Bare Z-rapporten er nummerert (§ 2-8-3 mot § 2-8-2)."""

@@ -9,11 +9,16 @@ class TestFiqMultiCompany(TransactionCase):
     globale multi-company record-rulen faktisk skjermer per selskap."""
 
     def test_01_company_id_field_present(self):
-        for model in ("crm.stage", "crm.lost.reason",
-                      "mail.template", "res.partner.category"):
+        for model in (
+            "crm.stage",
+            "crm.lost.reason",
+            "mail.template",
+            "res.partner.category",
+        ):
             self.assertIn(
-                "company_id", self.env[model]._fields,
-                "company_id mangler på %s" % model,
+                "company_id",
+                self.env[model]._fields,
+                f"company_id mangler på {model}",
             )
 
     def test_02_record_rule_scopes_by_company(self):
@@ -25,20 +30,26 @@ class TestFiqMultiCompany(TransactionCase):
         )
         stage_shared = self.env["crm.stage"].create({"name": "Delt"})
 
-        user_b = self.env["res.users"].create({
-            "name": "B-bruker",
-            "login": "fiq_mc_test_b",
-            "company_id": company_b.id,
-            "company_ids": [(6, 0, [company_b.id])],
-            "group_ids": [(6, 0, [self.env.ref("sales_team.group_sale_salesman").id])],
-        })
+        user_b = self.env["res.users"].create(
+            {
+                "name": "B-bruker",
+                "login": "fiq_mc_test_b",
+                "company_id": company_b.id,
+                "company_ids": [(6, 0, [company_b.id])],
+                "group_ids": [
+                    (6, 0, [self.env.ref("sales_team.group_sale_salesman").id])
+                ],
+            }
+        )
 
         visible = self.env["crm.stage"].with_user(user_b).search([])
         self.assertIn(
-            stage_shared, visible,
+            stage_shared,
+            visible,
             "Delt stadium (company_id=False) skal være synlig for alle.",
         )
         self.assertNotIn(
-            stage_a, visible,
+            stage_a,
+            visible,
             "Stadium scopet til selskap A skal IKKE være synlig for B-bruker.",
         )

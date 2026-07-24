@@ -21,7 +21,7 @@ oppførsel). Satt company_id = synlig kun for det selskapet (+ delte).
 """,
     "author": "FIQ as, Loym AS",
     "website": "https://www.fiq.no",
-    "version": "19.0.1.0.1",
+    "version": "19.0.1.0.2",
     "license": "OPL-1",
     "category": "Multi Company",
     "depends": ["crm", "mail"],

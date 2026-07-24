@@ -24,7 +24,11 @@ class FiqPosRapport(models.Model):
     # § 2-8-3 (1): Z-rapport skal vere fortløpande nummerert
     nummer = fields.Integer(string="Rapportnummer", readonly=True, copy=False)
     session_id = fields.Many2one(
-        "pos.session", string="Kassaøkt", required=True, readonly=True, ondelete="restrict"
+        "pos.session",
+        string="Kassaøkt",
+        required=True,
+        readonly=True,
+        ondelete="restrict",
     )
     config_id = fields.Many2one(
         "pos.config", string="Kassapunkt", related="session_id.config_id", store=True
@@ -38,7 +42,7 @@ class FiqPosRapport(models.Model):
 
     # § 2-8-2 b: namn og organisasjonsnummer
     firma_navn = fields.Char(string="Firmanavn", readonly=True)
-    organisasjonsnummer = fields.Char(string="Organisasjonsnummer", readonly=True)
+    organisasjonsnummer = fields.Char(readonly=True)
     # § 2-8-2 c: dato og klokkeslett
     dato = fields.Datetime(string="Tidspunkt", readonly=True, required=True)
     # § 2-8-2 d: ID-nummer til kassapunkt
@@ -57,25 +61,51 @@ class FiqPosRapport(models.Model):
 
     tips_antall = fields.Integer(string="i) Antall tips", readonly=True)
     tips_belop = fields.Monetary(string="i) Beløp tips", readonly=True)
-    inngaende_vekselkasse = fields.Monetary(string="k) Inngående vekselkasse", readonly=True)
-    antall_salgskvitteringer = fields.Integer(string="l) Antall salgskvitteringer", readonly=True)
+    inngaende_vekselkasse = fields.Monetary(
+        string="k) Inngående vekselkasse", readonly=True
+    )
+    antall_salgskvitteringer = fields.Integer(
+        string="l) Antall salgskvitteringer", readonly=True
+    )
     antall_kassaskuff_apninger = fields.Integer(
         string="m) Antall åpninger av kassaskuff", readonly=True
     )
 
-    antall_kopikvitteringer = fields.Integer(string="n) Antall kopikvitteringer", readonly=True)
-    belop_kopikvitteringer = fields.Monetary(string="n) Beløp kopikvitteringer", readonly=True)
-    antall_forelopige = fields.Integer(string="o) Antall foreløpige kvitteringer", readonly=True)
-    belop_forelopige = fields.Monetary(string="o) Beløp foreløpige kvitteringer", readonly=True)
-    antall_returkvitteringer = fields.Integer(string="p) Antall returkvitteringer", readonly=True)
-    belop_returkvitteringer = fields.Monetary(string="p) Beløp returkvitteringer", readonly=True)
+    antall_kopikvitteringer = fields.Integer(
+        string="n) Antall kopikvitteringer", readonly=True
+    )
+    belop_kopikvitteringer = fields.Monetary(
+        string="n) Beløp kopikvitteringer", readonly=True
+    )
+    antall_forelopige = fields.Integer(
+        string="o) Antall foreløpige kvitteringer", readonly=True
+    )
+    belop_forelopige = fields.Monetary(
+        string="o) Beløp foreløpige kvitteringer", readonly=True
+    )
+    antall_returkvitteringer = fields.Integer(
+        string="p) Antall returkvitteringer", readonly=True
+    )
+    belop_returkvitteringer = fields.Monetary(
+        string="p) Beløp returkvitteringer", readonly=True
+    )
     antall_rabatter = fields.Integer(string="q) Antall rabatter", readonly=True)
     belop_rabatter = fields.Monetary(string="q) Beløp rabatter", readonly=True)
-    antall_avbrutte_salg = fields.Integer(string="r) Antall avbrutte salg", readonly=True)
-    belop_avbrutte_salg = fields.Monetary(string="r) Beløp avbrutte salg", readonly=True)
-    antall_linjekorreksjoner = fields.Integer(string="s) Antall linjekorreksjoner", readonly=True)
-    antall_prisundersokelser = fields.Integer(string="t) Antall prisundersøkelser", readonly=True)
-    antall_andre_korreksjoner = fields.Integer(string="u) Antall andre korreksjoner", readonly=True)
+    antall_avbrutte_salg = fields.Integer(
+        string="r) Antall avbrutte salg", readonly=True
+    )
+    belop_avbrutte_salg = fields.Monetary(
+        string="r) Beløp avbrutte salg", readonly=True
+    )
+    antall_linjekorreksjoner = fields.Integer(
+        string="s) Antall linjekorreksjoner", readonly=True
+    )
+    antall_prisundersokelser = fields.Integer(
+        string="t) Antall prisundersøkelser", readonly=True
+    )
+    antall_andre_korreksjoner = fields.Integer(
+        string="u) Antall andre korreksjoner", readonly=True
+    )
     antall_utleveringskvitteringer = fields.Integer(
         string="v) Antall utleveringskvitteringer", readonly=True
     )
@@ -97,8 +127,8 @@ class FiqPosRapport(models.Model):
     # Kredittsalg og inn-/utbetalinger (§ 2-8-2 siste ledd)
     antall_kredittsalg = fields.Integer(string="Antall kredittsalg", readonly=True)
     belop_kredittsalg = fields.Monetary(string="Beløp kredittsalg", readonly=True)
-    innbetalinger = fields.Monetary(string="Innbetalinger", readonly=True)
-    utbetalinger = fields.Monetary(string="Utbetalinger", readonly=True)
+    innbetalinger = fields.Monetary(readonly=True)
+    utbetalinger = fields.Monetary(readonly=True)
 
     # § 2-8-3 (2): et Z-nummer kan ikke brukes to ganger.
     # Odoo 19 bruker models.Constraint — _sql_constraints som liste er utgått.
@@ -112,12 +142,10 @@ class FiqPosRapport(models.Model):
         for rapport in self:
             merkelapp = _("Z-rapport") if rapport.type == "z" else _("X-rapport")
             if rapport.type == "z" and rapport.nummer:
-                rapport.name = "%s %s" % (merkelapp, rapport.nummer)
+                rapport.name = f"{merkelapp} {rapport.nummer}"
             else:
-                rapport.name = "%s %s" % (
-                    merkelapp,
-                    fields.Datetime.to_string(rapport.dato) or "",
-                )
+                dato = fields.Datetime.to_string(rapport.dato) or ""
+                rapport.name = f"{merkelapp} {dato}"
 
     # --- Oppretting -----------------------------------------------------
     @api.model
@@ -166,7 +194,10 @@ class FiqPosRapport(models.Model):
         filter — datofeltet har sekundoppløsning. Da ville omsetning forsvunnet stille, og
         grand totals ikke stemt. Ordre-ID er monotont økende og har ingen slik grense.
         """
-        domene = [("session_id", "=", session.id), ("state", "in", ["paid", "done", "invoiced"])]
+        domene = [
+            ("session_id", "=", session.id),
+            ("state", "in", ["paid", "done", "invoiced"]),
+        ]
         if type == "x":
             forrige = self._forrige_z(session)
             if forrige:
@@ -184,9 +215,10 @@ class FiqPosRapport(models.Model):
         grand_salg = sum(salg.mapped("amount_total"))
         grand_retur = abs(sum(retur.mapped("amount_total")))
 
-        rabatt_linjer = ordrer.mapped("lines").filtered(lambda l: l.discount)
+        rabatt_linjer = ordrer.mapped("lines").filtered(lambda linje: linje.discount)
         rabatt_belop = sum(
-            (l.price_unit * l.qty) * (l.discount / 100.0) for l in rabatt_linjer
+            (linje.price_unit * linje.qty) * (linje.discount / 100.0)
+            for linje in rabatt_linjer
         )
 
         forrige = self._forrige_z(session)
@@ -201,9 +233,9 @@ class FiqPosRapport(models.Model):
             "dato": fields.Datetime.now(),
             "fra_tidspunkt": fra,
             "kassapunkt_id_nummer": session.config_id.name,
-            "siste_ordre_id": max(ordrer.ids) if ordrer else (
-                forrige.siste_ordre_id if forrige else 0
-            ),
+            "siste_ordre_id": max(ordrer.ids)
+            if ordrer
+            else (forrige.siste_ordre_id if forrige else 0),
             "totalt_kontantsalg": valuta.round(grand_salg - grand_retur),
             "antall_salg": len(ordrer),
             "antall_salgskvitteringer": len(salg),
@@ -220,20 +252,29 @@ class FiqPosRapport(models.Model):
     @api.model
     def _neste_nummer(self, firma):
         """Gapløs serie per firma (§ 2-8-3): ir.sequence med no_gap."""
-        sekvens = self.env["ir.sequence"].sudo().search(
-            [("code", "=", "fiq.pos.rapport.z"), ("company_id", "=", firma.id)], limit=1
+        sekvens = (
+            self.env["ir.sequence"]
+            .sudo()
+            .search(
+                [("code", "=", "fiq.pos.rapport.z"), ("company_id", "=", firma.id)],
+                limit=1,
+            )
         )
         if not sekvens:
-            sekvens = self.env["ir.sequence"].sudo().create(
-                {
-                    "name": _("Z-rapport %s", firma.name),
-                    "code": "fiq.pos.rapport.z",
-                    "implementation": "no_gap",
-                    "company_id": firma.id,
-                    "number_increment": 1,
-                    "number_next": 1,
-                    "padding": 0,
-                }
+            sekvens = (
+                self.env["ir.sequence"]
+                .sudo()
+                .create(
+                    {
+                        "name": _("Z-rapport %s", firma.name),
+                        "code": "fiq.pos.rapport.z",
+                        "implementation": "no_gap",
+                        "company_id": firma.id,
+                        "number_increment": 1,
+                        "number_next": 1,
+                        "padding": 0,
+                    }
+                )
             )
         return int(sekvens.next_by_id())
 
@@ -335,7 +376,10 @@ class FiqPosRapportLinje(models.Model):
     _order = "kategori, navn"
 
     rapport_id = fields.Many2one(
-        "fiq.pos.rapport", string="Rapport", required=True, ondelete="cascade", index=True
+        "fiq.pos.rapport",
+        required=True,
+        ondelete="cascade",
+        index=True,
     )
     kategori = fields.Selection(
         [
@@ -344,11 +388,10 @@ class FiqPosRapportLinje(models.Model):
             ("operator", "h) Operatør"),
             ("mva", "j) Merverdiavgift"),
         ],
-        string="Kategori",
         required=True,
     )
-    navn = fields.Char(string="Navn", required=True)
-    antall = fields.Integer(string="Antall")
+    navn = fields.Char(required=True)
+    antall = fields.Integer()
     belop = fields.Monetary(string="Beløp")
     currency_id = fields.Many2one(
         "res.currency", related="rapport_id.currency_id", string="Valuta"
