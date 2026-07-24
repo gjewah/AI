@@ -479,6 +479,18 @@ class TestRgsData(TransactionCase):
             self.assertIn("navn", m)
             self.assertIn("forklaring", m)
 
+        # Samme vakt for tidlig korrigering (08.03.02): også den gir objekter,
+        # og også den ville gitt «[object Object]» om noen join-et lista.
+        self.assertNotIn("korrigering.forslag.join", mal)
+        for felt in ("f.motpart", "f.tiltak", "f.begrunnelse"):
+            self.assertIn(felt, mal,
+                          "Malen må vise %r — et forslag uten begrunnelse "
+                          "kan ikke overprøves av mennesket" % felt)
+        # Årsaken når vi IKKE kan anbefale må også vises. Et tomt forslagsfelt
+        # leses som «ingen tiltak nødvendig» — helt annen beskjed enn «vet ikke».
+        self.assertIn("hvorfor_ikke", mal,
+                      "Malen må vise hvorfor det ikke gis anbefaling")
+
     def test_mangler_sier_hvorfor_ikke_bare_hva(self):
         """🔴 TRE TILSTANDER, IKKE TO (funnet 23.07 sammen med 2.20 Lønn).
 
@@ -723,6 +735,129 @@ class TestRgsData(TransactionCase):
         if not b["avstemming_mulig"]:
             self.assertTrue(b["merknad"],
                             "Umulig avstemming må forklares, ikke bare flagges")
+
+    # ---------- TIDLIG KORRIGERING (08.03.02) ----------
+
+    def _falsk_monster(self, motparter, antall_fakturaer=None, godt_nok=True):
+        """Setter et kjent betalingsmønster, uten å måtte lage 20 fakturaer.
+
+        🔴 Vaktpost mot tom-liste-fella (2.20 Lønn 23.07): en test som kjører
+        over ingenting passerer alltid. Her styrer vi grunnlaget eksplisitt,
+        og hver test krever at det faktisk finnes forslag å måle på.
+        """
+        data = {
+            "motparter": motparter,
+            "antall_fakturaer": antall_fakturaer if antall_fakturaer is not None
+            else sum(m["antall_fakturaer"] for m in motparter),
+            "antall_motparter": len(motparter),
+            "ubekreftede_betalinger": 0,
+            "godt_nok": godt_nok,
+            "grunnlag": "test",
+            "forbehold": "",
+            "base": {"firma": "test", "url": "test"},
+        }
+        Data = type(self.Data)
+        original = Data.hent_betalingsmonster
+        Data.hent_betalingsmonster = api.model(lambda self_: data)
+        self.addCleanup(setattr, Data, "hent_betalingsmonster", original)
+
+    @staticmethod
+    def _mp(navn, snitt, antall=5, verste=None, ubekreftede=0):
+        return {"motpart": navn, "snitt_dager": snitt, "antall_fakturaer": antall,
+                "verste_dager": verste if verste is not None else snitt + 10,
+                "betaler_sent": snitt > 0, "ubekreftede": ubekreftede}
+
+    def test_tier_helt_naar_grunnlaget_ikke_baerer(self):
+        """🛑 «ALDRI gjett» — ingen anbefaling på ett tilfelle.
+
+        Gjermunds spec ber om tidlig korrigering, men et forslag om kortere
+        betalingsfrist til en kunde er en handling mot en forretningsforbindelse.
+        Bygget på én faktura er det gjetning i pen innpakning.
+
+        Testen låser at vi da gir NULL forslag — og sier hvorfor, i stedet for
+        å tie stille. Et tomt svar uten årsak leses som «ingen tiltak nødvendig».
+        """
+        self._falsk_monster([self._mp("Enslig AS", 40, antall=1)],
+                            antall_fakturaer=1, godt_nok=False)
+        r = self.Data.hent_tidlig_korrigering()
+
+        self.assertFalse(r["kan_anbefale"])
+        self.assertEqual(r["forslag"], [], "Tynt grunnlag skal gi NULL forslag")
+        self.assertTrue(r["hvorfor_ikke"],
+                        "Fraværet av forslag må forklares, ikke bare være tomt")
+
+    def test_foreslaar_tiltak_som_passer_forsinkelsen(self):
+        """Tiltaket må stå i forhold til hvor sent kunden faktisk betaler.
+
+        30+ dager er et annet problem enn 7 dager, og fortjener et annet grep.
+        Foreslår vi forskuddsfakturering til en som betaler 6 dager for sent,
+        skader vi kundeforholdet uten grunn.
+        """
+        self._falsk_monster([
+            self._mp("Treig AS", 45),      # grovt forsinket
+            self._mp("Litt sen AS", 16),   # moderat
+            self._mp("Nesten AS", 7),      # så vidt over terskelen
+        ])
+        r = self.Data.hent_tidlig_korrigering()
+
+        self.assertEqual(len(r["forslag"]), 3, "Alle tre skal få forslag")
+        t = {f["motpart"]: f["tiltak"] for f in r["forslag"]}
+        self.assertIn("forskudd", t["Treig AS"].lower())
+        self.assertIn("frist", t["Litt sen AS"].lower())
+        self.assertIn("fakturere", t["Nesten AS"].lower())
+
+    def test_ingen_tiltak_for_dem_som_betaler_i_tide(self):
+        """En kunde som betaler i praksis i tide skal ikke få et tiltak mot seg.
+
+        Uten denne grensa ville flaten foreslått innstramminger mot gode
+        betalere fordi snittet var 1–2 dager over — støy presentert som funn.
+        """
+        self._falsk_monster([
+            self._mp("Punktlig AS", 2),     # under terskelen
+            self._mp("Forskudd AS", -5),    # betaler FØR forfall
+            self._mp("Sen AS", 20),         # skal få forslag
+        ])
+        r = self.Data.hent_tidlig_korrigering()
+
+        navn = [f["motpart"] for f in r["forslag"]]
+        self.assertEqual(navn, ["Sen AS"],
+                         "Bare den som faktisk betaler sent skal få et tiltak")
+
+    def test_tynt_grunnlag_per_motpart_utelates(self):
+        """Samlet grunnlag kan bære, uten at det gjør det for HVER motpart.
+
+        En kunde med én faktura skal ikke få et forslag mot seg selv om
+        totalen har nok data. Snittet sier ingenting om akkurat den kunden.
+        """
+        self._falsk_monster([
+            self._mp("Godt grunnlag AS", 30, antall=8),
+            self._mp("Én faktura AS", 60, antall=1),
+        ])
+        r = self.Data.hent_tidlig_korrigering()
+
+        navn = [f["motpart"] for f in r["forslag"]]
+        self.assertEqual(navn, ["Godt grunnlag AS"])
+        self.assertNotIn("Én faktura AS", navn,
+                         "Én faktura er ikke grunnlag for et tiltak mot en kunde")
+
+    def test_forslaget_baerer_sin_egen_begrunnelse(self):
+        """🛑 Rådgiver, ikke beslutter — mennesket må kunne overprøve forslaget.
+
+        Et tiltak uten tallgrunnlag kan ikke etterprøves. Begrunnelsen og
+        antall fakturaer står derfor i DATASETTET, ikke bare i visningen —
+        samme prinsipp som `mangler` og `grunnlag` ellers i modulen.
+        """
+        self._falsk_monster([self._mp("Sen AS", 22, antall=6, verste=41)])
+        r = self.Data.hent_tidlig_korrigering()
+
+        self.assertEqual(len(r["forslag"]), 1, "Testen må ha et forslag å måle på")
+        f = r["forslag"][0]
+        for felt in ("motpart", "tiltak", "begrunnelse", "grunnlag",
+                     "snitt_dager", "verste_dager"):
+            self.assertIn(felt, f, "Forslaget mangler %r" % felt)
+        self.assertIn("22", f["begrunnelse"])
+        self.assertIn("41", f["begrunnelse"])
+        self.assertIn("6", f["grunnlag"])
 
     def test_base_merket_oppgir_server_ikke_bare_firma(self):
         """🔑 LÆRDOM 22.07: firmanavn identifiserer INNHOLD, ikke SERVER.

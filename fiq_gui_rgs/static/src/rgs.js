@@ -28,19 +28,22 @@ export class FiqGuiRgs extends Component {
         this.orm = useService("orm");
         this.action = useService("action");
         this.forpliktelser = FORPLIKTELSER;
-        this.state = useState({ laster: true, data: null, kritiske: [], cashflow: null, feil: null });
+        this.state = useState({ laster: true, data: null, kritiske: [], cashflow: null,
+                                korrigering: null, feil: null });
 
         onWillStart(async () => {
             try {
                 // company_id sendes ALDRI med — serveren tar den fra sesjonen.
-                const [data, kritiske, cashflow] = await Promise.all([
+                const [data, kritiske, cashflow, korrigering] = await Promise.all([
                     this.orm.call("fiq.gui.rgs.data", "hent_grunnbilde", []),
                     this.orm.call("fiq.gui.rgs.data", "hent_kritiske_poster", []),
                     this.orm.call("fiq.gui.rgs.data", "hent_cashflow", []),
+                    this.orm.call("fiq.gui.rgs.data", "hent_tidlig_korrigering", []),
                 ]);
                 this.state.data = data;
                 this.state.kritiske = kritiske;
                 this.state.cashflow = cashflow;
+                this.state.korrigering = korrigering;
             } catch (e) {
                 // Feil skjules ALDRI bak et tomt tall — et blankt felt ville sett ut
                 // som «null kroner utestående», og det er en farlig løgn i regnskap.

@@ -668,3 +668,85 @@ class FiqGuiRgsData(models.AbstractModel):
             ) if ubekreftede else "",
             "base": self._base_merke(),
         }
+
+    # Under dette snittet er forsinkelsen støy, ikke et mønster verdt et tiltak.
+    MIN_DAGER_FOR_TILTAK = 5
+    # En motpart må ha nok fakturaer til at snittet betyr noe for AKKURAT den.
+    MIN_FAKTURA_PER_MOTPART = 3
+
+    @api.model
+    def hent_tidlig_korrigering(self):
+        """Hva kan gjøres FØR det brenner — kortere frister, tidligere fakturering.
+
+        Gjermunds spec 2.80: «tidlig korrigering — hjelpe med grep FØR det brenner,
+        for å verne likviditeten». Dette er 08.03.02; motoren er `hent_betalingsmonster`.
+
+        🛑 TIER NÅR GRUNNLAGET IKKE BÆRER. Er `godt_nok` False — for få fakturaer
+        eller for få motparter — returneres INGEN forslag, bare årsaken. En
+        anbefaling bygget på ett tilfelle er gjetning i pen innpakning, og
+        «ALDRI gjett» er rollens egen regel. Det er billigere å si «vet ikke»
+        enn å foreslå kortere frister til en kunde på grunnlag av én faktura.
+
+        🛑 RÅDGIVER, IKKE BESLUTTER. Hvert forslag har `begrunnelse` og `grunnlag`
+        (hvor mange fakturaer det bygger på) slik at mennesket kan overprøve det.
+        Ingen automatiske handlinger — flaten foreslår, daglig leder bestemmer.
+
+        🔒 Motpartsnavn er forretningsdata innenfor eget firma; tenant-grensa
+        håndheves av `_betalingsdager` (company fra sesjonen) + `ir.rule`.
+        """
+        m = self.hent_betalingsmonster()
+
+        if not m["godt_nok"]:
+            return {
+                "forslag": [],
+                "kan_anbefale": False,
+                "hvorfor_ikke": (
+                    "Grunnlaget er for tynt: %s betaling(er) fordelt på %s motpart(er). "
+                    "Et snitt fra så få tilfeller er en enkelthendelse, ikke et mønster."
+                    % (m["antall_fakturaer"], m["antall_motparter"])
+                ),
+                "grunnlag": m["grunnlag"],
+                "forbehold": m["forbehold"],
+                "base": m["base"],
+            }
+
+        forslag = []
+        for mp in m["motparter"]:
+            if mp["antall_fakturaer"] < self.MIN_FAKTURA_PER_MOTPART:
+                continue  # for tynt for AKKURAT denne motparten
+            if mp["snitt_dager"] < self.MIN_DAGER_FOR_TILTAK:
+                continue  # betaler i praksis i tide — ingen grunn til tiltak
+
+            dager = mp["snitt_dager"]
+            if dager >= 30:
+                tiltak = "Vurder forskuddsfakturering eller delbetaling"
+            elif dager >= 14:
+                tiltak = "Vurder kortere betalingsfrist"
+            else:
+                tiltak = "Vurder å fakturere tidligere i leveransen"
+
+            forslag.append({
+                "motpart": mp["motpart"],
+                "tiltak": tiltak,
+                "snitt_dager": dager,
+                "verste_dager": mp["verste_dager"],
+                # Begrunnelsen står i datasettet, ikke bare i visningen — et
+                # forslag uten tallgrunnlag kan ikke overprøves av mennesket.
+                "begrunnelse": (
+                    "Betaler i snitt %s dager etter forfall, verste tilfelle %s dager."
+                    % (dager, mp["verste_dager"])
+                ),
+                "grunnlag": "%s fakturaer" % mp["antall_fakturaer"],
+                # Er noen av betalingene ubekreftet, følger forbeholdet med hit —
+                # ellers ser forslaget sikrere ut enn tallene bak det.
+                "ubekreftede": mp["ubekreftede"],
+            })
+
+        return {
+            "forslag": forslag,
+            "kan_anbefale": True,
+            "hvorfor_ikke": "",
+            "grunnlag": m["grunnlag"],
+            "forbehold": m["forbehold"],
+            "base": m["base"],
+        }

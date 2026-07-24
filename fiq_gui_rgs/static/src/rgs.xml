@@ -186,18 +186,45 @@
             <section class="fiqr-kort">
                 <div class="fiqr-korthode">
                     <h3>Tidlig korrigering</h3>
-                    <span class="fiqr-scenario-merke">IKKE KOBLET</span>
+                    <span class="fiqr-scenario-merke">FRAMSKRIVNING — bygget på faktisk betalingsmønster</span>
                 </div>
                 <p class="fiqr-hjelp">Grep FØR det brenner — for å verne likviditeten.</p>
-                <div class="fiqr-forslag">
-                    <div class="fiqr-forslag-rad">
-                        <span class="fiqr-forslag-navn">Kortere frister</span>
-                        <span class="fiqr-tom fiqr-tom-liten">Forslag fra rådgiveren</span>
+
+                <!-- 🛑 TIER NÅR GRUNNLAGET IKKE BÆRER. Er datagrunnlaget for tynt,
+                     vises ÅRSAKEN — ikke en tom liste. Et tomt forslagsfelt leses
+                     som «ingen tiltak nødvendig», og det er en helt annen beskjed
+                     enn «vi vet ikke nok ennå».
+                     🔴 Feltene plukkes ut ENKELTVIS — aldri join() på lista.
+                     Det var nettopp join() som ga «[object Object]» i cashflow-
+                     boksen 23.07, da modellen fikk objekter og malen sto igjen. -->
+                <div t-if="state.korrigering and !state.korrigering.kan_anbefale"
+                     class="fiqr-mangler">
+                    <b>Ingen anbefaling ennå.</b>
+                    <t t-esc="state.korrigering.hvorfor_ikke"/>
+                </div>
+
+                <div t-elif="state.korrigering and !state.korrigering.forslag.length"
+                     class="fiqr-tom">
+                    Ingen kunder betaler vesentlig etter forfall — ingen tiltak foreslås.
+                </div>
+
+                <div t-elif="state.korrigering" class="fiqr-forslag">
+                    <div t-foreach="state.korrigering.forslag" t-as="f" t-key="f.motpart"
+                         class="fiqr-forslag-rad">
+                        <span class="fiqr-forslag-navn"><t t-esc="f.motpart"/></span>
+                        <span class="fiqr-forslag-tiltak"><t t-esc="f.tiltak"/></span>
+                        <!-- Begrunnelsen står ved siden av forslaget, ikke skjult:
+                             et tiltak mot en forretningsforbindelse skal kunne
+                             overprøves av mennesket som leser det. -->
+                        <span class="fiqr-forslag-hvorfor">
+                            <t t-esc="f.begrunnelse"/> (<t t-esc="f.grunnlag"/>)
+                        </span>
                     </div>
-                    <div class="fiqr-forslag-rad">
-                        <span class="fiqr-forslag-navn">Tidligere fakturering</span>
-                        <span class="fiqr-tom fiqr-tom-liten">Forslag fra rådgiveren</span>
-                    </div>
+                </div>
+
+                <div t-if="state.korrigering and state.korrigering.forbehold"
+                     class="fiqr-forbehold">
+                    <t t-esc="state.korrigering.forbehold"/>
                 </div>
                 <div class="fiqr-note">
                     Forslag — ingen automatiske finansielle handlinger. Mennesket bestemmer.

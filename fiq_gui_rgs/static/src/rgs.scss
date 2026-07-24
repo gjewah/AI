@@ -169,6 +169,26 @@
     }
   }
 
+  // Tidlig korrigering: tiltaket til høyre, begrunnelsen under — mennesket
+  // skal kunne lese HVORFOR uten å klikke seg videre.
+  .fiqr-forslag-tiltak {
+    font-weight: 600;
+  }
+
+  .fiqr-forslag-hvorfor {
+    display: block;
+    width: 100%;
+    font-size: 0.85em;
+    color: #666;
+    margin-top: 2px;
+  }
+
+  .fiqr-forbehold {
+    font-size: 0.85em;
+    color: #8A6D00;
+    margin-top: 6px;
+  }
+
   .fiqr-start {
     margin-bottom: 8px;
   }
