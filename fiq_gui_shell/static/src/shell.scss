@@ -5,7 +5,28 @@
     --shadow:0 8px 26px -18px rgba(20,30,50,.5);
     font-family: system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     color: var(--ink); background: var(--ground);
-    padding: 14px; min-height: 100%;
+    padding: 14px;
+
+    // ── HØYDEKONTRAKTEN — SAMME som Kontrollrommets (control_room.scss:1295) ──────────
+    //
+    // 🔴 Gjermund 24.07.2026: «scroll funksjonen har forsvunnet på generell basis».
+    // Årsaken: kontrakten ble bygget i `fiq_gui_control` 7.6.0 og ALDRI lagt inn her.
+    // Commit `832b55d` sa «en flate KAN ikke lenger glemme scrollen» — sant om KR-rammen,
+    // usant om skallet. Fire filer i den commiten, alle i fiq_gui_control.
+    //
+    // 🔑 SEKS moduler arver dette skallet: ai_kr · comm · crm_leads · fin · relations · rgs.
+    // De fikk en ramme uten scroll mens KR-rammen hadde den — derfor så det ut som at
+    // scrollen forsvant «tilfeldig»: den avhang av hvilken vei brukeren kom inn.
+    //
+    // 🛑 SAMME FORM, IKKE EN VARIANT. En kontrakt nummer to ville driftet fra den første,
+    // og vi ville hatt samme feil igjen om tre måneder — i motsatt retning.
+    //
+    // Kjeden: full høyde → flex-kolonne → låst ytre → `.fiqs-wrap` tar resten →
+    // `.fiqs-main` scroller. Brytes ett ledd, klippes innholdet i stedet for å scrolle.
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;          // låst ytre; scrollen eies av .fiqs-main
 
     &[data-fiq-theme="dark"] {
         --ground:#0D1218; --surface:#151C24; --surface-2:#1A222B; --ink:#EAEFF5; --ink-soft:#B4BFCC;
@@ -75,8 +96,27 @@
     .fiqs-theme { border:1px solid var(--line); background:var(--surface); border-radius:9px; padding:8px 12px; font-size:12px; font-weight:640; }
 
     // Wrap: fast sidemeny + innmat-slot
-    .fiqs-wrap { display:grid; grid-template-columns:212px 1fr; gap:14px; align-items:start; }
-    .fiqs-side { background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); padding:12px; position:sticky; top:10px; }
+    // `flex:1 1 auto` + `min-height:0` = tar resten av høyden og lar barna scrolle.
+    // 🛑 `min-height:0` er IKKE valgfri: uten den vokser grid-barna forbi forelderen,
+    // og scrollen dør i hele kjeden nedover.
+    // 🔴 `align-items:start` er FJERNET — den lot innholdet vokse fritt i stedet for å
+    // fylle raden. Med den stående ville kolonnene ikke fått høyde å scrolle innenfor.
+    .fiqs-wrap {
+        display:grid; grid-template-columns:212px 1fr; gap:14px;
+        flex:1 1 auto; min-height:0;
+    }
+    // 🔑 `sticky` ERSTATTET av egen scroll — bivirkningen AI IQ advarte om.
+    // `position:sticky` fester seg mot nærmeste scrollende forelder. Når `.fiqs` nå er
+    // `overflow:hidden`, finnes ingen slik forelder lenger, og sidemenyen ville sluttet
+    // å feste seg — den ville bare stått stille øverst og blitt klippet hvis den var lang.
+    // Egen `overflow-y:auto` gir samme opplevelse (menyen blir stående mens innholdet
+    // scroller) OG lar en lang meny scrolle for seg. Samme løsning som KR-sidemenyen
+    // (`control_room.scss:125`).
+    .fiqs-side {
+        background:var(--surface); border:1px solid var(--line); border-radius:12px;
+        box-shadow:var(--shadow); padding:12px;
+        min-height:0; overflow-y:auto; overflow-x:hidden;
+    }
     .fiqs-sh { font-family:ui-monospace,monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:4px 6px 8px; }
     .fiqs-nav { display:flex; flex-direction:column; gap:2px; }
     .fiqs-navb {
@@ -87,7 +127,21 @@
     .fiqs-navb.on { background:color-mix(in srgb,var(--accent) 12%,transparent); border-color:color-mix(in srgb,var(--accent) 30%,transparent); color:var(--accent); }
     .fiqs-dot { width:9px; height:9px; border-radius:3px; flex:none; }
 
-    .fiqs-main { min-width:0; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); padding:18px; }
+    // ── SLOT-CONTAINEREN EIER SCROLLEN ───────────────────────────────────────────────
+    // Nøyaktig samme kontrakt som `.fiq_hm_flateslot` i Kontrollrommet — én kontrakt,
+    // to rammer. Flatene trenger IKKE sette `height:100%`; gjør de det, er det harmløst.
+    // 🔑 Poenget: en flate KAN ikke lenger glemme scrollen — heller ikke her. Det var
+    // nettopp den forventningen som sto uskrevet og felte seks flater.
+    .fiqs-main {
+        min-width:0; background:var(--surface); border:1px solid var(--line);
+        border-radius:12px; box-shadow:var(--shadow); padding:18px;
+        display:flex; flex-direction:column;
+        min-height:0;              // uten denne vokser flex-barn forbi forelderen
+        overflow-y:auto;
+        overflow-x:hidden;         // vidt innhold scroller i sin egen beholder
+        // Flaten under skal fylle resten, uansett hva den selv setter.
+        > * { flex:1 1 auto; min-height:0; }
+    }
     .fiqs-demo h2 { margin:0 0 8px; font-size:18px; }
     .fiqs-demo-note { color:var(--muted); font-size:12.5px; border-left:3px solid var(--accent); padding-left:10px; }
     .fiqs-empty { color:var(--muted); font-size:13px; }

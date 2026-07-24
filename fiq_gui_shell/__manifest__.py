@@ -1,6 +1,6 @@
 {
     "name": "FIQ GUI Skall (V00.04 delt skall)",
-    "version": "19.0.1.7.3",
+    "version": "19.0.1.8.0",
     "summary": "Vei C: delt V00.04-skall — fast presence-linje + firma-band + sidemeny + innmat-slot. "
     "Flatene registrerer innmaten sin i registry-kategorien 'fiq_gui_flates'; klikk i "
     "sidemenyen bytter INNMAT, ikke hele siden. PULS-KR blir én flate til slutt (med S07).",

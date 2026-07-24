@@ -108,6 +108,68 @@ class TestFiqGuiShell(TransactionCase):
                 "to bindestreker i en XML-kommentar gjør hele malfila ugyldig",
             )
 
+    def test_hoydekontrakten_finnes_i_BEGGE_rammer(self):
+        """Scroll-kontrakten må stå i skallet OG i Kontrollrommet — ikke bare ett sted.
+
+        🔴 DETTE ER FEILEN SOM SKJEDDE, IKKE EN TEORI. Kontrakten ble bygget i
+        `fiq_gui_control` 7.6.0 (commit `832b55d`) med ordene «en flate KAN ikke lenger
+        glemme scrollen». Det var sant om KR-rammen — og usant om skallet, som aldri ble
+        rørt. Seks moduler arver skallet (`ai_kr`, `comm`, `crm_leads`, `fin`,
+        `relations`, `rgs`), og de mistet scrollen uten at noe varslet.
+        Gjermund 24.07: «scroll funksjonen har forsvunnet på generell basis».
+
+        🔑 Derfor tester denne BEGGE filene i én test, ikke skallet alene. En test som
+        dekker ett lag ville gjentatt nøyaktig den feilen den skal forhindre — det var
+        rekkevidden som sviktet, ikke målingen.
+
+        🛑 `min-height: 0` er det leddet som ryker først ved en opprydding. Den ser
+        overflødig ut og er det ikke: uten den vokser flex-/grid-barn forbi forelderen,
+        og scrollen dør i hele kjeden nedover.
+        """
+        skall = self._les("fiq_gui_shell/static/src/shell.scss")
+        kr = self._les("fiq_gui_control/static/src/control_room.scss")
+
+        # Skallet: ytre låst · wrap tar resten · slot-containeren scroller
+        self.assertRegex(
+            skall,
+            r"\.fiqs\s*\{[^}]*?overflow:\s*hidden",
+            "skallets ytre ramme mangler `overflow: hidden` — scrollen får ingen eier",
+        )
+        self.assertRegex(
+            skall,
+            r"\.fiqs-wrap\s*\{[^}]*?min-height:\s*0",
+            "`.fiqs-wrap` mangler `min-height: 0` — barna vokser forbi og scrollen dør",
+        )
+        self.assertRegex(
+            skall,
+            r"\.fiqs-main\s*\{[^}]*?overflow-y:\s*auto",
+            "`.fiqs-main` scroller ikke — flatene i skallet blir klippet",
+        )
+        self.assertRegex(
+            skall,
+            r"\.fiqs-main\s*\{[^}]*?min-height:\s*0",
+            "`.fiqs-main` mangler `min-height: 0`",
+        )
+        # 🔑 `sticky` på sidemenyen virker IKKE når forelderen er `overflow: hidden`.
+        # Den ville stått stille og blitt klippet. Egen scroll gir samme opplevelse.
+        self.assertNotRegex(
+            skall,
+            r"\.fiqs-side\s*\{[^}]*?position:\s*sticky",
+            "`.fiqs-side` kan ikke være sticky under en låst forelder — gi den egen scroll",
+        )
+
+        # Kontrollrommet: samme kontrakt, samme krav
+        self.assertRegex(
+            kr,
+            r"\.fiq_hm_flateslot\s*\{[^}]*?overflow-y:\s*auto",
+            "KRs slot-container scroller ikke",
+        )
+        self.assertRegex(
+            kr,
+            r"\.fiq_hm_flateslot\s*\{[^}]*?min-height:\s*0",
+            "KRs slot-container mangler `min-height: 0`",
+        )
+
     def test_gui_build_ikke_relevant_for_skallet(self):
         """Skallet har ingen GUI_BUILD-konstant — og skal ikke ha det.
 

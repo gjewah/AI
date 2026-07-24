@@ -1,6 +1,6 @@
 {
     "name": "Control room",
-    "version": "19.0.7.12.0",
+    "version": "19.0.7.13.0",
     "summary": "Control room – the unified OWL shell (dashboard/landing) that hosts every "
     "main menu as a navigation view: company picker, Simple/Full mode, per-company "
     "accent/logo, KPIs from real Odoo data, communication and dynamic widgets.",
