@@ -1,6 +1,6 @@
 {
     "name": "FIQ Finans",
-    "version": "19.0.1.8.1",
+    "version": "19.0.1.8.2",
     "summary": "AI GUI Finans (2.70) — visningen av AI Finans-Rådgiveren: analyse, "
     "framskrivning, simulator (fortid/nåtid/fremtid), KPI og POG.",
     "description": """
@@ -25,6 +25,15 @@ Harde regler innebygd i flaten:
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
     "license": "OPL-1",
+    # 🛑 `account_reports` (Enterprise) står BEVISST IKKE her, selv om KPI-velgeren
+    # peker på åtte av dens rapporter. Beslutning 24.07 etter AI IQs gate-kjøring:
+    #   · Kredittrisiko-delen (samleboks, faresignaler) bruker kun `account.move`
+    #     og virker uten Enterprise. Det er kjernen i 2.70-flaten.
+    #   · KPI-velgeren er et TILLEGG. `hent_kpi_valg()` hopper over rapporter som
+    #     ikke finnes, så flaten viser færre kort i stedet for å krasje.
+    #   · Legges `account_reports` i depends, kan modulen IKKE installeres på en
+    #     Community-base i det hele tatt — hele flaten faller for et tillegg.
+    # `depends` beskytter installasjon, koden beskytter kjøretid. Ulike problemer.
     "depends": ["fiq_gui_control", "fiq_gui_shell", "web", "account"],
     "data": [
         "security/fiq_gui_fin_groups.xml",
