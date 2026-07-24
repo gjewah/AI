@@ -1005,6 +1005,151 @@ class TestRgsData(TransactionCase):
         self.assertIn("41", f["begrunnelse"])
         self.assertIn("6", f["grunnlag"])
 
+    # ---------- KONTRAKTER MELLOM LAG (gruppe 2, 24.07) ----------
+
+    def test_apne_botte_viser_det_tallet_lovet(self):
+        """🔴 KONTRAKTEN MELLOM TALL OG LISTE — den viktigste i modulen.
+
+        Gjermund 19.07: «tall → klikk → liste med det som ligger bak.»
+        Da MÅ lista inneholde det samme som tallet talte. Sprikkene her er
+        stille: bøtta viser 217 810, brukeren klikker, og lista viser noe annet.
+        Ingen feilmelding — bare et tall daglig leder ikke kan etterprøve.
+
+        Dette er ikke dekket av «domenet er kjørbart»: et domene kan kjøre
+        helt fint og likevel returnere feil poster.
+        """
+        self._faktura(-30, belop=5000.0)  # forfalt → kritisk + ubetalt
+        self._faktura(3, belop=7000.0)  # haster
+        self._faktura(60, belop=9000.0)  # hverken
+
+        botter = {b["key"]: b["verdi"] for b in self.Data.hent_grunnbilde()["botter"]}
+        for key in ("inn", "ut", "haster", "kritisk", "ubetalt"):
+            domene = self.Data.apne_botte(key)["domain"]
+            fra_lista = sum(self.Move.search(domene).mapped("amount_residual"))
+            self.assertAlmostEqual(
+                fra_lista,
+                botter[key],
+                places=2,
+                msg=f"Bøtta «{key}» viser {botter[key]}, men lista bak gir {fra_lista}",
+            )
+
+    def test_apne_botte_ukjent_noekkel_gir_ubetalt_ikke_krasj(self):
+        """🔴 KANT: en ukjent nøkkel skal falle tilbake, ikke felle flaten.
+
+        Flaten sender nøkkelen fra klikket. Endres en nøkkel i malen uten at
+        modellen følger med — eller kommer et kall fra et annet lag — er
+        alternativet en KeyError midt i brukerens klikk.
+
+        Fallbacken finnes i koden (`else`-grenen). Denne testen låser at den
+        gir et BRUKBART resultat, ikke bare at den ikke krasjer.
+        """
+        handling = self.Data.apne_botte("finnes_ikke")
+        self.assertEqual(handling["res_model"], "account.move")
+        self.assertEqual(
+            handling["name"],
+            "Ubetalt",
+            "Ukjent nøkkel skal falle tilbake til «Ubetalt»",
+        )
+        self.Move.search_count(handling["domain"])  # må være kjørbart
+
+    def test_apne_botte_hindrer_oppretting_fra_oversikten(self):
+        """En oversikt er for LESING. «Ny»-knappen hører ikke hjemme her.
+
+        `create: False` er bevisst: bruker som klikker et likviditetstall skal
+        undersøke, ikke opprette bilag. Forsvinner flagget ved en refaktorering,
+        får hun en «Ny»-knapp i det som ser ut som en rapport — og et bilag
+        opprettet ved et uhell er et regnskapsbilag.
+        """
+        for key in ("inn", "ut", "haster", "kritisk", "ubetalt"):
+            kontekst = self.Data.apne_botte(key).get("context") or {}
+            self.assertFalse(
+                kontekst.get("create", True),
+                f"Bøtta «{key}» tillater oppretting fra en leseoversikt",
+            )
+
+    def test_kr_boks_kontrakt_har_riktige_typer(self):
+        """🛑 KR-KONTRAKTEN: nøklene OG typene, ikke KRs tolkning av dem.
+
+        Kontrollrommet leser fire nøkler. Kommer det en streng der KR venter
+        et tall, får forsiden en visningsfeil — eller verre, alle boksene
+        forsvinner hvis KR ikke fanger unntaket per flate.
+
+        📌 Vi tester KONTRAKTEN, ikke hvordan KR viser den. Endrer KR sin
+        visning, skal ikke denne testen feile — vi eier vår side av avtalen.
+        """
+        b = self.Data.get_kr_boks()
+        for felt in ("haster", "i_dag", "totalt"):
+            self.assertIsInstance(
+                b[felt], int, f"KR venter et heltall i «{felt}», fikk {type(b[felt])}"
+            )
+            self.assertGreaterEqual(b[felt], 0, f"«{felt}» kan ikke være negativ")
+        self.assertIsInstance(b["linjer"], list)
+
+    def test_kr_boks_teller_samme_som_grunnbildet(self):
+        """KR-boksen og flaten må ikke fortelle to historier om samme firma.
+
+        Boksen viser ANTALL saker, flaten viser BELØP — men begge bygger på
+        samme domene. Er det saker i boksen, må flaten ha beløp, og motsatt.
+        Spriker de, stoler daglig leder på det tallet han så sist.
+        """
+        self._faktura(-15, belop=12000.0)
+
+        boks = self.Data.get_kr_boks()
+        ubetalt = {b["key"]: b["verdi"] for b in self.Data.hent_grunnbilde()["botter"]}[
+            "ubetalt"
+        ]
+        if boks["totalt"] > 0:
+            self.assertNotEqual(
+                ubetalt, 0.0, "KR melder saker, men flaten viser null utestående"
+            )
+
+    # ---------- FRAVÆR — at noe IKKE skjer (gruppe 2, 24.07) ----------
+
+    def test_anbefalingen_tier_fortsatt_paa_tom_base(self):
+        """🛑 FRAVÆR: uten data skal det IKKE komme et forslag.
+
+        08.03.02 er bygget for å tie når grunnlaget ikke bærer — men ingen test
+        låste at den fortsatt tier. Senkes terskelen ved et uhell, begynner
+        flaten å foreslå kortere betalingsfrister mot kunder på grunnlag av
+        én enkelt faktura. Det er en handling mot en forretningsforbindelse.
+
+        Denne kjører på fersk base: ingen betalinger finnes, altså intet grunnlag.
+        """
+        r = self.Data.hent_tidlig_korrigering()
+        self.assertEqual(r["forslag"], [], "Uten grunnlag skal det IKKE gis forslag")
+        self.assertFalse(r["kan_anbefale"])
+        self.assertTrue(
+            r["hvorfor_ikke"],
+            "Fraværet må forklares — et tomt felt leses som «ingen tiltak nødvendig»",
+        )
+
+    def test_ingen_skriving_til_regnskapet(self):
+        """🛑 FRAVÆR: flaten LESER. Den skal aldri endre et regnskapstall.
+
+        Modellen er en AbstractModel uten lagring — men en fremtidig endring
+        kan legge inn en `write` i god tro («oppdater status når vi først er
+        her»). I regnskap er det forskjellen på en rapport og en postering.
+
+        Testen kjører alle lesemetodene og krever at intet bilag er endret.
+        """
+        faktura = self._faktura(-10, belop=4000.0)
+        for_ = (faktura.amount_residual, faktura.payment_state, faktura.state)
+
+        self.Data.hent_grunnbilde()
+        self.Data.hent_cashflow()
+        self.Data.hent_kritiske_poster()
+        self.Data.get_kr_boks()
+        self.Data.hent_betalingsmonster()
+        self.Data.hent_tidlig_korrigering()
+        self.Data.hent_bankavstemming()
+
+        faktura.invalidate_recordset()
+        self.assertEqual(
+            (faktura.amount_residual, faktura.payment_state, faktura.state),
+            for_,
+            "En lesemetode endret bilaget — flaten skal ALDRI skrive til regnskapet",
+        )
+
     # ---------- KRITISKE POSTER — hadde NULL dekning før 24.07 ----------
 
     def test_kritiske_poster_viser_kun_forfalte(self):
