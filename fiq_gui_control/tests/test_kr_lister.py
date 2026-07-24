@@ -53,7 +53,18 @@ class TestKrLister(TransactionCase):
         der er kolonnene allerede smeltet sammen til `tekst`.
         """
         oppgave = self._lag_oppgave("Romskjema Norvik", frist_om_dager=3)
-        res = self.Config.get_kr_apne_oppgaver()
+        # 🔴 `sok=` ER IKKE PYNT HER — uten den feiler testen på en base med demodata.
+        # `get_kr_apne_oppgaver` henter de `grense` nærmeste fristene (standard 12), sortert
+        # `date_deadline asc`. I den lukkede gaten er basen full av demo-oppgaver med
+        # tidligere frister, så testoppgaven havner UTENFOR de tolv og lista kommer tom.
+        # På Dev var basen tom, og de tolv plassene rakk. Derfor så testen grønn ut der og
+        # rød her — samme kode, ulikt datagrunnlag.
+        #
+        # 🔑 Feilklassen: testen antok en TOM base. Den målte ikke koden, den målte hvor lite
+        # data som tilfeldigvis lå der. Søket avgrenser til nettopp denne oppgaven og gjør
+        # testen uavhengig av hva basen ellers inneholder — det er strengere enn å heve
+        # grensen, for et høyere tall ville bare flyttet den samme antakelsen lenger ut.
+        res = self.Config.get_kr_apne_oppgaver(sok="Romskjema Norvik")
         rader = [r for r in res["rader"] if r["res_id"] == oppgave.id]
         self.assertTrue(rader, "den nye oppgaven skulle vært i lista")
         rad = rader[0]
@@ -70,9 +81,12 @@ class TestKrLister(TransactionCase):
         formatet slik at den ikke kan skli tilbake uten at noen ser det.
         """
         oppgave = self._lag_oppgave("Sluttrapport Kostr AS", frist_om_dager=5)
-        res = self.Config.get_kr_apne_oppgaver()
+        # Søk framfor standardgrensen — se begrunnelsen i
+        # `test_radene_har_fire_adskilte_kolonner`: de tolv plassene fylles av demodata
+        # med tidligere frister, og testoppgaven faller utenfor.
+        res = self.Config.get_kr_apne_oppgaver(sok="Sluttrapport Kostr AS")
         rader = [r for r in res["rader"] if r["res_id"] == oppgave.id]
-        self.assertTrue(rader)
+        self.assertTrue(rader, "den nye oppgaven skulle vært i lista")
         naar = rader[0]["naar"]
         forventet_ar = str((fields.Date.context_today(self.Config) + timedelta(days=5)).year)
         self.assertIn(forventet_ar, naar, f"fristen «{naar}» mangler årstall")
