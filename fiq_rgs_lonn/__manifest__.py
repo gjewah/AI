@@ -1,7 +1,7 @@
 # Odoos manifest ER en frittstaaende ordbok — den skal ikke tilordnes noe.
 {  # noqa: B018
     "name": "FIQ Lønn Norge",
-    "version": "19.0.1.4.0",
+    "version": "19.0.1.4.1",
     "summary": "Norsk lønnslokalisering (2.20) — lønnsarter, satser og AA-register. "
     "Regnskapsfunksjon som LESER HR-data.",
     "description": """

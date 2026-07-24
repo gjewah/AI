@@ -331,11 +331,11 @@ class TestLonnskostnad(TransactionCase):
 
     def _lonnslinjer(self):
         return [
-            l
-            for l in self.env["fiq.lonnsforpliktelse"]
+            linje
+            for linje in self.env["fiq.lonnsforpliktelse"]
             .with_company(self.company)
             .hent_lonnsforpliktelser("2026-01-01", "2026-12-31")
-            if l["type"] == "lonn"
+            if linje["type"] == "lonn"
         ]
 
     def test_27_augustlonn_forfaller_15_september(self):
@@ -359,7 +359,7 @@ class TestLonnskostnad(TransactionCase):
         linjer = self._lonnslinjer()
         self.assertTrue(linjer, "Ingen lønnslinjer å måle på.")
         self.assertAlmostEqual(
-            sum(l["belop"] for l in linjer),
+            sum(linje["belop"] for linje in linjer),
             90_000.0,
             2,
             "Beløpet er ikke summen av nettolønn — testen måler noe annet "
@@ -385,9 +385,13 @@ class TestLonnskostnad(TransactionCase):
         """Samme skille som for AGA — og det MAA holdes her, fordi 2.80 RGS
         viser det vi sender uten aa overproeve det."""
         self.slipper.write({"state": "validated"})
-        self.assertTrue(all(l["sikkerhet"] == "planlagt" for l in self._lonnslinjer()))
+        self.assertTrue(
+            all(linje["sikkerhet"] == "planlagt" for linje in self._lonnslinjer())
+        )
         self.slipper.write({"state": "paid"})
-        self.assertTrue(all(l["sikkerhet"] == "bokfort" for l in self._lonnslinjer()))
+        self.assertTrue(
+            all(linje["sikkerhet"] == "bokfort" for linje in self._lonnslinjer())
+        )
 
     def test_31_status_og_linjer_er_enige(self):
         """🤝 Kryss-testen — motstykket til 2.80 RGS' egen. Bygget FRA START
@@ -796,7 +800,7 @@ class TestKontraktMedEkteData(TransactionCase):
         self.assertTrue(linjer, "Ingen linjer å teste kontrakten mot.")
         # 3 ansatte x 40 000 = 120 000 grunnlag, sone II = 10,6 %
         self.assertAlmostEqual(
-            sum(l["belop"] for l in linjer),
+            sum(linje["belop"] for linje in linjer),
             12_720.0,
             2,
             "Beløpet er ikke det grunnlaget tilsier — testen måler noe annet "
@@ -823,7 +827,7 @@ class TestKontraktMedEkteData(TransactionCase):
         self.slipper.write({"state": "paid"})
         modell = self.env["fiq.lonnsforpliktelse"].with_company(self.company)
         status = modell.status_forpliktelser("2026-01-01", "2026-12-31")
-        linjer = [l for l in self._linjer() if l["type"] == "aga"]
+        linjer = [linje for linje in self._linjer() if linje["type"] == "aga"]
         self.assertEqual(
             bool(linjer),
             status["aga"]["levert"],

@@ -239,9 +239,9 @@ class HrPayslip(models.Model):
         """
         self.ensure_one()
         return sum(
-            self.line_ids.filtered(lambda l: l.category_id.code == "BASIC").mapped(
-                "total"
-            )
+            self.line_ids.filtered(
+                lambda linje: linje.category_id.code == "BASIC"
+            ).mapped("total")
         )
 
     def fiq_aga_belop(self, grunnlag=None):
