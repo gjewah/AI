@@ -954,3 +954,82 @@ class TestPrjData(TransactionCase):
             "En oppgave uten firma forsvant fra flaten uten feilmelding. "
             "Domenet må også slippe gjennom company_id = False.",
         )
+
+    # ---------- SJEKKLISTE SOM VALGFRI NABO ----------
+
+    def test_flaten_taaler_at_sjekkliste_motoren_mangler(self):
+        """🔴 Sjekklisten er et TILLEGG, ikke en forutsetning for å se prosjekter.
+
+        `fiq_sjekkliste` ble skilt ut som egen modul 24.07. Feltene
+        `fiq_sjekkliste_ids` og `fiq_sjekkliste_fremdrift` bor der nå, og ble
+        lest sju steder i datalaget UTEN vakt.
+
+        🔑 Uten vakten ville et AttributeError felt `_node()`,
+        `get_oppgaver_over_tid()` OG `get_oppgaver()` — altså Gantt, Liste og
+        Kanban samtidig. Ikke en tom kolonne: en flate som ikke laster.
+
+        Testen bruker en attrapp UTEN feltene, fordi modulen er installert i
+        denne basen og tilstanden ellers ikke kan oppstå. Det er samme grep som
+        `test_prioritet_ukjent_verdi_faller_til_normal`: vi kan ikke avinstallere
+        en nabo midt i en test, men vi kan spørre vakten hva den gjør.
+
+        📌 Hvilken feil fanger den om tre måneder? At noen fjerner vakten fordi
+        «feltet finnes jo alltid» — som det gjør, helt til motoren avinstalleres.
+        """
+
+        class UtenSjekkliste:
+            _fields = {}
+
+        self.assertEqual(
+            self.Data._sjekkliste_fremdrift(UtenSjekkliste()),
+            0.0,
+            "Uten motoren skal fremdriften være 0.0 — ikke felle flaten",
+        )
+
+    def test_sjekkliste_fremdrift_avrundes_til_en_desimal(self):
+        """Flaten viser «12,3 %» — ikke «12,333333333».
+
+        🔑 Avrundingen skjedde tidligere på syv ulike steder. Nå gjør vakten
+        det ett sted. Testen låser at den fortsatt gjør det: fjerner noen
+        `round()` i vakten, får flaten et tall den ikke kan tegne pent.
+        """
+        prosjekt = self.Project.search(self._prosjekt_domene_for_test(), limit=1)
+        if not prosjekt:
+            self.skipTest("Ingen prosjekter å teste mot")
+
+        oppgave = self.env["project.task"].create(
+            {"name": "TEST avrunding", "project_id": prosjekt.id}
+        )
+        verdi = self.Data._sjekkliste_fremdrift(oppgave)
+        self.assertEqual(
+            verdi,
+            round(verdi, 1),
+            "Fremdriften er ikke avrundet til én desimal",
+        )
+
+    def test_sjekklister_gir_alltid_noe_som_kan_telles_og_itereres(self):
+        """Kontrakten mellom datalaget og flaten: `len()` og `for` må virke.
+
+        🔑 Vakten returnerer `task.browse()` — en TOM MENGDE av samme modell,
+        ikke `[]` og ikke `None`. Forskjellen betyr noe: `len(None)` kaster,
+        og en liste tåler ikke `.sorted()` eller `.mapped()` som koden bruker
+        lenger nede.
+
+        📌 Hvilken feil fanger den? At noen «forenkler» vakten til `return []`
+        fordi det ser renere ut — og at `get_sjekklister()` da kaster på første
+        oppgave uten sjekklister.
+        """
+        prosjekt = self.Project.search(self._prosjekt_domene_for_test(), limit=1)
+        if not prosjekt:
+            self.skipTest("Ingen prosjekter å teste mot")
+
+        oppgave = self.env["project.task"].create(
+            {"name": "TEST tom mengde", "project_id": prosjekt.id}
+        )
+        lister = self.Data._sjekklister(oppgave)
+        self.assertEqual(len(lister), 0, "Ny oppgave skal ikke ha sjekklister")
+        self.assertEqual(
+            list(lister), [], "Mengden skal kunne itereres, ikke bare telles"
+        )
+        # `.mapped()` finnes bare på en recordset — beviser at det ikke er en liste.
+        self.assertEqual(lister.mapped("id"), [])

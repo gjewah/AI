@@ -104,6 +104,45 @@ class FiqGuiPrjData(models.AbstractModel):
         verdi = task.fiq_prioritet
         return verdi if verdi in self.PRIORITET_LOVLIG else "m"
 
+    # ---------- sjekkliste: en VALGFRI nabo ----------
+
+    def _sjekklister(self, task):
+        """Sjekklistene på en oppgave — tom mengde hvis motoren ikke er der.
+
+        🔴 VAKT LAGT INN 24.07, etter at `fiq_sjekkliste` ble skilt ut som egen
+        modul (Gjermunds ordre: «ja skill den ut»).
+
+        `fiq_sjekkliste_ids` og `fiq_sjekkliste_fremdrift` bor nå i en annen
+        modul. Den står i `depends`, så feltene FINNES i dag — men vakten er
+        her likevel, og grunnen er prinsipiell:
+
+        🔑 SJEKKLISTEN ER ET TILLEGG, IKKE EN FORUTSETNING FOR Å SE PROSJEKTER
+        I TID. Avinstalleres motoren, skal Gantt, Liste og Kanban fortsatt
+        virke — uten sjekkliste-kolonnen. Uten vakten ville et `AttributeError`
+        felt `_node()`, `get_oppgaver_over_tid()` OG `get_oppgaver()`, altså
+        alle tre visningene. Ikke en tom kolonne: en flate som ikke laster.
+
+        📌 Samme mønster som `planned_date_begin` (Enterprise) og `code`
+        (`project_sequence_number`) — begge valgfrie naboer, begge guardet
+        siden 1.20.0 etter at de felte flaten på Dev 20.07.
+
+        🔑 ÉN metode framfor sju vakter: da kan ikke en fremtidig endring treffe
+        det ene stedet og ikke det andre. Samme grep som `_prioritet()`.
+        """
+        if "fiq_sjekkliste_ids" not in task._fields:
+            return task.browse()  # tom mengde av samme modell — `len()` og `for` virker
+        return task.fiq_sjekkliste_ids
+
+    def _sjekkliste_fremdrift(self, task):
+        """Snitt-fremdrift på oppgavens sjekklister — 0.0 uten motoren.
+
+        Skilt fra `_sjekklister()` fordi feltet er et EGET compute-felt, ikke
+        utledet av mengden. Mangler modulen, finnes verken feltet eller tallet.
+        """
+        if "fiq_sjekkliste_fremdrift" not in task._fields:
+            return 0.0
+        return round(task.fiq_sjekkliste_fremdrift or 0.0, 1)
+
     # ---------- budsjett-aksen (kravspek batch 15) ----------
 
     def _budsjett_status(self, fort, budsjett, ferdig):
@@ -177,8 +216,8 @@ class FiqGuiPrjData(models.AbstractModel):
             "egne_timer": round(egen_fort, 1),
             "forbruk_prosent": self._forbruk_prosent(fort, budsjett),
             "budsjett_status": status,
-            "antall_sjekklister": len(task.fiq_sjekkliste_ids),
-            "sjekkliste_fremdrift": round(task.fiq_sjekkliste_fremdrift or 0.0, 1),
+            "antall_sjekklister": len(self._sjekklister(task)),
+            "sjekkliste_fremdrift": self._sjekkliste_fremdrift(task),
             "barn": barn,
         }
 
@@ -580,8 +619,8 @@ class FiqGuiPrjData(models.AbstractModel):
                     "forbruk_prosent": self._forbruk_prosent(fort, budsjett),
                     "budsjett_status": self._budsjett_status(fort, budsjett, ferdig),
                     "tid_status": self._tid_status(t, ferdig, i_dag),
-                    "antall_sjekklister": len(t.fiq_sjekkliste_ids),
-                    "sjekkliste_fremdrift": round(t.fiq_sjekkliste_fremdrift or 0.0, 1),
+                    "antall_sjekklister": len(self._sjekklister(t)),
+                    "sjekkliste_fremdrift": self._sjekkliste_fremdrift(t),
                 }
             )
 
@@ -659,7 +698,7 @@ class FiqGuiPrjData(models.AbstractModel):
             return {"tilgjengelig": True, "lister": [], "oppgave": False}
 
         lister = []
-        for s in oppgave.fiq_sjekkliste_ids:
+        for s in self._sjekklister(oppgave):
             punkter = []
             for p in s.punkt_ids.sorted(key=lambda x: (x.sequence, x.id)):
                 # Kravene er UAVHENGIGE (Gjermund 16.07): dok / foto / signatur.
@@ -1021,8 +1060,8 @@ class FiqGuiPrjData(models.AbstractModel):
                     "forte_timer": round(fort, 1),
                     "forbruk_prosent": self._forbruk_prosent(fort, budsjett),
                     "budsjett_status": self._budsjett_status(fort, budsjett, ferdig),
-                    "antall_sjekklister": len(t.fiq_sjekkliste_ids),
-                    "sjekkliste_fremdrift": round(t.fiq_sjekkliste_fremdrift or 0.0, 1),
+                    "antall_sjekklister": len(self._sjekklister(t)),
+                    "sjekkliste_fremdrift": self._sjekkliste_fremdrift(t),
                 }
             )
         prosjekt = self.env["project.project"].browse(int(prosjekt_id))
