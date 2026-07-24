@@ -281,6 +281,40 @@ class TestFinData(TransactionCase):
             "Tre fakturaer fra SAMME kunde er ÉN kunde med faresignal",
         )
 
+    def test_kreditnota_gjor_ikke_kunden_usynlig_naar_kravet_bestaar(self):
+        """🔴 REGRESJON, andre side: fiksen må ikke trekke fra for MYE.
+
+        Da kreditnota-feilen ble rettet 24.07, ble det innført fortegnshåndtering
+        per bilagstype. Denne testen låser at en LITEN kreditnota ikke nuller ut
+        et STORT krav: 90 000 faktura − 5 000 kreditnota = 85 000, fortsatt godt
+        over terskelen. Uten den kunne en fortegnsfeil den andre veien gjort
+        kunder usynlige — like farlig, motsatt retning.
+        """
+        kunde = self._kunde("FIQ Test Liten Kreditnota AS")
+        self._faktura(kunde, -90, 90000.0)
+        kreditnota = self.Move.create(
+            {
+                "move_type": "out_refund",
+                "partner_id": kunde.id,
+                "invoice_date": self.i_dag,
+                "invoice_date_due": fields.Date.add(self.i_dag, days=-90),
+                "invoice_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "product_id": self.produkt.id,
+                            "quantity": 1,
+                            "price_unit": 5000.0,
+                            "tax_ids": [(6, 0, [])],
+                        },
+                    )
+                ],
+            }
+        )
+        kreditnota.action_post()
+        self.assertIn("FIQ Test Liten Kreditnota AS", self._faresignal_navn())
+
     # ---------- FRAVÆR: flaten skal TIE når grunnlaget mangler ----------
 
     def test_ingen_faresignal_gir_tom_liste_ikke_plassholder(self):

@@ -136,17 +136,39 @@ class FiqGuiFinData(models.AbstractModel):
         grense = fields.Date.subtract(i_dag, days=selv.FARE_DAGER)
         Move = selv.env["account.move"]
 
-        # Grupper per kunde: sum utestående + eldste forfall.
+        # 🔴 FEIL FUNNET AV TEST 24.07 (AI IQ-gaten, kjøring 446 tester):
+        # `amount_residual` er POSITIVT for både faktura og kreditnota. Grupperer
+        # man rått på `partner_id`, legges de sammen: 25 000 faktura + 20 000
+        # kreditnota ga 45 000 i stedet for 5 000. Kunden ble flagget som
+        # kredittrisiko for nesten dobbelt av hva hun faktisk skylder — en daglig
+        # leder ville purret på et krav som ikke finnes.
+        #
+        # Derfor grupperes det på BÅDE partner og bilagstype, og kreditnotaer
+        # trekkes fra. `_read_group` kan ikke gjøre fortegnet for oss.
         grupper = Move._read_group(
             selv._kunde_domene(selv),
-            groupby=["partner_id"],
+            groupby=["partner_id", "move_type"],
             aggregates=["amount_residual:sum", "invoice_date_due:min"],
         )
 
-        totalt = len(grupper)
+        # Slå sammen per kunde med riktig fortegn.
+        per_kunde = {}
+        for partner, move_type, sum_rest, eldste in grupper:
+            netto, gammel = per_kunde.get(partner, (0.0, None))
+            if move_type in ("out_refund", "in_refund"):
+                netto -= sum_rest  # kreditnota reduserer kravet
+            else:
+                netto += sum_rest
+            # Eldste forfall på tvers av bilagene — kreditnotaer teller ikke som
+            # «alder», bare fakturaer skaper et krav som blir gammelt.
+            if move_type not in ("out_refund", "in_refund") and eldste:
+                gammel = eldste if gammel is None else min(gammel, eldste)
+            per_kunde[partner] = (netto, gammel)
+
+        totalt = len(per_kunde)
         i_dag_ant = 0
         faresignal = []
-        for partner, sum_rest, eldste in grupper:
+        for partner, (sum_rest, eldste) in per_kunde.items():
             if eldste and eldste == i_dag:
                 i_dag_ant += 1
             # Faresignal = skylder MYE og har ligget LENGE. Begge, ikke én av dem —
