@@ -37,12 +37,24 @@ VERSJON = re.compile(r'"version"\s*:\s*"([\d.]+)"')
 # Minst fire ledd, ellers treffer den datoer og tilfeldige tall.
 VERSJON_I_EMNE = re.compile(r"\b(\d+\.\d+\.\d+\.\d+(?:\.\d+)?)\b")
 # Mapper som faktisk kjores hos brukeren. `tests/` er BEVISST utelatt.
-KJORT_KODE = ("models/", "views/", "static/", "security/", "data/", "wizards/", "report/")
+KJORT_KODE = (
+    "models/",
+    "views/",
+    "static/",
+    "security/",
+    "data/",
+    "wizards/",
+    "report/",
+)
 
 
 def _git(*args):
     return subprocess.run(
-        ["git", *args], capture_output=True, text=True, encoding="utf-8", errors="replace"
+        ["git", *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
     ).stdout
 
 
@@ -54,7 +66,9 @@ def _versjon(sha, sti):
 def _commiter(siden):
     """(sha, emne, {modul: {filer}}) for hver commit, nyeste forst."""
     ut, sha, emne, filer = [], None, None, collections.defaultdict(set)
-    for linje in _git("log", f"--since={siden}", "--format=@@%H|%s", "--name-only").splitlines():
+    for linje in _git(
+        "log", f"--since={siden}", "--format=@@%H|%s", "--name-only"
+    ).splitlines():
         if linje.startswith("@@"):
             if sha:
                 ut.append((sha, emne, dict(filer)))
@@ -79,7 +93,9 @@ def kontroll_1_kollisjon(commiter):
     sett = collections.defaultdict(list)
     for sha, emne, mods in commiter:
         for mod, fs in mods.items():
-            if f"{mod}/__manifest__.py" in fs and (v := _versjon(sha, f"{mod}/__manifest__.py")):
+            if f"{mod}/__manifest__.py" in fs and (
+                v := _versjon(sha, f"{mod}/__manifest__.py")
+            ):
                 sett[(mod, v)].append((sha[:7], emne))
     return [
         (mod, v, treff) for (mod, v), treff in sorted(sett.items()) if len(treff) > 1
