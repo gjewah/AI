@@ -15,6 +15,7 @@ KJERNEFAKTA:
 - Anthropic har INGEN embeddings og INGEN transkripsjon → de forblir OpenAI/Google.
 - `max_tokens` er PÅKREVD av Anthropic. `temperature` sendes IKKE (avvises på Opus 4.8 / Sonnet 5).
 """
+
 import json
 
 # --- Sentinel for strukturert JSON-utdata (Anthropic har ikke output_config.format) ---
@@ -26,8 +27,10 @@ class ClaudeProvider:
     NAME = "anthropic"
     DISPLAY_NAME = "Anthropic (Claude)"
     API_URL = "https://api.anthropic.com/v1"
-    KEY_PARAM = "ai.anthropic_key"           # system-param som holder API-nøkkelen
-    BASEURL_PARAM = "ai.anthropic_base_url"  # config-drevet: flippes til FIQ-gateway senere
+    KEY_PARAM = "ai.anthropic_key"  # system-param som holder API-nøkkelen
+    BASEURL_PARAM = (
+        "ai.anthropic_base_url"  # config-drevet: flippes til FIQ-gateway senere
+    )
     MAXTOKENS_PARAM = "ai.anthropic_max_tokens"
     ANTHROPIC_VERSION = "2023-06-01"
     DEFAULT_MAX_TOKENS = 8192
@@ -81,24 +84,36 @@ class ClaudeProvider:
     @staticmethod
     def _build_user_content(user_prompts, files):
         content = []
-        for prompt in (user_prompts or []):
+        for prompt in user_prompts or []:
             if prompt:
                 content.append({"type": "text", "text": prompt})
-        for f in (files or []):
+        for f in files or []:
             mimetype = f.get("mimetype", "")
             value = f.get("value")
             if mimetype == "text/plain":
                 content.append({"type": "text", "text": value})
             elif mimetype.startswith("image/"):
-                content.append({
-                    "type": "image",
-                    "source": {"type": "base64", "media_type": mimetype, "data": value},
-                })
+                content.append(
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": mimetype,
+                            "data": value,
+                        },
+                    }
+                )
             elif mimetype == "application/pdf":
-                content.append({
-                    "type": "document",
-                    "source": {"type": "base64", "media_type": "application/pdf", "data": value},
-                })
+                content.append(
+                    {
+                        "type": "document",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "application/pdf",
+                            "data": value,
+                        },
+                    }
+                )
             else:
                 content.append({"type": "text", "text": str(value)})
         if not content:
@@ -113,16 +128,30 @@ class ClaudeProvider:
         for name, spec in (tools or {}).items():
             description = spec[0]
             parameter_schema = spec[3]
-            anth_tools.append({
-                "name": name,
-                "description": description,
-                "input_schema": parameter_schema,
-            })
+            anth_tools.append(
+                {
+                    "name": name,
+                    "description": description,
+                    "input_schema": parameter_schema,
+                }
+            )
         return anth_tools
 
     @classmethod
-    def build_message_body(cls, model, system_prompts, user_prompts, tools, files, schema, inputs, max_tokens):
-        messages = [{"role": "user", "content": cls._build_user_content(user_prompts, files)}]
+    def build_message_body(
+        cls,
+        model,
+        system_prompts,
+        user_prompts,
+        tools,
+        files,
+        schema,
+        inputs,
+        max_tokens,
+    ):
+        messages = [
+            {"role": "user", "content": cls._build_user_content(user_prompts, files)}
+        ]
         # `inputs` = akkumulerte assistant(tool_use) / user(tool_result)-meldinger fra loopen.
         messages.extend(inputs or [])
 
@@ -136,16 +165,21 @@ class ClaudeProvider:
         anth_tools = cls._build_tools(tools)
         if schema and not tools:
             # Strukturert JSON: tving et enkelt-verktøy og les inputen som svaret.
-            anth_tools.append({
-                "name": _STRUCTURED_TOOL,
-                "description": "Return the final answer strictly matching the given JSON schema.",
-                "input_schema": schema,
-            })
+            anth_tools.append(
+                {
+                    "name": _STRUCTURED_TOOL,
+                    "description": "Return the final answer strictly matching the given JSON schema.",
+                    "input_schema": schema,
+                }
+            )
             body["tool_choice"] = {"type": "tool", "name": _STRUCTURED_TOOL}
         elif schema and tools:
             # Kombinert: legg schema som instruksjon (mykere, men unngår tool-konflikt).
-            system = (system + "\n\nWhen giving the final answer, respond with JSON matching this schema: "
-                      + json.dumps(schema)).strip()
+            system = (
+                system
+                + "\n\nWhen giving the final answer, respond with JSON matching this schema: "
+                + json.dumps(schema)
+            ).strip()
 
         if system:
             body["system"] = system
@@ -158,11 +192,13 @@ class ClaudeProvider:
         """Anthropic-gren for LLMApiService._build_tool_call_response."""
         return {
             "role": "user",
-            "content": [{
-                "type": "tool_result",
-                "tool_use_id": tool_call_id,
-                "content": str(return_value),
-            }],
+            "content": [
+                {
+                    "type": "tool_result",
+                    "tool_use_id": tool_call_id,
+                    "content": str(return_value),
+                }
+            ],
         }
 
     @staticmethod
