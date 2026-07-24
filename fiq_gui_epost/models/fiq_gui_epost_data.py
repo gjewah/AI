@@ -752,8 +752,14 @@ class FiqMeldingssenterData(models.AbstractModel):
         m.sudo().write({"model": model, "res_id": target.id})
         if hasattr(target, "message_post"):
             target.message_post(
-                body="Melding paret hit fra Kommunikasjon av {}: {}".format(
-                    self.env.user.name, m.subject or "(uten emne)"
+                # 🛑 NORSK ER KILDESPRÅKET (Gjermund 24.07: «du må bruke norsk og
+                # oversette til engelsk, eller blir det feil i Odoo»). `env._()` står
+                # rundt den NORSKE strengen; engelsk kommer fra i18n/en_US.po.
+                # Uten `env._()` blir meldingen aldri oversettbar (C8107).
+                body=self.env._(
+                    "Melding paret hit fra Kommunikasjon av %(bruker)s: %(emne)s",
+                    bruker=self.env.user.name,
+                    emne=m.subject or "(uten emne)",
                 ),
                 message_type="comment",
             )
@@ -796,7 +802,8 @@ class FiqMeldingssenterData(models.AbstractModel):
             return False
         target.message_post(
             body=m.body or (m.preview or ""),
-            subject="[Arkivert] %s" % (m.subject or ""),
+            # Norsk kilde + env._() → oversettbar. Se merknaden i par_melding().
+            subject=self.env._("[Arkivert] %(emne)s", emne=m.subject or ""),
             attachment_ids=m.attachment_ids.ids,
             message_type="comment",
         )
@@ -1681,7 +1688,7 @@ class FiqMeldingssenterData(models.AbstractModel):
         if not target or not hasattr(target, "message_post"):
             return False
         target.message_post(
-            body="Vedlegg fra e-post: %s" % (m.subject or ""),
+            body=self.env._("Vedlegg fra e-post: %(emne)s", emne=m.subject or ""),
             attachment_ids=m.attachment_ids.ids,
             message_type="comment",
             subtype_xmlid="mail.mt_note",

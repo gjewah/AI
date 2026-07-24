@@ -22,7 +22,6 @@ class FiqKommRegel(models.Model):
             ("innhold", "Innhold"),
             ("element", "Element"),
         ],
-        string="Felt",
         default="emne",
         required=True,
     )
@@ -31,18 +30,16 @@ class FiqKommRegel(models.Model):
             ("inneholder", "inneholder"),
             ("er_lik", "er lik"),
         ],
-        string="Operator",
         default="inneholder",
         required=True,
     )
-    verdi = fields.Char(string="Verdi", required=True)
+    verdi = fields.Char(required=True)
     handling = fields.Selection(
         [
             ("status_apen", "Sett status: Åpen"),
             ("status_pagar", "Sett status: Pågår"),
             ("status_ferdig", "Sett status: Ferdig"),
         ],
-        string="Handling",
         default="status_apen",
         required=True,
     )
