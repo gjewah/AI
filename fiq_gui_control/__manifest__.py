@@ -1,6 +1,6 @@
 {
     "name": "Control room",
-    "version": "19.0.7.11.5",
+    "version": "19.0.7.11.6",
     "summary": "Control room – the unified OWL shell (dashboard/landing) that hosts every "
     "main menu as a navigation view: company picker, Simple/Full mode, per-company "
     "accent/logo, KPIs from real Odoo data, communication and dynamic widgets.",
@@ -20,7 +20,7 @@ Key features
  * Communication view (email/messages) with direction + sender filtering.
  * Fully translatable – English source, Norwegian (nb_NO) provided; follows the user's language.
 """,
-    "author": "FIQ AS",
+    "author": "FIQ as",
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
     "license": "OPL-1",

@@ -24,9 +24,11 @@ class FiqControlRoomConfig(models.Model):
     _description = "FIQ Control room – user setup"
     _rec_name = "user_id"
 
+    # Ingen `string=` på disse to: Odoo utleder «User» fra `user_id` og «Company» fra
+    # `company_id` automatisk. En eksplisitt etikett som gjentar utledningen er støy som
+    # må vedlikeholdes i to lag — og den blokkerte CI-porten (W8113).
     user_id = fields.Many2one(
         "res.users",
-        string="User",
         required=True,
         index=True,
         ondelete="cascade",
@@ -34,7 +36,6 @@ class FiqControlRoomConfig(models.Model):
     )
     company_id = fields.Many2one(
         "res.company",
-        string="Company",
         required=True,
         index=True,
         default=lambda s: s.env.company,
@@ -1883,7 +1884,18 @@ class FiqControlRoomConfig(models.Model):
             return label.get(lang) or label.get("nb_NO") or label.get("en_US") or next(iter(label.values()), key)
         if label:
             # Plain string: run it through gettext so labels listed in our own i18n/*.po translate.
-            return _(label)  # pylint: disable=gettext-variable
+            #
+            # ⚠️ BEVISST, MEN SKJØRT — les dette før noen «rydder» her.
+            # `_()` med en VARIABEL kan ikke leses av gettext-uttrekkeren: den skanner kildekoden
+            # etter `_("fast tekst")` og finner ingenting her. Oversettelsen virker derfor KUN
+            # hvis strengen tilfeldigvis alt står i `i18n/*.po` fra et annet sted.
+            # ✅ Målt 24.07.2026: alle fem registrerte etikettene — «Inspections», «Deviations»,
+            #    «Timeline», «AI roles», «Message routing» — ligger i nb_NO.po. Det VIRKER i dag.
+            # 🛑 Men en ny modul som registrerer seg med en NY etikett får den ikke oversatt, og
+            #    ingenting varsler: teksten står bare på engelsk. En stille mangel, ikke en feil.
+            # 👉 Den varige løsningen er dict-formen over (`{"en_US": …, "nb_NO": …}`), der modulen
+            #    eier sine egne oversettelser. Denne grenen er ren bakoverkompatibilitet.
+            return _(label)
         return key.replace("_", " ").title()
 
     def _skjulte_flater(self):
