@@ -79,9 +79,13 @@ class FiqGuiSalgData(models.AbstractModel):
         Navnet leses uten språk-context med vilje: prefikset `9.99` er likt i
         alle språklinjer, mens ordet etter er oversatt. Vi matcher på tallet.
         """
-        return selv.env["crm.stage"].search([
-            "|", ("is_won", "=", True), ("name", "=like", "9.99%"),
-        ])
+        return selv.env["crm.stage"].search(
+            [
+                "|",
+                ("is_won", "=", True),
+                ("name", "=like", "9.99%"),
+            ]
+        )
 
     @api.model
     def get_kr_boks(self, company_id=False):
@@ -121,10 +125,12 @@ class FiqGuiSalgData(models.AbstractModel):
             # Navn, ikke ID — husets regel. `display_name` bærer kundenavnet
             # slik brukeren kjenner det, også når navnemønsteret er satt opp
             # per firma (Loym-oppsettet gjør nettopp det).
-            linjer.append({
-                "tekst": f"{lead.display_name} — {dager} dager over frist",
-                "res_id": lead.id,
-            })
+            linjer.append(
+                {
+                    "tekst": f"{lead.display_name} — {dager} dager over frist",
+                    "res_id": lead.id,
+                }
+            )
 
         return {
             "haster": len(forfalt),
@@ -172,14 +178,16 @@ class FiqGuiSalgData(models.AbstractModel):
         ut = []
         for stadium in selv.env["crm.stage"].search([], order="sequence, id"):
             antall, sum_kr = per_stadium.get(stadium.id, (0, 0.0))
-            ut.append({
-                "id": stadium.id,
-                "navn": stadium.display_name,
-                "vunnet": bool(stadium.is_won),
-                # Avsluttet = vunnet ELLER tapt. Flaten demper disse: de er
-                # historikk, ikke arbeid som venter.
-                "avsluttet": stadium.id in avsluttede,
-                "antall": antall,
-                "verdi": sum_kr,
-            })
+            ut.append(
+                {
+                    "id": stadium.id,
+                    "navn": stadium.display_name,
+                    "vunnet": bool(stadium.is_won),
+                    # Avsluttet = vunnet ELLER tapt. Flaten demper disse: de er
+                    # historikk, ikke arbeid som venter.
+                    "avsluttet": stadium.id in avsluttede,
+                    "antall": antall,
+                    "verdi": sum_kr,
+                }
+            )
         return ut

@@ -2,7 +2,7 @@
     "name": "FIQ Salgsmuligheter",
     "version": "19.0.1.5.3",
     "summary": "AI GUI Salg (6 SALG) — visningen av AI Salg-Rådgiveren: pipeline per "
-               "stadium med antall og forventet omsetning, lest fra crm.lead.",
+    "stadium med antall og forventet omsetning, lest fra crm.lead.",
     "description": """
 FIQ GUI Salg — flate 6 SALG
 ===========================
@@ -48,7 +48,6 @@ Harde regler innebygd i flaten
             "fiq_gui_crm_leads/static/src/crm_leads.scss",
             "fiq_gui_crm_leads/static/src/crm_leads.js",
             "fiq_gui_crm_leads/static/src/crm_leads.xml",
-
         ],
     },
     "application": True,

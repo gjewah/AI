@@ -2,7 +2,7 @@
     "name": "FIQ Salgsordre",
     "version": "19.0.1.3.1",
     "summary": "FIQ GUI-skjelett for flaten CRM salgsordre – OWL klient-handling "
-               "(placeholder-dashbord), menuitem og rettighetsgruppe. Klar for ekte funksjonalitet.",
+    "(placeholder-dashbord), menuitem og rettighetsgruppe. Klar for ekte funksjonalitet.",
     "description": """
 FIQ GUI CRM salgsordre
 ======================
@@ -31,7 +31,6 @@ Bygd rent og konsistent med Hovedmeny-stilen, klart for å fylles med ekte funks
             "fiq_gui_crm_so/static/src/crm_so.scss",
             "fiq_gui_crm_so/static/src/crm_so.js",
             "fiq_gui_crm_so/static/src/crm_so.xml",
-
         ],
     },
     "application": True,

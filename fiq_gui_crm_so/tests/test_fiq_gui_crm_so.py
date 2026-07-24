@@ -27,7 +27,6 @@ from odoo.tests import TransactionCase, tagged
 
 @tagged("post_install", "-at_install", "fiq")
 class TestFiqGuiCrmSo(TransactionCase):
-
     def test_klienthandling_finnes_og_peker_paa_flaten(self):
         """Handlingen må finnes OG ha riktig `tag`.
 
@@ -39,7 +38,8 @@ class TestFiqGuiCrmSo(TransactionCase):
         handling = self.env.ref("fiq_gui_crm_so.action_fiq_gui_crm_so")
         self.assertEqual(handling._name, "ir.actions.client")
         self.assertEqual(
-            handling.tag, "fiq_gui_crm_so_dashboard",
+            handling.tag,
+            "fiq_gui_crm_so_dashboard",
             "tag må matche registreringen i crm_so.js — ellers åpner flaten ingenting.",
         )
 
@@ -47,7 +47,8 @@ class TestFiqGuiCrmSo(TransactionCase):
         """Rettighetsgruppa må finnes og arve `base.group_user`."""
         gruppe = self.env.ref("fiq_gui_crm_so.group_user")
         self.assertIn(
-            self.env.ref("base.group_user"), gruppe.implied_ids,
+            self.env.ref("base.group_user"),
+            gruppe.implied_ids,
             "Gruppa må arve base.group_user, ellers får ingen ansatt tilgang.",
         )
 
@@ -57,11 +58,13 @@ class TestFiqGuiCrmSo(TransactionCase):
         Testen oppretter en ekte bruker framfor å lese en record: poenget er
         at koblingen faktisk TREFFER, ikke at XML-en ble lastet.
         """
-        bruker = self.env["res.users"].create({
-            "name": "Testbruker Salgsordre-flate",
-            "login": "test_fiq_gui_crm_so_bruker",
-            "group_ids": [(4, self.env.ref("base.group_user").id)],
-        })
+        bruker = self.env["res.users"].create(
+            {
+                "name": "Testbruker Salgsordre-flate",
+                "login": "test_fiq_gui_crm_so_bruker",
+                "group_ids": [(4, self.env.ref("base.group_user").id)],
+            }
+        )
         self.assertTrue(
             bruker.has_group("fiq_gui_crm_so.group_user"),
             "En intern bruker skal automatisk ha salgsordre-flatens gruppe.",
@@ -75,9 +78,11 @@ class TestFiqGuiCrmSo(TransactionCase):
         å hente tall — altså langt fra der feilen ble laget.
         """
         modul = self.env["ir.module.module"].search(
-            [("name", "=", "sale")], limit=1,
+            [("name", "=", "sale")],
+            limit=1,
         )
         self.assertEqual(
-            modul.state, "installed",
+            modul.state,
+            "installed",
             "fiq_gui_crm_so depends på sale — den må være installert.",
         )

@@ -20,7 +20,6 @@ from odoo.tests import TransactionCase, tagged
 #    taggen fram til 24.07 — de ville aldri kjørt i CI.
 @tagged("post_install", "-at_install", "fiq")
 class TestFiqGuiSalg(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -35,12 +34,19 @@ class TestFiqGuiSalg(TransactionCase):
         # passerte. Her lages et minimalt, komplett pipeline-bilde: ett
         # aktivt stadium, ett vunnet, ett tapt — det er alt koden skiller på.
         Stadium = cls.env["crm.stage"]
-        cls.aktivt_stadium = Stadium.create({
-            "name": "02.01 Testaktiv", "sequence": 900,
-        })
-        cls.vunnet_stadium = Stadium.create({
-            "name": "4.00 Testvunnet", "sequence": 901, "is_won": True,
-        })
+        cls.aktivt_stadium = Stadium.create(
+            {
+                "name": "02.01 Testaktiv",
+                "sequence": 900,
+            }
+        )
+        cls.vunnet_stadium = Stadium.create(
+            {
+                "name": "4.00 Testvunnet",
+                "sequence": 901,
+                "is_won": True,
+            }
+        )
 
         # 🛑 SALGSMULIGHETER MÅ HA KUNDE — `name` er BEREGNET, ikke fritekst.
         #
@@ -77,42 +83,48 @@ class TestFiqGuiSalg(TransactionCase):
 
         # Kunden må ha `short_name`: crm_name leser nettopp det feltet
         # (partner_short_name = related partner_id.short_name).
-        cls.testkunde = cls.env["res.partner"].create({
-            "name": "Testkunde Salgsflate",
-            "short_name": "TESTSALG",
-            "is_company": True,
-        })
+        cls.testkunde = cls.env["res.partner"].create(
+            {
+                "name": "Testkunde Salgsflate",
+                "short_name": "TESTSALG",
+                "is_company": True,
+            }
+        )
 
         i_dag = fields.Date.context_today(cls.Data)
         # Én sak over frist i et aktivt stadium = én sak som skal HASTE.
-        cls.forfalt_sak = cls.Lead.create({
-            # `name` MÅ med i create-kallet: crm_lead.name er NOT NULL i
-            # basen, og crm_name beregner navnet FØRST ETTER super().create()
-            # (crm_name/models/crm_lead.py:18-20) — altså etter at INSERT
-            # allerede har kjørt. Uten `name` her feiler INSERT før crm_name
-            # får sjansen. Verdien blir uansett overskrevet av det beregnede
-            # navnet rett etterpå; den er kun en gyldig plassholder for INSERT.
-            "name": "Testsak",
-            "partner_id": cls.testkunde.id,
-            "type": "opportunity",
-            "stage_id": cls.aktivt_stadium.id,
-            "date_deadline": fields.Date.subtract(i_dag, days=10),
-            "expected_revenue": 50000.0,
-        })
+        cls.forfalt_sak = cls.Lead.create(
+            {
+                # `name` MÅ med i create-kallet: crm_lead.name er NOT NULL i
+                # basen, og crm_name beregner navnet FØRST ETTER super().create()
+                # (crm_name/models/crm_lead.py:18-20) — altså etter at INSERT
+                # allerede har kjørt. Uten `name` her feiler INSERT før crm_name
+                # får sjansen. Verdien blir uansett overskrevet av det beregnede
+                # navnet rett etterpå; den er kun en gyldig plassholder for INSERT.
+                "name": "Testsak",
+                "partner_id": cls.testkunde.id,
+                "type": "opportunity",
+                "stage_id": cls.aktivt_stadium.id,
+                "date_deadline": fields.Date.subtract(i_dag, days=10),
+                "expected_revenue": 50000.0,
+            }
+        )
         # Én vunnet sak: skal ALDRI telle som åpen pipeline.
-        cls.vunnet_sak = cls.Lead.create({
-            # `name` MÅ med i create-kallet: crm_lead.name er NOT NULL i
-            # basen, og crm_name beregner navnet FØRST ETTER super().create()
-            # (crm_name/models/crm_lead.py:18-20) — altså etter at INSERT
-            # allerede har kjørt. Uten `name` her feiler INSERT før crm_name
-            # får sjansen. Verdien blir uansett overskrevet av det beregnede
-            # navnet rett etterpå; den er kun en gyldig plassholder for INSERT.
-            "name": "Testsak",
-            "partner_id": cls.testkunde.id,
-            "type": "opportunity",
-            "stage_id": cls.vunnet_stadium.id,
-            "expected_revenue": 80000.0,
-        })
+        cls.vunnet_sak = cls.Lead.create(
+            {
+                # `name` MÅ med i create-kallet: crm_lead.name er NOT NULL i
+                # basen, og crm_name beregner navnet FØRST ETTER super().create()
+                # (crm_name/models/crm_lead.py:18-20) — altså etter at INSERT
+                # allerede har kjørt. Uten `name` her feiler INSERT før crm_name
+                # får sjansen. Verdien blir uansett overskrevet av det beregnede
+                # navnet rett etterpå; den er kun en gyldig plassholder for INSERT.
+                "name": "Testsak",
+                "partner_id": cls.testkunde.id,
+                "type": "opportunity",
+                "stage_id": cls.vunnet_stadium.id,
+                "expected_revenue": 80000.0,
+            }
+        )
 
     def test_pipeline_har_alle_stadier(self):
         """Pipelinen viser hvert stadium i basen — også de tomme.
@@ -162,11 +174,13 @@ class TestFiqGuiSalg(TransactionCase):
         boks = self.Data.get_kr_boks()
         self.assertIsNotNone(boks, "Med en aktiv sak skal boksen finnes.")
         avsluttede = self.Data._avsluttede_stadier(self.Data).ids
-        aktive = self.Lead.search_count([
-            ("type", "=", "opportunity"),
-            ("stage_id.is_won", "=", False),
-            ("stage_id", "not in", avsluttede),
-        ])
+        aktive = self.Lead.search_count(
+            [
+                ("type", "=", "opportunity"),
+                ("stage_id.is_won", "=", False),
+                ("stage_id", "not in", avsluttede),
+            ]
+        )
         self.assertEqual(boks["totalt"], aktive)
 
     def test_tapte_teller_ikke_som_apen_pipeline(self):
@@ -191,31 +205,36 @@ class TestFiqGuiSalg(TransactionCase):
         ikke det som kjørte» ([[00_FERDIG]] port 6: testen må OPPRETTE
         tilstanden den verner mot, ikke bare lese den).
         """
-        tapt_stadium = self.env["crm.stage"].create({
-            "name": "9.99 Testtapt",
-            "sequence": 999,
-            # is_won bevisst usatt: det er nettopp poenget. Odoo har ingen
-            # `is_lost`, så koden må kjenne igjen tapt på nummerprefikset.
-        })
+        tapt_stadium = self.env["crm.stage"].create(
+            {
+                "name": "9.99 Testtapt",
+                "sequence": 999,
+                # is_won bevisst usatt: det er nettopp poenget. Odoo har ingen
+                # `is_lost`, så koden må kjenne igjen tapt på nummerprefikset.
+            }
+        )
 
         for_boks = self.Data.get_kr_boks()
         for_antall = for_boks["totalt"] if for_boks else 0
 
-        self.Lead.create({
-            # `name` som plassholder for INSERT, kunde for det beregnede
-            # navnet. Se setUpClass for hvorfor begge trengs.
-            "name": "Regresjonstest tapt sak",
-            "partner_id": self.testkunde.id,
-            "type": "opportunity",
-            "stage_id": tapt_stadium.id,
-            "active": True,          # ikke arkivert — det er hele poenget
-            "expected_revenue": 999999.0,
-        })
+        self.Lead.create(
+            {
+                # `name` som plassholder for INSERT, kunde for det beregnede
+                # navnet. Se setUpClass for hvorfor begge trengs.
+                "name": "Regresjonstest tapt sak",
+                "partner_id": self.testkunde.id,
+                "type": "opportunity",
+                "stage_id": tapt_stadium.id,
+                "active": True,  # ikke arkivert — det er hele poenget
+                "expected_revenue": 999999.0,
+            }
+        )
 
         etter_boks = self.Data.get_kr_boks()
         etter_antall = etter_boks["totalt"] if etter_boks else 0
         self.assertEqual(
-            etter_antall, for_antall,
+            etter_antall,
+            for_antall,
             "En tapt sak som ikke er arkivert skal ikke øke åpen pipeline.",
         )
 
@@ -229,7 +248,8 @@ class TestFiqGuiSalg(TransactionCase):
         avsluttede = self.Data._avsluttede_stadier(self.Data).ids
         for stadium in stadier:
             self.assertEqual(
-                stadium["avsluttet"], stadium["id"] in avsluttede,
+                stadium["avsluttet"],
+                stadium["id"] in avsluttede,
                 f"Stadiet «{stadium['navn']}» er feilmerket.",
             )
 
@@ -251,7 +271,8 @@ class TestFiqGuiSalg(TransactionCase):
         # Den forfalte testsaken fra setUpClass SKAL være med i haster-tallet.
         # Uten denne sjekken kunne boksen returnert riktig FORM med gale TALL.
         self.assertGreaterEqual(
-            boks["haster"], 1,
+            boks["haster"],
+            1,
             "En sak 10 dager over frist i et aktivt stadium skal haste.",
         )
 

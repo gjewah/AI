@@ -23,7 +23,6 @@ from odoo.tests import TransactionCase, tagged
 
 @tagged("post_install", "-at_install", "fiq")
 class TestFiqGuiCrm(TransactionCase):
-
     def test_klienthandling_finnes_og_peker_paa_flaten(self):
         """Handlingen må finnes OG ha riktig `tag`.
 
@@ -36,7 +35,8 @@ class TestFiqGuiCrm(TransactionCase):
         handling = self.env.ref("fiq_gui_crm.action_fiq_gui_crm")
         self.assertEqual(handling._name, "ir.actions.client")
         self.assertEqual(
-            handling.tag, "fiq_gui_crm_dashboard",
+            handling.tag,
+            "fiq_gui_crm_dashboard",
             "tag må matche registreringen i crm.js — ellers åpner flaten ingenting.",
         )
 
@@ -48,7 +48,8 @@ class TestFiqGuiCrm(TransactionCase):
         """
         gruppe = self.env.ref("fiq_gui_crm.group_user")
         self.assertIn(
-            self.env.ref("base.group_user"), gruppe.implied_ids,
+            self.env.ref("base.group_user"),
+            gruppe.implied_ids,
             "Gruppa må arve base.group_user, ellers får ingen ansatt tilgang.",
         )
 
@@ -59,11 +60,13 @@ class TestFiqGuiCrm(TransactionCase):
         `base.group_user.implied_ids`. Testen verifiserer at koblingen faktisk
         traff: en ekte bruker skal ha gruppa, ikke bare en record som finnes.
         """
-        bruker = self.env["res.users"].create({
-            "name": "Testbruker CRM-flate",
-            "login": "test_fiq_gui_crm_bruker",
-            "group_ids": [(4, self.env.ref("base.group_user").id)],
-        })
+        bruker = self.env["res.users"].create(
+            {
+                "name": "Testbruker CRM-flate",
+                "login": "test_fiq_gui_crm_bruker",
+                "group_ids": [(4, self.env.ref("base.group_user").id)],
+            }
+        )
         self.assertTrue(
             bruker.has_group("fiq_gui_crm.group_user"),
             "En intern bruker skal automatisk ha CRM-flatens gruppe.",

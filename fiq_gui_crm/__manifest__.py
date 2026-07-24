@@ -2,7 +2,7 @@
     "name": "FIQ CRM",
     "version": "19.0.1.3.1",
     "summary": "FIQ GUI-skjelett for flaten CRM – OWL klient-handling "
-               "(placeholder-dashbord), menuitem og rettighetsgruppe. Klar for ekte funksjonalitet.",
+    "(placeholder-dashbord), menuitem og rettighetsgruppe. Klar for ekte funksjonalitet.",
     "description": """
 FIQ GUI CRM
 ===========
@@ -31,7 +31,6 @@ Bygd rent og konsistent med Hovedmeny-stilen, klart for å fylles med ekte funks
             "fiq_gui_crm/static/src/crm.scss",
             "fiq_gui_crm/static/src/crm.js",
             "fiq_gui_crm/static/src/crm.xml",
-
         ],
     },
     "application": True,
