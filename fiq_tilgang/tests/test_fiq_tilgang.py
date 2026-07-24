@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tester for rettighetsfundamentet (fiq_tilgang).
 
 Hvorfor de finnes: denne modulen avgjør HVEM SOM SER HVA på tvers av fem firmaer.
@@ -60,7 +59,6 @@ LESE, SKRIVE, ADMINISTRERE = 1, 2, 3
 
 @tagged("post_install", "-at_install", "fiq_tilgang")
 class TestFiqTilgang(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -80,9 +78,13 @@ class TestFiqTilgang(TransactionCase):
 
         # ---- Roller (org-hierarki), opprettet av testen selv ----
         cls.rolle_leder = cls.Rolle.create({"name": "Testleder", "art": "intern"})
-        cls.rolle_arbeider = cls.Rolle.create({
-            "name": "Testarbeider", "art": "intern", "parent_id": cls.rolle_leder.id,
-        })
+        cls.rolle_arbeider = cls.Rolle.create(
+            {
+                "name": "Testarbeider",
+                "art": "intern",
+                "parent_id": cls.rolle_leder.id,
+            }
+        )
         cls.rolle_ekstern = cls.Rolle.create({"name": "Testekstern", "art": "ekstern"})
 
     # ------------------------------------------------------------------
@@ -95,7 +97,7 @@ class TestFiqTilgang(TransactionCase):
     def _unikt(cls, prefiks):
         """documents.tag har UNIQUE(name) i Odoo 19 — navnet må være unikt per post."""
         TestFiqTilgang._teller += 1
-        return "%s-%d" % (prefiks, TestFiqTilgang._teller)
+        return f"{prefiks}-{TestFiqTilgang._teller}"
 
     def _omraade(self, navn, forelder=None):
         """Oppretter ET område (documents.tag), evt. under et annet."""
@@ -122,8 +124,17 @@ class TestFiqTilgang(TransactionCase):
             bruker.group_ids = [(4, g.id) for g in grupper]
         return bruker
 
-    def _regel(self, omraade, nivaa="lese", regel_type="tildeling",
-               rolle=None, bruker=None, gruppe=None, partner=None, firma=None):
+    def _regel(
+        self,
+        omraade,
+        nivaa="lese",
+        regel_type="tildeling",
+        rolle=None,
+        bruker=None,
+        gruppe=None,
+        partner=None,
+        firma=None,
+    ):
         """Oppretter ÉN tilgangsregel med eksplisitt subjekt."""
         vals = {
             "ressurs_id": omraade.id,
@@ -164,17 +175,22 @@ class TestFiqTilgang(TransactionCase):
         self._regel(omraade, nivaa="administrere", rolle=self.rolle_leder)
         uten_rolle = self._bruker("Uten Rolle", self.firma_a)
 
-        self.assertFalse(uten_rolle.fiq_tilgang_rolle_id,
-                         "Forutsetning: brukeren skal ikke ha rolle")
-        self.assertEqual(omraade.effektiv_nivaa(uten_rolle), 0,
-                         "Bruker uten rolle skal ikke arve noen tilgang")
+        self.assertFalse(
+            uten_rolle.fiq_tilgang_rolle_id, "Forutsetning: brukeren skal ikke ha rolle"
+        )
+        self.assertEqual(
+            omraade.effektiv_nivaa(uten_rolle),
+            0,
+            "Bruker uten rolle skal ikke arve noen tilgang",
+        )
 
     def test_ingen_regler_gir_null(self):
         """🛑 Et område uten én eneste regel gir 0 for alle. Nekt er standard."""
         omraade = self._omraade("Uroert")
         bruker = self._bruker("Ingen Regler", self.firma_a, rolle=self.rolle_arbeider)
-        self.assertEqual(omraade.effektiv_nivaa(bruker), 0,
-                         "Uten regler skal ingen ha tilgang")
+        self.assertEqual(
+            omraade.effektiv_nivaa(bruker), 0, "Uten regler skal ingen ha tilgang"
+        )
 
     def test_regel_for_annen_rolle_gjelder_ikke(self):
         """🛑 RANDTILFELLE «regel som ikke gjelder»: feil rolle = ingen tilgang.
@@ -186,8 +202,11 @@ class TestFiqTilgang(TransactionCase):
         self._regel(omraade, nivaa="administrere", rolle=self.rolle_leder)
         arbeider = self._bruker("Arbeider", self.firma_a, rolle=self.rolle_arbeider)
 
-        self.assertEqual(omraade.effektiv_nivaa(arbeider), 0,
-                         "Regel for Testleder skal ikke treffe Testarbeider")
+        self.assertEqual(
+            omraade.effektiv_nivaa(arbeider),
+            0,
+            "Regel for Testleder skal ikke treffe Testarbeider",
+        )
 
     def test_regel_for_annen_bruker_gjelder_ikke(self):
         """🛑 Bruker-regel er punktvis: den skal treffe ÉN bruker, ikke naboen."""
@@ -197,8 +216,9 @@ class TestFiqTilgang(TransactionCase):
         self._regel(omraade, nivaa="skrive", bruker=per)
 
         self.assertEqual(omraade.effektiv_nivaa(per), SKRIVE)
-        self.assertEqual(omraade.effektiv_nivaa(kari), 0,
-                         "Regel for Per skal ikke gi Kari tilgang")
+        self.assertEqual(
+            omraade.effektiv_nivaa(kari), 0, "Regel for Per skal ikke gi Kari tilgang"
+        )
 
     def test_rolle_hierarki_gir_ikke_automatisk_arv_av_rettigheter(self):
         """🛑 Rolle-treet er et ORG-KART, ikke en rettighetskjede.
@@ -212,10 +232,16 @@ class TestFiqTilgang(TransactionCase):
         self._regel(omraade, nivaa="administrere", rolle=self.rolle_leder)
         arbeider = self._bruker("Underordnet", self.firma_a, rolle=self.rolle_arbeider)
 
-        self.assertEqual(self.rolle_arbeider.parent_id, self.rolle_leder,
-                         "Forutsetning: arbeideren er underordnet lederen")
-        self.assertEqual(omraade.effektiv_nivaa(arbeider), 0,
-                         "Rolle-hierarkiet skal ikke arve RETTIGHETER oppover")
+        self.assertEqual(
+            self.rolle_arbeider.parent_id,
+            self.rolle_leder,
+            "Forutsetning: arbeideren er underordnet lederen",
+        )
+        self.assertEqual(
+            omraade.effektiv_nivaa(arbeider),
+            0,
+            "Rolle-hierarkiet skal ikke arve RETTIGHETER oppover",
+        )
 
     def test_partner_regel_treffer_ikke_feil_partner(self):
         """🛑 Partner-regel (portal/ekstern) skal treffe én motpart, ikke alle."""
@@ -225,8 +251,9 @@ class TestFiqTilgang(TransactionCase):
         self._regel(omraade, nivaa="lese", partner=a.partner_id)
 
         self.assertEqual(omraade.effektiv_nivaa(a), LESE)
-        self.assertEqual(omraade.effektiv_nivaa(b), 0,
-                         "Partner-regel for A skal ikke gi B tilgang")
+        self.assertEqual(
+            omraade.effektiv_nivaa(b), 0, "Partner-regel for A skal ikke gi B tilgang"
+        )
 
     # ==================================================================
     # 2. TENANT-ISOLASJON — firma A skal ALDRI se firma B
@@ -240,15 +267,19 @@ class TestFiqTilgang(TransactionCase):
         kunde en annen kundes dokumenter. Det er en GDPR-hendelse, ikke en bug.
         """
         omraade_b = self._omraade("FirmaB-Hemmelig")
-        rolle_b = self.Rolle.create({
-            "name": self._unikt("RolleB"), "art": "intern",
-            "company_id": self.firma_b.id,
-        })
+        rolle_b = self.Rolle.create(
+            {
+                "name": self._unikt("RolleB"),
+                "art": "intern",
+                "company_id": self.firma_b.id,
+            }
+        )
         self._regel(omraade_b, nivaa="administrere", rolle=rolle_b, firma=self.firma_b)
 
         bruker_a = self._bruker("Bruker A", self.firma_a, rolle=self.rolle_arbeider)
         self.assertEqual(
-            omraade_b.effektiv_nivaa(bruker_a), 0,
+            omraade_b.effektiv_nivaa(bruker_a),
+            0,
             "TENANT-LEKKASJE: bruker i firma A fikk tilgang til firma B sitt område",
         )
 
@@ -264,19 +295,24 @@ class TestFiqTilgang(TransactionCase):
         filtrere regelsøket på brukerens firma i `effektiv_nivaa()`.
         """
         generisk = self.Rolle.create({"name": self._unikt("Generisk"), "art": "intern"})
-        self.assertFalse(generisk.company_id,
-                         "Forutsetning: rollen er generisk (uten firma)")
+        self.assertFalse(
+            generisk.company_id, "Forutsetning: rollen er generisk (uten firma)"
+        )
 
         omraade_b = self._omraade("FirmaB-Lonn")
         self._regel(omraade_b, nivaa="administrere", rolle=generisk, firma=self.firma_b)
 
         # Bruker i firma A med SAMME generiske rolle — men uten tilgang til firma B.
         bruker_a = self._bruker("Delt Rolle A", self.firma_a, rolle=generisk)
-        self.assertNotIn(self.firma_b, bruker_a.company_ids,
-                         "Forutsetning: brukeren har ikke tilgang til firma B")
+        self.assertNotIn(
+            self.firma_b,
+            bruker_a.company_ids,
+            "Forutsetning: brukeren har ikke tilgang til firma B",
+        )
 
         self.assertEqual(
-            omraade_b.effektiv_nivaa(bruker_a), 0,
+            omraade_b.effektiv_nivaa(bruker_a),
+            0,
             "TENANT-LEKKASJE: en generisk rolle ga bruker i firma A tilgang til en "
             "regel som tilhører firma B (effektiv_nivaa filtrerer ikke på firma)",
         )
@@ -292,13 +328,17 @@ class TestFiqTilgang(TransactionCase):
         firma A. Feiler den: selskaps-admin-sjekken må bindes til firma.
         """
         gruppe_selskap = self.env.ref("fiq_tilgang.group_company_admin")
-        omraade_a = self._omraade("FirmaA-Styre", )
+        omraade_a = self._omraade(
+            "FirmaA-Styre",
+        )
         # Området tilhører firma A-verdenen; admin sitter i firma B.
-        admin_b = self._bruker("Selskapsadmin B", self.firma_b,
-                               grupper=[gruppe_selskap])
+        admin_b = self._bruker(
+            "Selskapsadmin B", self.firma_b, grupper=[gruppe_selskap]
+        )
 
         self.assertEqual(
-            omraade_a.effektiv_nivaa(admin_b), 0,
+            omraade_a.effektiv_nivaa(admin_b),
+            0,
             "TENANT-LEKKASJE: selskaps-admin i firma B fikk administrer-tilgang på "
             "firma A sitt område — gruppa er ikke bundet til selskap",
         )
@@ -357,8 +397,11 @@ class TestFiqTilgang(TransactionCase):
         self._regel(omraade, nivaa="administrere", gruppe=gruppe)
         utenfor = self._bruker("Utenfor", self.firma_a)
 
-        self.assertEqual(omraade.effektiv_nivaa(utenfor), 0,
-                         "Bruker utenfor gruppa skal ikke få tilgang")
+        self.assertEqual(
+            omraade.effektiv_nivaa(utenfor),
+            0,
+            "Bruker utenfor gruppa skal ikke få tilgang",
+        )
 
     def test_global_admin_ser_alt(self):
         """Global admin (topp) skal ha administrer overalt — uten én eneste regel."""
@@ -366,8 +409,11 @@ class TestFiqTilgang(TransactionCase):
         omraade = self._omraade("Hvorsomhelst")
         admin = self._bruker("Toppadmin", self.firma_a, grupper=[gruppe_global])
 
-        self.assertEqual(omraade.effektiv_nivaa(admin), ADMINISTRERE,
-                         "Global admin (topp) skal ha administrer overalt")
+        self.assertEqual(
+            omraade.effektiv_nivaa(admin),
+            ADMINISTRERE,
+            "Global admin (topp) skal ha administrer overalt",
+        )
 
     # ==================================================================
     # 4. RANDTILFELLER — nivå, flere roller, manglende firma
@@ -381,8 +427,11 @@ class TestFiqTilgang(TransactionCase):
         self._regel(omraade, nivaa="administrere", rolle=self.rolle_arbeider)
         self._regel(omraade, nivaa="skrive", bruker=bruker)
 
-        self.assertEqual(omraade.effektiv_nivaa(bruker), ADMINISTRERE,
-                         "Høyeste nivå skal vinne når flere regler treffer")
+        self.assertEqual(
+            omraade.effektiv_nivaa(bruker),
+            ADMINISTRERE,
+            "Høyeste nivå skal vinne når flere regler treffer",
+        )
 
     def test_bruker_med_flere_treff_via_rolle_og_bruker(self):
         """RANDTILFELLE «flere roller»: en bruker kan treffes av flere subjekt-typer.
@@ -393,14 +442,18 @@ class TestFiqTilgang(TransactionCase):
         """
         gruppe = self.env["res.groups"].create({"name": self._unikt("Multi")})
         omraade = self._omraade("Multiomraade")
-        bruker = self._bruker("Multi", self.firma_a, rolle=self.rolle_arbeider,
-                              grupper=[gruppe])
+        bruker = self._bruker(
+            "Multi", self.firma_a, rolle=self.rolle_arbeider, grupper=[gruppe]
+        )
         self._regel(omraade, nivaa="lese", rolle=self.rolle_arbeider)
         self._regel(omraade, nivaa="lese", partner=bruker.partner_id)
         self._regel(omraade, nivaa="administrere", gruppe=gruppe)
 
-        self.assertEqual(omraade.effektiv_nivaa(bruker), ADMINISTRERE,
-                         "Treff via flere subjekt-typer: høyeste nivå skal vinne")
+        self.assertEqual(
+            omraade.effektiv_nivaa(bruker),
+            ADMINISTRERE,
+            "Treff via flere subjekt-typer: høyeste nivå skal vinne",
+        )
 
     def test_bruker_uten_firma_faar_ikke_tilgang(self):
         """🛑 RANDTILFELLE «manglende firma»: uten firma skal ingenting innvilges.
@@ -415,10 +468,12 @@ class TestFiqTilgang(TransactionCase):
         # company_id er required på res.users — vi måler derfor en bruker som
         # IKKE har tilgang til regelens firma i det hele tatt.
         bruker = self._bruker("Feil Firma", self.firma_b, rolle=rolle)
-        self.assertNotIn(self.firma_a, bruker.company_ids,
-                         "Forutsetning: brukeren har ikke firma A")
+        self.assertNotIn(
+            self.firma_a, bruker.company_ids, "Forutsetning: brukeren har ikke firma A"
+        )
         self.assertEqual(
-            omraade.effektiv_nivaa(bruker), 0,
+            omraade.effektiv_nivaa(bruker),
+            0,
             "Regel i firma A skal ikke treffe en bruker som ikke har firma A",
         )
 
@@ -434,8 +489,10 @@ class TestFiqTilgang(TransactionCase):
         self._regel(omraade, nivaa="administrere", bruker=admin)
 
         self.assertTrue(omraade.har_tilgang("administrere", admin))
-        self.assertFalse(omraade.har_tilgang("tulleverdi", admin),
-                         "Ukjent nivånavn skal nekte, ikke innvilge")
+        self.assertFalse(
+            omraade.har_tilgang("tulleverdi", admin),
+            "Ukjent nivånavn skal nekte, ikke innvilge",
+        )
 
     def test_har_tilgang_er_terskel_ikke_likhet(self):
         """«Minst dette nivået»: skrive-tilgang gir også lese, men ikke administrere."""
@@ -445,16 +502,20 @@ class TestFiqTilgang(TransactionCase):
 
         self.assertTrue(omraade.har_tilgang("lese", bruker), "Skrive skal dekke lese")
         self.assertTrue(omraade.har_tilgang("skrive", bruker))
-        self.assertFalse(omraade.har_tilgang("administrere", bruker),
-                         "Skrive skal IKKE gi administrere")
+        self.assertFalse(
+            omraade.har_tilgang("administrere", bruker),
+            "Skrive skal IKKE gi administrere",
+        )
 
     def test_har_tilgang_uten_tilgang_er_usant_paa_alle_nivaaer(self):
         """Nivå 0 (randtilfelle): ingen tilgang skal gi False på ALLE nivåer."""
         omraade = self._omraade("Stengt")
         bruker = self._bruker("Ingen", self.firma_a)
         for nivaa in ("lese", "skrive", "administrere"):
-            self.assertFalse(omraade.har_tilgang(nivaa, bruker),
-                             "Nivå 0 skal gi False for %r" % nivaa)
+            self.assertFalse(
+                omraade.har_tilgang(nivaa, bruker),
+                f"Nivå 0 skal gi False for {nivaa!r}",
+            )
 
     def test_gjelder_bruker_uten_subjekt_er_usant(self):
         """RANDTILFELLE: regel med subjekt_type satt, men tomt subjekt = treffer ingen.
@@ -463,18 +524,21 @@ class TestFiqTilgang(TransactionCase):
         Uten den vakten ville en halvutfylt regel truffet ALLE brukere.
         """
         omraade = self._omraade("Halvferdig")
-        tom = self.Regel.create({
-            "ressurs_id": omraade.id,
-            "subjekt_type": "rolle",
-            "nivaa": "administrere",
-            "regel_type": "tildeling",
-            "company_id": self.firma_a.id,
-        })
+        tom = self.Regel.create(
+            {
+                "ressurs_id": omraade.id,
+                "subjekt_type": "rolle",
+                "nivaa": "administrere",
+                "regel_type": "tildeling",
+                "company_id": self.firma_a.id,
+            }
+        )
         bruker = self._bruker("Tilfeldig", self.firma_a, rolle=self.rolle_arbeider)
 
         self.assertFalse(tom.rolle_id, "Forutsetning: regelen har tomt subjekt")
-        self.assertFalse(tom._gjelder_bruker(bruker),
-                         "Regel uten subjekt skal ikke treffe noen")
+        self.assertFalse(
+            tom._gjelder_bruker(bruker), "Regel uten subjekt skal ikke treffe noen"
+        )
         self.assertEqual(omraade.effektiv_nivaa(bruker), 0)
 
     def test_effektiv_nivaa_bruker_innlogget_som_standard(self):
@@ -498,8 +562,11 @@ class TestFiqTilgang(TransactionCase):
         self._regel(forelder, nivaa="skrive", rolle=self.rolle_arbeider)
         bruker = self._bruker("Arver", self.firma_a, rolle=self.rolle_arbeider)
 
-        self.assertEqual(barn.effektiv_nivaa(bruker), SKRIVE,
-                         "Tilgang på forelderen skal arves ned til barnet")
+        self.assertEqual(
+            barn.effektiv_nivaa(bruker),
+            SKRIVE,
+            "Tilgang på forelderen skal arves ned til barnet",
+        )
 
     def test_arv_gaar_ikke_oppover(self):
         """🛑 Arven går NEDOVER. Tilgang på et barn gir ikke tilgang på forelderen.
@@ -513,8 +580,11 @@ class TestFiqTilgang(TransactionCase):
         bruker = self._bruker("Bunnbruker", self.firma_a, rolle=self.rolle_arbeider)
 
         self.assertEqual(barn.effektiv_nivaa(bruker), ADMINISTRERE)
-        self.assertEqual(forelder.effektiv_nivaa(bruker), 0,
-                         "Tilgang på barnet skal ALDRI lekke opp til forelderen")
+        self.assertEqual(
+            forelder.effektiv_nivaa(bruker),
+            0,
+            "Tilgang på barnet skal ALDRI lekke opp til forelderen",
+        )
 
     def test_brudd_stopper_arv(self):
         """Novell «Inherited Rights Filter»: et brudd stopper arven fra forelderen."""
@@ -526,8 +596,9 @@ class TestFiqTilgang(TransactionCase):
         bruker = self._bruker("Stoppet", self.firma_a, rolle=self.rolle_arbeider)
 
         self.assertEqual(forelder.effektiv_nivaa(bruker), ADMINISTRERE)
-        self.assertEqual(barn.effektiv_nivaa(bruker), 0,
-                         "Brudd skal stoppe arven fra forelderen")
+        self.assertEqual(
+            barn.effektiv_nivaa(bruker), 0, "Brudd skal stoppe arven fra forelderen"
+        )
 
     def test_brudd_stopper_bare_for_egen_rolle(self):
         """🛑 Et brudd er subjekt-spesifikt — det skal ikke stenge for alle.
@@ -546,8 +617,9 @@ class TestFiqTilgang(TransactionCase):
         leder = self._bruker("Slipper Inn", self.firma_a, rolle=self.rolle_leder)
 
         self.assertEqual(barn.effektiv_nivaa(arbeider), 0, "Bruddet gjelder arbeideren")
-        self.assertEqual(barn.effektiv_nivaa(leder), SKRIVE,
-                         "Bruddet skal ikke stenge for lederen")
+        self.assertEqual(
+            barn.effektiv_nivaa(leder), SKRIVE, "Bruddet skal ikke stenge for lederen"
+        )
 
     def test_tildeling_paa_bruddnoden_gjelder_fortsatt(self):
         """Et brudd stopper ARVEN, men egne tildelinger PÅ noden gjelder.
@@ -563,8 +635,11 @@ class TestFiqTilgang(TransactionCase):
         self._regel(barn, regel_type="brudd", nivaa="lese", rolle=self.rolle_arbeider)
         bruker = self._bruker("Redusert", self.firma_a, rolle=self.rolle_arbeider)
 
-        self.assertEqual(barn.effektiv_nivaa(bruker), LESE,
-                         "Egen tildeling på bruddnoden skal gjelde, arven ikke")
+        self.assertEqual(
+            barn.effektiv_nivaa(bruker),
+            LESE,
+            "Egen tildeling på bruddnoden skal gjelde, arven ikke",
+        )
 
     def test_arv_over_tre_nivaaer(self):
         """Arven skal gå hele veien opp forelder-kjeden, ikke bare ett hakk."""
@@ -575,8 +650,7 @@ class TestFiqTilgang(TransactionCase):
         self._regel(n1, nivaa="skrive", rolle=self.rolle_arbeider)
         bruker = self._bruker("Dypt Nede", self.firma_a, rolle=self.rolle_arbeider)
 
-        self.assertEqual(n3.effektiv_nivaa(bruker), SKRIVE,
-                         "Arven skal nå tredje nivå")
+        self.assertEqual(n3.effektiv_nivaa(bruker), SKRIVE, "Arven skal nå tredje nivå")
 
     def test_brudd_paa_mellomnivaa_skjermer_hele_grenen(self):
         """Et brudd i midten skal skjerme ALT under seg, ikke bare seg selv."""
@@ -589,8 +663,11 @@ class TestFiqTilgang(TransactionCase):
         bruker = self._bruker("Sperret", self.firma_a, rolle=self.rolle_arbeider)
 
         self.assertEqual(n2.effektiv_nivaa(bruker), 0)
-        self.assertEqual(n3.effektiv_nivaa(bruker), 0,
-                         "Brudd på mellomnivå skal skjerme hele grenen under")
+        self.assertEqual(
+            n3.effektiv_nivaa(bruker),
+            0,
+            "Brudd på mellomnivå skal skjerme hele grenen under",
+        )
 
     # ==================================================================
     # 6. MODELL-INTEGRITET
@@ -600,14 +677,19 @@ class TestFiqTilgang(TransactionCase):
         """Rollemodellen er `_parent_store` — org-kartet må faktisk henge sammen."""
         self.assertEqual(self.rolle_arbeider.parent_id, self.rolle_leder)
         self.assertIn(self.rolle_arbeider, self.rolle_leder.child_ids)
-        self.assertTrue(self.rolle_arbeider.parent_path,
-                        "parent_path må fylles (_parent_store = True)")
+        self.assertTrue(
+            self.rolle_arbeider.parent_path,
+            "parent_path må fylles (_parent_store = True)",
+        )
 
     def test_bruker_kobles_til_rolle_begge_veier(self):
         """`bruker_ids` på rollen er motstykket til `fiq_tilgang_rolle_id`."""
         bruker = self._bruker("Koblet", self.firma_a, rolle=self.rolle_arbeider)
-        self.assertIn(bruker, self.rolle_arbeider.bruker_ids,
-                      "Rollen må kjenne brukeren sin (One2many-motstykket)")
+        self.assertIn(
+            bruker,
+            self.rolle_arbeider.bruker_ids,
+            "Rollen må kjenne brukeren sin (One2many-motstykket)",
+        )
 
     def test_regel_slettes_med_omraadet(self):
         """`ondelete="cascade"` på ressurs_id: slettes området, dør regelen med det.
@@ -619,5 +701,6 @@ class TestFiqTilgang(TransactionCase):
         self.assertTrue(regel.exists())
 
         omraade.unlink()
-        self.assertFalse(regel.exists(),
-                         "Regelen skal slettes sammen med området (cascade)")
+        self.assertFalse(
+            regel.exists(), "Regelen skal slettes sammen med området (cascade)"
+        )

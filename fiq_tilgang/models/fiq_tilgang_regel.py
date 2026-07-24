@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-from odoo import models, fields
+from odoo import fields, models
 
 # Rangering av nivåene (høyere tall = mer tilgang)
 NIVAA_RANG = {"lese": 1, "skrive": 2, "administrere": 3}
@@ -8,17 +7,29 @@ NIVAA_RANG = {"lese": 1, "skrive": 2, "administrere": 3}
 class FiqTilgangRegel(models.Model):
     """Én arvbar tilgangsregel på et område (dokument-etikett). En regel defineres
     ÉN gang og arves nedover treet – den dupliseres ikke per underområde."""
+
     _name = "fiq.tilgang.regel"
     _description = "FIQ Tilgang – rettighetsregel (arvbar)"
     _rec_name = "ressurs_id"
 
     ressurs_id = fields.Many2one(
-        "documents.tag", string="Område", required=True, index=True, ondelete="cascade",
+        "documents.tag",
+        string="Område",
+        required=True,
+        index=True,
+        ondelete="cascade",
         help="Området (dokument-etikett) regelen gjelder for. Arves nedover til underområder.",
     )
     subjekt_type = fields.Selection(
-        [("rolle", "Rolle"), ("gruppe", "Odoo-gruppe"), ("bruker", "Bruker"), ("partner", "Partner")],
-        string="Gjelder for", default="rolle", required=True,
+        [
+            ("rolle", "Rolle"),
+            ("gruppe", "Odoo-gruppe"),
+            ("bruker", "Bruker"),
+            ("partner", "Partner"),
+        ],
+        string="Gjelder for",
+        default="rolle",
+        required=True,
     )
     rolle_id = fields.Many2one("fiq.tilgang.rolle", string="Rolle")
     gruppe_id = fields.Many2one("res.groups", string="Odoo-gruppe")
@@ -26,15 +37,21 @@ class FiqTilgangRegel(models.Model):
     partner_id = fields.Many2one("res.partner", string="Partner")
     nivaa = fields.Selection(
         [("lese", "Lese"), ("skrive", "Skrive"), ("administrere", "Administrere")],
-        string="Nivå", required=True, default="lese",
+        string="Nivå",
+        required=True,
+        default="lese",
     )
     regel_type = fields.Selection(
         [("tildeling", "Tildeling"), ("brudd", "Brudd (stopp arv)")],
-        string="Type", required=True, default="tildeling",
+        string="Type",
+        required=True,
+        default="tildeling",
         help="Tildeling gir tilgang. Brudd stopper arv fra forelderen for dette området.",
     )
     company_id = fields.Many2one(
-        "res.company", string="Selskap", default=lambda s: s.env.company,
+        "res.company",
+        string="Selskap",
+        default=lambda s: s.env.company,
     )
 
     def _gjelder_bruker(self, user):

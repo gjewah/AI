@@ -1,10 +1,11 @@
-# -*- coding: utf-8 -*-
 from odoo import models
+
 from .fiq_tilgang_regel import NIVAA_RANG
 
 
 class DocumentsTag(models.Model):
     """Utvider dokument-etiketten (området) med arvet effektiv tilgang."""
+
     _inherit = "documents.tag"
 
     def effektiv_nivaa(self, user=None):
@@ -24,7 +25,9 @@ class DocumentsTag(models.Model):
         # Global admin (topp) er tenant-uavhengig og overstyrer fortsatt alt.
         if user.has_group("fiq_tilgang.group_global_admin"):
             return NIVAA_RANG["administrere"]
-        if user.has_group("fiq_tilgang.group_company_admin") and self._samme_selskap(user):
+        if user.has_group("fiq_tilgang.group_company_admin") and self._samme_selskap(
+            user
+        ):
             return NIVAA_RANG["administrere"]
 
         Regel = self.env["fiq.tilgang.regel"].sudo()
@@ -34,10 +37,12 @@ class DocumentsTag(models.Model):
             # Regelsøket filtreres nå på selskap: en regel som tilhører et annet
             # selskap skal aldri gi tilgang her. `company_id = False` = generisk regel
             # (deles på tvers), jf. samme mønster som malene i fiq_mgmtsystem.
-            regler = Regel.search([
-                ("ressurs_id", "=", node.id),
-                ("company_id", "in", [False] + user.company_ids.ids),
-            ])
+            regler = Regel.search(
+                [
+                    ("ressurs_id", "=", node.id),
+                    ("company_id", "in", [False] + user.company_ids.ids),
+                ]
+            )
             egne = regler.filtered(lambda r: r._gjelder_bruker(user))
             for r in egne.filtered(lambda r: r.regel_type == "tildeling"):
                 beste = max(beste, NIVAA_RANG[r.nivaa])
@@ -67,10 +72,17 @@ class DocumentsTag(models.Model):
         while node:
             noder |= node
             node = node._forelder()
-        eiere = self.env["fiq.tilgang.regel"].sudo().search([
-            ("ressurs_id", "in", noder.ids),
-            ("company_id", "!=", False),
-        ]).mapped("company_id")
+        eiere = (
+            self.env["fiq.tilgang.regel"]
+            .sudo()
+            .search(
+                [
+                    ("ressurs_id", "in", noder.ids),
+                    ("company_id", "!=", False),
+                ]
+            )
+            .mapped("company_id")
+        )
 
         # 🛑 INGEN REGLER = INGEN TILKNYTNING = INGEN SELSKAPS-ADMIN-TILGANG.
         # Gruppa heter «Global admin (selskap)» og skal gi «alt i EGET selskap»
