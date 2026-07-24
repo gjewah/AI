@@ -81,9 +81,21 @@ class ResCompany(models.Model):
         )
         for company in self:
             if company.fiq_otp_sats and company.fiq_otp_sats < minste:
+                # 🛑 env._() tar IKKE f-strenger: oversettelsesverktoeyet leser
+                # kildekoden statisk, og en f-streng er allerede interpolert naar
+                # den kommer fram — teksten havner aldri i .po-fila.
+                # 🛑 `%` maa dobles til `%%` naar %-parametre brukes, ellers
+                # tolkes prosenttegnet som en formateringskode.
+                # 📌 NAVNGITTE parametre, ikke %s: oversetteren kan flytte dem
+                # fritt, mens %s-rekkefoelgen er laast til norsk setningsbygning.
                 raise ValidationError(
-                    "OTP-satsen kan ikke være lavere enn lovens minstekrav på "
-                    f"{minste} %. Angitt: {company.fiq_otp_sats} %. Se OTP-loven § 4."
+                    self.env._(
+                        "OTP-satsen kan ikke være lavere enn lovens minstekrav "
+                        "på %(minste)s %%. Angitt: %(angitt)s %%. "
+                        "Se OTP-loven § 4.",
+                        minste=minste,
+                        angitt=company.fiq_otp_sats,
+                    )
                 )
 
     def fiq_aga_fribelop_gjenstaaende(self, fribelop, aar):

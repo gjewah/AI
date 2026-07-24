@@ -216,16 +216,26 @@ class HrPayslip(models.Model):
         self.ensure_one()
         sone = self.fiq_aga_sone()
         if not sone:
+            # Samme oversettelsesregel som ValidationError i res_company:
+            # env._() med NAVNGITTE parametre, aldri f-streng. Meldingen vises
+            # til brukeren naar loennskjoeringen stopper.
             raise ValueError(
-                f"Sone for arbeidsgiveravgift mangler for {self.company_id.display_name}. Sett sonen paa "
-                "selskapet, eller paa ansattes kontrakt ved ambulerende arbeid."
+                self.env._(
+                    "Sone for arbeidsgiveravgift mangler for %(firma)s. "
+                    "Sett sonen på selskapet, eller på ansattes kontrakt ved "
+                    "ambulerende arbeid.",
+                    firma=self.company_id.display_name,
+                )
             )
 
         satser = self._rule_parameter("no_aga_sonesatser")
         if sone not in satser:
             raise ValueError(
-                "Ukjent sone {!r} for arbeidsgiveravgift. Kjente soner: {}".format(
-                    sone, ", ".join(sorted(satser))
+                self.env._(
+                    "Ukjent sone «%(sone)s» for arbeidsgiveravgift. "
+                    "Kjente soner: %(kjente)s",
+                    sone=sone,
+                    kjente=", ".join(sorted(satser)),
                 )
             )
         return satser[sone]
