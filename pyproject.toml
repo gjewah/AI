@@ -1,0 +1,88 @@
+# Verktøykonfigurasjon for apps-ai — Odoo 19-addon-repo.
+# Én fil styrer ruff (lint+format), pytest og pylint-innstillinger.
+
+[project]
+name = "apps-ai"
+version = "19.0.1.0.0"
+description = "FIQ AI-plattform — sentralt Odoo 19-addon-repo"
+requires-python = ">=3.11"
+license = { text = "OPL-1" }
+
+# ────────────────────────────────────────────────────────────────────
+# RUFF — linter + formatter. Erstatter flake8, black, isort, pyupgrade.
+# ────────────────────────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+# Odoo-moduler ligger under addons/; ekskluder generert/tredjeparts
+extend-exclude = [
+    "*/lib/*",
+    "*/node_modules/*",
+    "*/migrations/*",
+]
+
+[tool.ruff.lint]
+# E,F = pyflakes/pycodestyle · I = isort · UP = pyupgrade · B = bugbear
+# C4 = comprehensions · W = warnings
+select = ["E", "F", "I", "UP", "B", "C4", "W"]
+ignore = [
+    "E501",   # linjelengde styres av formatter, ikke linter
+    "B008",   # Odoo bruker funksjonskall i felt-defaults (fields.Date.today)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# __init__.py og __manifest__.py har Odoo-spesifikke mønstre
+#
+# 🔴 I001 er lagt til 24.07 etter et MÅLT nesten-uhell:
+# ruff ville sortert importene i fiq_gui_prj/models/__init__.py alfabetisk og
+# flyttet `fiq_sjekkliste_mixin` fra første til tredje plass — stikk i strid med
+# modulens egen kommentar: «må lastes før modeller som arver den».
+# I Odoo er importrekkefølgen i __init__.py SEMANTISK: en mixin må lastes før
+# modellene som arver den, ellers feiler registreringen.
+# Alfabetisk sortering er riktig for vanlige Python-pakker og FEIL her.
+"__init__.py" = ["F401", "I001"]  # re-eksport OG rekkefølge er tilsiktet
+"__manifest__.py" = ["B018"]      # manifest er en naken dict
+
+[tool.ruff.lint.isort]
+# Odoo-import grupperes for seg, etter standard/tredjepart
+known-first-party = ["odoo"]
+section-order = ["future", "standard-library", "third-party", "odoo", "first-party", "local-folder"]
+
+[tool.ruff.lint.isort.sections]
+odoo = ["odoo", "odoo.addons"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# ────────────────────────────────────────────────────────────────────
+# PYTEST — for eventuelle rene enhetstester utenfor Odoo-runtime.
+# Odoo-modultestene kjøres av odoo-bin --test-enable i CI, ikke her.
+# ────────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-q"
+
+# ────────────────────────────────────────────────────────────────────
+# PYLINT — grunninnstillinger. Odoo-spesifikke sjekker ligger i
+# .pylintrc-odoo (pylint-odoo-plugin) som pre-commit og CI bruker.
+# ────────────────────────────────────────────────────────────────────
+[tool.pylint.main]
+py-version = "3.11"
+
+[tool.pylint."messages control"]
+disable = [
+    "missing-module-docstring",
+    "missing-class-docstring",
+    "missing-function-docstring",
+    "too-few-public-methods",
+]
+
+# ────────────────────────────────────────────────────────────────────
+# 📌 KOPI FRA gjewah/apps-ai — HOLD DEM IDENTISKE
+# Lagt her 24.07 fordi sporene jobber i DETTE repoet og ikke fant
+# konfigurasjonen. Tre spor kjørte ruff uten den og fikk falske positiver
+# på F401/B018/BLE001/RUF012 — regler som er unntatt eller ikke i select.
+# Endres denne, skal apps-ai/pyproject.toml endres i samme commit.
+# ────────────────────────────────────────────────────────────────────
