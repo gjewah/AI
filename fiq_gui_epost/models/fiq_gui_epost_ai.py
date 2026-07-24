@@ -128,6 +128,27 @@ class FiqGuiEpostAi(models.AbstractModel):
         """Ett AI-kall. Feil kommer fram i klartekst — vi later aldri som det gikk bra."""
         if not (tekst or "").strip():
             return ""
+        # 🔴 FEATURE-DETEKTERT, ikke hard avhengighet (rettet 24.07 etter at gaten falt).
+        #
+        # `fiq_ai` → `fiq_ai_claude` → `ai`, og `ai` er en ENTERPRISE-modul. CI-gaten
+        # henter en DELVIS Enterprise-kilde (17 moduler; `ai` er ikke blant dem), så en
+        # `depends: fiq_ai` i manifestet felte hele databasen — ikke bare denne modulen,
+        # men alle 21 som ble installert i samme kjøring:
+        #     UserError: module "fiq_ai_claude" depends on module "ai".
+        #     But the latter module is not available in your system.
+        #
+        # 🔑 Lærdommen: en avhengighet er ikke bare «trenger jeg denne koden», men
+        # «finnes hele kjeden under den, overalt der modulen skal installeres». Jeg
+        # sjekket at `fiq_ai` var installert i Production — og glemte at gaten er et
+        # annet miljø med en annen kilde.
+        if "fiq.ai" not in self.env:
+            raise UserError(
+                self.env._(
+                    "AI-hjelpen er ikke tilgjengelig på denne installasjonen — "
+                    "modulen «FIQ AI» er ikke installert. Alt annet i Kommunikasjon "
+                    "virker som før."
+                )
+            )
         try:
             return self.env["fiq.ai"].chat(
                 oppdrag + "\n\n=== E-POST ===\n" + tekst,

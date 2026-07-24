@@ -15,6 +15,7 @@
 from datetime import date, datetime, timedelta
 
 from odoo import fields
+from odoo.exceptions import UserError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
@@ -523,6 +524,49 @@ class TestEpost(TransactionCase):
             prosjekt,
             "deloppgaven må arve prosjektet — ellers havner den utenfor",
         )
+
+    def test_ai_er_VALGFRI_ikke_hard_avhengighet(self):
+        """🔴 FELTE HELE CI-GATEN 24.07 — 21 moduler, ikke bare denne.
+
+        Jeg la `fiq_ai` i manifestet fordi jeg hadde verifisert at den var installert
+        i Production. Men kjeden er `fiq_ai` → `fiq_ai_claude` → `ai`, og `ai` er en
+        ENTERPRISE-modul. Gaten henter en DELVIS Enterprise-kilde (17 moduler; `ai`
+        er ikke blant dem), så databasen nektet å laste:
+
+            UserError: module "fiq_ai_claude" depends on module "ai".
+            But the latter module is not available in your system.
+
+        🔑 En avhengighet er ikke bare «trenger jeg denne koden», men «finnes HELE
+        kjeden under den, i ALLE miljøer modulen skal installeres i». Å sjekke ett
+        miljø er ikke å sjekke.
+
+        Testen låser at `fiq_ai` ikke sniker seg inn i manifestet igjen."""
+        modul = self.env["ir.module.module"].search(
+            [("name", "=", "fiq_gui_epost")], limit=1
+        )
+        if modul:
+            avhengige = modul.dependencies_id.mapped("name")
+            self.assertNotIn(
+                "fiq_ai",
+                avhengige,
+                "fiq_ai MÅ være feature-detektert, ikke en hard avhengighet — "
+                "den drar Enterprise-modulen «ai» med seg og feller hele gaten",
+            )
+
+    def test_ai_sier_fra_naar_tjenesten_ikke_finnes(self):
+        """Uten `fiq_ai` skal AI-panelet si det ÆRLIG — ikke krasje, og ikke
+        late som det gikk bra. Resten av Kommunikasjon virker som før."""
+        Ai = self.env["fiq.meldingssenter.ai"]
+        if "fiq.ai" in self.env:
+            self.skipTest("fiq_ai ER installert her — dette er stien uten den")
+        m = self.env["mail.message"].create(
+            {"subject": "TEST uten AI", "message_type": "email", "body": "<p>x</p>"}
+        )
+        # `UserError`, ikke `Exception`: vi krever at brukeren får en LESBAR melding,
+        # ikke bare at noe gikk galt. Samme lærdom som B017-funnet i POS — et bredt
+        # unntaksfang lar testen bestå av feil grunn.
+        with self.assertRaises(UserError):
+            Ai.oppsummer(m.id)
 
     def test_ai_fritekst_uten_sporsmaal_kaller_ikke_tjenesten(self):
         """Tomt spørsmål skal ikke koste et AI-kall. Returnerer tom tekst uten å

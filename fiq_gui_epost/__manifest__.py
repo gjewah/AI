@@ -3,7 +3,7 @@
     # E-POST-KANALEN under den → egen etikett, ellers to like app-fliser i Apper.
     # Teknisk modulnavn (fiq_gui_epost) er URØRT — modulen er live på Staging + Production.
     "name": "Kommunikasjon — E-post",
-    "version": "19.0.7.1.0",
+    "version": "19.0.7.1.1",
     "summary": "FIQ Meldingssenter – kommunikasjonsflaten i Kontrollrommet. "
     "V00.04-designet (godkjent) som levende flate: tilstede-topplinje, firmavelger "
     "m/ logo, taksonomi 0–8, kompakte meldingsrader, lesepanel, paring/tildeling og AI-flate.",
@@ -28,8 +28,23 @@ V00.04 bygges først som levende referanse; native OWL-port mot ekte Odoo-data
     # fiq_gui_comm = Kommunikasjon-paraplyen. E-post er en KANAL under den og melder
     # seg inn i kanal-registeret (models/fiq_gui_epost_kanal.py) → paraplyen må lastes
     # først. Enveis: comm avhenger ALDRI av epost (ingen sirkulær avhengighet).
-    # fiq_ai = ÉN AI-vei (shim mot Odoo 19 native `ai` → Anthropic via fiq_ai_claude).
-    # Verifisert installert i Production 24.07: fiq_ai 19.0.1.2.0 · ai 19.0.1.0.
+    # 🔴 `fiq_ai` står MED VILJE IKKE her (rettet 24.07 etter at CI-gaten falt).
+    #
+    # Kjeden er `fiq_ai` → `fiq_ai_claude` → `ai`, og `ai` er en ENTERPRISE-modul.
+    # Gaten henter en DELVIS Enterprise-kilde (17 moduler; `ai` er ikke blant dem),
+    # så avhengigheten felte HELE databasen — alle 21 moduler i samme kjøring, ikke
+    # bare denne:
+    #     UserError: module "fiq_ai_claude" depends on module "ai".
+    #     But the latter module is not available in your system.
+    #
+    # AI-hjelpen er derfor FEATURE-DETEKTERT (`"fiq.ai" not in self.env` → ærlig
+    # melding til brukeren). Modulen installerer og virker uten den; bare AI-panelet
+    # sier fra at det ikke er tilgjengelig. Samme mønster som SharePoint-koblingen.
+    #
+    # 🔑 Lærdom: en avhengighet er ikke bare «trenger jeg denne koden», men «finnes
+    # HELE kjeden under den, i ALLE miljøer modulen skal installeres i». Jeg sjekket
+    # Production og glemte at gaten er et annet miljø med en annen Enterprise-kilde.
+    #
     # project = sjekkliste legges som deloppgaver på project.task (Odoo 19s egen
     # mekanikk) — vi lager ikke en konkurrerende sjekkliste-modell ved siden av.
     # crm = «opprett salgsmulighet» fra en e-post (Gjermund 24.07). Verifisert
@@ -39,7 +54,6 @@ V00.04 bygges først som levende referanse; native OWL-port mot ekte Odoo-data
     "depends": [
         "fiq_gui_comm",
         "fiq_gui_control",
-        "fiq_ai",
         "project",
         "crm",
         "web",
