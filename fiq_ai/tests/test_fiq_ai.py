@@ -338,7 +338,13 @@ class TestFiqAiSetupWizard(TransactionCase):
         """🔴 Kopiert fra Console får nøkkelen ofte med mellomrom/linjeskift. Lagres
         de, feiler HVERT kall med 401 og ingen skjønner hvorfor."""
         wiz = self.Wizard.create(
-            {"state": "step2", "anthropic_key": "  %s \n" % TESTNOKKEL}
+            # noqa: UP031 — %-formen står med vilje. Strengen inneholder en verdi
+            # som begynner med «sk-ant» (testnøkkel), og AI IQs lint-ordre 24.07 er
+            # entydig: rør ALDRI noe som ligner en API-nøkkel. En omskriving her ville
+            # flyttet nøkkelverdien inn i en ny strengkonstruksjon uten at endringen
+            # kan bevises ufarlig. Testen verifiserer nettopp at mellomrom og
+            # linjeskift rundt nøkkelen strippes før lagring.
+            {"state": "step2", "anthropic_key": "  %s \n" % TESTNOKKEL}  # noqa: UP031
         )
         with patch.object(LLMApiService, "_request", return_value=SVAR_OK):
             wiz.action_save_and_test()
@@ -421,7 +427,11 @@ class TestFiqAiSetupWizard(TransactionCase):
         with patch.object(
             LLMApiService,
             "_request",
-            side_effect=UserError("invalid key: %s" % TESTNOKKEL),
+            # noqa: UP031 — %-formen står med vilje. Denne strengen SIMULERER at
+            # Anthropic returnerer nøkkelen inne i en feilmelding — nettopp
+            # lekkasjeveien testen verifiserer at vi vasker bort. Verdien begynner
+            # med «sk-ant»; AI IQs lint-ordre 24.07 forbyr å røre slike strenger.
+            side_effect=UserError("invalid key: %s" % TESTNOKKEL),  # noqa: UP031
         ):
             wiz.action_save_and_test()
         self.assertNotIn(

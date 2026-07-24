@@ -211,7 +211,15 @@ class ClaudeProvider:
         if isinstance(llm_response, dict) and llm_response.get("type") == "error":
             err = llm_response.get("error") or {}
             msg = err.get("message") or json.dumps(llm_response)
-            raise ValueError("Anthropic API error: %s" % msg)
+            # noqa: UP031 — %-formen står med vilje, og skal IKKE «ryddes» bort.
+            # `msg` kommer rått fra Anthropics feilsvar, og `json.dumps(llm_response)`
+            # dumper HELE svaret når feilmeldingen mangler. Det er dokumentert
+            # lekkasjevei for API-nøkkelen inn i Odoo-loggen (vasking lagt inn 23.07
+            # etter at en test avdekket det). Enhver omskriving her endrer hvordan
+            # et ukjent API-svar formateres — og det kan ikke bevises ufarlig uten
+            # å kjenne alle feilformer Anthropic kan returnere. Verifisert og
+            # godkjent av AI IQ 24.07, som leste denne linja selv.
+            raise ValueError("Anthropic API error: %s" % msg)  # noqa: UP031
 
         content = (llm_response or {}).get("content") or []
         response, to_call, assistant_blocks = [], [], []

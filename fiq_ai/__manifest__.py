@@ -13,7 +13,7 @@ Nøkkel/base-URL settes som systemparametere (Gjermund): ``ai.anthropic_key`` /
 ``ai.anthropic_base_url``. Uten nøkkel kaster native-tjenesten UserError, som
 «Spør AI» viser i klartekst.
 """,
-    "version": "19.0.1.3.1",
+    "version": "19.0.1.3.2",
     "category": "Productivity/AI",
     "author": "FIQ AS",
     "license": "OPL-1",

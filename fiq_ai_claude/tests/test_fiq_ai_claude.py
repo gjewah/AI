@@ -662,7 +662,7 @@ class TestLLMApiServicePatch(TransactionCase):
                 # gir ulike unntaksklasser, og Odoos assertRaises tar kun ÉN.
                 # Å snevre inn ville bundet testen til hvilken søppeltype som
                 # feiler først — da tester den implementasjonen, ikke kravet.
-                with self.assertRaises(
+                with self.assertRaises(  # noqa: B017 — bredt unntak er kravet, se over
                     Exception, msg=f"Søppel-svar {soppel!r} ga ingen feil"
                 ):
                     svc._request_llm("claude-sonnet-5", ["s"], ["u"])
