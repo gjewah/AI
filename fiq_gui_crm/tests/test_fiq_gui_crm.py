@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tester for FIQ GUI CRM.
 
 ⚠️ HVA DENNE MODULEN ER: et tomt skall. Flaten viser «Kommer» og har ingen

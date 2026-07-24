@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
 {
     "name": "FIQ CRM",
-    "version": "19.0.1.3.0",
+    "version": "19.0.1.3.1",
     "summary": "FIQ GUI-skjelett for flaten CRM – OWL klient-handling "
                "(placeholder-dashbord), menuitem og rettighetsgruppe. Klar for ekte funksjonalitet.",
     "description": """

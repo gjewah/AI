@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Datakilde for AI GUI Salg (6 SALG) — samleboks til Kontrollrommet.
 
 Rolle bak, flate foran: dette er VISNINGEN av «0.00 6 AI Salg-Rådgiver».
@@ -123,7 +122,7 @@ class FiqGuiSalgData(models.AbstractModel):
             # slik brukeren kjenner det, også når navnemønsteret er satt opp
             # per firma (Loym-oppsettet gjør nettopp det).
             linjer.append({
-                "tekst": "%s — %s dager over frist" % (lead.display_name, dager),
+                "tekst": f"{lead.display_name} — {dager} dager over frist",
                 "res_id": lead.id,
             })
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tester for salgsflatens datakilde.
 
 🛑 `post_install` er IKKE valgfritt. Odoos standard (`at_install`) kjører testen
@@ -231,7 +230,7 @@ class TestFiqGuiSalg(TransactionCase):
         for stadium in stadier:
             self.assertEqual(
                 stadium["avsluttet"], stadium["id"] in avsluttede,
-                "Stadiet «%s» er feilmerket." % stadium["navn"],
+                f"Stadiet «{stadium['navn']}» er feilmerket.",
             )
 
     def test_kr_boks_har_kontraktens_form(self):
