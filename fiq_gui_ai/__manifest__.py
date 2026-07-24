@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 {
     "name": "FIQ AI co-worker",
-    "version": "19.0.1.2.1",
+    "version": "19.0.1.2.2",
     "summary": "FIQ AI co-worker: an 'Ask AI for help' chat (to Claude) plus Odoo "
-               "presence – embeddable in the Control room and openable as its own flate.",
+    "presence – embeddable in the Control room and openable as its own flate.",
     "description": """
 FIQ AI co-worker (fiq_gui_ai)
 =============================
@@ -43,7 +42,6 @@ Key features
             "fiq_gui_ai/static/src/coworker.scss",
             "fiq_gui_ai/static/src/coworker.js",
             "fiq_gui_ai/static/src/coworker.xml",
-
         ],
     },
     "application": True,

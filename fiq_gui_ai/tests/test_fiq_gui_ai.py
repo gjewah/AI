@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tester for FIQ AI co-worker-flaten (`fiq.gui.ai.assistent`).
 
 HVA MODULEN GJØR: to tjenester bak co-worker-flaten —
@@ -28,12 +27,16 @@ from unittest.mock import MagicMock, patch
 
 import requests
 
-from odoo.tests import TransactionCase, tagged
-
 from odoo.addons.fiq_gui_ai.models.fiq_gui_ai_assistent import (
-    ANTHROPIC_URL, ANTHROPIC_VERSION, DEFAULT_MODEL, DEFAULT_MAX_TOKENS,
-    REQUEST_TIMEOUT, PARAM_KEY, PARAM_MODEL,
+    ANTHROPIC_URL,
+    ANTHROPIC_VERSION,
+    DEFAULT_MAX_TOKENS,
+    DEFAULT_MODEL,
+    PARAM_KEY,
+    PARAM_MODEL,
+    REQUEST_TIMEOUT,
 )
+from odoo.tests import TransactionCase, tagged
 
 MOCK_POST = "odoo.addons.fiq_gui_ai.models.fiq_gui_ai_assistent.requests.post"
 
@@ -55,8 +58,9 @@ def _respons(json_data=None, json_exception=None, raise_for_status=None):
 
 
 def _tekstsvar(tekst="Hei, jeg er co-workeren."):
-    return _respons({"content": [{"type": "text", "text": tekst}],
-                     "stop_reason": "end_turn"})
+    return _respons(
+        {"content": [{"type": "text", "text": tekst}], "stop_reason": "end_turn"}
+    )
 
 
 @tagged("post_install", "-at_install", "fiq_gui_ai")
@@ -76,8 +80,9 @@ class TestFiqGuiAiSpor(TransactionCase):
 
     def test_modellen_er_abstrakt(self):
         """Stateless hjelper — ingen poster å lagre, ingen tabell."""
-        self.assertTrue(self.Assistent._abstract,
-                        "fiq.gui.ai.assistent skal være en AbstractModel")
+        self.assertTrue(
+            self.Assistent._abstract, "fiq.gui.ai.assistent skal være en AbstractModel"
+        )
 
     # ---------- Tom inndata: ingen kall ut ----------
 
@@ -86,7 +91,7 @@ class TestFiqGuiAiSpor(TransactionCase):
         with patch(MOCK_POST) as mock_post:
             for tomt in ("", "   ", "\n\t", None):
                 svar = self.Assistent.spor(tomt)
-                self.assertTrue(svar, "Tom melding %r ga tomt svar til brukeren" % (tomt,))
+                self.assertTrue(svar, f"Tom melding {tomt!r} ga tomt svar til brukeren")
                 self.assertIsInstance(svar, str)
             mock_post.assert_not_called()
 
@@ -100,8 +105,9 @@ class TestFiqGuiAiSpor(TransactionCase):
             svar = self.Assistent.spor("Hei")
         mock_post.assert_not_called()
         self.assertIsInstance(svar, str)
-        self.assertIn(PARAM_KEY, svar,
-                      "Brukeren må få vite HVILKEN systemparameter som mangler")
+        self.assertIn(
+            PARAM_KEY, svar, "Brukeren må få vite HVILKEN systemparameter som mangler"
+        )
 
     def test_noekkel_med_bare_mellomrom_teller_som_manglende(self):
         """Et blankt-utseende felt er ikke en nøkkel — vi skal ikke sende 401-kall."""
@@ -129,8 +135,9 @@ class TestFiqGuiAiSpor(TransactionCase):
         self.assertEqual(headers["x-api-key"], TESTNOKKEL)
         self.assertEqual(headers["anthropic-version"], ANTHROPIC_VERSION)
         self.assertEqual(headers["content-type"], "application/json")
-        self.assertNotIn("Authorization", headers,
-                         "Anthropic bruker x-api-key, ikke Bearer")
+        self.assertNotIn(
+            "Authorization", headers, "Anthropic bruker x-api-key, ikke Bearer"
+        )
 
     def test_kallet_er_JSON_ikke_skjemadata(self):
         """Odoo 20-regel: ekstern kommunikasjon skal være JSON-basert."""
@@ -151,7 +158,9 @@ class TestFiqGuiAiSpor(TransactionCase):
         """max_tokens er PÅKREVD av Anthropic — uten den er kallet ugyldig."""
         with patch(MOCK_POST, return_value=_tekstsvar()) as mock_post:
             self.Assistent.spor("Hei")
-        self.assertEqual(mock_post.call_args.kwargs["json"]["max_tokens"], DEFAULT_MAX_TOKENS)
+        self.assertEqual(
+            mock_post.call_args.kwargs["json"]["max_tokens"], DEFAULT_MAX_TOKENS
+        )
 
     def test_default_modell_uten_datosuffiks(self):
         """Modell-id-en er nøyaktig «claude-opus-4-8» — et datosuffiks gir 404."""
@@ -167,7 +176,9 @@ class TestFiqGuiAiSpor(TransactionCase):
         self.addCleanup(self.icp.set_param, PARAM_MODEL, "")
         with patch(MOCK_POST, return_value=_tekstsvar()) as mock_post:
             self.Assistent.spor("Hei")
-        self.assertEqual(mock_post.call_args.kwargs["json"]["model"], "claude-haiku-4-5")
+        self.assertEqual(
+            mock_post.call_args.kwargs["json"]["model"], "claude-haiku-4-5"
+        )
 
     def test_blank_modellparameter_faller_tilbake_til_default(self):
         """🔴 En tømt parameter skal ikke gi tom modell-id — det er en 400 på hvert kall."""
@@ -190,8 +201,11 @@ class TestFiqGuiAiSpor(TransactionCase):
             self.Assistent.spor("Hei")
         system = mock_post.call_args.kwargs["json"]["system"]
         self.assertIn(self.env.user.name, system)
-        self.assertNotIn(self.env.user.login, system,
-                         "Innloggingsnavnet skal ikke sendes til Anthropic")
+        self.assertNotIn(
+            self.env.user.login,
+            system,
+            "Innloggingsnavnet skal ikke sendes til Anthropic",
+        )
 
     def test_kontekst_legges_paa_systemnotatet(self):
         """Kontekst fra flaten skal utvide systemnotatet, ikke erstatte det."""
@@ -199,8 +213,11 @@ class TestFiqGuiAiSpor(TransactionCase):
             self.Assistent.spor("Hei", kontekst="Brukeren står i Regnskapsflaten.")
         system = mock_post.call_args.kwargs["json"]["system"]
         self.assertIn("Regnskapsflaten", system)
-        self.assertIn(self.env.user.name, system,
-                      "Kontekst skal LEGGES TIL, ikke overskrive systemnotatet")
+        self.assertIn(
+            self.env.user.name,
+            system,
+            "Kontekst skal LEGGES TIL, ikke overskrive systemnotatet",
+        )
 
     def test_ikke_streng_kontekst_kaster_ikke(self):
         """FEILSTI: flaten kan sende en dict eller et tall. Skal ikke felle kallet."""
@@ -214,21 +231,33 @@ class TestFiqGuiAiSpor(TransactionCase):
 
     def test_tekstsvar_returneres_som_ren_tekst(self):
         with patch(MOCK_POST, return_value=_tekstsvar("FIQ er en AI-plattform.")):
-            self.assertEqual(self.Assistent.spor("Hva er FIQ?"), "FIQ er en AI-plattform.")
+            self.assertEqual(
+                self.Assistent.spor("Hva er FIQ?"), "FIQ er en AI-plattform."
+            )
 
     def test_flere_tekstblokker_slaas_sammen(self):
-        svar = _respons({"content": [{"type": "text", "text": "Del 1. "},
-                                     {"type": "text", "text": "Del 2."}]})
+        svar = _respons(
+            {
+                "content": [
+                    {"type": "text", "text": "Del 1. "},
+                    {"type": "text", "text": "Del 2."},
+                ]
+            }
+        )
         with patch(MOCK_POST, return_value=svar):
             self.assertEqual(self.Assistent.spor("Hei"), "Del 1. Del 2.")
 
     def test_ikke_tekst_blokker_hoppes_over(self):
         """Et tool_use- eller thinking-blokk skal ikke havne i brukerens svar."""
-        svar = _respons({"content": [
-            {"type": "thinking", "thinking": "intern resonnering"},
-            {"type": "text", "text": "Det endelige svaret."},
-            {"type": "tool_use", "id": "t1", "name": "f", "input": {}},
-        ]})
+        svar = _respons(
+            {
+                "content": [
+                    {"type": "thinking", "thinking": "intern resonnering"},
+                    {"type": "text", "text": "Det endelige svaret."},
+                    {"type": "tool_use", "id": "t1", "name": "f", "input": {}},
+                ]
+            }
+        )
         with patch(MOCK_POST, return_value=svar):
             resultat = self.Assistent.spor("Hei")
         self.assertEqual(resultat, "Det endelige svaret.")
@@ -255,7 +284,7 @@ class TestFiqGuiAiSpor(TransactionCase):
             feilsvar = _respons(raise_for_status=requests.exceptions.HTTPError(status))
             with patch(MOCK_POST, return_value=feilsvar):
                 svar = self.Assistent.spor("Hei")
-            self.assertIsInstance(svar, str, "HTTP %s felte kallet" % status)
+            self.assertIsInstance(svar, str, f"HTTP {status} felte kallet")
             self.assertTrue(svar.strip())
 
     def test_ugyldig_JSON_gir_lesbar_beskjed(self):
@@ -273,23 +302,30 @@ class TestFiqGuiAiSpor(TransactionCase):
         for soppel in ([], ["a"], "en streng", 42, None):
             with patch(MOCK_POST, return_value=_respons(soppel)):
                 svar = self.Assistent.spor("Hei")
-            self.assertIsInstance(svar, str, "Payload %r felte kallet" % (soppel,))
-            self.assertTrue(svar.strip(), "Payload %r ga tomt svar" % (soppel,))
+            self.assertIsInstance(svar, str, f"Payload {soppel!r} felte kallet")
+            self.assertTrue(svar.strip(), f"Payload {soppel!r} ga tomt svar")
 
     def test_blokker_som_ikke_er_dict_kaster_ikke(self):
         """FEILSTI: content-lista inneholder noe annet enn objekter."""
-        with patch(MOCK_POST, return_value=_respons({"content": ["ikke et objekt", None, 3]})):
+        with patch(
+            MOCK_POST, return_value=_respons({"content": ["ikke et objekt", None, 3]})
+        ):
             svar = self.Assistent.spor("Hei")
         self.assertIsInstance(svar, str)
         self.assertTrue(svar.strip())
 
     def test_tomt_svar_forklares_ikke_bare_tom_streng(self):
         """🔴 Brukeren må se FORSKJELL på «AI-en svarte ingenting» og «ingenting skjedde»."""
-        for tomt in ({"content": []}, {"content": [{"type": "text", "text": "   "}]},
-                     {"stop_reason": "end_turn"}):
+        for tomt in (
+            {"content": []},
+            {"content": [{"type": "text", "text": "   "}]},
+            {"stop_reason": "end_turn"},
+        ):
             with patch(MOCK_POST, return_value=_respons(tomt)):
                 svar = self.Assistent.spor("Hei")
-            self.assertTrue(svar.strip(), "Tomt svar %r ga tom streng til brukeren" % (tomt,))
+            self.assertTrue(
+                svar.strip(), f"Tomt svar {tomt!r} ga tom streng til brukeren"
+            )
 
     def test_spor_kaster_ALDRI_uansett_feil(self):
         """🔴 SAMLETESTEN for kontrakten: hver tenkelige feil, ingen skal boble opp."""
@@ -308,8 +344,9 @@ class TestFiqGuiAiSpor(TransactionCase):
                 try:
                     svar = self.Assistent.spor("Hei")
                 except Exception as boblet:  # noqa: BLE001 — DET er hele poenget
-                    self.fail("spor() kastet %r ved %r — kontrakten er brutt"
-                              % (boblet, e))
+                    self.fail(
+                        f"spor() kastet {boblet!r} ved {e!r} — kontrakten er brutt"
+                    )
             self.assertIsInstance(svar, str)
             self.assertTrue(svar.strip())
 
@@ -320,6 +357,7 @@ class TestFiqGuiAiSpor(TransactionCase):
             with self.assertLogs("odoo.addons.fiq_gui_ai", level="DEBUG") as logg:
                 # tvinger minst én logglinje så assertLogs ikke feiler på tomhet
                 import logging
+
                 logging.getLogger("odoo.addons.fiq_gui_ai").debug("testmarkør")
                 self.Assistent.spor("Hei")
         alt = "\n".join(logg.output)
@@ -331,35 +369,46 @@ class TestFiqGuiAiSpor(TransactionCase):
         Inneholder unntaket forespørselen, kan nøkkelen følge med i loggen."""
         e = requests.exceptions.HTTPError(
             "401 for url https://api.anthropic.com/v1/messages "
-            "(x-api-key: %s)" % TESTNOKKEL)
+            f"(x-api-key: {TESTNOKKEL})"
+        )
         with patch(MOCK_POST, side_effect=e):
             with self.assertLogs("odoo.addons.fiq_gui_ai", level="WARNING") as logg:
                 svar = self.Assistent.spor("Hei")
         alt = "\n".join(logg.output)
-        self.assertNotIn(TESTNOKKEL, alt,
-                         "API-NØKKELEN BLE LOGGET I FEILSTIEN — den ligger nå i "
-                         "Odoo.sh-loggen i klartekst")
-        self.assertNotIn(TESTNOKKEL, svar,
-                         "API-NØKKELEN BLE VIST TIL BRUKEREN i feilmeldingen")
+        self.assertNotIn(
+            TESTNOKKEL,
+            alt,
+            "API-NØKKELEN BLE LOGGET I FEILSTIEN — den ligger nå i "
+            "Odoo.sh-loggen i klartekst",
+        )
+        self.assertNotIn(
+            TESTNOKKEL, svar, "API-NØKKELEN BLE VIST TIL BRUKEREN i feilmeldingen"
+        )
 
     def test_noekkelen_returneres_ALDRI_til_brukeren(self):
         """🔴 SIKKERHET: returverdien går rett inn i co-worker-panelet."""
         tilfeller = [
             ("vellykket", {"return_value": _tekstsvar("Alt fint")}),
-            ("http-feil", {"side_effect": requests.exceptions.HTTPError(
-                "401 key=%s" % TESTNOKKEL)}),
-            ("json-feil", {"return_value": _respons(json_exception=ValueError(TESTNOKKEL))}),
+            (
+                "http-feil",
+                {"side_effect": requests.exceptions.HTTPError(f"401 key={TESTNOKKEL}")},
+            ),
+            (
+                "json-feil",
+                {"return_value": _respons(json_exception=ValueError(TESTNOKKEL))},
+            ),
             ("soppel", {"return_value": _respons(["søppel"])}),
         ]
         for navn, kwargs in tilfeller:
             with patch(MOCK_POST, **kwargs):
                 svar = self.Assistent.spor("Hei")
-            self.assertNotIn(TESTNOKKEL, svar, "Nøkkelen lekket i tilfellet «%s»" % navn)
-            self.assertNotIn("sk-ant", svar, "Nøkkel-form lekket i tilfellet «%s»" % navn)
+            self.assertNotIn(TESTNOKKEL, svar, f"Nøkkelen lekket i tilfellet «{navn}»")
+            self.assertNotIn("sk-ant", svar, f"Nøkkel-form lekket i tilfellet «{navn}»")
 
     def test_noekkelen_er_KUN_i_headeren_aldri_i_kroppen(self):
         """🔴 SIKKERHET: bodyen logges av mellomledd; headeren gjør det sjeldnere."""
         import json as _json
+
         with patch(MOCK_POST, return_value=_tekstsvar()) as mock_post:
             self.Assistent.spor("Hei")
         kropp = _json.dumps(mock_post.call_args.kwargs["json"])
@@ -393,20 +442,24 @@ class TestFiqGuiAiTilstedevaerelse(TransactionCase):
         # OPPRETT vår egen tilstand — ikke stol på hvilke brukere basen har.
         self.firma_a = self.env["res.company"].create({"name": "FIQ Testfirma A"})
         self.firma_b = self.env["res.company"].create({"name": "FIQ Testfirma B"})
-        self.intern = self.env["res.users"].create({
-            "name": "FIQ Testbruker Intern",
-            "login": "fiq_test_intern@example.com",
-            "company_id": self.firma_a.id,
-            "company_ids": [(6, 0, [self.firma_a.id])],
-            "group_ids": [(6, 0, [self.env.ref("base.group_user").id])],
-        })
-        self.intern_b = self.env["res.users"].create({
-            "name": "FIQ Testbruker Firma B",
-            "login": "fiq_test_firma_b@example.com",
-            "company_id": self.firma_b.id,
-            "company_ids": [(6, 0, [self.firma_b.id])],
-            "group_ids": [(6, 0, [self.env.ref("base.group_user").id])],
-        })
+        self.intern = self.env["res.users"].create(
+            {
+                "name": "FIQ Testbruker Intern",
+                "login": "fiq_test_intern@example.com",
+                "company_id": self.firma_a.id,
+                "company_ids": [(6, 0, [self.firma_a.id])],
+                "group_ids": [(6, 0, [self.env.ref("base.group_user").id])],
+            }
+        )
+        self.intern_b = self.env["res.users"].create(
+            {
+                "name": "FIQ Testbruker Firma B",
+                "login": "fiq_test_firma_b@example.com",
+                "company_id": self.firma_b.id,
+                "company_ids": [(6, 0, [self.firma_b.id])],
+                "group_ids": [(6, 0, [self.env.ref("base.group_user").id])],
+            }
+        )
 
     def test_returnerer_liste_med_forventede_noekler(self):
         """Flaten leser id/name/status/online/is_me — mangler én, krasjer OWL-malen."""
@@ -424,11 +477,13 @@ class TestFiqGuiAiTilstedevaerelse(TransactionCase):
     def test_portalbrukere_utelates(self):
         """🔴 Portal-/delte brukere er KUNDER. De skal aldri stå i et internt
         tilstedeværelsespanel — det er en lekkasje av hvem som er kunde."""
-        portal = self.env["res.users"].create({
-            "name": "FIQ Testportal Kunde",
-            "login": "fiq_test_portal@example.com",
-            "group_ids": [(6, 0, [self.env.ref("base.group_portal").id])],
-        })
+        portal = self.env["res.users"].create(
+            {
+                "name": "FIQ Testportal Kunde",
+                "login": "fiq_test_portal@example.com",
+                "group_ids": [(6, 0, [self.env.ref("base.group_portal").id])],
+            }
+        )
         navn = [r["name"] for r in self.Assistent.get_tilstedevaerelse()]
         self.assertNotIn(portal.name, navn, "En portalbruker lekket inn i panelet")
 
@@ -458,8 +513,11 @@ class TestFiqGuiAiTilstedevaerelse(TransactionCase):
         betyr at «meg»-raden kan mangle helt. Flaten må tåle det."""
         self.intern.active = False
         rader = self.Assistent.with_user(self.intern).get_tilstedevaerelse()
-        self.assertEqual([r for r in rader if r["is_me"]], [],
-                         "En inaktiv bruker skal ikke stå i sitt eget panel")
+        self.assertEqual(
+            [r for r in rader if r["is_me"]],
+            [],
+            "En inaktiv bruker skal ikke stå i sitt eget panel",
+        )
 
     def test_ingen_PII_utover_navnet(self):
         """🔴 GDPR: panelet skal vise navn og status — ALDRI e-post, telefon eller
@@ -467,18 +525,25 @@ class TestFiqGuiAiTilstedevaerelse(TransactionCase):
         rader = self.Assistent.get_tilstedevaerelse()
         forbudt = {"login", "email", "phone", "mobile", "partner_id", "password"}
         for rad in rader:
-            self.assertFalse(set(rad) & forbudt,
-                             "PII lekket i tilstedeværelsen: %s" % (set(rad) & forbudt))
+            self.assertFalse(
+                set(rad) & forbudt,
+                "PII lekket i tilstedeværelsen: %s" % (set(rad) & forbudt),
+            )
         raa = str(rader)
-        self.assertNotIn("fiq_test_intern@example.com", raa,
-                         "Innloggings-e-posten lekket i panelet")
+        self.assertNotIn(
+            "fiq_test_intern@example.com", raa, "Innloggings-e-posten lekket i panelet"
+        )
 
     def test_status_er_en_kjent_verdi(self):
         gyldige = {"online", "away", "offline"}
         for rad in self.Assistent.get_tilstedevaerelse():
-            self.assertIn(rad["status"], gyldige,
-                          "Ukjent status «%s» — flaten kjenner bare %s"
-                          % (rad["status"], gyldige))
+            self.assertIn(
+                rad["status"],
+                gyldige,
+                "Ukjent status «{}» — flaten kjenner bare {}".format(
+                    rad["status"], gyldige
+                ),
+            )
 
     def test_online_flagget_foelger_status(self):
         for rad in self.Assistent.get_tilstedevaerelse():
@@ -500,9 +565,12 @@ class TestFiqGuiAiTilstedevaerelse(TransactionCase):
         self.assertIsInstance(rader, list)
         meg = [r for r in rader if r["is_me"]]
         self.assertEqual(len(meg), 1)
-        self.assertEqual(meg[0]["id"], self.intern.id,
-                         "«is_me» pekte ikke på den brukeren metoden kjørte som — "
-                         "da er self.env.uid ikke den innloggede")
+        self.assertEqual(
+            meg[0]["id"],
+            self.intern.id,
+            "«is_me» pekte ikke på den brukeren metoden kjørte som — "
+            "da er self.env.uid ikke den innloggede",
+        )
 
     def test_firma_bytte_endrer_ikke_is_me(self):
         """Firma-scope: bytter brukeren aktivt firma, er han fortsatt seg selv."""
@@ -522,8 +590,10 @@ class TestFiqGuiAiTilgang(TransactionCase):
         den virker, men ingen kan huke den av. Samme felle som felte
         fiq_gui_control v6.77 og fiq_tilgang v1.2.0."""
         gruppe = self.env.ref("fiq_gui_ai.group_ai_mgm")
-        self.assertTrue(gruppe.privilege_id,
-                        "AI MGM mangler privilege_id — gruppa er usynlig i brukerskjemaet")
+        self.assertTrue(
+            gruppe.privilege_id,
+            "AI MGM mangler privilege_id — gruppa er usynlig i brukerskjemaet",
+        )
         self.assertTrue(gruppe.privilege_id.category_id)
 
     def test_ai_mgm_arver_intern_bruker(self):
@@ -537,11 +607,13 @@ class TestFiqGuiAiTilgang(TransactionCase):
 
     def test_vanlig_intern_bruker_naar_chatten(self):
         """Chatten skal være åpen for alle interne — den er poenget med flaten."""
-        bruker = self.env["res.users"].create({
-            "name": "FIQ Testbruker Chat",
-            "login": "fiq_test_chat@example.com",
-            "group_ids": [(6, 0, [self.env.ref("base.group_user").id])],
-        })
+        bruker = self.env["res.users"].create(
+            {
+                "name": "FIQ Testbruker Chat",
+                "login": "fiq_test_chat@example.com",
+                "group_ids": [(6, 0, [self.env.ref("base.group_user").id])],
+            }
+        )
         icp = self.env["ir.config_parameter"].sudo()
         icp.set_param(PARAM_KEY, TESTNOKKEL)
         self.addCleanup(icp.set_param, PARAM_KEY, "")

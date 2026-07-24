@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 import logging
 
 import requests
 
-from odoo import models, api, _
+from odoo import _, api, models
 
 _logger = logging.getLogger(__name__)
 
@@ -44,6 +43,7 @@ class FiqGuiAiAssistent(models.AbstractModel):
     Stateless helper (AbstractModel) – no records to persist. Runs as
     self.env.user so Odoo record rules govern what data the caller can reach.
     """
+
     _name = "fiq.gui.ai.assistent"
     _description = "FIQ AI co-worker – assistant"
 
@@ -80,7 +80,7 @@ class FiqGuiAiAssistent(models.AbstractModel):
             "in the same language as the user's question. The user is %s."
         ) % (self.env.user.name or _("an Odoo user"))
         if kontekst:
-            system = "%s\n\n%s" % (system, str(kontekst))
+            system = f"{system}\n\n{str(kontekst)}"
 
         payload = {
             "model": model,
@@ -102,15 +102,19 @@ class FiqGuiAiAssistent(models.AbstractModel):
             data = resp.json()
         except requests.exceptions.RequestException as e:
             # Vask bort nøkkelen: 401-svar kan ekko-e headeren tilbake til oss.
-            _logger.warning("FIQ AI co-worker: Anthropic request failed: %s",
-                            _uten_noekkel(e, api_key))
+            _logger.warning(
+                "FIQ AI co-worker: Anthropic request failed: %s",
+                _uten_noekkel(e, api_key),
+            )
             return _(
                 "AI is unavailable right now – I couldn't reach the assistant. "
                 "Please try again in a moment."
             )
         except ValueError as e:  # JSON decode error
-            _logger.warning("FIQ AI co-worker: could not parse Anthropic response: %s",
-                            _uten_noekkel(e, api_key))
+            _logger.warning(
+                "FIQ AI co-worker: could not parse Anthropic response: %s",
+                _uten_noekkel(e, api_key),
+            )
             return _("AI is unavailable right now – I got an unreadable answer.")
 
         # Response shape: {"content": [{"type": "text", "text": "..."}], ...}
@@ -146,13 +150,15 @@ class FiqGuiAiAssistent(models.AbstractModel):
                 status = u.im_status or "offline"
             except Exception:  # field absent in a stripped DB – degrade safely
                 status = "offline"
-            out.append({
-                "id": u.id,
-                "name": u.name or "",
-                "status": status,
-                "online": status in ("online", "away"),
-                "is_me": u.id == self.env.uid,
-            })
+            out.append(
+                {
+                    "id": u.id,
+                    "name": u.name or "",
+                    "status": status,
+                    "online": status in ("online", "away"),
+                    "is_me": u.id == self.env.uid,
+                }
+            )
         # Online first, then away, then offline; alphabetical within each group.
         rank = {"online": 0, "away": 1, "offline": 2}
         out.sort(key=lambda r: (rank.get(r["status"], 3), r["name"].lower()))
