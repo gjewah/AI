@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 {
     "name": "FIQ Styringssystem — ISO 9001 (krav/kontroll/sjekkliste/avvik)",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.1.1",
     "summary": "ISO-styringssystem: krav (klausuler), kontroller, sjekklister og avvik "
-               "med taksonomi-kobling (code.list / documents.tag, feature-detektert). "
-               "Multi-selskap, tenant-isolert, config-drevet — generisk for alle FIQ-kunder.",
+    "med taksonomi-kobling (code.list / documents.tag, feature-detektert). "
+    "Multi-selskap, tenant-isolert, config-drevet — generisk for alle FIQ-kunder.",
     "description": """
 FIQ Styringssystem — ISO 9001
 ===============================
@@ -29,7 +28,7 @@ Multi-selskap:
  (['|',('company_id','=',False),('company_id','in',company_ids)]). Tenant-isolert,
  generisk for ALLE FIQ AS-kunder — aldri kunde-fork.
 """,
-    "author": "FIQ AS",
+    "author": "FIQ as",
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
     "license": "OPL-1",

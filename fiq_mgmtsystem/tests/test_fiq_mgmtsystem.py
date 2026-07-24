@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tester for FIQ Styringssystem (ISO 9001) — krav, kontroll, sjekkliste, avvik.
 
 Hvorfor de finnes (2026-07-23): modulen hadde NULL tester. «0 failed, 0 error(s)
@@ -29,7 +28,6 @@ from odoo.tests.common import TransactionCase
 
 @tagged("post_install", "-at_install", "fiq_mgmtsystem")
 class TestFiqMgmtsystem(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -47,41 +45,69 @@ class TestFiqMgmtsystem(TransactionCase):
     @classmethod
     def _unik(cls):
         cls._teller += 1
-        return "T%03d" % cls._teller
+        # 🛑 `:03d` MÅ bevares. Uten nullpolstringen blir T1/T2 i stedet for
+        # T001/T002, og hele modulens unikhet hviler på denne ene strengen —
+        # klausul, kode og login bygges av den.
+        return f"T{cls._teller:03d}"
 
     def _lag_krav(self, **vals):
         """Ett krav med garantert unik klausul (unique(standard, klausul, company_id))."""
         u = self._unik()
-        return self.Krav.create(dict({
-            "name": "Testkrav %s" % u,
-            "klausul": "9.%s" % u,
-            "standard": "iso9001",
-        }, **vals))
+        return self.Krav.create(
+            dict(
+                {
+                    "name": f"Testkrav {u}",
+                    "klausul": f"9.{u}",
+                    "standard": "iso9001",
+                },
+                **vals,
+            )
+        )
 
     def _lag_kontroll(self, **vals):
         u = self._unik()
-        return self.Kontroll.create(dict({
-            "name": "Testkontroll %s" % u,
-            "kode": "K-%s" % u,
-        }, **vals))
+        return self.Kontroll.create(
+            dict(
+                {
+                    "name": f"Testkontroll {u}",
+                    "kode": f"K-{u}",
+                },
+                **vals,
+            )
+        )
 
     def _lag_liste(self, **vals):
-        return self.Sjekkliste.create(dict({
-            "name": "Testsjekkliste %s" % self._unik(),
-        }, **vals))
+        return self.Sjekkliste.create(
+            dict(
+                {
+                    "name": f"Testsjekkliste {self._unik()}",
+                },
+                **vals,
+            )
+        )
 
     def _lag_punkter(self, liste, antall, utfort=False):
         """Oppretter N punkter på lista. Returnerer recordsettet."""
-        return self.Punkt.create([{
-            "sjekkliste_id": liste.id,
-            "name": "Punkt %d" % (i + 1),
-            "utfort": utfort,
-        } for i in range(antall)])
+        return self.Punkt.create(
+            [
+                {
+                    "sjekkliste_id": liste.id,
+                    "name": f"Punkt {i + 1}",
+                    "utfort": utfort,
+                }
+                for i in range(antall)
+            ]
+        )
 
     def _lag_avvik(self, **vals):
-        return self.Avvik.create(dict({
-            "name": "Testavvik %s" % self._unik(),
-        }, **vals))
+        return self.Avvik.create(
+            dict(
+                {
+                    "name": f"Testavvik {self._unik()}",
+                },
+                **vals,
+            )
+        )
 
     # =========================================================================
     # _compute_fremdrift() — den viktigste. Deler på antall punkter.
@@ -100,8 +126,9 @@ class TestFiqMgmtsystem(TransactionCase):
         liste = self._lag_liste()
         self.assertEqual(liste.antall_punkt, 0)
         self.assertEqual(liste.antall_utfort, 0)
-        self.assertEqual(liste.fremdrift, 0.0,
-                         "Tom sjekkliste skal gi 0 %, ikke divisjon på null")
+        self.assertEqual(
+            liste.fremdrift, 0.0, "Tom sjekkliste skal gi 0 %, ikke divisjon på null"
+        )
 
     def test_fremdrift_null_holder_etter_at_siste_punkt_slettes(self):
         """🔴 Samme null-divisjon, men via den STIEN som faktisk treffer i drift.
@@ -116,8 +143,11 @@ class TestFiqMgmtsystem(TransactionCase):
         self.assertEqual(liste.fremdrift, 100.0)
         punkter.unlink()
         self.assertEqual(liste.antall_punkt, 0)
-        self.assertEqual(liste.fremdrift, 0.0,
-                         "Etter at siste punkt er slettet må fremdrift falle til 0, ikke krasje")
+        self.assertEqual(
+            liste.fremdrift,
+            0.0,
+            "Etter at siste punkt er slettet må fremdrift falle til 0, ikke krasje",
+        )
 
     def test_fremdrift_alle_utfort_er_hundre(self):
         """Alle punkter utført = 100 %. Ikke 99,999 og ikke 1.0 (andel vs prosent)."""
@@ -125,8 +155,12 @@ class TestFiqMgmtsystem(TransactionCase):
         self._lag_punkter(liste, 5, utfort=True)
         self.assertEqual(liste.antall_punkt, 5)
         self.assertEqual(liste.antall_utfort, 5)
-        self.assertAlmostEqual(liste.fremdrift, 100.0, places=2,
-                               msg="Feltet heter «Fremdrift (%)» — 100, ikke 1.0")
+        self.assertAlmostEqual(
+            liste.fremdrift,
+            100.0,
+            places=2,
+            msg="Feltet heter «Fremdrift (%)» — 100, ikke 1.0",
+        )
 
     def test_fremdrift_halvparten_utfort_er_femti(self):
         """2 av 4 utført = 50 %."""
@@ -145,7 +179,9 @@ class TestFiqMgmtsystem(TransactionCase):
         """
         liste = self._lag_liste()
         self._lag_punkter(liste, 3)
-        self.assertEqual(liste.antall_punkt, 3, "Punktene skal telles selv om ingen er utført")
+        self.assertEqual(
+            liste.antall_punkt, 3, "Punktene skal telles selv om ingen er utført"
+        )
         self.assertEqual(liste.antall_utfort, 0)
         self.assertEqual(liste.fremdrift, 0.0)
 
@@ -164,8 +200,12 @@ class TestFiqMgmtsystem(TransactionCase):
         punkter[1].utfort = True
         self.assertAlmostEqual(liste.fremdrift, 100.0, places=2)
         punkter[0].utfort = False
-        self.assertAlmostEqual(liste.fremdrift, 50.0, places=2,
-                               msg="Å fjerne avhukingen må også regne om — ikke bare å sette den")
+        self.assertAlmostEqual(
+            liste.fremdrift,
+            50.0,
+            places=2,
+            msg="Å fjerne avhukingen må også regne om — ikke bare å sette den",
+        )
 
     def test_fremdrift_avrunder_ikke_bort_udelelig_brok(self):
         """1 av 3 = 33,33… %. Feltet er Float — verdien skal ikke bli 33 eller 0.
@@ -207,8 +247,11 @@ class TestFiqMgmtsystem(TransactionCase):
         liste = self._lag_liste()
         punkt = self._lag_punkter(liste, 1)
         self.assertEqual(punkt.company_id, liste.company_id)
-        self.assertEqual(liste.company_id, self.env.company,
-                         "Firma skal komme fra sesjonen — aldri fra klienten")
+        self.assertEqual(
+            liste.company_id,
+            self.env.company,
+            "Firma skal komme fra sesjonen — aldri fra klienten",
+        )
 
     def test_punkter_slettes_med_sjekklista(self):
         """ondelete=«cascade»: punkter uten sjekkliste er foreldreløse rader.
@@ -220,8 +263,10 @@ class TestFiqMgmtsystem(TransactionCase):
         self._lag_punkter(liste, 3)
         punkt_ids = liste.punkt_ids.ids
         liste.unlink()
-        self.assertFalse(self.Punkt.browse(punkt_ids).exists(),
-                         "Punkter skal følge sjekklista i grava")
+        self.assertFalse(
+            self.Punkt.browse(punkt_ids).exists(),
+            "Punkter skal følge sjekklista i grava",
+        )
 
     # =========================================================================
     # _compute_antall() på krav
@@ -245,8 +290,9 @@ class TestFiqMgmtsystem(TransactionCase):
         self._lag_kontroll(krav_ids=[(6, 0, krav.ids)])
         self.assertEqual(krav.kontroll_antall, 2)
         k1.krav_ids = [(5, 0, 0)]
-        self.assertEqual(krav.kontroll_antall, 1,
-                         "Å koble fra en kontroll må også regne om")
+        self.assertEqual(
+            krav.kontroll_antall, 1, "Å koble fra en kontroll må også regne om"
+        )
 
     def test_aapne_avvik_teller_kun_ikke_lukkede(self):
         """🔴 Kjernen i «åpne avvik»: lukkede skal IKKE telle.
@@ -258,9 +304,14 @@ class TestFiqMgmtsystem(TransactionCase):
         self._lag_avvik(krav_id=krav.id, status="aapen")
         self._lag_avvik(krav_id=krav.id, status="under_tiltak")
         lukket = self._lag_avvik(krav_id=krav.id, status="lukket")
-        self.assertEqual(krav.avvik_aapne, 2,
-                         "«Under tiltak» er ÅPENT — kun «lukket» skal trekkes fra")
-        self.assertEqual(len(krav.avvik_ids), 3, "Alle tre er fortsatt koblet til kravet")
+        self.assertEqual(
+            krav.avvik_aapne,
+            2,
+            "«Under tiltak» er ÅPENT — kun «lukket» skal trekkes fra",
+        )
+        self.assertEqual(
+            len(krav.avvik_ids), 3, "Alle tre er fortsatt koblet til kravet"
+        )
         self.assertTrue(lukket)
 
     def test_lukking_av_avvik_reduserer_aapne(self):
@@ -270,8 +321,11 @@ class TestFiqMgmtsystem(TransactionCase):
         self.assertEqual(krav.avvik_aapne, 1)
         avvik.action_lukk()
         self.assertEqual(avvik.status, "lukket")
-        self.assertEqual(avvik.lukket_dato, fields.Date.context_today(avvik),
-                         "Lukket-dato må stemples — ellers mangler sporet i ISO-revisjon")
+        self.assertEqual(
+            avvik.lukket_dato,
+            fields.Date.context_today(avvik),
+            "Lukket-dato må stemples — ellers mangler sporet i ISO-revisjon",
+        )
         self.assertEqual(krav.avvik_aapne, 0)
 
     def test_antall_er_uavhengig_per_krav(self):
@@ -316,11 +370,13 @@ class TestFiqMgmtsystem(TransactionCase):
         """
         krav = self._lag_krav(
             taksonomi_kode="ZZ.99.99-finnes-ikke",
-            dokumentetikett="Etikett som ikke finnes %s" % self._unik(),
+            dokumentetikett=f"Etikett som ikke finnes {self._unik()}",
         )
         res = krav.resolve_taksonomi()
-        self.assertFalse(res["code_list_item_id"],
-                         "Ukjent kode skal gi False — ikke et tilfeldig treff")
+        self.assertFalse(
+            res["code_list_item_id"],
+            "Ukjent kode skal gi False — ikke et tilfeldig treff",
+        )
         self.assertFalse(res["documents_tag_id"])
 
     def test_resolve_taksonomi_finner_kjent_verdi_naar_modellen_finnes(self):
@@ -333,7 +389,7 @@ class TestFiqMgmtsystem(TransactionCase):
         truffet = False
 
         if "code.list.item" in self.env:
-            kode = "FIQ.TEST.%s" % self._unik()
+            kode = f"FIQ.TEST.{self._unik()}"
             item = self._lag_code_list_item(kode)
             if item:
                 krav = self._lag_krav(taksonomi_kode=kode)
@@ -341,7 +397,7 @@ class TestFiqMgmtsystem(TransactionCase):
                 truffet = True
 
         if "documents.tag" in self.env:
-            navn = "FIQ Testetikett %s" % self._unik()
+            navn = f"FIQ Testetikett {self._unik()}"
             tag = self._lag_documents_tag(navn)
             if tag:
                 krav = self._lag_krav(dokumentetikett=navn)
@@ -349,8 +405,10 @@ class TestFiqMgmtsystem(TransactionCase):
                 truffet = True
 
         if not truffet:
-            self.skipTest("hverken code.list.item eller documents.tag kunne opprettes "
-                          "her — taksonomi-koblingen er feature-detektert (soft)")
+            self.skipTest(
+                "hverken code.list.item eller documents.tag kunne opprettes "
+                "her — taksonomi-koblingen er feature-detektert (soft)"
+            )
 
     def _lag_code_list_item(self, kode):
         """Oppretter et taksonomi-element hvis modellen finnes og lar seg fylle.
@@ -361,7 +419,7 @@ class TestFiqMgmtsystem(TransactionCase):
         Item = self.env["code.list.item"]
         vals = {"code": kode}
         if "name" in Item._fields:
-            vals["name"] = "FIQ testkode %s" % kode
+            vals["name"] = f"FIQ testkode {kode}"
         try:
             return Item.create(vals)
         except Exception:
@@ -397,9 +455,16 @@ class TestFiqMgmtsystem(TransactionCase):
     def test_get_data_har_kontraktens_nokler(self):
         """Mangler en nøkkel, får KR en KeyError og mister hele boksen."""
         d = self.Krav.get_mgmtsystem_data()
-        for felt in ("antall_krav", "antall_kontroller", "antall_sjekklister",
-                     "aapne_avvik", "krav"):
-            self.assertIn(felt, d, "get_mgmtsystem_data mangler kontraktsfeltet %r" % felt)
+        for felt in (
+            "antall_krav",
+            "antall_kontroller",
+            "antall_sjekklister",
+            "aapne_avvik",
+            "krav",
+        ):
+            self.assertIn(
+                felt, d, f"get_mgmtsystem_data mangler kontraktsfeltet {felt!r}"
+            )
         self.assertIsInstance(d["krav"], list)
         self.assertIsInstance(d["antall_krav"], int)
 
@@ -416,8 +481,9 @@ class TestFiqMgmtsystem(TransactionCase):
 
         ider = [r["id"] for r in self.Krav.get_mgmtsystem_data()["krav"]]
         for krav in (k9, k14, k27):
-            self.assertIn(krav.id, ider,
-                          "Uten standard-parameter skal alle standarder være med")
+            self.assertIn(
+                krav.id, ider, "Uten standard-parameter skal alle standarder være med"
+            )
 
     def test_get_data_med_standard_filtrerer(self):
         """Med parameter skal KUN den standarden være med."""
@@ -428,8 +494,11 @@ class TestFiqMgmtsystem(TransactionCase):
         ider = [r["id"] for r in d["krav"]]
         self.assertIn(k14.id, ider)
         self.assertNotIn(k9.id, ider, "Filteret slipper igjennom feil standard")
-        self.assertEqual(d["antall_krav"], len(d["krav"]),
-                         "antall_krav må telle det samme som lista faktisk inneholder")
+        self.assertEqual(
+            d["antall_krav"],
+            len(d["krav"]),
+            "antall_krav må telle det samme som lista faktisk inneholder",
+        )
 
     def test_get_data_ukjent_standard_gir_tomt_ikke_krasj(self):
         """🔴 RANDTILFELLE: en standard som ikke finnes.
@@ -458,13 +527,16 @@ class TestFiqMgmtsystem(TransactionCase):
         Radene må bære lesbar tekst — og `standard` skal være ETIKETTEN
         («ISO 9001 — Kvalitet»), ikke den tekniske nøkkelen «iso9001».
         """
-        krav = self._lag_krav(standard="iso14001", klausul="14.%s" % self._unik())
+        krav = self._lag_krav(standard="iso14001", klausul=f"14.{self._unik()}")
         rad = [r for r in self.Krav.get_mgmtsystem_data()["krav"] if r["id"] == krav.id]
         self.assertTrue(rad, "Kravet testen opprettet mangler i svaret")
         rad = rad[0]
         self.assertEqual(rad["navn"], krav.name)
-        self.assertEqual(rad["standard"], "ISO 14001 — Miljø",
-                         "«standard» skal være etiketten, ikke den tekniske nøkkelen")
+        self.assertEqual(
+            rad["standard"],
+            "ISO 14001 — Miljø",
+            "«standard» skal være etiketten, ikke den tekniske nøkkelen",
+        )
 
     def test_get_data_taaler_tomme_tekstfelt(self):
         """🔴 RANDTILFELLE: klausul og taksonomi-kode er valgfrie → False i basen.
@@ -475,8 +547,12 @@ class TestFiqMgmtsystem(TransactionCase):
         base med fullstendige data aldri ser.
         """
         krav = self._lag_krav(klausul=False, taksonomi_kode=False)
-        rad = [r for r in self.Krav.get_mgmtsystem_data()["krav"] if r["id"] == krav.id][0]
-        self.assertEqual(rad["klausul"], "", "Tom klausul skal bli tom streng, ikke False")
+        rad = [
+            r for r in self.Krav.get_mgmtsystem_data()["krav"] if r["id"] == krav.id
+        ][0]
+        self.assertEqual(
+            rad["klausul"], "", "Tom klausul skal bli tom streng, ikke False"
+        )
         self.assertEqual(rad["taksonomi_kode"], "")
         self.assertIsInstance(rad["klausul"], str)
         self.assertIsInstance(rad["taksonomi_kode"], str)
@@ -500,8 +576,9 @@ class TestFiqMgmtsystem(TransactionCase):
         self._lag_avvik(status="under_tiltak")
         self._lag_avvik(status="lukket")
         etter = self.Krav.get_mgmtsystem_data()["aapne_avvik"]
-        self.assertEqual(etter - for_, 2,
-                         "Kun «lukket» skal trekkes fra — «under tiltak» er åpent")
+        self.assertEqual(
+            etter - for_, 2, "Kun «lukket» skal trekkes fra — «under tiltak» er åpent"
+        )
 
     def test_get_data_radenes_tall_stemmer_med_kravet(self):
         """Radene i API-svaret må bære SAMME tall som posten — ikke et eget regnestykke."""
@@ -510,7 +587,9 @@ class TestFiqMgmtsystem(TransactionCase):
         self._lag_avvik(krav_id=krav.id, status="aapen")
         self._lag_avvik(krav_id=krav.id, status="lukket")
 
-        rad = [r for r in self.Krav.get_mgmtsystem_data()["krav"] if r["id"] == krav.id][0]
+        rad = [
+            r for r in self.Krav.get_mgmtsystem_data()["krav"] if r["id"] == krav.id
+        ][0]
         self.assertEqual(rad["kontroller"], krav.kontroll_antall)
         self.assertEqual(rad["aapne_avvik"], krav.avvik_aapne)
         self.assertEqual(rad["aapne_avvik"], 1)
@@ -543,14 +622,20 @@ class TestFiqMgmtsystem(TransactionCase):
         Klarer vi hverken å finne eller lage et, skipper testen ærlig i stedet for
         å feile på noe som ikke handler om styringssystemet.
         """
-        annet = self.env["res.company"].search([("id", "!=", self.env.company.id)], limit=1)
+        annet = self.env["res.company"].search(
+            [("id", "!=", self.env.company.id)], limit=1
+        )
         if annet:
             return annet
         try:
-            return self.env["res.company"].create({"name": "FIQ Testfirma %s" % self._unik()})
+            return self.env["res.company"].create(
+                {"name": f"FIQ Testfirma {self._unik()}"}
+            )
         except Exception:
-            self.skipTest("trenger et firma nummer to; å opprette et er blokkert på "
-                          "denne basen (documents_project e.l.)")
+            self.skipTest(
+                "trenger et firma nummer to; å opprette et er blokkert på "
+                "denne basen (documents_project e.l.)"
+            )
 
     def _bruker_i(self, firma):
         """En vanlig bruker som KUN tilhører `firma`.
@@ -558,19 +643,27 @@ class TestFiqMgmtsystem(TransactionCase):
         Testadministratoren tilhører alle firmaer, så scope må testes gjennom en
         bruker med smalere tilgang — ellers beviser testen ingenting.
         """
-        return self.env["res.users"].create({
-            "name": "FIQ mgmt-testbruker %s" % self._unik(),
-            "login": "fiq_mgmt_test_%s" % self._unik(),
-            "company_id": firma.id,
-            "company_ids": [(6, 0, [firma.id])],
-            "group_ids": [(6, 0, [self.env.ref("base.group_user").id])],
-        })
+        return self.env["res.users"].create(
+            {
+                "name": f"FIQ mgmt-testbruker {self._unik()}",
+                "login": f"fiq_mgmt_test_{self._unik()}",
+                "company_id": firma.id,
+                "company_ids": [(6, 0, [firma.id])],
+                "group_ids": [(6, 0, [self.env.ref("base.group_user").id])],
+            }
+        )
 
     def test_krav_settes_til_sesjonens_firma(self):
         """company_id kommer fra sesjonen — aldri fra klienten (kanon)."""
-        for post in (self._lag_krav(), self._lag_kontroll(), self._lag_liste(), self._lag_avvik()):
-            self.assertEqual(post.company_id, self.env.company,
-                             "%s fikk feil firma" % post._name)
+        for post in (
+            self._lag_krav(),
+            self._lag_kontroll(),
+            self._lag_liste(),
+            self._lag_avvik(),
+        ):
+            self.assertEqual(
+                post.company_id, self.env.company, f"{post._name} fikk feil firma"
+            )
 
     def test_get_data_lekker_ikke_annet_firmas_krav(self):
         """🛑 HARD GRENSE: en annen tenants krav skal ALDRI komme med.
@@ -583,14 +676,15 @@ class TestFiqMgmtsystem(TransactionCase):
         firma_b = self._annet_firma()
         bruker_b = self._bruker_i(firma_b)
 
-        mitt = self._lag_krav()                      # firma A (sesjonen)
+        mitt = self._lag_krav()  # firma A (sesjonen)
         deres = self._lag_krav(company_id=firma_b.id)
 
         d = self.Krav.with_user(bruker_b).with_company(firma_b).get_mgmtsystem_data()
         ider = [r["id"] for r in d["krav"]]
         self.assertIn(deres.id, ider, "Eget firmas krav må være synlig")
-        self.assertNotIn(mitt.id, ider,
-                         "🛑 TENANT-LEKKASJE: annet firmas krav kom med i API-svaret")
+        self.assertNotIn(
+            mitt.id, ider, "🛑 TENANT-LEKKASJE: annet firmas krav kom med i API-svaret"
+        )
 
     def test_generisk_mal_uten_firma_er_delt(self):
         """company_id = False er en GENERISK MAL — bevisst delt på tvers.
@@ -603,9 +697,15 @@ class TestFiqMgmtsystem(TransactionCase):
         bruker_b = self._bruker_i(firma_b)
         mal = self._lag_krav(company_id=False)
 
-        ider = [r["id"] for r in
-                self.Krav.with_user(bruker_b).with_company(firma_b).get_mgmtsystem_data()["krav"]]
-        self.assertIn(mal.id, ider, "Generisk mal (company_id=False) skal være synlig for alle")
+        ider = [
+            r["id"]
+            for r in self.Krav.with_user(bruker_b)
+            .with_company(firma_b)
+            .get_mgmtsystem_data()["krav"]
+        ]
+        self.assertIn(
+            mal.id, ider, "Generisk mal (company_id=False) skal være synlig for alle"
+        )
 
     def test_aggregatene_er_ogsaa_firma_scopet(self):
         """🛑 Tellerne bruker search_count — de må lyde de samme reglene.
@@ -621,26 +721,38 @@ class TestFiqMgmtsystem(TransactionCase):
         self._lag_kontroll()
         self._lag_liste()
         self._lag_avvik(status="aapen")
-        etter = self.Krav.with_user(bruker_b).with_company(firma_b).get_mgmtsystem_data()
+        etter = (
+            self.Krav.with_user(bruker_b).with_company(firma_b).get_mgmtsystem_data()
+        )
 
-        self.assertEqual(etter["antall_kontroller"], for_["antall_kontroller"],
-                         "🛑 Kontroll-telleren lekker over firmagrensen")
-        self.assertEqual(etter["antall_sjekklister"], for_["antall_sjekklister"],
-                         "🛑 Sjekkliste-telleren lekker over firmagrensen")
-        self.assertEqual(etter["aapne_avvik"], for_["aapne_avvik"],
-                         "🛑 Avviks-telleren lekker over firmagrensen")
+        self.assertEqual(
+            etter["antall_kontroller"],
+            for_["antall_kontroller"],
+            "🛑 Kontroll-telleren lekker over firmagrensen",
+        )
+        self.assertEqual(
+            etter["antall_sjekklister"],
+            for_["antall_sjekklister"],
+            "🛑 Sjekkliste-telleren lekker over firmagrensen",
+        )
+        self.assertEqual(
+            etter["aapne_avvik"],
+            for_["aapne_avvik"],
+            "🛑 Avviks-telleren lekker over firmagrensen",
+        )
 
     def test_sjekklistepunkt_er_firma_scopet(self):
         """Punktets company_id er related+store nettopp for at regelen skal treffe."""
         firma_b = self._annet_firma()
         bruker_b = self._bruker_i(firma_b)
 
-        liste = self._lag_liste()                 # firma A
+        liste = self._lag_liste()  # firma A
         punkter = self._lag_punkter(liste, 2)
         synlige = self.Punkt.with_user(bruker_b).with_company(firma_b).search([])
         for p in punkter:
-            self.assertNotIn(p, synlige,
-                             "🛑 TENANT-LEKKASJE: annet firmas sjekklistepunkt er synlig")
+            self.assertNotIn(
+                p, synlige, "🛑 TENANT-LEKKASJE: annet firmas sjekklistepunkt er synlig"
+            )
 
     # =========================================================================
     # Datamodell-vakter
@@ -655,17 +767,22 @@ class TestFiqMgmtsystem(TransactionCase):
         from psycopg2 import IntegrityError
 
         u = self._unik()
-        self.Krav.create({"name": "Første", "klausul": "7.%s" % u, "standard": "iso9001"})
+        self.Krav.create({"name": "Første", "klausul": f"7.{u}", "standard": "iso9001"})
         with self.assertRaises(IntegrityError):
             with self.cr.savepoint():
-                self.Krav.create({"name": "Duplikat", "klausul": "7.%s" % u,
-                                  "standard": "iso9001"})
+                self.Krav.create(
+                    {"name": "Duplikat", "klausul": f"7.{u}", "standard": "iso9001"}
+                )
 
     def test_samme_klausul_i_ulik_standard_er_lov(self):
         """«7.5» finnes i BÅDE ISO 9001 og ISO 14001 — det er ikke et duplikat."""
         u = self._unik()
-        a = self.Krav.create({"name": "9001-7.5", "klausul": "7.%s" % u, "standard": "iso9001"})
-        b = self.Krav.create({"name": "14001-7.5", "klausul": "7.%s" % u, "standard": "iso14001"})
+        a = self.Krav.create(
+            {"name": "9001-7.5", "klausul": f"7.{u}", "standard": "iso9001"}
+        )
+        b = self.Krav.create(
+            {"name": "14001-7.5", "klausul": f"7.{u}", "standard": "iso14001"}
+        )
         self.assertNotEqual(a.id, b.id)
 
     def test_avvik_overlever_at_kravet_slettes(self):
