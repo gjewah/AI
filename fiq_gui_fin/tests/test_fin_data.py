@@ -396,10 +396,27 @@ class TestFinData(TransactionCase):
         # Løsningen er å ikke bygge et firma i det hele tatt: bruk et som ALT
         # finnes med regnskapsoppsett, og fjern brukerens tilgang til det.
         # Testen måler lekkasje — ikke Odoos firmaoppsett.
+        # 🔴 FJERDE utgave. De tre første feilet alle på SAMME grunnform: en
+        # antakelse om hva basen inneholder.
+        #   1. at et nytt firma er utilgjengelig for den som lager det  → feil
+        #   2. at et nytt firma kan bokføre                             → feil
+        #   3. at et EKSISTERENDE firma har regnskapsoppsett            → feil
+        #      («No journal ... in company My Company (Chicago) ... types: sale»)
+        #
+        # Nå søkes det på det testen FAKTISK trenger: et annet firma som har en
+        # salgsjournal. Finnes det ikke, kan tenant-grensen ikke måles her — og
+        # da skal testen si fra, ikke se grønn ut. En grønn test som ikke kan
+        # måle noe, er en løgn.
         eget = self.env.company
-        andre = self.env["res.company"].search([("id", "!=", eget.id)], limit=1)
-        if not andre:
-            self.skipTest("Basen har bare ett firma — kryss-firma kan ikke måles")
+        salgsjournal = self.env["account.journal"].search(
+            [("type", "=", "sale"), ("company_id", "!=", eget.id)], limit=1
+        )
+        if not salgsjournal:
+            self.skipTest(
+                "Ingen annet firma med salgsjournal i denne basen — "
+                "kryss-firma kan ikke måles"
+            )
+        andre = salgsjournal.company_id
 
         # Ta bort brukerens tilgang til det andre firmaet for denne testen.
         self.env.user.company_ids = [(3, andre.id)]
@@ -412,7 +429,9 @@ class TestFinData(TransactionCase):
             "Forutsetningen holder ikke: brukeren har fortsatt tilgang til firmaet",
         )
 
-        # Faktura i DET ANDRE firmaet — som har journaler, siden det er ekte.
+        # Faktura i DET ANDRE firmaet. `journal_id` settes EKSPLISITT — Odoos
+        # `_compute_journal_id` slår til allerede ved `create()` og feiler hvis
+        # den må gjette. Vi har journalen; da skal vi oppgi den.
         kunde = self._kunde("FIQ Test Annet Firma AS")
         faktura = (
             self.Move.with_company(andre)
@@ -424,6 +443,7 @@ class TestFinData(TransactionCase):
                     "invoice_date": self.i_dag,
                     "invoice_date_due": fields.Date.add(self.i_dag, days=-90),
                     "company_id": andre.id,
+                    "journal_id": salgsjournal.id,
                     "invoice_line_ids": [
                         (
                             0,

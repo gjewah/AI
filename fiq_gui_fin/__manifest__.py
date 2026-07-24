@@ -1,6 +1,6 @@
 {
     "name": "FIQ Finans",
-    "version": "19.0.1.11.2",
+    "version": "19.0.1.11.3",
     "summary": "AI GUI Finans (2.70) — visningen av AI Finans-Rådgiveren: analyse, "
     "framskrivning, simulator (fortid/nåtid/fremtid), KPI og POG.",
     "description": """
