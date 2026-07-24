@@ -152,8 +152,12 @@ class FiqSjekkliste(models.Model):
     # ⏸ Ekte versjonering (historikk + tilbakerulling) er et ÅPENT spørsmål hos
     # Gjermund: «hvor mye skal denne dokumentasjonen tåle å bli utfordret?»
     # Blir den bygget, endres teksten da. Til da sier den sant.
+    # Ingen `string=`: etiketten «Versjon» ville vaert IDENTISK med feltnavnet,
+    # og Odoo utleder den selv. Brukeren ser noeyaktig samme ord. (W8113, 24.07)
+    # 🔑 Dette kan IKKE ryddes mekanisk: i moduler med ENGELSKE feltnavn ville
+    # fjerning gjort det verre — der baerer etiketten den norske teksten.
+    # Her heter feltet `versjon`, saa den utledede etiketten er allerede norsk.
     versjon = fields.Char(
-        string="Versjon",
         default="1.0",
         readonly=True,
         help="Bumpes ved hver endring (1.0 → 1.1). Forrige tilstand "

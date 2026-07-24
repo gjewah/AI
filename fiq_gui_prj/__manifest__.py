@@ -4,7 +4,19 @@
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
     "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
     "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
-    "description": """19.0.1.35.0 - SJEKKLISTE-MOTOREN SKILT UT (Gjermund 24.07.2026):
+    "description": """19.0.1.35.1 - TOM CSV FORKLART DER DET ER TRYGT:
+* Prosjekt (00.03) meldte at ir.model.access.csv staar igjen med bare
+  overskriftsrad og «er ren pynt» - med rette. Neste person kunne trodd at
+  tilganger ikke trengs her.
+* FOERSTE FORSOEK VAR AA SKRIVE FORKLARINGEN I CSV-EN SELV. Forkastet: Odoo
+  leser fila med csv.reader, som IKKE kjenner #-kommentarer. Linja ville blitt
+  lest som en DATARAD med tomme kolonner - og jeg har ingen Odoo-kilde lokalt
+  aa verifisere mot. Ingen andre FIQ-moduler gjoer det heller.
+* 🔑 Naar jeg ikke kan MAALE at noe virker, velger jeg formen som ikke kan
+  feile. Forklaringen staar i manifestet, som er Python og taaler kommentarer.
+* Fila BLIR staaende tom: modulen eier ingen modeller som trenger rader.
+
+19.0.1.35.0 - SJEKKLISTE-MOTOREN SKILT UT (Gjermund 24.07.2026):
 * Ordrett: «ja skill den ut og gjor typene konfigurerbare». Motoren er generisk
   (res_model/res_id) og var aldri prosjekt-spesifikk - men kunne bare installeres
   ved aa dra med seg hele denne modulen.
@@ -190,6 +202,18 @@ Fra før:
     "depends": ["fiq_gui_control", "web", "project", "fiq_sjekkliste"],
     "data": [
         "security/fiq_gui_prj_groups.xml",
+        # ⚠️ ir.model.access.csv er TOM (kun overskriftsrad) MED VILJE - ikke en
+        # glipp. Meldt av Prosjekt (00.03) 24.07: «fila er naa ren pynt». Riktig
+        # observert, men den skal BLI staaende:
+        #   Radene gjaldt fiq.sjekkliste + fiq.sjekkliste.punkt og fulgte motoren
+        #   til fiq_sjekkliste ved utskillingen. Denne modulen eier ingen modeller
+        #   som TRENGER rader: fiq.gui.prj.data er AbstractModel (ingen tabell),
+        #   og project.project/project.task er ODOOS egne - Odoo eier rettighetene.
+        # 🔑 Begrunnelsen staar HER og ikke i CSV-en: Odoo leser den med
+        # csv.reader, som ikke kjenner kommentarer. En #-linje ville blitt lest
+        # som en DATARAD med tomme kolonner. Ikke verifisert mot Odoos kilde -
+        # derfor valgte jeg formen som ikke kan feile.
+        # Legges en EKTE models.Model til her, MAA den faa en rad.
         "security/ir.model.access.csv",
         "views/fiq_gui_prj_action.xml",
         "views/project_task_views.xml",

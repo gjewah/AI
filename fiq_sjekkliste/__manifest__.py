@@ -1,10 +1,21 @@
 {
     "name": "FIQ Sjekkliste",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "summary": "Generisk sjekkliste-motor: niva x type, uavhengige krav "
     "(dokument/foto/signatur), maler, portal-kvittering + OWL-flate. "
     "Kobles paa en hvilken som helst modell med EEN linje.",
-    "description": """19.0.1.0.0 - SKILT UT SOM EGEN MODUL (Gjermund 24.07.2026):
+    "description": """19.0.1.0.1 - W8113: etiketten «Versjon» fjernet:
+* Meldt av AI PK 24.07 (port 2, pylint-odoo). Etiketten var IDENTISK med
+  feltnavnet `versjon` - Odoo utleder den selv, og brukeren ser samme ord.
+* 🔑 W8113 KAN IKKE RYDDES MEKANISK. I fiq_gui_relations er de tilsvarende
+  etikettene ENGELSKE («Note», «Code»); der ville fjerning gjort det verre,
+  fordi etiketten baerer teksten feltnavnet ikke har. Her heter feltet
+  `versjon`, saa den utledede etiketten er allerede norsk. Forskjellen er
+  hvilket SPRAAK feltnavnet har - ikke hvilken regel linter melder.
+* Verifisert foer fjerning: feltet vises fire steder (to visningsfiler, to
+  lister) uten egen etikett, og OWL-flaten viser bare VERDIEN («v1.0»).
+
+19.0.1.0.0 - SKILT UT SOM EGEN MODUL (Gjermund 24.07.2026):
 * Ordrett: «ja skill den ut og gjor typene konfigurerbare».
 * MOTOREN LAA I fiq_gui_prj. Den er generisk (res_model/res_id) og var ALDRI
   prosjekt-spesifikk - men den kunne bare installeres ved aa dra med seg hele
