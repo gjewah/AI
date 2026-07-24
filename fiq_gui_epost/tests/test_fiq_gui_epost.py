@@ -404,3 +404,103 @@ class TestEpost(TransactionCase):
         self.assertIn(f"/web/content/{a.id}", fv["url"])
         self.assertTrue(fv["kan_vises"], "PDF skal kunne vises i nettleseren")
         self.assertNotIn("raw", fv)
+
+    # ---- Dekning av `mail_message_search_global` (konsolidering, modul 1) ----------
+    #
+    # Modulen har ÉN metode — `action_open_related()` — som bygger en act_window mot
+    # (message.model, message.res_id). Testfila er TOM (0 byte), så det finnes ingen
+    # fasit fra dens side; testene under er fasiten vi lager før noe fjernes.
+    #
+    # 🛑 Kravet fra AI IQ er dekning, ikke likhet: min `aapneFraPerson()` må håndtere
+    # de tilfellene originalen håndterer FEIL — ikke bare de den håndterer likt.
+    # Målt i Production 24.07: 233 av 44 634 meldinger har res_id = 0, og 230 av dem
+    # har model = False. Kanten er ekte data, ikke et tenkt tilfelle.
+
+    def test_upart_melding_gir_IKKE_en_aapne_handling(self):
+        """🔴 Kjernen i dekningsbeviset.
+
+        `action_open_related()` bygger act_window UANSETT — også når model er False og
+        res_id er 0. Odoo får da `res_model: False` og svarer med en feilside.
+        Målt i Production: 230 meldinger ville gjort nettopp det.
+
+        Min side leverer `element`/`res_id` som tomme for slike meldinger, og
+        `aapneFraPerson()` åpner kun når BEGGE finnes (epost.js:585). Resultatet er at
+        raden ikke er klikkbar — ikke at klikket feiler."""
+        p = self.env["res.partner"].create(
+            {"name": "TEST Upart", "email": "upart@x.no"}
+        )
+        self.env["mail.message"].create(
+            {
+                "subject": "TEST uten tilknytning",
+                "message_type": "email",
+                "author_id": p.id,
+                "body": "<p>ingen model, ingen res_id</p>",
+            }
+        )
+        r = self.Data.get_person_kommunikasjon(p.id)
+        traff = [m for m in r["meldinger"] if m["emne"] == "TEST uten tilknytning"]
+        self.assertTrue(traff, "meldingen skal fortsatt VISES i historikken")
+        self.assertFalse(
+            traff[0].get("element") and traff[0].get("res_id"),
+            "en melding uten tilknytning skal ikke gi noe å åpne — "
+            "det er nettopp her originalen bygger en act_window mot ingenting",
+        )
+
+    def test_paret_melding_gir_element_og_res_id(self):
+        """Den andre halvdelen: der originalen gjør noe fornuftig, må min gjøre det
+        samme. Er meldingen paret, skal vi få nøyaktig (model, res_id) — det er de
+        to verdiene `action_open_related()` bygger sin act_window av."""
+        p = self.env["res.partner"].create(
+            {"name": "TEST Paret", "email": "paret@x.no"}
+        )
+        prosjekt = self.env["project.project"].create({"name": "TEST Prosjekt paring"})
+        self.env["mail.message"].create(
+            {
+                "subject": "TEST paret melding",
+                "message_type": "email",
+                "author_id": p.id,
+                "model": "project.project",
+                "res_id": prosjekt.id,
+                "body": "<p>hei</p>",
+            }
+        )
+        r = self.Data.get_person_kommunikasjon(p.id)
+        traff = [m for m in r["meldinger"] if m["emne"] == "TEST paret melding"]
+        self.assertTrue(traff, "den parede meldingen må være i historikken")
+        self.assertEqual(traff[0]["element"], "project.project")
+        self.assertEqual(traff[0]["res_id"], prosjekt.id)
+
+    def test_slettet_element_gir_ikke_en_doed_lenke(self):
+        """Meldingen overlever elementet den peker på: `mail.message` har ingen
+        fremmednøkkel mot (model, res_id), så sletter noen prosjektet, blir res_id
+        stående og peker i tomme luften.
+
+        `action_open_related()` bygger act_window mot den slettede id-en → feilside.
+        Min side skal ikke tilby en lenke som ikke fører noe sted."""
+        p = self.env["res.partner"].create(
+            {"name": "TEST Slettet", "email": "slettet@x.no"}
+        )
+        prosjekt = self.env["project.project"].create({"name": "TEST Slettes"})
+        pid = prosjekt.id
+        self.env["mail.message"].create(
+            {
+                "subject": "TEST peker paa slettet",
+                "message_type": "email",
+                "author_id": p.id,
+                "model": "project.project",
+                "res_id": pid,
+                "body": "<p>hei</p>",
+            }
+        )
+        prosjekt.unlink()
+        r = self.Data.get_person_kommunikasjon(p.id)
+        traff = [m for m in r["meldinger"] if m["emne"] == "TEST peker paa slettet"]
+        self.assertTrue(traff, "meldingen finnes fortsatt selv om elementet er borte")
+        self.assertFalse(
+            self.env["project.project"].browse(pid).exists(),
+            "forutsetningen for testen: elementet SKAL være slettet",
+        )
+        self.assertFalse(
+            traff[0].get("res_id"),
+            "en peker til et slettet element skal ikke bli en klikkbar lenke",
+        )

@@ -1133,6 +1133,39 @@ class FiqMeldingssenterData(models.AbstractModel):
         return partner | andre
 
     @api.model
+    def _aapnbart(self, melding):
+        """Gi {element, res_id} KUN når meldingen faktisk kan åpnes et sted.
+
+        🔴 Skrevet 24.07 fordi en test for `mail_message_search_global` avdekket et hull
+        i VÅR kode, ikke i deres. `mail.message` har ingen fremmednøkkel mot
+        (model, res_id) — pekeren blir stående når elementet slettes, og modellen kan
+        være avinstallert. Vi sendte begge videre rått, og front-enden gjorde dem til
+        klikkbare lenker mot ingenting.
+
+        Tre ting må stemme før noe er åpnbart:
+          1. både `model` og `res_id` er satt      (233 av 44 634 i Production mangler)
+          2. modellen finnes i registryet          (avinstallert modul)
+          3. raden finnes fortsatt                 (slettet element)
+
+        Er noe av det usant, får front-enden tomme verdier og lar raden være uklikkbar.
+        Meldingen VISES fortsatt — den er historikk uansett om målet lever.
+        """
+        tomt = {"element": "", "res_id": 0}
+        navn = melding.model or ""
+        rad_id = melding.res_id or 0
+        if not navn or not rad_id:
+            return tomt
+        if navn not in self.env:
+            # Modellen er avinstallert. `self.env[navn]` ville kastet KeyError og
+            # revet ned hele person-oversikten for én foreldet melding.
+            return tomt
+        # sudo: vi spør KUN om raden eksisterer, og leser ingenting fra den. Uten sudo
+        # ville en rad brukeren ikke har lesetilgang til sett «slettet» ut — feil svar
+        # på et annet spørsmål. Tilgangen avgjøres når elementet faktisk åpnes.
+        if not self.env[navn].sudo().browse(rad_id).exists():
+            return tomt
+        return {"element": navn, "res_id": rad_id}
+
     def get_person_kommunikasjon(self, partner_id, limit=40):
         """ALL kommunikasjon med ett menneske — på tvers av kontakt-dubletter og kanaler.
 
@@ -1186,8 +1219,7 @@ class FiqMeldingssenterData(models.AbstractModel):
                     "dato": lokal.strftime("%d.%m.%Y %H:%M") if lokal else "",
                     "retning": "fra" if fra_personen else "til",
                     "kanal": "epost" if m.message_type == "email" else "notat",
-                    "element": m.model or "",
-                    "res_id": m.res_id or 0,
+                    **self._aapnbart(m),
                 }
             )
 

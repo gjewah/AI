@@ -3,7 +3,7 @@
     # E-POST-KANALEN under den → egen etikett, ellers to like app-fliser i Apper.
     # Teknisk modulnavn (fiq_gui_epost) er URØRT — modulen er live på Staging + Production.
     "name": "Kommunikasjon — E-post",
-    "version": "19.0.6.24.0",
+    "version": "19.0.6.25.0",
     "summary": "FIQ Meldingssenter – kommunikasjonsflaten i Kontrollrommet. "
     "V00.04-designet (godkjent) som levende flate: tilstede-topplinje, firmavelger "
     "m/ logo, taksonomi 0–8, kompakte meldingsrader, lesepanel, paring/tildeling og AI-flate.",
@@ -21,7 +21,7 @@ Bakgrunn: beslutnings-notatet «Skal V00.04 bli KR-master?» (Alt C – gradvis)
 V00.04 bygges først som levende referanse; native OWL-port mot ekte Odoo-data
 (mail_fiq + paringshjerne fiq_komm_match) kommer i neste versjon etter master-beslutningen.
 """,
-    "author": "FIQ AS",
+    "author": "FIQ as",
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
     "license": "OPL-1",
