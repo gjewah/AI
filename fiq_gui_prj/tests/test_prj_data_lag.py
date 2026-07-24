@@ -31,7 +31,6 @@ from odoo.tests import TransactionCase, tagged
 
 @tagged("post_install", "-at_install", "fiq_prj")
 class TestPrjDataLag(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -69,13 +68,16 @@ class TestPrjDataLag(TransactionCase):
         if not prosjekt:
             self.skipTest("Ingen prosjekter å henge testoppgaven på")
 
-        oppgave = self.env["project.task"].create({
-            "name": "TEST lav prioritet",
-            "project_id": prosjekt.id,
-            "fiq_prioritet": "l",
-        })
+        oppgave = self.env["project.task"].create(
+            {
+                "name": "TEST lav prioritet",
+                "project_id": prosjekt.id,
+                "fiq_prioritet": "l",
+            }
+        )
         self.assertEqual(
-            self.Data._prioritet(oppgave), "l",
+            self.Data._prioritet(oppgave),
+            "l",
             "«Lav» finnes bare i vårt eget felt — leses Odoos priority, går den tapt",
         )
 
@@ -93,10 +95,12 @@ class TestPrjDataLag(TransactionCase):
         if not prosjekt:
             self.skipTest("Ingen prosjekter å henge testoppgaven på")
 
-        oppgave = self.env["project.task"].create({
-            "name": "TEST uten valgt prioritet",
-            "project_id": prosjekt.id,
-        })
+        oppgave = self.env["project.task"].create(
+            {
+                "name": "TEST uten valgt prioritet",
+                "project_id": prosjekt.id,
+            }
+        )
         self.assertEqual(oppgave.fiq_prioritet, "m")
         self.assertEqual(self.Data._prioritet(oppgave), "m")
 
@@ -111,13 +115,17 @@ class TestPrjDataLag(TransactionCase):
         if not prosjekt:
             self.skipTest("Ingen prosjekter å henge testoppgaven på")
 
-        oppgave = self.env["project.task"].create({
-            "name": "TEST uavhengighet", "project_id": prosjekt.id,
-        })
+        oppgave = self.env["project.task"].create(
+            {
+                "name": "TEST uavhengighet",
+                "project_id": prosjekt.id,
+            }
+        )
         for verdi in ("h", "l", "m"):
             oppgave.fiq_prioritet = verdi
             self.assertEqual(
-                oppgave.priority, "0",
+                oppgave.priority,
+                "0",
                 f"FIQ-prioritet «{verdi}» endret Odoos eget priority-felt — "
                 "de skal være uavhengige",
             )
@@ -129,6 +137,7 @@ class TestPrjDataLag(TransactionCase):
         likevel: et felt som er påkrevd i dag kan bli valgfritt i morgen, og da
         skal flaten fortsatt få noe den kan tegne i stedet for et blankt symbol.
         """
+
         class FalskOppgave:
             _fields = {"fiq_prioritet": True}
             fiq_prioritet = "tull"
@@ -139,7 +148,8 @@ class TestPrjDataLag(TransactionCase):
             _fields = {}
 
         self.assertEqual(
-            self.Data._prioritet(UtenFelt()), "m",
+            self.Data._prioritet(UtenFelt()),
+            "m",
             "Mangler feltet, skal datalaget svare «m» — ikke felle flaten",
         )
 
@@ -208,11 +218,15 @@ class TestPrjDataLag(TransactionCase):
         """Fasiten: «26_042 Kabelgata · 62 % brukt / 62 % fremdrift → i balanse»."""
         i_dag = fields.Date.today()
         dom = self.Data._risiko_dom(
-            fort=62.0, budsjett=100.0, fremdrift=62.0,
-            naermeste_frist=None, i_dag=i_dag,
+            fort=62.0,
+            budsjett=100.0,
+            fremdrift=62.0,
+            naermeste_frist=None,
+            i_dag=i_dag,
         )
         self.assertEqual(
-            dom, "i_balanse",
+            dom,
+            "i_balanse",
             "62 % brukt av 62 % ferdig er sunt — det skal ikke merkes som risiko",
         )
 
@@ -226,11 +240,15 @@ class TestPrjDataLag(TransactionCase):
         """
         i_dag = fields.Date.today()
         dom = self.Data._risiko_dom(
-            fort=62.0, budsjett=100.0, fremdrift=20.0,
-            naermeste_frist=None, i_dag=i_dag,
+            fort=62.0,
+            budsjett=100.0,
+            fremdrift=20.0,
+            naermeste_frist=None,
+            i_dag=i_dag,
         )
         self.assertEqual(
-            dom, "tett_budsjett",
+            dom,
+            "tett_budsjett",
             "62 % brukt på 20 % fremdrift skal varsles, ikke passere som «innenfor»",
         )
 
@@ -247,11 +265,15 @@ class TestPrjDataLag(TransactionCase):
         """
         i_dag = fields.Date.today()
         dom = self.Data._risiko_dom(
-            fort=36.0, budsjett=100.0, fremdrift=0.0,
-            naermeste_frist=None, i_dag=i_dag,
+            fort=36.0,
+            budsjett=100.0,
+            fremdrift=0.0,
+            naermeste_frist=None,
+            i_dag=i_dag,
         )
         self.assertEqual(
-            dom, "tett_budsjett",
+            dom,
+            "tett_budsjett",
             "36 % av budsjettet brukt uten en eneste ferdig oppgave er ikke balanse",
         )
 
@@ -264,8 +286,11 @@ class TestPrjDataLag(TransactionCase):
         """
         i_dag = fields.Date.today()
         dom = self.Data._risiko_dom(
-            fort=10.0, budsjett=100.0, fremdrift=10.0,
-            naermeste_frist=i_dag, i_dag=i_dag,
+            fort=10.0,
+            budsjett=100.0,
+            fremdrift=10.0,
+            naermeste_frist=i_dag,
+            i_dag=i_dag,
         )
         self.assertEqual(dom, "avgjores", "Frist i dag skal slå gjennom alt annet")
 
@@ -273,8 +298,11 @@ class TestPrjDataLag(TransactionCase):
         """En frist som er passert er ikke «tett tid» — den er forbi."""
         i_dag = fields.Date.today()
         dom = self.Data._risiko_dom(
-            fort=1.0, budsjett=100.0, fremdrift=90.0,
-            naermeste_frist=i_dag - timedelta(days=5), i_dag=i_dag,
+            fort=1.0,
+            budsjett=100.0,
+            fremdrift=90.0,
+            naermeste_frist=i_dag - timedelta(days=5),
+            i_dag=i_dag,
         )
         self.assertEqual(dom, "avgjores", "Passert frist må aldri se ut som i balanse")
 
@@ -288,16 +316,22 @@ class TestPrjDataLag(TransactionCase):
         i_dag = fields.Date.today()
         self.assertEqual(
             self.Data._risiko_dom(
-                fort=10.0, budsjett=100.0, fremdrift=10.0,
-                naermeste_frist=i_dag + timedelta(days=2), i_dag=i_dag,
+                fort=10.0,
+                budsjett=100.0,
+                fremdrift=10.0,
+                naermeste_frist=i_dag + timedelta(days=2),
+                i_dag=i_dag,
             ),
             "tett_tid",
             "Frist om to dager er tett tid, ikke balanse",
         )
         self.assertEqual(
             self.Data._risiko_dom(
-                fort=10.0, budsjett=100.0, fremdrift=10.0,
-                naermeste_frist=i_dag + timedelta(days=30), i_dag=i_dag,
+                fort=10.0,
+                budsjett=100.0,
+                fremdrift=10.0,
+                naermeste_frist=i_dag + timedelta(days=30),
+                i_dag=i_dag,
             ),
             "i_balanse",
             "Frist om 30 dager er ikke en risiko i seg selv",
@@ -307,8 +341,11 @@ class TestPrjDataLag(TransactionCase):
         """Brukt mer enn budsjettet: rødt uansett fremdrift."""
         i_dag = fields.Date.today()
         dom = self.Data._risiko_dom(
-            fort=159.3, budsjett=1.0, fremdrift=100.0,
-            naermeste_frist=None, i_dag=i_dag,
+            fort=159.3,
+            budsjett=1.0,
+            fremdrift=100.0,
+            naermeste_frist=None,
+            i_dag=i_dag,
         )
         self.assertEqual(dom, "over_budsjett", "15 931 % forbruk skal aldri passere")
 
@@ -316,10 +353,16 @@ class TestPrjDataLag(TransactionCase):
         """Alt ferdig = ingen dom å felle, uansett hvor galt det gikk underveis."""
         i_dag = fields.Date.today()
         dom = self.Data._risiko_dom(
-            fort=999.0, budsjett=1.0, fremdrift=100.0,
-            naermeste_frist=i_dag - timedelta(days=30), i_dag=i_dag, ferdig=True,
+            fort=999.0,
+            budsjett=1.0,
+            fremdrift=100.0,
+            naermeste_frist=i_dag - timedelta(days=30),
+            i_dag=i_dag,
+            ferdig=True,
         )
-        self.assertEqual(dom, "ferdig", "Et avsluttet prosjekt er historie, ikke risiko")
+        self.assertEqual(
+            dom, "ferdig", "Et avsluttet prosjekt er historie, ikke risiko"
+        )
 
     def test_risiko_uten_budsjett_og_frist_er_i_balanse(self):
         """Ingen data å dømme på = ingen dom, ikke en oppdiktet risiko.
@@ -331,8 +374,11 @@ class TestPrjDataLag(TransactionCase):
         """
         i_dag = fields.Date.today()
         dom = self.Data._risiko_dom(
-            fort=0.0, budsjett=0.0, fremdrift=0.0,
-            naermeste_frist=None, i_dag=i_dag,
+            fort=0.0,
+            budsjett=0.0,
+            fremdrift=0.0,
+            naermeste_frist=None,
+            i_dag=i_dag,
         )
         self.assertEqual(dom, "i_balanse")
 
@@ -345,27 +391,44 @@ class TestPrjDataLag(TransactionCase):
         flaten kan tegne.
         """
         lovlige = {
-            "i_balanse", "tett_budsjett", "over_budsjett",
-            "tett_tid", "avgjores", "ferdig",
+            "i_balanse",
+            "tett_budsjett",
+            "over_budsjett",
+            "tett_tid",
+            "avgjores",
+            "ferdig",
         }
         i_dag = fields.Date.today()
-        frister = [None, i_dag - timedelta(days=5), i_dag,
-                   i_dag + timedelta(days=2), i_dag + timedelta(days=60)]
+        frister = [
+            None,
+            i_dag - timedelta(days=5),
+            i_dag,
+            i_dag + timedelta(days=2),
+            i_dag + timedelta(days=60),
+        ]
         for fort, budsjett, fremdrift in [
-            (0.0, 0.0, 0.0), (36.0, 100.0, 0.0), (62.0, 100.0, 62.0),
-            (150.0, 100.0, 90.0), (10.0, 0.0, 0.0), (0.0, 100.0, 0.0),
+            (0.0, 0.0, 0.0),
+            (36.0, 100.0, 0.0),
+            (62.0, 100.0, 62.0),
+            (150.0, 100.0, 90.0),
+            (10.0, 0.0, 0.0),
+            (0.0, 100.0, 0.0),
         ]:
             for frist in frister:
                 for ferdig in (False, True):
                     dom = self.Data._risiko_dom(
-                        fort, budsjett, fremdrift, frist, i_dag, ferdig,
+                        fort,
+                        budsjett,
+                        fremdrift,
+                        frist,
+                        i_dag,
+                        ferdig,
                     )
                     self.assertIn(
-                        dom, lovlige,
-                        "Ukjent dom «{}» for ({} t / {} t / {} % / frist {} / "
-                        "ferdig {})".format(
-                            dom, fort, budsjett, fremdrift, frist, ferdig
-                        ),
+                        dom,
+                        lovlige,
+                        f"Ukjent dom «{dom}» for ({fort} t / {budsjett} t / {fremdrift} % / frist {frist} / "
+                        f"ferdig {ferdig})",
                     )
 
     # ---------- BEGRUNNELSEN ----------
@@ -379,8 +442,11 @@ class TestPrjDataLag(TransactionCase):
         """
         i_dag = fields.Date.today()
         tekst = self.Data._risiko_hvorfor(
-            fort=62.0, budsjett=100.0, fremdrift=20.0,
-            naermeste_frist=i_dag, i_dag=i_dag,
+            fort=62.0,
+            budsjett=100.0,
+            fremdrift=20.0,
+            naermeste_frist=i_dag,
+            i_dag=i_dag,
         )
         self.assertIn("frist i dag", tekst.lower(), "Fristen må stå i klartekst")
         self.assertIn("%", tekst, "Forbruk mot fremdrift må vises som tall")
@@ -392,8 +458,11 @@ class TestPrjDataLag(TransactionCase):
         er et svar — og det er ofte selve funnet.
         """
         tekst = self.Data._risiko_hvorfor(
-            fort=0.0, budsjett=0.0, fremdrift=0.0,
-            naermeste_frist=None, i_dag=fields.Date.today(),
+            fort=0.0,
+            budsjett=0.0,
+            fremdrift=0.0,
+            naermeste_frist=None,
+            i_dag=fields.Date.today(),
         )
         self.assertTrue(tekst.strip(), "Begrunnelsen skal aldri være tom")
 
@@ -404,8 +473,11 @@ class TestPrjDataLag(TransactionCase):
         timer — og en tom linje leses som manglende data, ikke som et funn.
         """
         tekst = self.Data._risiko_hvorfor(
-            fort=40.0, budsjett=0.0, fremdrift=0.0,
-            naermeste_frist=None, i_dag=fields.Date.today(),
+            fort=40.0,
+            budsjett=0.0,
+            fremdrift=0.0,
+            naermeste_frist=None,
+            i_dag=fields.Date.today(),
         )
         self.assertIn("timer", tekst.lower())
         self.assertIn("uten budsjett", tekst.lower())
@@ -420,29 +492,41 @@ class TestPrjDataLag(TransactionCase):
         i_dag = fields.Date.today()
 
         passert = self.Data._risiko_hvorfor(
-            fort=0.0, budsjett=0.0, fremdrift=0.0,
-            naermeste_frist=i_dag - timedelta(days=5), i_dag=i_dag,
+            fort=0.0,
+            budsjett=0.0,
+            fremdrift=0.0,
+            naermeste_frist=i_dag - timedelta(days=5),
+            i_dag=i_dag,
         )
         self.assertIn("passert", passert.lower())
         self.assertIn("5", passert)
 
         i_morgen = self.Data._risiko_hvorfor(
-            fort=0.0, budsjett=0.0, fremdrift=0.0,
-            naermeste_frist=i_dag + timedelta(days=1), i_dag=i_dag,
+            fort=0.0,
+            budsjett=0.0,
+            fremdrift=0.0,
+            naermeste_frist=i_dag + timedelta(days=1),
+            i_dag=i_dag,
         )
         self.assertIn("i morgen", i_morgen.lower())
 
         i_dag_tekst = self.Data._risiko_hvorfor(
-            fort=0.0, budsjett=0.0, fremdrift=0.0,
-            naermeste_frist=i_dag, i_dag=i_dag,
+            fort=0.0,
+            budsjett=0.0,
+            fremdrift=0.0,
+            naermeste_frist=i_dag,
+            i_dag=i_dag,
         )
         self.assertIn("i dag", i_dag_tekst.lower())
 
     def test_risiko_hvorfor_ferdig_sier_at_alt_er_gjort(self):
         """Et avsluttet prosjekt skal begrunne seg som historie, ikke som risiko."""
         tekst = self.Data._risiko_hvorfor(
-            fort=999.0, budsjett=1.0, fremdrift=100.0,
-            naermeste_frist=fields.Date.today(), i_dag=fields.Date.today(),
+            fort=999.0,
+            budsjett=1.0,
+            fremdrift=100.0,
+            naermeste_frist=fields.Date.today(),
+            i_dag=fields.Date.today(),
             ferdig=True,
         )
         self.assertIn("ferdig", tekst.lower())
@@ -463,22 +547,30 @@ class TestPrjDataLag(TransactionCase):
         for dager, ord in [(0, "i dag"), (1, "i morgen"), (2, "om 2 dager")]:
             frist = i_dag + timedelta(days=dager)
             dom = self.Data._risiko_dom(
-                fort=10.0, budsjett=100.0, fremdrift=10.0,
-                naermeste_frist=frist, i_dag=i_dag,
+                fort=10.0,
+                budsjett=100.0,
+                fremdrift=10.0,
+                naermeste_frist=frist,
+                i_dag=i_dag,
             )
             tekst = self.Data._risiko_hvorfor(
-                fort=10.0, budsjett=100.0, fremdrift=10.0,
-                naermeste_frist=frist, i_dag=i_dag,
+                fort=10.0,
+                budsjett=100.0,
+                fremdrift=10.0,
+                naermeste_frist=frist,
+                i_dag=i_dag,
             )
             self.assertIn(
-                dom, ("avgjores", "tett_tid"),
+                dom,
+                ("avgjores", "tett_tid"),
                 f"Frist om {dager} dager skal gi en tidsdom",
             )
             self.assertIn(
-                ord, tekst.lower(),
+                ord,
+                tekst.lower(),
                 # 🔑 `%r` → `{!r}`, ikke `{}`. repr() beholder anførselstegn og
                 # viser usynlige tegn — i en feilmelding om manglende tekst er
                 # det nettopp forskjellen mellom «tom» og «bare mellomrom».
-                "Dommen «{}» handler om fristen, men begrunnelsen nevner den "
-                "ikke: {!r}".format(dom, tekst),
+                f"Dommen «{dom}» handler om fristen, men begrunnelsen nevner den "
+                f"ikke: {tekst!r}",
             )

@@ -169,7 +169,9 @@ class FiqGuiPrjData(models.AbstractModel):
             "er_ai": not bool(task.user_ids),
             "stadium": task.stage_id.display_name or "",
             "ferdig": ferdig,
-            "frist": fields.Date.to_string(task.date_deadline.date()) if task.date_deadline else False,
+            "frist": fields.Date.to_string(task.date_deadline.date())
+            if task.date_deadline
+            else False,
             "forte_timer": round(fort, 1),
             "budsjett_timer": round(budsjett, 1),
             "egne_timer": round(egen_fort, 1),
@@ -241,7 +243,9 @@ class FiqGuiPrjData(models.AbstractModel):
                 "budsjett_timer": round(budsjett, 1),
                 "forbruk_prosent": self._forbruk_prosent(sum_fort, budsjett),
                 "budsjett_status": self._budsjett_status(
-                    sum_fort, budsjett, all(n["ferdig"] for n in noder) if noder else False
+                    sum_fort,
+                    budsjett,
+                    all(n["ferdig"] for n in noder) if noder else False,
                 ),
                 "budsjett_kilde": "prosjekt" if prosjekt_budsjett else "oppgaver",
             },
@@ -280,8 +284,7 @@ class FiqGuiPrjData(models.AbstractModel):
         # 👉 Test alltid mot en oppgave som FAKTISK har frist satt.
         frist = task.date_deadline
         if not frist:
-            har_start = ("planned_date_begin" in task._fields
-                         and task.planned_date_begin)
+            har_start = "planned_date_begin" in task._fields and task.planned_date_begin
             return "rute" if har_start else "plan"
         frist = frist.date()  # Datetime -> Date, samme type som i_dag
 
@@ -292,8 +295,9 @@ class FiqGuiPrjData(models.AbstractModel):
             return "folg"
         return "rute"
 
-    def _risiko_dom(self, fort, budsjett, fremdrift, naermeste_frist, i_dag,
-                    ferdig=False):
+    def _risiko_dom(
+        self, fort, budsjett, fremdrift, naermeste_frist, i_dag, ferdig=False
+    ):
         """Én dom om et prosjekt: er det trangt på penger eller tid?
 
         🔑 FASITEN KREVER EN DOM, IKKE ET TALL (AI KR + AI PK 23.07):
@@ -354,8 +358,9 @@ class FiqGuiPrjData(models.AbstractModel):
 
         return "i_balanse"
 
-    def _risiko_hvorfor(self, fort, budsjett, fremdrift, naermeste_frist, i_dag,
-                        ferdig=False):
+    def _risiko_hvorfor(
+        self, fort, budsjett, fremdrift, naermeste_frist, i_dag, ferdig=False
+    ):
         """Begrunnelsen bak dommen, i klartekst.
 
         Fasiten viser ALDRI merket alene — den viser hvorfor:
@@ -391,8 +396,15 @@ class FiqGuiPrjData(models.AbstractModel):
         return " · ".join(deler) if deler else "ingen frist eller budsjett satt"
 
     @api.model
-    def get_oppgaver_over_tid(self, firma_id=None, fra_uke=None, antall=7,
-                              oppløsning="uke", grupper="prosjekt", grense=400):
+    def get_oppgaver_over_tid(
+        self,
+        firma_id=None,
+        fra_uke=None,
+        antall=7,
+        oppløsning="uke",
+        grupper="prosjekt",
+        grense=400,
+    ):
         """Alle oppgaver med tidsplassering — grunnlaget for Gantt/Liste/Kanban.
 
         Fasit: `docs/mockups/0.00 IQ prosjektoversikt_utkast03.html` (artifact 87871eef),
@@ -442,13 +454,15 @@ class FiqGuiPrjData(models.AbstractModel):
             else:
                 etikett = f"Uke {uke}"
                 under = str(aar)
-            kolonner.append({
-                "etikett": etikett,
-                "under": under,
-                "fra": fields.Date.to_string(k_start),
-                "til": fields.Date.to_string(k_slutt),
-                "er_naa": k_start <= i_dag <= k_slutt,
-            })
+            kolonner.append(
+                {
+                    "etikett": etikett,
+                    "under": under,
+                    "fra": fields.Date.to_string(k_start),
+                    "til": fields.Date.to_string(k_slutt),
+                    "er_naa": k_start <= i_dag <= k_slutt,
+                }
+            )
 
         # --- oppgavene ---
         # Bare oppgaver som BERØRER vinduet. Uten dette henter vi hele historikken
@@ -499,16 +513,21 @@ class FiqGuiPrjData(models.AbstractModel):
         har_start = "planned_date_begin" in Task._fields
 
         dato_ledd = [
-            "&", ("date_deadline", "!=", False),
-                 ("date_deadline", ">=", start_dt),
+            "&",
+            ("date_deadline", "!=", False),
+            ("date_deadline", ">=", start_dt),
         ]
         if har_start:
-            dato_ledd = ["|",
-                "&", ("planned_date_begin", "!=", False),
-                     ("planned_date_begin", "<=", slutt_dt),
+            dato_ledd = [
+                "|",
+                "&",
+                ("planned_date_begin", "!=", False),
+                ("planned_date_begin", "<=", slutt_dt),
             ] + dato_ledd
 
-        domene = self._firma_domene(firma_id) + [("project_id", "!=", False)] + dato_ledd
+        domene = (
+            self._firma_domene(firma_id) + [("project_id", "!=", False)] + dato_ledd
+        )
 
         # `fiq_wbs_number` er vårt eget felt og finnes alltid; `sequence` og `id` er native.
         oppgaver = Task.search(
@@ -529,38 +548,42 @@ class FiqGuiPrjData(models.AbstractModel):
             frist_d = t.date_deadline.date() if t.date_deadline else None
             e = frist_d or b
 
-            rader.append({
-                "id": t.id,
-                "navn": t.display_name,
-                # Tre tall side om side — fasitens «01.01 · T0412 · 2026-00084».
-                "wbs": t.fiq_wbs_number or "",
-                "oppgavenr": (t.code or "") if "code" in t._fields else "",
-                "prosjektnr": t.project_id.sequence_code or "",
-                "prosjekt": t.project_id.display_name or "",
-                "prosjekt_id": t.project_id.id,
-                "firma": t.company_id.display_name or "",
-                "firma_id": t.company_id.id,
-                "ansvarlig": ", ".join(t.user_ids.mapped("name")),
-                # 🤖 uten mennesker / 👤 med — samme merking som AI KTRL-kontrakten.
-                "er_ai": not bool(t.user_ids),
-                "stadium": t.stage_id.display_name or "",
-                "ferdig": ferdig,
-                "fra": fields.Date.to_string(b) if b else False,
-                "til": fields.Date.to_string(e) if e else False,
-                "frist": fields.Date.to_string(t.date_deadline.date()) if t.date_deadline else False,
-                # Tre nivåer (▴▪▾) fra vårt eget felt — AI PK avgjorde 23.07 at
-                # Odoos binære `priority` ikke kan bære dem. Se
-                # models/project_task_prioritet.py.
-                "prioritet": self._prioritet(t),
-                "fremdrift": round(min(100.0, t.progress or 0.0), 1),
-                "forte_timer": round(fort, 1),
-                "budsjett_timer": round(budsjett, 1),
-                "forbruk_prosent": self._forbruk_prosent(fort, budsjett),
-                "budsjett_status": self._budsjett_status(fort, budsjett, ferdig),
-                "tid_status": self._tid_status(t, ferdig, i_dag),
-                "antall_sjekklister": len(t.fiq_sjekkliste_ids),
-                "sjekkliste_fremdrift": round(t.fiq_sjekkliste_fremdrift or 0.0, 1),
-            })
+            rader.append(
+                {
+                    "id": t.id,
+                    "navn": t.display_name,
+                    # Tre tall side om side — fasitens «01.01 · T0412 · 2026-00084».
+                    "wbs": t.fiq_wbs_number or "",
+                    "oppgavenr": (t.code or "") if "code" in t._fields else "",
+                    "prosjektnr": t.project_id.sequence_code or "",
+                    "prosjekt": t.project_id.display_name or "",
+                    "prosjekt_id": t.project_id.id,
+                    "firma": t.company_id.display_name or "",
+                    "firma_id": t.company_id.id,
+                    "ansvarlig": ", ".join(t.user_ids.mapped("name")),
+                    # 🤖 uten mennesker / 👤 med — samme merking som AI KTRL-kontrakten.
+                    "er_ai": not bool(t.user_ids),
+                    "stadium": t.stage_id.display_name or "",
+                    "ferdig": ferdig,
+                    "fra": fields.Date.to_string(b) if b else False,
+                    "til": fields.Date.to_string(e) if e else False,
+                    "frist": fields.Date.to_string(t.date_deadline.date())
+                    if t.date_deadline
+                    else False,
+                    # Tre nivåer (▴▪▾) fra vårt eget felt — AI PK avgjorde 23.07 at
+                    # Odoos binære `priority` ikke kan bære dem. Se
+                    # models/project_task_prioritet.py.
+                    "prioritet": self._prioritet(t),
+                    "fremdrift": round(min(100.0, t.progress or 0.0), 1),
+                    "forte_timer": round(fort, 1),
+                    "budsjett_timer": round(budsjett, 1),
+                    "forbruk_prosent": self._forbruk_prosent(fort, budsjett),
+                    "budsjett_status": self._budsjett_status(fort, budsjett, ferdig),
+                    "tid_status": self._tid_status(t, ferdig, i_dag),
+                    "antall_sjekklister": len(t.fiq_sjekkliste_ids),
+                    "sjekkliste_fremdrift": round(t.fiq_sjekkliste_fremdrift or 0.0, 1),
+                }
+            )
 
         # --- KPI (fasitens fem kort, alle klikkbare) ---
         i_rute = sum(1 for r in rader if r["tid_status"] == "rute" and not r["ferdig"])
@@ -568,7 +591,8 @@ class FiqGuiPrjData(models.AbstractModel):
         krit = sum(1 for r in rader if r["tid_status"] == "krit")
         denne_uka = start + timedelta(days=6)
         frister = sum(
-            1 for r in rader
+            1
+            for r in rader
             if r["frist"] and start <= fields.Date.from_string(r["frist"]) <= denne_uka
         )
         ai_gjort = sum(1 for r in rader if r["er_ai"] and r["ferdig"])
@@ -647,33 +671,37 @@ class FiqGuiPrjData(models.AbstractModel):
                     krav.append("foto")
                 if p.krav_sign:
                     krav.append("sign")
-                punkter.append({
-                    "id": p.id,
-                    "navn": p.name or "",
-                    "beskrivelse": p.beskrivelse or "",
-                    "utfoert": bool(p.utfoert),
-                    "krav": krav,
-                    # Motorens egen constraint avgjør om punktet KAN kvitteres.
-                    # Flaten viser sperren; den finner den ikke opp.
-                    "kan_kvitteres": bool(p.kan_kvitteres),
-                    "mangler": p.mangler or "",
-                    "har_dok": bool(p.kvitt_dok_id),
-                    "har_foto": bool(p.kvitt_foto_id),
-                    "signert_av": p.kvitt_sign_av or "",
-                    "kvittert_av": p.kvitt_av or "",
-                })
-            lister.append({
-                "id": s.id,
-                "navn": s.name or "",
-                "nivaa": s.nivaa or "",
-                "type": s.type_liste or "",
-                "versjon": s.versjon or "1.0",
-                "er_mal": bool(s.er_mal),
-                "antall": s.antall_punkt,
-                "antall_ok": s.antall_ok,
-                "fremdrift": round(s.fremdrift or 0.0, 1),
-                "punkter": punkter,
-            })
+                punkter.append(
+                    {
+                        "id": p.id,
+                        "navn": p.name or "",
+                        "beskrivelse": p.beskrivelse or "",
+                        "utfoert": bool(p.utfoert),
+                        "krav": krav,
+                        # Motorens egen constraint avgjør om punktet KAN kvitteres.
+                        # Flaten viser sperren; den finner den ikke opp.
+                        "kan_kvitteres": bool(p.kan_kvitteres),
+                        "mangler": p.mangler or "",
+                        "har_dok": bool(p.kvitt_dok_id),
+                        "har_foto": bool(p.kvitt_foto_id),
+                        "signert_av": p.kvitt_sign_av or "",
+                        "kvittert_av": p.kvitt_av or "",
+                    }
+                )
+            lister.append(
+                {
+                    "id": s.id,
+                    "navn": s.name or "",
+                    "nivaa": s.nivaa or "",
+                    "type": s.type_liste or "",
+                    "versjon": s.versjon or "1.0",
+                    "er_mal": bool(s.er_mal),
+                    "antall": s.antall_punkt,
+                    "antall_ok": s.antall_ok,
+                    "fremdrift": round(s.fremdrift or 0.0, 1),
+                    "punkter": punkter,
+                }
+            )
 
         return {
             "tilgjengelig": True,
@@ -752,24 +780,26 @@ class FiqGuiPrjData(models.AbstractModel):
         ut = []
         for s in rader:
             pid = s.get("project_id") or False
-            ut.append({
-                "id": s.get("id"),
-                # Navn på arbeidet — det Gjermund faktisk kjenner igjen.
-                "navn": s.get("prosjekt") or s.get("navn") or "",
-                "kode": s.get("kode") or "",
-                "versjon": s.get("versjon") or "",
-                "status": s.get("status") or "",
-                "modul": s.get("modul") or "",
-                "i_odoo": bool(s.get("i_odoo")),
-                "project_id": pid,
-                # Ukoblet spor sies ÆRLIG. Alternativet — å skjule det — ville gitt
-                # et bilde som ser komplett ut mens noe mangler.
-                "koblet": bool(pid),
-                "beskrivelse": s.get("beskrivelse") or "",
-                # 🛑 `aktive_okter` er med som TALL (hvor mye som skjer), aldri som
-                # øktnummer. Ingen «01.02» passerer dette laget.
-                "aktivitet": s.get("aktive_okter") or 0,
-            })
+            ut.append(
+                {
+                    "id": s.get("id"),
+                    # Navn på arbeidet — det Gjermund faktisk kjenner igjen.
+                    "navn": s.get("prosjekt") or s.get("navn") or "",
+                    "kode": s.get("kode") or "",
+                    "versjon": s.get("versjon") or "",
+                    "status": s.get("status") or "",
+                    "modul": s.get("modul") or "",
+                    "i_odoo": bool(s.get("i_odoo")),
+                    "project_id": pid,
+                    # Ukoblet spor sies ÆRLIG. Alternativet — å skjule det — ville gitt
+                    # et bilde som ser komplett ut mens noe mangler.
+                    "koblet": bool(pid),
+                    "beskrivelse": s.get("beskrivelse") or "",
+                    # 🛑 `aktive_okter` er med som TALL (hvor mye som skjer), aldri som
+                    # øktnummer. Ingen «01.02» passerer dette laget.
+                    "aktivitet": s.get("aktive_okter") or 0,
+                }
+            )
 
         return {
             "spor": ut,
@@ -829,45 +859,55 @@ class FiqGuiPrjData(models.AbstractModel):
             # en avsluttet oppgave er ikke en risiko — den er historie.
             # `.date()` FØR sammenligning: date_deadline er Datetime (Odoo 19).
             frister = [
-                t.date_deadline.date()
-                for t in (oppgaver - ferdige)
-                if t.date_deadline
+                t.date_deadline.date() for t in (oppgaver - ferdige) if t.date_deadline
             ]
             naermeste = min(frister) if frister else None
 
-            rader.append({
-                "id": p.id,
-                "navn": p.display_name,
-                # Navn, ikke ID — husets regel. Prosjektnummeret er STABILT (røres aldri).
-                "nummer": p.sequence_code or "",
-                "firma": p.company_id.display_name or "",
-                "firma_id": p.company_id.id,
-                "kunde": p.partner_id.display_name or "",
-                "antall_oppgaver": len(oppgaver),
-                "antall_ferdige": len(ferdige),
-                "budsjett_timer": round(est, 1),
-                "forte_timer": round(fort, 1),
-                # 🔴 ALDRI kappet — se _forbruk_prosent.
-                "forbruk_prosent": self._forbruk_prosent(fort, est),
-                "budsjett_status": self._budsjett_status(fort, est, alt_ferdig),
-                "andel_ferdig": andel_ferdig,
-                "fremdrift_kilde": kilde,
-                "frist": fields.Date.to_string(p.date) if p.date else False,
-                # ── RISIKO-DOMMEN (krav 7) ───────────────────────────────────
-                # Nærmeste frist blant UFERDIGE oppgaver — ikke prosjektets egen
-                # `date`. 🔴 `project.project.date` er en **Date**, mens
-                # `project.task.date_deadline` er **Datetime**. Motsatt av hva
-                # navnene antyder; verifisert i kilden. Blandes de, får vi samme
-                # TypeError som felte Staging 21.07.
-                # Prosjektets `date` er ofte tom mens oppgavene har ekte frister —
-                # da ville dommen sagt «i balanse» om noe som forfaller i morgen.
-                "risiko": self._risiko_dom(
-                    fort, est, andel_ferdig, naermeste, i_dag, alt_ferdig,
-                ),
-                "risiko_hvorfor": self._risiko_hvorfor(
-                    fort, est, andel_ferdig, naermeste, i_dag, alt_ferdig,
-                ),
-            })
+            rader.append(
+                {
+                    "id": p.id,
+                    "navn": p.display_name,
+                    # Navn, ikke ID — husets regel. Prosjektnummeret er STABILT (røres aldri).
+                    "nummer": p.sequence_code or "",
+                    "firma": p.company_id.display_name or "",
+                    "firma_id": p.company_id.id,
+                    "kunde": p.partner_id.display_name or "",
+                    "antall_oppgaver": len(oppgaver),
+                    "antall_ferdige": len(ferdige),
+                    "budsjett_timer": round(est, 1),
+                    "forte_timer": round(fort, 1),
+                    # 🔴 ALDRI kappet — se _forbruk_prosent.
+                    "forbruk_prosent": self._forbruk_prosent(fort, est),
+                    "budsjett_status": self._budsjett_status(fort, est, alt_ferdig),
+                    "andel_ferdig": andel_ferdig,
+                    "fremdrift_kilde": kilde,
+                    "frist": fields.Date.to_string(p.date) if p.date else False,
+                    # ── RISIKO-DOMMEN (krav 7) ───────────────────────────────────
+                    # Nærmeste frist blant UFERDIGE oppgaver — ikke prosjektets egen
+                    # `date`. 🔴 `project.project.date` er en **Date**, mens
+                    # `project.task.date_deadline` er **Datetime**. Motsatt av hva
+                    # navnene antyder; verifisert i kilden. Blandes de, får vi samme
+                    # TypeError som felte Staging 21.07.
+                    # Prosjektets `date` er ofte tom mens oppgavene har ekte frister —
+                    # da ville dommen sagt «i balanse» om noe som forfaller i morgen.
+                    "risiko": self._risiko_dom(
+                        fort,
+                        est,
+                        andel_ferdig,
+                        naermeste,
+                        i_dag,
+                        alt_ferdig,
+                    ),
+                    "risiko_hvorfor": self._risiko_hvorfor(
+                        fort,
+                        est,
+                        andel_ferdig,
+                        naermeste,
+                        i_dag,
+                        alt_ferdig,
+                    ),
+                }
+            )
         return {
             "prosjekter": rader,
             "firmaer": [
@@ -911,10 +951,7 @@ class FiqGuiPrjData(models.AbstractModel):
         # «I rute» = ikke rød på noen av de to aksene. Vi bruker risiko-dommen,
         # ikke budsjett_status alene — et prosjekt med frist i dag er ikke i rute
         # selv om økonomien er sunn.
-        i_rute = [
-            p for p in prosjekter
-            if p["risiko"] in ("i_balanse", "ferdig")
-        ]
+        i_rute = [p for p in prosjekter if p["risiko"] in ("i_balanse", "ferdig")]
 
         # Lokal import: `timedelta` importeres allerede lokalt i _kolonner()
         # lenger opp. Å flytte den til toppen ville rørt en metode som ikke er
@@ -924,7 +961,8 @@ class FiqGuiPrjData(models.AbstractModel):
         i_dag = fields.Date.context_today(self)
         uke_slutt = i_dag + timedelta(days=(6 - i_dag.weekday()))
         frister_uka = [
-            p for p in prosjekter
+            p
+            for p in prosjekter
             if p["frist"] and i_dag <= fields.Date.to_date(p["frist"]) <= uke_slutt
         ]
 
@@ -950,7 +988,9 @@ class FiqGuiPrjData(models.AbstractModel):
         Sorteringen bruker `fiq_wbs_number` slik brukeren ser treet — ikke intern id.
         """
         domene = self._firma_domene(firma_id) + [("project_id", "=", int(prosjekt_id))]
-        oppgaver = self.env["project.task"].search(domene, order="fiq_wbs_number, sequence, id")
+        oppgaver = self.env["project.task"].search(
+            domene, order="fiq_wbs_number, sequence, id"
+        )
 
         rader = []
         for t in oppgaver:
@@ -959,30 +999,32 @@ class FiqGuiPrjData(models.AbstractModel):
             ferdig = bool(t.stage_id.fold)
             # `date_deadline` er Datetime i Odoo 19 — konverter FØR bruk.
             frist_dato = t.date_deadline.date() if t.date_deadline else None
-            rader.append({
-                "id": t.id,
-                "navn": t.display_name,
-                # Oppgavenummer (code) er STABILT; WBS er dynamisk. Aldri bland dem.
-                "oppgavenr": (t.code or "") if "code" in t._fields else "",
-                "wbs": t.fiq_wbs_number or "",
-                "ansvarlige": ", ".join(t.user_ids.mapped("name")),
-                "er_ai": not bool(t.user_ids),
-                "stadium": t.stage_id.display_name or "",
-                "ferdig": ferdig,
-                "frist": fields.Date.to_string(frist_dato) if frist_dato else False,
-                # 🔴 SAMME FORM SOM get_oppgaver_over_tid. Sto tidligere som rå
-                # `t.priority` («0»/«1») mens den andre utgangen ga «h»/«m» —
-                # to former for samme begrep fra samme datalag. Klienten kunne
-                # ikke vite hvilken den fikk, og `prioSymbol("1")` traff ingen
-                # gren og falt stille til ▪. Ingen feilmelding.
-                "prioritet": self._prioritet(t),
-                "budsjett_timer": round(budsjett, 1),
-                "forte_timer": round(fort, 1),
-                "forbruk_prosent": self._forbruk_prosent(fort, budsjett),
-                "budsjett_status": self._budsjett_status(fort, budsjett, ferdig),
-                "antall_sjekklister": len(t.fiq_sjekkliste_ids),
-                "sjekkliste_fremdrift": round(t.fiq_sjekkliste_fremdrift or 0.0, 1),
-            })
+            rader.append(
+                {
+                    "id": t.id,
+                    "navn": t.display_name,
+                    # Oppgavenummer (code) er STABILT; WBS er dynamisk. Aldri bland dem.
+                    "oppgavenr": (t.code or "") if "code" in t._fields else "",
+                    "wbs": t.fiq_wbs_number or "",
+                    "ansvarlige": ", ".join(t.user_ids.mapped("name")),
+                    "er_ai": not bool(t.user_ids),
+                    "stadium": t.stage_id.display_name or "",
+                    "ferdig": ferdig,
+                    "frist": fields.Date.to_string(frist_dato) if frist_dato else False,
+                    # 🔴 SAMME FORM SOM get_oppgaver_over_tid. Sto tidligere som rå
+                    # `t.priority` («0»/«1») mens den andre utgangen ga «h»/«m» —
+                    # to former for samme begrep fra samme datalag. Klienten kunne
+                    # ikke vite hvilken den fikk, og `prioSymbol("1")` traff ingen
+                    # gren og falt stille til ▪. Ingen feilmelding.
+                    "prioritet": self._prioritet(t),
+                    "budsjett_timer": round(budsjett, 1),
+                    "forte_timer": round(fort, 1),
+                    "forbruk_prosent": self._forbruk_prosent(fort, budsjett),
+                    "budsjett_status": self._budsjett_status(fort, budsjett, ferdig),
+                    "antall_sjekklister": len(t.fiq_sjekkliste_ids),
+                    "sjekkliste_fremdrift": round(t.fiq_sjekkliste_fremdrift or 0.0, 1),
+                }
+            )
         prosjekt = self.env["project.project"].browse(int(prosjekt_id))
         return {
             "prosjekt": {"id": prosjekt.id, "navn": prosjekt.display_name},

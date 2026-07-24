@@ -1,9 +1,9 @@
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.34.8",
+    "version": "19.0.1.34.9",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
-               "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
-               "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
+    "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
+    "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
     "description": """19.0.1.34.3 - EGET FELT FOR PRIORITET (fiq_prioritet, tre nivaaer):
 * AI PK avgjorde kravspek-sporsmaal 4 den 23.07: eget felt. Odoos binaere priority (0/1) kan ikke baere tre nivaaer, og Gantt-specen forutsetter tre.
 * NYTT FELT fiq_prioritet paa project.task: h Hoy / m Normal / l Lav. Norske etiketter, default m, required, indeksert, tracking.

@@ -22,7 +22,6 @@ from odoo.tests import TransactionCase, tagged
 
 @tagged("post_install", "-at_install", "fiq", "fiq_prj")
 class TestFiqWbs(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -34,12 +33,14 @@ class TestFiqWbs(TransactionCase):
             cls.skipTest(cls, "Ingen project.project finnes å teste mot")
 
     def _task(self, name, parent=False, sequence=10):
-        return self.Task.create({
-            "name": name,
-            "project_id": self.project.id,
-            "parent_id": parent and parent.id or False,
-            "sequence": sequence,
-        })
+        return self.Task.create(
+            {
+                "name": name,
+                "project_id": self.project.id,
+                "parent_id": parent and parent.id or False,
+                "sequence": sequence,
+            }
+        )
 
     def test_toppnivaa_nummereres_fra_01(self):
         """Første toppnivå-oppgave i et prosjekt får 01, neste 02 — nullpolstret."""
@@ -66,8 +67,7 @@ class TestFiqWbs(TransactionCase):
         barn = self._task("Barn", parent=mor)
         barnebarn = self._task("Barnebarn", parent=barn)
         self.assertEqual(barnebarn.fiq_wbs_number.count("."), 2)
-        self.assertTrue(
-            barnebarn.fiq_wbs_number.startswith(barn.fiq_wbs_number + "."))
+        self.assertTrue(barnebarn.fiq_wbs_number.startswith(barn.fiq_wbs_number + "."))
 
     def test_soesken_faar_ulike_nummer(self):
         """To barn under samme forelder skal ALDRI få samme nummer."""
@@ -101,7 +101,8 @@ class TestFiqWbs(TransactionCase):
         barn = [self._task(f"B{i}", parent=mor, sequence=10) for i in range(5)]
         numre = [b.fiq_wbs_number for b in barn]
         self.assertEqual(
-            len(set(numre)), len(barn),
+            len(set(numre)),
+            len(barn),
             f"Søsken med LIK sequence fikk duplikate WBS-numre: {numre} "
             "(dette er produksjonsfeilen der 66 oppgaver alle fikk «01»)",
         )
@@ -111,7 +112,8 @@ class TestFiqWbs(TransactionCase):
         toppnivaa = [self._task(f"T{i}", sequence=10) for i in range(5)]
         numre = [t.fiq_wbs_number for t in toppnivaa]
         self.assertEqual(
-            len(set(numre)), len(toppnivaa),
+            len(set(numre)),
+            len(toppnivaa),
             f"Toppnivå-oppgaver med lik sequence fikk duplikate numre: {numre}",
         )
 
@@ -155,13 +157,17 @@ class TestFiqWbs(TransactionCase):
         b1.sequence = 30
         b1.invalidate_recordset(["fiq_wbs_number"])
         self.assertEqual(
-            b1.fiq_wbs_number, b2_for,
-            "B1 skal ha overtatt siste-plassen etter rokering")
+            b1.fiq_wbs_number,
+            b2_for,
+            "B1 skal ha overtatt siste-plassen etter rokering",
+        )
 
         # Dokumenterer dagens faktiske oppførsel for søsknet (ikke kaskade):
         self.assertEqual(
-            b2.fiq_wbs_number, b2_for,
-            "Søsken omnummereres ikke automatisk — endres dette, oppdater testen")
+            b2.fiq_wbs_number,
+            b2_for,
+            "Søsken omnummereres ikke automatisk — endres dette, oppdater testen",
+        )
 
     def test_oppgave_uten_prosjekt_og_forelder_har_ingen_wbs(self):
         """Uten plassering i et tre finnes det ikke noe disposisjonsnummer."""
@@ -177,7 +183,9 @@ class TestFiqWbs(TransactionCase):
         en feil i vår modul.
         """
         if "code" not in self.Task._fields:
-            self.skipTest("project_sequence_number ikke installert — `code` finnes ikke")
+            self.skipTest(
+                "project_sequence_number ikke installert — `code` finnes ikke"
+            )
         t = self._task("T")
         code_for = t.code
         t.sequence = 999
@@ -193,12 +201,14 @@ class TestFiqWbs(TransactionCase):
         """
         mor = self._task("Mor")
         self._task("B1", parent=mor, sequence=10)
-        ny = self.Task.new({
-            "name": "Ny i onchange",
-            "project_id": self.project.id,
-            "parent_id": mor.id,
-            "sequence": 20,
-        })
+        ny = self.Task.new(
+            {
+                "name": "Ny i onchange",
+                "project_id": self.project.id,
+                "parent_id": mor.id,
+                "sequence": 20,
+            }
+        )
         # Skal ikke kaste, og skal gi et fornuftig nummer under mor
         verdi = ny.fiq_wbs_number
         self.assertTrue(

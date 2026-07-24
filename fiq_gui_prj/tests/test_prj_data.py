@@ -17,7 +17,6 @@ from odoo.tests import TransactionCase, tagged
 
 @tagged("post_install", "-at_install", "fiq", "fiq_prj")
 class TestPrjData(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -42,10 +41,14 @@ class TestPrjData(TransactionCase):
         if not viste_ider:
             self.skipTest("Ingen prosjekter å teste mot")
 
-        maler = self.Project.search([("id", "in", viste_ider), ("is_template", "=", True)])
+        maler = self.Project.search(
+            [("id", "in", viste_ider), ("is_template", "=", True)]
+        )
         self.assertFalse(
             maler,
-            "Maler skal ALDRI vises i Prosjektoversikt, men disse kom med: {}".format(maler.mapped("name")),
+            "Maler skal ALDRI vises i Prosjektoversikt, men disse kom med: {}".format(
+                maler.mapped("name")
+            ),
         )
 
     # ---------- FREMDRIFT: ÆRLIG OM KILDEN ----------
@@ -62,7 +65,8 @@ class TestPrjData(TransactionCase):
         for p in res["prosjekter"]:
             if not p["budsjett_timer"]:
                 self.assertNotEqual(
-                    p["fremdrift_kilde"], "timer",
+                    p["fremdrift_kilde"],
+                    "timer",
                     "«{}» har ingen estimerte timer, men oppgir «timer» som "
                     "fremdriftskilde — det er villedende.".format(p["navn"]),
                 )
@@ -97,15 +101,19 @@ class TestPrjData(TransactionCase):
             if budsjett > 0 and fort > budsjett:
                 # Over budsjett: prosenten SKAL passere 100 og statusen SKAL være «over».
                 self.assertGreater(
-                    pst, 100.0,
+                    pst,
+                    100.0,
                     "«{}» har ført {} t mot budsjett {} t — det er over budsjett, "
                     "men forbruket vises som {} %. Kappes tallet, skjuler flaten "
                     "overforbruket.".format(p["navn"], fort, budsjett, pst),
                 )
                 self.assertEqual(
-                    p["budsjett_status"], "over",
+                    p["budsjett_status"],
+                    "over",
                     "«{}» er over budsjett ({} t mot {} t), men status er «{}» — "
-                    "skal være «over» (rød).".format(p["navn"], fort, budsjett, p["budsjett_status"]),
+                    "skal være «over» (rød).".format(
+                        p["navn"], fort, budsjett, p["budsjett_status"]
+                    ),
                 )
 
     # 📌 FLYTTET til tests/test_prj_data_lag.py (23.07, datalags-delingen):
@@ -118,7 +126,9 @@ class TestPrjData(TransactionCase):
         """Brukeren skal alltid kunne se om tallet er fasit eller anslag."""
         res = self.Data.get_prosjektoversikt(grense=50)
         for p in res["prosjekter"]:
-            self.assertIn(p["fremdrift_kilde"], ("timer", "oppgaver", "ingen"), p["navn"])
+            self.assertIn(
+                p["fremdrift_kilde"], ("timer", "oppgaver", "ingen"), p["navn"]
+            )
 
     # ---------- TENANT-ISOLASJON ----------
 
@@ -132,8 +142,11 @@ class TestPrjData(TransactionCase):
         tillatte = set(self.env.companies.ids or [self.env.company.id])
         for p in res["prosjekter"]:
             self.assertIn(
-                p["firma_id"], tillatte,
-                "Prosjekt «{}» tilhører firma utenfor sesjonens scope".format(p["navn"]),
+                p["firma_id"],
+                tillatte,
+                "Prosjekt «{}» tilhører firma utenfor sesjonens scope".format(
+                    p["navn"]
+                ),
             )
 
     def test_firmaliste_er_sesjonens_firmaer(self):
@@ -152,7 +165,9 @@ class TestPrjData(TransactionCase):
             self.skipTest("Ingen prosjekter med oppgaver å teste mot")
 
         drill = self.Data.get_oppgaver(med_oppgaver[0]["id"])
-        self.assertTrue(drill["oppgaver"], "Prosjektet oppga oppgaver, men drill ga ingen")
+        self.assertTrue(
+            drill["oppgaver"], "Prosjektet oppga oppgaver, men drill ga ingen"
+        )
         for t in drill["oppgaver"]:
             self.assertIn("oppgavenr", t)
             self.assertIn("wbs", t)
@@ -172,7 +187,8 @@ class TestPrjData(TransactionCase):
         p = med_oppgaver[0]
         drill = self.Data.get_oppgaver(p["id"])
         self.assertEqual(
-            len(drill["oppgaver"]), p["antall_oppgaver"],
+            len(drill["oppgaver"]),
+            p["antall_oppgaver"],
             "«{}»: oversikten sier {} oppgaver, drill viser {}".format(
                 p["navn"], p["antall_oppgaver"], len(drill["oppgaver"])
             ),
@@ -220,7 +236,8 @@ class TestPrjData(TransactionCase):
             return sum(1 + tell(n["barn"]) for n in noder)
 
         self.assertEqual(
-            tell(tre["noder"]), tre["antall_noder"],
+            tell(tre["noder"]),
+            tre["antall_noder"],
             "«{}»: {} oppgaver i basen, men {} noder i treet — noe falt ut.".format(
                 tre["prosjekt"]["navn"], tre["antall_noder"], tell(tre["noder"])
             ),
@@ -238,11 +255,20 @@ class TestPrjData(TransactionCase):
 
         def sjekk(node):
             if node["barn"]:
-                ventet = node["egne_timer"] + sum(b["forte_timer"] for b in node["barn"])
+                ventet = node["egne_timer"] + sum(
+                    b["forte_timer"] for b in node["barn"]
+                )
                 self.assertAlmostEqual(
-                    node["forte_timer"], round(ventet, 1), places=1,
-                    msg="«{}»: rollup gir {} t, men egne ({}) + barnas ({}) = {}".format(node["navn"], node["forte_timer"], node["egne_timer"],
-                       sum(b["forte_timer"] for b in node["barn"]), ventet),
+                    node["forte_timer"],
+                    round(ventet, 1),
+                    places=1,
+                    msg="«{}»: rollup gir {} t, men egne ({}) + barnas ({}) = {}".format(
+                        node["navn"],
+                        node["forte_timer"],
+                        node["egne_timer"],
+                        sum(b["forte_timer"] for b in node["barn"]),
+                        ventet,
+                    ),
                 )
             for b in node["barn"]:
                 sjekk(b)
@@ -263,9 +289,12 @@ class TestPrjData(TransactionCase):
         def sjekk(node):
             if any(b["budsjett_status"] == "over" for b in node["barn"]):
                 self.assertEqual(
-                    node["budsjett_status"], "over",
+                    node["budsjett_status"],
+                    "over",
                     "«{}» har et barn over budsjett, men står som «{}» — "
-                    "overforbruk skal aldri skjules bak en forelder.".format(node["navn"], node["budsjett_status"]),
+                    "overforbruk skal aldri skjules bak en forelder.".format(
+                        node["navn"], node["budsjett_status"]
+                    ),
                 )
             for b in node["barn"]:
                 sjekk(b)
@@ -289,7 +318,9 @@ class TestPrjData(TransactionCase):
 
         samle(tre["noder"])
         if ider:
-            firmaer = set(self.env["project.task"].browse(ider).mapped("company_id").ids)
+            firmaer = set(
+                self.env["project.task"].browse(ider).mapped("company_id").ids
+            )
             self.assertTrue(
                 firmaer.issubset(tillatte | {False}),
                 f"WBS-treet viser oppgaver fra firmaer utenfor sesjonen: {firmaer - tillatte}",
@@ -309,7 +340,9 @@ class TestPrjData(TransactionCase):
         self.assertIn("spor", res)
         self.assertIsInstance(res["spor"], list)
         if not res["tilgjengelig"]:
-            self.assertEqual(res["spor"], [], "Utilgjengelig skal gi tom liste, ikke halve data")
+            self.assertEqual(
+                res["spor"], [], "Utilgjengelig skal gi tom liste, ikke halve data"
+            )
 
     def test_ai_arbeid_lekker_aldri_oktnummer(self):
         """🔴 KJERNEN I DIREKTIVET: Gjermund skal ALDRI se «01.02» i denne flaten.
@@ -322,6 +355,7 @@ class TestPrjData(TransactionCase):
         ville feilet om noen senere la øktnummer inn i visningen «bare som info».
         """
         import re
+
         res = self.Data.get_ai_arbeid()
         if not res["tilgjengelig"] or not res["spor"]:
             self.skipTest("fiq_gui_ai_kr ikke installert, eller ingen spor å teste mot")
@@ -349,7 +383,9 @@ class TestPrjData(TransactionCase):
                 self.assertIsNone(
                     okt_monster.search(verdi),
                     "Øktnummer lekket inn i «{}» på sporet «{}»: {!r}. "
-                    "Gjermund skal se ARBEID, ikke Claudes bokføring.".format(felt, s.get("navn"), verdi),
+                    "Gjermund skal se ARBEID, ikke Claudes bokføring.".format(
+                        felt, s.get("navn"), verdi
+                    ),
                 )
             # `aktivitet` er et TALL (hvor mye som skjer) — aldri et øktnummer.
             self.assertIsInstance(s["aktivitet"], int, s.get("navn"))
@@ -368,11 +404,15 @@ class TestPrjData(TransactionCase):
 
         for s in res["spor"]:
             self.assertEqual(
-                s["koblet"], bool(s["project_id"]),
-                "«{}»: «koblet» må speile om project_id faktisk finnes".format(s.get("navn")),
+                s["koblet"],
+                bool(s["project_id"]),
+                "«{}»: «koblet» må speile om project_id faktisk finnes".format(
+                    s.get("navn")
+                ),
             )
         self.assertEqual(
-            res["antall_koblet"], sum(1 for s in res["spor"] if s["koblet"]),
+            res["antall_koblet"],
+            sum(1 for s in res["spor"] if s["koblet"]),
             "Tellingen av koblede spor stemmer ikke med listen",
         )
 
@@ -411,14 +451,31 @@ class TestPrjData(TransactionCase):
             self.skipTest("Ingen prosjekter å teste mot")
 
         i_dag = fields.Date.context_today(self.Data)
-        oppgaver = self.env["project.task"].create([
-            {"name": "TEST frist passert", "project_id": prosjekt.id,
-             "date_deadline": fields.Datetime.to_datetime(i_dag - timedelta(days=3))},
-            {"name": "TEST frist om 3 dager", "project_id": prosjekt.id,
-             "date_deadline": fields.Datetime.to_datetime(i_dag + timedelta(days=3))},
-            {"name": "TEST frist langt fram", "project_id": prosjekt.id,
-             "date_deadline": fields.Datetime.to_datetime(i_dag + timedelta(days=60))},
-        ])
+        oppgaver = self.env["project.task"].create(
+            [
+                {
+                    "name": "TEST frist passert",
+                    "project_id": prosjekt.id,
+                    "date_deadline": fields.Datetime.to_datetime(
+                        i_dag - timedelta(days=3)
+                    ),
+                },
+                {
+                    "name": "TEST frist om 3 dager",
+                    "project_id": prosjekt.id,
+                    "date_deadline": fields.Datetime.to_datetime(
+                        i_dag + timedelta(days=3)
+                    ),
+                },
+                {
+                    "name": "TEST frist langt fram",
+                    "project_id": prosjekt.id,
+                    "date_deadline": fields.Datetime.to_datetime(
+                        i_dag + timedelta(days=60)
+                    ),
+                },
+            ]
+        )
 
         # Selve kallet — dette er det som ga 500 og blank skjerm.
         res = self.Data.get_oppgaver_over_tid(antall=7)
@@ -433,13 +490,19 @@ class TestPrjData(TransactionCase):
             r = per_id.get(opg.id)
             if r:
                 self.assertEqual(
-                    r["tid_status"], vent,
-                    "«{}» fikk status «{}», forventet «{}»".format(opg.name, r["tid_status"], vent),
+                    r["tid_status"],
+                    vent,
+                    "«{}» fikk status «{}», forventet «{}»".format(
+                        opg.name, r["tid_status"], vent
+                    ),
                 )
                 # Frist skal være en ren datostreng, ikke et tidsstempel.
                 self.assertRegex(
-                    str(r["frist"]), r"^\d{4}-\d{2}-\d{2}$",
-                    "Frist skal være dato uten klokkeslett, fikk {!r}".format(r["frist"]),
+                    str(r["frist"]),
+                    r"^\d{4}-\d{2}-\d{2}$",
+                    "Frist skal være dato uten klokkeslett, fikk {!r}".format(
+                        r["frist"]
+                    ),
                 )
 
     def test_frist_sent_paa_dagen_forsvinner_ikke(self):
@@ -465,19 +528,22 @@ class TestPrjData(TransactionCase):
         start = i_dag - timedelta(days=i_dag.weekday())
         siste_dag = start + timedelta(weeks=7) - timedelta(days=1)
 
-        sen = self.env["project.task"].create({
-            "name": "TEST frist kl 15 siste dag",
-            "project_id": prosjekt.id,
-            # 15:00 samme dag — ville falt utenfor med midnatt-grense
-            "date_deadline": fields.Datetime.to_datetime(
-                f"{fields.Date.to_string(siste_dag)} 15:00:00"
-            ),
-        })
+        sen = self.env["project.task"].create(
+            {
+                "name": "TEST frist kl 15 siste dag",
+                "project_id": prosjekt.id,
+                # 15:00 samme dag — ville falt utenfor med midnatt-grense
+                "date_deadline": fields.Datetime.to_datetime(
+                    f"{fields.Date.to_string(siste_dag)} 15:00:00"
+                ),
+            }
+        )
 
         res = self.Data.get_oppgaver_over_tid(antall=7)
         ider = {r["id"] for r in res["oppgaver"]}
         self.assertIn(
-            sen.id, ider,
+            sen.id,
+            ider,
             "Oppgave med frist kl. 15:00 på siste dag i vinduet forsvant. "
             "Domenegrensen kutter trolig ved midnatt — bruk datetime.max.time().",
         )
@@ -521,9 +587,12 @@ class TestPrjData(TransactionCase):
         prosjekt = self.Project.search(self._prosjekt_domene_for_test(), limit=1)
         if not prosjekt:
             self.skipTest("Ingen prosjekter å teste mot")
-        t = self.env["project.task"].create({
-            "name": "TEST uten sjekkliste", "project_id": prosjekt.id,
-        })
+        t = self.env["project.task"].create(
+            {
+                "name": "TEST uten sjekkliste",
+                "project_id": prosjekt.id,
+            }
+        )
         res = self.Data.get_sjekklister(t.id)
         self.assertTrue(res["tilgjengelig"])
         self.assertEqual(res["lister"], [])
@@ -542,13 +611,19 @@ class TestPrjData(TransactionCase):
         prosjekt = self.Project.search(self._prosjekt_domene_for_test(), limit=1)
         if not prosjekt:
             self.skipTest("Ingen prosjekter å teste mot")
-        t = self.env["project.task"].create({
-            "name": "TEST med sjekkliste", "project_id": prosjekt.id,
-        })
-        self.env["fiq.sjekkliste"].create({
-            "name": "Testliste", "task_id": t.id,
-            "punkt_ids": [(0, 0, {"name": "Krever dok", "krav_dok": True})],
-        })
+        t = self.env["project.task"].create(
+            {
+                "name": "TEST med sjekkliste",
+                "project_id": prosjekt.id,
+            }
+        )
+        self.env["fiq.sjekkliste"].create(
+            {
+                "name": "Testliste",
+                "task_id": t.id,
+                "punkt_ids": [(0, 0, {"name": "Krever dok", "krav_dok": True})],
+            }
+        )
 
         res = self.Data.get_sjekklister(t.id)
         self.assertEqual(len(res["lister"]), 1, "Sjekklista kom ikke med")
@@ -562,7 +637,10 @@ class TestPrjData(TransactionCase):
             p["kan_kvitteres"],
             "Punktet krever dokument som ikke finnes — sperren skal være synlig i flaten",
         )
-        self.assertTrue(p["mangler"], "Brukeren må få vite HVA som mangler, ikke bare at det er sperret")
+        self.assertTrue(
+            p["mangler"],
+            "Brukeren må få vite HVA som mangler, ikke bare at det er sperret",
+        )
 
     def test_sjekklister_respekterer_firma_scope(self):
         """Oppgave utenfor sesjonens firmaer skal ikke gi data."""
@@ -623,7 +701,8 @@ class TestPrjData(TransactionCase):
         self.assertIn("prosjekter_i_rute", b)
         self.assertIn("prosjekter_totalt", b)
         self.assertLessEqual(
-            b["prosjekter_i_rute"], b["prosjekter_totalt"],
+            b["prosjekter_i_rute"],
+            b["prosjekter_totalt"],
             "Teller kan aldri være større enn nevner",
         )
 
@@ -637,7 +716,8 @@ class TestPrjData(TransactionCase):
         """
         b = self.Data.get_kr_boks()
         self.assertIs(
-            b["avvik_apne"], False,
+            b["avvik_apne"],
+            False,
             "Ubygget tall skal være False (vet ikke), aldri 0 (ingen)",
         )
 
@@ -651,7 +731,9 @@ class TestPrjData(TransactionCase):
         """
         b = self.Data.get_kr_boks()
         self.assertEqual(b["slot"], "gui_prj")
-        self.assertNotIn(".", b["slot"], "En xmlid har punktum; en slot-nøkkel har ikke")
+        self.assertNotIn(
+            ".", b["slot"], "En xmlid har punktum; en slot-nøkkel har ikke"
+        )
 
     def test_kortslutninger_returnerer_SAMME_form(self):
         """🔴 REGRESJON funnet 23.07 på et FERSKT bygg.
@@ -695,13 +777,20 @@ class TestPrjData(TransactionCase):
         if not res["prosjekter"]:
             self.skipTest("Ingen prosjekter å teste mot")
         lovlige = {
-            "i_balanse", "tett_budsjett", "over_budsjett",
-            "tett_tid", "avgjores", "ferdig",
+            "i_balanse",
+            "tett_budsjett",
+            "over_budsjett",
+            "tett_tid",
+            "avgjores",
+            "ferdig",
         }
         for p in res["prosjekter"]:
             self.assertIn(
-                p["risiko"], lovlige,
-                "«{}» har ukjent dom «{}» — flaten kan ikke farge den".format(p["navn"], p["risiko"]),
+                p["risiko"],
+                lovlige,
+                "«{}» har ukjent dom «{}» — flaten kan ikke farge den".format(
+                    p["navn"], p["risiko"]
+                ),
             )
             self.assertIn("nummer", p, "Risikoraden viser prosjektnummer")
             self.assertIn("forbruk_prosent", p, "Risikoraden viser en stolpe")
@@ -727,12 +816,24 @@ class TestPrjData(TransactionCase):
             self.skipTest("Ingen prosjekter å teste mot")
 
         i_dag = fields.Date.context_today(self.Data)
-        egne = self.env["project.task"].create([
-            {"name": "KPI passert", "project_id": prosjekt.id,
-             "date_deadline": fields.Datetime.to_datetime(i_dag - timedelta(days=2))},
-            {"name": "KPI naer", "project_id": prosjekt.id,
-             "date_deadline": fields.Datetime.to_datetime(i_dag + timedelta(days=2))},
-        ])
+        egne = self.env["project.task"].create(
+            [
+                {
+                    "name": "KPI passert",
+                    "project_id": prosjekt.id,
+                    "date_deadline": fields.Datetime.to_datetime(
+                        i_dag - timedelta(days=2)
+                    ),
+                },
+                {
+                    "name": "KPI naer",
+                    "project_id": prosjekt.id,
+                    "date_deadline": fields.Datetime.to_datetime(
+                        i_dag + timedelta(days=2)
+                    ),
+                },
+            ]
+        )
 
         res = self.Data.get_oppgaver_over_tid(antall=7)
         kpi = res.get("kpi") or {}
@@ -756,12 +857,14 @@ class TestPrjData(TransactionCase):
         # «Et høyere tall ville bare flyttet den samme antakelsen lenger ut.»
         mine = [r for r in res["oppgaver"] if r["id"] in egne.ids]
         self.assertEqual(
-            len(mine), 2,
+            len(mine),
+            2,
             "De to opprettede oppgavene kom ikke med i datasettet — de har "
             f"frister i vinduet og skal alltid være der. Fant {len(mine)} av 2.",
         )
         self.assertGreater(
-            (kpi.get("kritisk") or 0) + (kpi.get("folg_opp") or 0), 0,
+            (kpi.get("kritisk") or 0) + (kpi.get("folg_opp") or 0),
+            0,
             "Oppgaver med passert frist og frist om to dager finnes, men både "
             "«kritisk» og «følg opp» står på 0. Kortene fylles ikke.",
         )
@@ -778,14 +881,18 @@ class TestPrjData(TransactionCase):
             self.skipTest("Ingen prosjekter å teste mot")
 
         i_dag = fields.Date.context_today(self.Data)
-        self.env["project.task"].create({
-            "name": "AI-nevner", "project_id": prosjekt.id,
-            "date_deadline": fields.Datetime.to_datetime(i_dag + timedelta(days=1)),
-        })
+        self.env["project.task"].create(
+            {
+                "name": "AI-nevner",
+                "project_id": prosjekt.id,
+                "date_deadline": fields.Datetime.to_datetime(i_dag + timedelta(days=1)),
+            }
+        )
 
         kpi = self.Data.get_oppgaver_over_tid(antall=7).get("kpi") or {}
         self.assertGreater(
-            kpi.get("ai_totalt") or 0, 0,
+            kpi.get("ai_totalt") or 0,
+            0,
             "En oppgave med frist i morgen finnes, men «gjort av AI»-nevneren er "
             "0. 0/0 ser ut som manglende data, ikke som et svar.",
         )
@@ -827,17 +934,23 @@ class TestPrjData(TransactionCase):
             self.skipTest("Ingen prosjekter å teste mot")
 
         i_dag = fields.Date.context_today(self.Data)
-        opg = self.env["project.task"].create({
-            "name": "Uten firma", "project_id": prosjekt.id,
-            "date_deadline": fields.Datetime.to_datetime(i_dag + timedelta(days=1)),
-        })
+        opg = self.env["project.task"].create(
+            {
+                "name": "Uten firma",
+                "project_id": prosjekt.id,
+                "date_deadline": fields.Datetime.to_datetime(i_dag + timedelta(days=1)),
+            }
+        )
         if opg.company_id:
-            self.skipTest("Oppgaven arvet firma fra prosjektet — tomt firma "
-                          "kan ikke oppstå i denne basen")
+            self.skipTest(
+                "Oppgaven arvet firma fra prosjektet — tomt firma "
+                "kan ikke oppstå i denne basen"
+            )
 
         res = self.Data.get_oppgaver_over_tid(antall=7)
         self.assertIn(
-            opg.id, [r["id"] for r in res["oppgaver"]],
+            opg.id,
+            [r["id"] for r in res["oppgaver"]],
             "En oppgave uten firma forsvant fra flaten uten feilmelding. "
             "Domenet må også slippe gjennom company_id = False.",
         )

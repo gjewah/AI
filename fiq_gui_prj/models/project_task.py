@@ -20,6 +20,7 @@ class ProjectProject(models.Model):
     prosjekter og på HD og Feltservice og Salgsmuligheter osv.» Dette er prosjekt-halvdelen;
     HD/feltservice/salg kobles på med samme ene linje når modulene er der.
     """
+
     _name = "project.project"
     _inherit = ["project.project", "fiq.sjekkliste.mixin"]
 
@@ -34,11 +35,15 @@ class ProjectTask(models.Model):
     # WBS-treet samtidig. `task_id` holdes i synk med res_model/res_id av computen i
     # fiq_sjekkliste.py, så begge veier virker.
     fiq_sjekkliste_ids = fields.One2many(
-        "fiq.sjekkliste", "task_id", string="Sjekklister",
+        "fiq.sjekkliste",
+        "task_id",
+        string="Sjekklister",
     )
     fiq_sjekkliste_fremdrift = fields.Float(
         string="Sjekkliste utført (%)",
-        compute="_compute_fiq_sjekkliste_fremdrift", store=True, aggregator="avg",
+        compute="_compute_fiq_sjekkliste_fremdrift",
+        store=True,
+        aggregator="avg",
         help="Snitt av sjekklistenes fremdrift. Vises i native views — virker uten KR.",
     )
 
@@ -77,7 +82,7 @@ class ProjectTask(models.Model):
         recursive=True,
         index=True,
         help="Dynamisk WBS-nummer (01, 01.02). Rekalkuleres ved flytting i treet. "
-             "Oppgavenr. (code) og prosjektnr. (sequence_code) er stabile og røres aldri.",
+        "Oppgavenr. (code) og prosjektnr. (sequence_code) er stabile og røres aldri.",
     )
 
     @api.depends("sequence", "parent_id", "parent_id.fiq_wbs_number", "project_id")

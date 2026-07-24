@@ -65,7 +65,7 @@ class ProjectTask(models.Model):
         index=True,
         tracking=True,
         help="FIQ-prioritet i tre nivåer: Høy ▴ · Normal ▪ · Lav ▾. "
-             "Odoos egen prioritet (stjerne) er uavhengig av denne og røres ikke.",
+        "Odoos egen prioritet (stjerne) er uavhengig av denne og røres ikke.",
     )
 
     # 🛑 INGEN COMPUTE, INGEN ONCHANGE MOT `priority`.
