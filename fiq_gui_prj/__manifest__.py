@@ -1,10 +1,26 @@
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.35.1",
+    "version": "19.0.1.35.2",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
     "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
     "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
-    "description": """19.0.1.35.1 - TOM CSV FORKLART DER DET ER TRYGT:
+    "description": """19.0.1.35.2 - VERSJONSKOLLISJON RETTET (to oekter, samme tall):
+* 🔴 Prosjekt (00.03) og AI KR satte BEGGE 19.0.1.35.1, uavhengig av hverandre,
+  innen minutter: 5432de0 (feltvakter, vei B) og a2cc08a (tom CSV forklart).
+  Begge endringene overlevde i git - men de delte ETT versjonsnummer.
+* HVORFOR DET IKKE KAN STAA: Gjermunds regel er at versjonsnummeret skal la
+  ham se om oppgraderingen FAKTISK skjer. Odoo oppgraderer paa endret nummer;
+  to ulike innhold under samme tall gir EEN oppgradering. Den som kom sist
+  ville sett installert ut uten aa ha kjoert.
+* 🔑 FANGET FORDI TALLENE IKKE STEMTE, ikke av et verktoey. Prosjekt meldte
+  «jeg pushet 1.35.1 kl. 14:5x» - men det gjorde JEG ogsaa. Ingen lint, ingen
+  test og ingen CI-gate ser dette; git tar imot begge uten konflikt fordi de
+  roerer ulike linjer.
+* MIN kom sist, saa min er den som flyttes. Prosjekts 1.35.1 staar uroert.
+* LAERDOM: to oekter i samme modul maa avtale versjonsnummer FOER push, ikke
+  oppdage kollisjonen etterpaa. Samme klasse som to spor paa samme gren.
+
+19.0.1.35.1 - TOM CSV FORKLART DER DET ER TRYGT:
 * Prosjekt (00.03) meldte at ir.model.access.csv staar igjen med bare
   overskriftsrad og «er ren pynt» - med rette. Neste person kunne trodd at
   tilganger ikke trengs her.
