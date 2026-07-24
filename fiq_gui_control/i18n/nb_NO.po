@@ -2997,3 +2997,15 @@ msgstr "Uke eller måned"
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "calm → full"
 msgstr "rolig → fullt"
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.js:0
+msgid "The item no longer exists — it has probably been deleted."
+msgstr "Elementet finnes ikke lenger — det er trolig slettet."
+
+#. module: fiq_gui_control
+#. odoo-javascript
+#: code:addons/fiq_gui_control/static/src/control_room.js:0
+msgid "Could not open the item — "
+msgstr "Kunne ikke åpne elementet — "

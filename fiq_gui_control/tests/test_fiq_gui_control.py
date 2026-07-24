@@ -465,3 +465,31 @@ class TestFiqControlRoom(TransactionCase):
         self.assertIn('"avdelingId"', nokler, "avdelingsvalget fryses ikke")
         self.assertIn('"tlMode"', nokler, "tidslinjens uke/måned fryses ikke")
         self.assertNotIn('"avdelinger"', nokler, "selve avdelingslista skal IKKE fryses — kun valget")
+
+    def test_openrecord_sjekker_at_posten_finnes(self):
+        """Vi åpner aldri en post uten å sjekke at den finnes.
+
+        🔴 Meldt av Kommunikasjon (0.05) 24.07.2026, og funnet gjelder min kode like mye:
+        `mail.message` og `mail.activity` har INGEN fremmednøkkel mot `model`/`res_id` —
+        det er bare et modellnavn og et tall. Slettes elementet, blir pekeren stående, og
+        lista viser en klikkbar lenke mot ingenting.
+
+        🔑 Uten sjekken kastes brukeren inn i en tom visning eller en rå serverfeil, og det
+        ser ut som at FLATEN er ødelagt — ikke som at posten er borte. Det er forskjellen
+        på en feil og en forklaring.
+
+        Testen låser at vernet ligger i `openRecord` — det ENE stedet som åpner — og ikke
+        hos hver enkelt kaller. Sytten kallesteder deler den; flyttes sjekken ut til dem,
+        vil neste kaller mangle den.
+        """
+        import re
+
+        from odoo.tools import file_path
+
+        with open(file_path("fiq_gui_control/static/src/control_room.js"), "r", encoding="utf-8") as f:
+            js = f.read()
+        blokk = re.search(r"async openRecord\(model, id, dialog\) \{(.*?)\n    \}", js, re.DOTALL)
+        self.assertTrue(blokk, "openRecord må være async — den slår opp posten før den åpner")
+        krop = blokk.group(1)
+        self.assertIn('"exists"', krop, "openRecord sjekker ikke at posten finnes")
+        self.assertIn("notification.add", krop, "brukeren får ingen beskjed når posten er borte")

@@ -80,7 +80,7 @@ const FREEZE_KEYS = ["mode", "view", "rightView", "cpFilter", "cpKunde", "cpProj
 // ⚠️ MÅ FØLGE __manifest__.py sin "version" — ellers tror KR at fanen kjører gammel
 // kode og viser «A new version is installed»-banneret som ALDRI forsvinner, uansett
 // hvor mange ganger brukeren laster på nytt. Bump denne i SAMME commit som manifestet.
-const GUI_BUILD = "19.0.7.11.10";
+const GUI_BUILD = "19.0.7.12.0";
 const dayNames = () => [_t("Mon"), _t("Tue"), _t("Wed"), _t("Thu"), _t("Fri"), _t("Sat"), _t("Sun")];
 
 function isoWeek(date) {
@@ -2244,7 +2244,39 @@ export class FiqControlRoom extends Component {
     }
 
     // Real click-through: open a record in Odoo
-    openRecord(model, id, dialog) {
+    // 🔴 SJEKK AT POSTEN FINNES FØR VI ÅPNER DEN — meldt av Kommunikasjon (0.05) 24.07.2026.
+    //
+    // Deres funn, som gjelder min kode like mye: `mail.message` og `mail.activity` har
+    // INGEN fremmednøkkel mot `model`/`res_id`. Det er bare et modellnavn og et tall.
+    // Slettes elementet, blir pekeren stående — og lista viser en klikkbar lenke mot
+    // ingenting. Uten sjekken kastes brukeren inn i en tom visning eller en rå serverfeil,
+    // og det ser ut som at flaten er ødelagt.
+    //
+    // 🔑 Vernet hører HER, i det ene stedet som åpner, ikke hos hver av de tre kallerne
+    // (handlingsposter · detaljlinjer · aktiviteter). Ett sted å vedlikeholde, og en ny
+    // kaller arver det gratis — samme grunn som fold-hjelperen og `get_kr_bokser`.
+    //
+    // `exists()` er Odoos egen måte: den svarer med de id-ene som faktisk finnes, uten å
+    // kaste. Feiler selve oppslaget (modell avinstallert, ingen lesetilgang), sier vi fra
+    // i klartekst framfor å åpne noe halvveis.
+    async openRecord(model, id, dialog) {
+        if (!model || !id) { return; }
+        try {
+            const finnes = await this.orm.call(model, "exists", [[id]]);
+            if (!finnes || !finnes.length) {
+                this.notification.add(
+                    _t("The item no longer exists — it has probably been deleted."),
+                    { type: "warning" },
+                );
+                return;
+            }
+        } catch (e) {
+            this.notification.add(
+                _t("Could not open the item — ") + this._errMsg(e),
+                { type: "danger" },
+            );
+            return;
+        }
         this.action.doAction({
             type: "ir.actions.act_window",
             res_model: model,
