@@ -47,7 +47,7 @@ const LISTE_FELT = [
 ];
 
 export class FiqSjekklisteFlate extends Component {
-    static template = "fiq_gui_prj.SjekklisteFlate";
+    static template = "fiq_sjekkliste.SjekklisteFlate";
     static components = { FileInput };
     static props = ["*"];
 

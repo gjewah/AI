@@ -1,10 +1,23 @@
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.34.9",
+    "version": "19.0.1.35.0",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
     "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
     "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",
-    "description": """19.0.1.34.3 - EGET FELT FOR PRIORITET (fiq_prioritet, tre nivaaer):
+    "description": """19.0.1.35.0 - SJEKKLISTE-MOTOREN SKILT UT (Gjermund 24.07.2026):
+* Ordrett: «ja skill den ut og gjor typene konfigurerbare». Motoren er generisk
+  (res_model/res_id) og var aldri prosjekt-spesifikk - men kunne bare installeres
+  ved aa dra med seg hele denne modulen.
+* FLYTTET til ny modul `fiq_sjekkliste`: modellen, mixin-en, testene, OWL-flaten
+  og motorens egne visninger. Med `git mv`, saa historikken foelger med.
+* BLE IGJEN HER: fanene «Sjekklister» paa project.project og project.task. De er
+  VAAR BRUK av motoren, ikke motoren. Samme snitt i visningsfila.
+* `fiq_sjekkliste` lagt i depends. Alt som leser task.fiq_sjekkliste_ids og
+  fiq_sjekkliste_fremdrift (WBS-treet, get_sjekklister, tre visninger) virker
+  uendret - feltene kommer fra mixin-en, som naa bor i den nye modulen.
+* MIGRERINGEN 19.0.1.16.0/post-migrate.py ble staaende HER. Den er alt kjort der
+  den skulle kjore; aa flytte den ville betydd at Odoo kunne kjort den paa nytt.
+19.0.1.34.3 - EGET FELT FOR PRIORITET (fiq_prioritet, tre nivaaer):
 * AI PK avgjorde kravspek-sporsmaal 4 den 23.07: eget felt. Odoos binaere priority (0/1) kan ikke baere tre nivaaer, og Gantt-specen forutsetter tre.
 * NYTT FELT fiq_prioritet paa project.task: h Hoy / m Normal / l Lav. Norske etiketter, default m, required, indeksert, tracking.
 * ODOOS priority ROERES IKKE. Vi legger til, vi erstatter ikke - andre moduler leser den som boolsk. Egen test krever at FIQ-feltet aldri endrer Odoos.
@@ -174,7 +187,7 @@ Fra før:
     "website": "https://fiq.no",
     "category": "Productivity/FIQ",
     "license": "OPL-1",
-    "depends": ["fiq_gui_control", "web", "project"],
+    "depends": ["fiq_gui_control", "web", "project", "fiq_sjekkliste"],
     "data": [
         "security/fiq_gui_prj_groups.xml",
         "security/ir.model.access.csv",
@@ -189,11 +202,8 @@ Fra før:
             # Wildcard skjuler lasterekkefolgen — og rekkefolgen mellom skall og flate
             # var nettopp det som felte grensesnittet 18.07. Stil, logikk, maler.
             "fiq_gui_prj/static/src/prj.scss",
-            "fiq_gui_prj/static/src/sjekkliste/sjekkliste_flate.scss",
             "fiq_gui_prj/static/src/prj.js",
-            "fiq_gui_prj/static/src/sjekkliste/sjekkliste_flate.js",
             "fiq_gui_prj/static/src/prj.xml",
-            "fiq_gui_prj/static/src/sjekkliste/sjekkliste_flate.xml",
         ],
     },
     "application": True,

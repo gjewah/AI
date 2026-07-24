@@ -17,7 +17,7 @@ from odoo.exceptions import ValidationError
 from odoo.tests import TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install", "fiq_prj", "fiq")
+@tagged("post_install", "-at_install", "fiq_sjekkliste", "fiq")
 class TestFiqSjekkliste(TransactionCase):
     @classmethod
     def setUpClass(cls):
