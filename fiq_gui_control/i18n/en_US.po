@@ -9,8 +9,15 @@ msgstr ""
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#. Forslagskassen — norsk er kildespråk, dette er den engelske oversettelsen.
-#. Gjermund 24.07.2026: «vi skal ha language på alle felter og alle feltverdier.»
+# Forslagskassen — norsk er kildespråk, dette er den engelske oversettelsen.
+# Gjermund 24.07.2026: «vi skal ha language på alle felter og alle feltverdier.»
+#
+# 🛑 MERK FORMEN: «#» og IKKE «#.» på fritekst.
+# Odoo leser «#.»-linjer som oppføringens EGEN kommentar og krever at den starter med
+# «module: <navn>» (`odoo/tools/translate.py:856`, `re.match` uten None-sjekk). En
+# fritekstlinje først → mønsteret bommer → `match.groups()` på None → HELE basen laster
+# ikke. Ikke bare denne modulen: alt.
+# «#» alene er en oversetter-kommentar som Odoo aldri parser. Samme innhold, trygg form.
 
 #. module: fiq_gui_control
 #: model:ir.model,name:fiq_gui_control.model_fiq_gui_suggestion
@@ -57,9 +64,9 @@ msgstr "User"
 msgid "Firma"
 msgstr "Company"
 
-#. FELTVERDIENE — «alle feltverdier», ikke bare etikettene.
-#. En nedtrekksliste som står på norsk for en engelsk bruker er halvveis oversatt,
-#. og det er verre enn ikke oversatt: brukeren tror resten er på sitt språk.
+# FELTVERDIENE — «alle feltverdier», ikke bare etikettene.
+# En nedtrekksliste som står på norsk for en engelsk bruker er halvveis oversatt,
+# og det er verre enn ikke oversatt: brukeren tror resten er på sitt språk.
 
 #. module: fiq_gui_control
 #: model:ir.model.fields.selection,name:fiq_gui_control.selection__fiq_gui_suggestion__category__onske
@@ -116,11 +123,11 @@ msgstr "Person"
 msgid "AI"
 msgstr "AI"
 
-#. ════════════════════════════════════════════════════════════════════════════════
-#. FELT SOM STO PÅ ENGELSK FRAM TIL 24.07.2026 — rest etter 18→19-oppgraderingen.
-#. Norsk er nå kilden, dette er den engelske oversettelsen.
-#. Gjermund 24.07: «det var 18-19 oppgraderingen som gjorde feilen.»
-#. ════════════════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════════
+# FELT SOM STO PÅ ENGELSK FRAM TIL 24.07.2026 — rest etter 18→19-oppgraderingen.
+# Norsk er nå kilden, dette er den engelske oversettelsen.
+# Gjermund 24.07: «det var 18-19 oppgraderingen som gjorde feilen.»
+# ════════════════════════════════════════════════════════════════════════════════
 
 #. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__level
