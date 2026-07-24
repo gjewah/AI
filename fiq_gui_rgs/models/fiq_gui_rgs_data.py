@@ -55,7 +55,9 @@ class FiqGuiRgsData(models.AbstractModel):
     @api.model
     def _sum_restbelop(self, domene):
         """Summerer utestående beløp. `amount_residual` = det som faktisk gjenstår."""
-        grupper = self.env["account.move"]._read_group(domene, aggregates=["amount_residual:sum"])
+        grupper = self.env["account.move"]._read_group(
+            domene, aggregates=["amount_residual:sum"]
+        )
         return grupper[0][0] or 0.0 if grupper else 0.0
 
     @api.model
@@ -83,7 +85,9 @@ class FiqGuiRgsData(models.AbstractModel):
             self._basis_domene(self.INN_TYPER + self.UT_TYPER)
             + [("invoice_date_due", "<", i_dag)]
         )
-        ubetalt = self._sum_restbelop(self._basis_domene(self.INN_TYPER + self.UT_TYPER))
+        ubetalt = self._sum_restbelop(
+            self._basis_domene(self.INN_TYPER + self.UT_TYPER)
+        )
 
         valuta = self.env.company.currency_id
 
@@ -122,16 +126,36 @@ class FiqGuiRgsData(models.AbstractModel):
             "scope_ett_firma": True,
             "antall_firmaer": antall_tilgjengelige,
             "botter": [
-                {"key": "inn", "label": "Inngående", "verdi": inn,
-                 "hjelp": "Bokførte kundefakturaer som ikke er betalt"},
-                {"key": "ut", "label": "Utgående", "verdi": ut,
-                 "hjelp": "Bokførte leverandørfakturaer som ikke er betalt"},
-                {"key": "haster", "label": "Haster", "verdi": haster,
-                 "hjelp": "Forfaller innen 7 dager"},
-                {"key": "kritisk", "label": "Kritisk", "verdi": kritisk,
-                 "hjelp": "Allerede forfalt"},
-                {"key": "ubetalt", "label": "Ubetalt", "verdi": ubetalt,
-                 "hjelp": "Alt utestående, inn og ut"},
+                {
+                    "key": "inn",
+                    "label": "Inngående",
+                    "verdi": inn,
+                    "hjelp": "Bokførte kundefakturaer som ikke er betalt",
+                },
+                {
+                    "key": "ut",
+                    "label": "Utgående",
+                    "verdi": ut,
+                    "hjelp": "Bokførte leverandørfakturaer som ikke er betalt",
+                },
+                {
+                    "key": "haster",
+                    "label": "Haster",
+                    "verdi": haster,
+                    "hjelp": "Forfaller innen 7 dager",
+                },
+                {
+                    "key": "kritisk",
+                    "label": "Kritisk",
+                    "verdi": kritisk,
+                    "hjelp": "Allerede forfalt",
+                },
+                {
+                    "key": "ubetalt",
+                    "label": "Ubetalt",
+                    "verdi": ubetalt,
+                    "hjelp": "Alt utestående, inn og ut",
+                },
             ],
             # Netto = det bildet daglig leder faktisk spør om: har vi penger igjen?
             "netto": inn - ut,
@@ -139,9 +163,11 @@ class FiqGuiRgsData(models.AbstractModel):
             # `mangler` i hent_cashflow. Er tallet 0, skal flaten ikke vise noe.
             "i_betaling_antall": i_betaling,
             "i_betaling_merknad": (
-                "%s bilag er registrert betalt, men ikke bekreftet mot bank. "
-                "De telles fortsatt som utestående." % i_betaling
-            ) if i_betaling else "",
+                f"{i_betaling} bilag er registrert betalt, men ikke bekreftet mot bank. "
+                "De telles fortsatt som utestående."
+            )
+            if i_betaling
+            else "",
             # Sier HVORFOR de blir stående: er avstemming i det hele tatt mulig?
             # Uten dette leses tallet som slurv, når årsaken kan være at ingen
             # bankkobling finnes. (Gjermund 08.10)
@@ -181,14 +207,22 @@ class FiqGuiRgsData(models.AbstractModel):
 
         # Forfalt = alt som skulle vært betalt før i dag. Det er utgangspunktet,
         # ikke en framtidig hendelse — derfor egen post, ikke en uke i kurven.
-        forfalt_inn = sum(b["amount_residual"] for b in bilag
-                          if b["invoice_date_due"] < i_dag and b["move_type"] in self.INN_TYPER)
-        forfalt_ut = sum(b["amount_residual"] for b in bilag
-                         if b["invoice_date_due"] < i_dag and b["move_type"] in self.UT_TYPER)
+        forfalt_inn = sum(
+            b["amount_residual"]
+            for b in bilag
+            if b["invoice_date_due"] < i_dag and b["move_type"] in self.INN_TYPER
+        )
+        forfalt_ut = sum(
+            b["amount_residual"]
+            for b in bilag
+            if b["invoice_date_due"] < i_dag and b["move_type"] in self.UT_TYPER
+        )
 
         # Lønnsforpliktelser fra 2.20 HR Lønn — aggregater, aldri persondata.
         # Positivt `belop` = utbetaling ut av konto (deres punkt 03).
-        lonnslinjer = self._hent_lonnslinjer(i_dag, fields.Date.add(i_dag, days=7 * uker))
+        lonnslinjer = self._hent_lonnslinjer(
+            i_dag, fields.Date.add(i_dag, days=7 * uker)
+        )
 
         punkter = []
         saldo = forfalt_inn - forfalt_ut
@@ -197,30 +231,40 @@ class FiqGuiRgsData(models.AbstractModel):
         for u in range(uker):
             fra = fields.Date.add(i_dag, days=7 * u)
             til = fields.Date.add(i_dag, days=7 * (u + 1))
-            inn = sum(b["amount_residual"] for b in bilag
-                      if fra <= b["invoice_date_due"] < til and b["move_type"] in self.INN_TYPER)
-            ut = sum(b["amount_residual"] for b in bilag
-                     if fra <= b["invoice_date_due"] < til and b["move_type"] in self.UT_TYPER)
+            inn = sum(
+                b["amount_residual"]
+                for b in bilag
+                if fra <= b["invoice_date_due"] < til
+                and b["move_type"] in self.INN_TYPER
+            )
+            ut = sum(
+                b["amount_residual"]
+                for b in bilag
+                if fra <= b["invoice_date_due"] < til
+                and b["move_type"] in self.UT_TYPER
+            )
             # Lønn plasseres etter FORFALL, aldri etter `periode` — periode er
             # ren visning (avtalt med 2.20 Lønn 22.07). Augustlønn betalt 15.
             # september hører i septemberuka, uansett hva perioden heter.
-            uke_lonn = [l for l in lonnslinjer if fra <= l["forfall"] < til]
-            lonn_ut = sum(l["belop"] for l in uke_lonn)
+            uke_lonn = [linje for linje in lonnslinjer if fra <= linje["forfall"] < til]
+            lonn_ut = sum(linje["belop"] for linje in uke_lonn)
             ut += lonn_ut
             saldo += inn - ut
-            punkter.append({
-                "uke": u,
-                "fra": fields.Date.to_string(fra),
-                "inn": inn,
-                "ut": ut,
-                "saldo": saldo,
-                # Kritisk = saldoen går under null. Det er «når blir det tight».
-                "kritisk": saldo < 0,
-                # Hva av «ut» som er lønnsforpliktelser — så flaten kan forklare
-                # et brått hopp (f.eks. når fribeløpet for AGA er brukt opp).
-                "lonn_ut": lonn_ut,
-                "lonn_linjer": uke_lonn,
-            })
+            punkter.append(
+                {
+                    "uke": u,
+                    "fra": fields.Date.to_string(fra),
+                    "inn": inn,
+                    "ut": ut,
+                    "saldo": saldo,
+                    # Kritisk = saldoen går under null. Det er «når blir det tight».
+                    "kritisk": saldo < 0,
+                    # Hva av «ut» som er lønnsforpliktelser — så flaten kan forklare
+                    # et brått hopp (f.eks. når fribeløpet for AGA er brukt opp).
+                    "lonn_ut": lonn_ut,
+                    "lonn_linjer": uke_lonn,
+                }
+            )
             if saldo < laveste["saldo"]:
                 laveste = {"saldo": saldo, "uke": u, "dato": fields.Date.to_string(fra)}
 
@@ -261,8 +305,11 @@ class FiqGuiRgsData(models.AbstractModel):
         🛑 `fiq_rgs_lonn` er IKKE en avhengighet og skal aldri bli det. En base
         uten lønn er en normal base, ikke en feil.
         """
-        if not self.env["ir.model"].sudo().search_count(
-                [("model", "=", "fiq.lonnsforpliktelse")]):
+        if (
+            not self.env["ir.model"]
+            .sudo()
+            .search_count([("model", "=", "fiq.lonnsforpliktelse")])
+        ):
             return None
         return self.env["fiq.lonnsforpliktelse"]
 
@@ -288,26 +335,28 @@ class FiqGuiRgsData(models.AbstractModel):
             return []
 
         rene = []
-        for l in linjer:
-            forfall = l.get("forfall")
-            if not forfall or l.get("belop") in (None, False):
+        for linje in linjer:
+            forfall = linje.get("forfall")
+            if not forfall or linje.get("belop") in (None, False):
                 continue  # en linje uten dato kan ikke plasseres i en uke
             if isinstance(forfall, str):
                 forfall = fields.Date.to_date(forfall)
-            rene.append({
-                "type": l.get("type"),
-                "label": l.get("label") or "",
-                "forfall": forfall,
-                "belop": l["belop"],
-                # `sikkerhet` følger helt ut i flaten: en `planlagt` linje skal
-                # ALDRI se ut som et bokført tall. Rollens egen regel.
-                "sikkerhet": l.get("sikkerhet") or "estimat",
-                "kilde": l.get("kilde") or "",
-                "periode": l.get("periode") or "",
-                # Valgfritt hos Lønn — forklarer f.eks. at fribeløpet er brukt
-                # opp og at satsen derfor hopper. Ren visning, aldri beregning.
-                "merknad": l.get("merknad") or "",
-            })
+            rene.append(
+                {
+                    "type": linje.get("type"),
+                    "label": linje.get("label") or "",
+                    "forfall": forfall,
+                    "belop": linje["belop"],
+                    # `sikkerhet` følger helt ut i flaten: en `planlagt` linje skal
+                    # ALDRI se ut som et bokført tall. Rollens egen regel.
+                    "sikkerhet": linje.get("sikkerhet") or "estimat",
+                    "kilde": linje.get("kilde") or "",
+                    "periode": linje.get("periode") or "",
+                    # Valgfritt hos Lønn — forklarer f.eks. at fribeløpet er brukt
+                    # opp og at satsen derfor hopper. Ren visning, aldri beregning.
+                    "merknad": linje.get("merknad") or "",
+                }
+            )
         return rene
 
     @api.model
@@ -341,9 +390,13 @@ class FiqGuiRgsData(models.AbstractModel):
         if Lonn is None or not hasattr(Lonn, "status_forpliktelser"):
             # Tilstand 02 for alle: modulen finnes ikke ennå.
             return [
-                {"type": kode, "navn": navn, "levert": False,
-                 "grunn": "ikke_bygd",
-                 "forklaring": "Ikke koblet til flaten ennå"}
+                {
+                    "type": kode,
+                    "navn": navn,
+                    "levert": False,
+                    "grunn": "ikke_bygd",
+                    "forklaring": "Ikke koblet til flaten ennå",
+                }
                 for kode, navn in self.LONNSTYPER
             ]
 
@@ -360,13 +413,16 @@ class FiqGuiRgsData(models.AbstractModel):
             info = status.get(kode) or {}
             if info.get("levert"):
                 continue  # tilstand 01 — tallene er i kurven
-            mangler.append({
-                "type": kode,
-                "navn": navn,
-                "levert": False,
-                "grunn": info.get("grunn") or "ikke_bygd",
-                "forklaring": info.get("forklaring") or "Ikke koblet til flaten ennå",
-            })
+            mangler.append(
+                {
+                    "type": kode,
+                    "navn": navn,
+                    "levert": False,
+                    "grunn": info.get("grunn") or "ikke_bygd",
+                    "forklaring": info.get("forklaring")
+                    or "Ikke koblet til flaten ennå",
+                }
+            )
         return mangler
 
     @api.model
@@ -455,12 +511,21 @@ class FiqGuiRgsData(models.AbstractModel):
         for p in forfalte:
             dager = (i_dag - p["invoice_date_due"]).days if p["invoice_date_due"] else 0
             motpart = p["partner_id"][1] if p["partner_id"] else "—"
-            linjer.append({
-                "tekst": "%s forfalt %s dager — %s" % (p["name"], dager, motpart),
-                "res_id": p["id"],
-            })
+            linjer.append(
+                {
+                    "tekst": "{} forfalt {} dager — {}".format(
+                        p["name"], dager, motpart
+                    ),
+                    "res_id": p["id"],
+                }
+            )
 
-        return {"haster": haster, "i_dag": i_dag_ant, "totalt": totalt, "linjer": linjer}
+        return {
+            "haster": haster,
+            "i_dag": i_dag_ant,
+            "totalt": totalt,
+            "linjer": linjer,
+        }
 
     @api.model
     def hent_kritiske_poster(self, grense=10):
@@ -530,19 +595,24 @@ class FiqGuiRgsData(models.AbstractModel):
         Altså: verktøyet finnes, men er aldri tatt i bruk.
         """
         Journal = self.env["account.journal"]
-        journaler = Journal.search([
-            ("type", "=", "bank"),
-            ("company_id", "=", self.env.company.id),
-        ])
+        journaler = Journal.search(
+            [
+                ("type", "=", "bank"),
+                ("company_id", "=", self.env.company.id),
+            ]
+        )
         # `bank_statements_source` = «undefined» betyr at ingen kilde er valgt —
         # verken filimport eller direkte kobling. Da kan ingenting avstemmes.
         uten_kilde = journaler.filtered(
-            lambda j: not j.bank_statements_source
-            or j.bank_statements_source == "undefined"
+            lambda j: (
+                not j.bank_statements_source or j.bank_statements_source == "undefined"
+            )
         )
-        linjer = self.env["account.bank.statement.line"].search_count([
-            ("company_id", "=", self.env.company.id),
-        ])
+        linjer = self.env["account.bank.statement.line"].search_count(
+            [
+                ("company_id", "=", self.env.company.id),
+            ]
+        )
 
         mulig = bool(journaler) and len(uten_kilde) < len(journaler)
         return {
@@ -550,7 +620,9 @@ class FiqGuiRgsData(models.AbstractModel):
             "uten_kilde": len(uten_kilde),
             "utskriftslinjer": linjer,
             "avstemming_mulig": mulig,
-            "merknad": "" if mulig else (
+            "merknad": ""
+            if mulig
+            else (
                 "Ingen bankjournal har en kilde for kontoutskrift. Betalinger kan "
                 "registreres, men ikke bekreftes mot bank — derfor blir bilag "
                 "stående som utestående."
@@ -595,15 +667,20 @@ class FiqGuiRgsData(models.AbstractModel):
             # på en base med 27 av dem. `invoice_ids` er koblingen som finnes fra
             # betalingen registreres, uavhengig av avstemming.
             for faktura in bet.invoice_ids:
-                if faktura.move_type not in self.INN_TYPER or not faktura.invoice_date_due:
+                if (
+                    faktura.move_type not in self.INN_TYPER
+                    or not faktura.invoice_date_due
+                ):
                     continue
-                rader.append({
-                    "partner_id": bet.partner_id.id,
-                    "motpart": bet.partner_id.display_name or "—",
-                    "dager": (bet.date - faktura.invoice_date_due).days,
-                    "belop": bet.amount,
-                    "bekreftet": bet.is_matched,  # avstemt mot bankutskrift?
-                })
+                rader.append(
+                    {
+                        "partner_id": bet.partner_id.id,
+                        "motpart": bet.partner_id.display_name or "—",
+                        "dager": (bet.date - faktura.invoice_date_due).days,
+                        "belop": bet.amount,
+                        "bekreftet": bet.is_matched,  # avstemt mot bankutskrift?
+                    }
+                )
         return rader
 
     @api.model
@@ -626,9 +703,15 @@ class FiqGuiRgsData(models.AbstractModel):
 
         per_motpart = {}
         for r in rader:
-            p = per_motpart.setdefault(r["partner_id"], {
-                "motpart": r["motpart"], "dager": [], "antall": 0, "ubekreftet": 0,
-            })
+            p = per_motpart.setdefault(
+                r["partner_id"],
+                {
+                    "motpart": r["motpart"],
+                    "dager": [],
+                    "antall": 0,
+                    "ubekreftet": 0,
+                },
+            )
             p["dager"].append(r["dager"])
             p["antall"] += 1
             if not r["bekreftet"]:
@@ -638,15 +721,17 @@ class FiqGuiRgsData(models.AbstractModel):
         for data in per_motpart.values():
             dager = data["dager"]
             snitt = sum(dager) / len(dager)
-            motparter.append({
-                "motpart": data["motpart"],
-                "antall_fakturaer": data["antall"],
-                "snitt_dager": round(snitt, 1),
-                "verste_dager": max(dager),
-                # Positivt snitt = betaler ETTER forfall. Det er dem tiltaket gjelder.
-                "betaler_sent": snitt > 0,
-                "ubekreftede": data["ubekreftet"],
-            })
+            motparter.append(
+                {
+                    "motpart": data["motpart"],
+                    "antall_fakturaer": data["antall"],
+                    "snitt_dager": round(snitt, 1),
+                    "verste_dager": max(dager),
+                    # Positivt snitt = betaler ETTER forfall. Det er dem tiltaket gjelder.
+                    "betaler_sent": snitt > 0,
+                    "ubekreftede": data["ubekreftet"],
+                }
+            )
         motparter.sort(key=lambda m: m["snitt_dager"], reverse=True)
 
         antall = len(rader)
@@ -662,9 +747,11 @@ class FiqGuiRgsData(models.AbstractModel):
                 "Måler betalingsdato mot forfallsdato — ikke bilagets betalingsstatus."
             ),
             "forbehold": (
-                "%s av %s betalinger er ikke avstemt mot bankutskrift — "
-                "registrert, men ikke bekreftet." % (ubekreftede, antall)
-            ) if ubekreftede else "",
+                f"{ubekreftede} av {antall} betalinger er ikke avstemt mot bankutskrift — "
+                "registrert, men ikke bekreftet."
+            )
+            if ubekreftede
+            else "",
             "base": self._base_merke(),
         }
 
@@ -700,9 +787,10 @@ class FiqGuiRgsData(models.AbstractModel):
                 "forslag": [],
                 "kan_anbefale": False,
                 "hvorfor_ikke": (
-                    "Grunnlaget er for tynt: %s betaling(er) fordelt på %s motpart(er). "
-                    "Et snitt fra så få tilfeller er en enkelthendelse, ikke et mønster."
-                    % (m["antall_fakturaer"], m["antall_motparter"])
+                    "Grunnlaget er for tynt: {} betaling(er) fordelt på {} motpart(er). "
+                    "Et snitt fra så få tilfeller er en enkelthendelse, ikke et mønster.".format(
+                        m["antall_fakturaer"], m["antall_motparter"]
+                    )
                 ),
                 "grunnlag": m["grunnlag"],
                 "forbehold": m["forbehold"],
@@ -724,22 +812,25 @@ class FiqGuiRgsData(models.AbstractModel):
             else:
                 tiltak = "Vurder å fakturere tidligere i leveransen"
 
-            forslag.append({
-                "motpart": mp["motpart"],
-                "tiltak": tiltak,
-                "snitt_dager": dager,
-                "verste_dager": mp["verste_dager"],
-                # Begrunnelsen står i datasettet, ikke bare i visningen — et
-                # forslag uten tallgrunnlag kan ikke overprøves av mennesket.
-                "begrunnelse": (
-                    "Betaler i snitt %s dager etter forfall, verste tilfelle %s dager."
-                    % (dager, mp["verste_dager"])
-                ),
-                "grunnlag": "%s fakturaer" % mp["antall_fakturaer"],
-                # Er noen av betalingene ubekreftet, følger forbeholdet med hit —
-                # ellers ser forslaget sikrere ut enn tallene bak det.
-                "ubekreftede": mp["ubekreftede"],
-            })
+            forslag.append(
+                {
+                    "motpart": mp["motpart"],
+                    "tiltak": tiltak,
+                    "snitt_dager": dager,
+                    "verste_dager": mp["verste_dager"],
+                    # Begrunnelsen står i datasettet, ikke bare i visningen — et
+                    # forslag uten tallgrunnlag kan ikke overprøves av mennesket.
+                    "begrunnelse": (
+                        "Betaler i snitt {} dager etter forfall, verste tilfelle {} dager.".format(
+                            dager, mp["verste_dager"]
+                        )
+                    ),
+                    "grunnlag": "{} fakturaer".format(mp["antall_fakturaer"]),
+                    # Er noen av betalingene ubekreftet, følger forbeholdet med hit —
+                    # ellers ser forslaget sikrere ut enn tallene bak det.
+                    "ubekreftede": mp["ubekreftede"],
+                }
+            )
 
         return {
             "forslag": forslag,

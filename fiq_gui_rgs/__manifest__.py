@@ -1,8 +1,8 @@
 {
     "name": "FIQ Regnskap",
-    "version": "19.0.1.25.1",
+    "version": "19.0.1.26.0",
     "summary": "AI GUI Regnskap (2.80) — visningen av AI Regnskap-Rådgiveren: likviditet, "
-               "cashflow, kritiske datoer og tidlig korrigering.",
+    "cashflow, kritiske datoer og tidlig korrigering.",
     "description": """
 FIQ GUI Regnskap — flate 2.80
 =============================
@@ -45,7 +45,6 @@ Harde regler innebygd i flaten:
             "fiq_gui_rgs/static/src/rgs.scss",
             "fiq_gui_rgs/static/src/rgs.js",
             "fiq_gui_rgs/static/src/rgs.xml",
-
         ],
     },
     "application": True,

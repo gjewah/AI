@@ -21,7 +21,6 @@ from odoo.tests import TransactionCase, tagged
 # `fiq_rgs` beholdes som mer spesifikt filter for kjøring av kun dette sporet.
 @tagged("post_install", "-at_install", "fiq", "fiq_rgs")
 class TestRgsData(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -30,27 +29,41 @@ class TestRgsData(TransactionCase):
         cls.i_dag = fields.Date.context_today(cls.Data)
 
         cls.kunde = cls.env["res.partner"].create({"name": "FIQ Testkunde AS"})
-        cls.produkt = cls.env["product.product"].create({
-            "name": "FIQ Testtjeneste",
-            "type": "service",
-        })
+        cls.produkt = cls.env["product.product"].create(
+            {
+                "name": "FIQ Testtjeneste",
+                "type": "service",
+            }
+        )
 
     @classmethod
-    def _faktura(cls, dager_til_forfall, belop=1000.0, type_="out_invoice", bokfor=True):
+    def _faktura(
+        cls, dager_til_forfall, belop=1000.0, type_="out_invoice", bokfor=True
+    ):
         """Oppretter EN faktura med kjent forfall. Negativ = forfalt."""
         forfall = fields.Date.add(cls.i_dag, days=dager_til_forfall)
-        faktura = cls.Move.create({
-            "move_type": type_,
-            "partner_id": cls.kunde.id,
-            "invoice_date": cls.i_dag,
-            "invoice_date_due": forfall,
-            "invoice_line_ids": [(0, 0, {
-                "product_id": cls.produkt.id,
-                "quantity": 1,
-                "price_unit": belop,
-                "tax_ids": [(6, 0, [])],  # uten mva — testen måler beløp, ikke avgift
-            })],
-        })
+        faktura = cls.Move.create(
+            {
+                "move_type": type_,
+                "partner_id": cls.kunde.id,
+                "invoice_date": cls.i_dag,
+                "invoice_date_due": forfall,
+                "invoice_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "product_id": cls.produkt.id,
+                            "quantity": 1,
+                            "price_unit": belop,
+                            "tax_ids": [
+                                (6, 0, [])
+                            ],  # uten mva — testen måler beløp, ikke avgift
+                        },
+                    )
+                ],
+            }
+        )
         if bokfor:
             faktura.action_post()
         return faktura
@@ -84,15 +97,18 @@ class TestRgsData(TransactionCase):
         kritisk = allerede forfalt
         Blandes de, mister daglig leder skillet mellom «følg med» og «gjør noe nå».
         """
-        self._faktura(-30, belop=5000.0)   # forfalt → kritisk
-        self._faktura(3, belop=7000.0)     # forfaller om 3 dager → haster
-        self._faktura(60, belop=9000.0)    # langt fram → ingen av delene
+        self._faktura(-30, belop=5000.0)  # forfalt → kritisk
+        self._faktura(3, belop=7000.0)  # forfaller om 3 dager → haster
+        self._faktura(60, belop=9000.0)  # langt fram → ingen av delene
 
         b = {x["key"]: x["verdi"] for x in self.Data.hent_grunnbilde()["botter"]}
         self.assertGreaterEqual(b["kritisk"], 5000.0, "Forfalt skal være kritisk")
         self.assertGreaterEqual(b["haster"], 7000.0, "Forfall om 3 dager skal haste")
-        self.assertNotIn(9000.0, [b["haster"], b["kritisk"]],
-                         "Forfall om 60 dager er hverken haster eller kritisk")
+        self.assertNotIn(
+            9000.0,
+            [b["haster"], b["kritisk"]],
+            "Forfall om 60 dager er hverken haster eller kritisk",
+        )
 
     def test_betaling_uten_avstemming_teller_fortsatt(self):
         """🔴 EKTE BEGRENSNING, ikke en bug — målt 22.07 på Dev OG fiqas Production.
@@ -128,9 +144,14 @@ class TestRgsData(TransactionCase):
         for_ = self.Data.hent_grunnbilde()["botter"][4]["verdi"]
 
         # Registrer full betaling via Odoos egen wizard — aldri rå ORM på regnskap.
-        wizard = self.env["account.payment.register"].with_context(
-            active_model="account.move", active_ids=faktura.ids,
-        ).create({})
+        wizard = (
+            self.env["account.payment.register"]
+            .with_context(
+                active_model="account.move",
+                active_ids=faktura.ids,
+            )
+            .create({})
+        )
         wizard.action_create_payments()
 
         # 🔴 MILJØAVHENGIG (målt 23.07 på to baser): utfallet av veiviseren
@@ -141,15 +162,25 @@ class TestRgsData(TransactionCase):
         # er bilaget ikke bekreftet betalt, skal det bli stående i utestående.
         etter = self.Data.hent_grunnbilde()["botter"][4]["verdi"]
         if faktura.payment_state == "in_payment":
-            self.assertNotEqual(faktura.amount_residual, 0.0,
-                                "Restbeløpet står urørt til betalingen er avstemt")
-            self.assertGreaterEqual(etter, for_,
-                                    "Uavstemt betaling skal fortsatt telle som utestående")
+            self.assertNotEqual(
+                faktura.amount_residual,
+                0.0,
+                "Restbeløpet står urørt til betalingen er avstemt",
+            )
+            self.assertGreaterEqual(
+                etter, for_, "Uavstemt betaling skal fortsatt telle som utestående"
+            )
         else:
-            self.assertEqual(faktura.payment_state, "paid",
-                             "Enten in_payment (uavstemt) eller paid (avstemt)")
-            self.assertEqual(faktura.amount_residual, 0.0,
-                             "Bekreftet betaling nullstiller restbeløpet")
+            self.assertEqual(
+                faktura.payment_state,
+                "paid",
+                "Enten in_payment (uavstemt) eller paid (avstemt)",
+            )
+            self.assertEqual(
+                faktura.amount_residual,
+                0.0,
+                "Bekreftet betaling nullstiller restbeløpet",
+            )
         # Men flaten MÅ forklare hvorfor tallet ser høyt ut — ellers leses det
         # som manglende innbetaling. Det er halve forklaringen på likviditets-
         # bildet i Production, der 19 av 20 bilag ligger slik.
@@ -159,8 +190,11 @@ class TestRgsData(TransactionCase):
         d = self.Data.hent_grunnbilde()
         self.assertIn("i_betaling_antall", d)
         if faktura.payment_state == "in_payment":
-            self.assertGreater(d["i_betaling_antall"], 0,
-                               "Grunnbildet må si fra om registrerte, uavstemte betalinger")
+            self.assertGreater(
+                d["i_betaling_antall"],
+                0,
+                "Grunnbildet må si fra om registrerte, uavstemte betalinger",
+            )
 
     # ---------- SAMLEBOKS (KR-kontrakt) ----------
 
@@ -172,7 +206,7 @@ class TestRgsData(TransactionCase):
         """
         b = self.Data.get_kr_boks()
         for felt in ("haster", "i_dag", "totalt", "linjer"):
-            self.assertIn(felt, b, "get_kr_boks mangler kontraktsfeltet %r" % felt)
+            self.assertIn(felt, b, f"get_kr_boks mangler kontraktsfeltet {felt!r}")
         self.assertIsInstance(b["totalt"], int)
         self.assertIsInstance(b["linjer"], list)
 
@@ -218,17 +252,18 @@ class TestRgsData(TransactionCase):
 
         En kurve der hver uke starter på null svarer ikke på «når blir det tight».
         """
-        self._faktura(3, belop=10000.0)    # inn uke 1
-        self._faktura(10, belop=5000.0)    # inn uke 2
+        self._faktura(3, belop=10000.0)  # inn uke 1
+        self._faktura(10, belop=5000.0)  # inn uke 2
         c = self.Data.hent_cashflow(uker=4)
         self.assertGreaterEqual(
-            c["punkter"][1]["saldo"], c["punkter"][0]["saldo"],
+            c["punkter"][1]["saldo"],
+            c["punkter"][0]["saldo"],
             "Saldo skal akkumulere: uke 2 må inkludere uke 1",
         )
 
     def test_cashflow_finner_laveste_punkt(self):
         """«Når blir det tight» = laveste punkt i kurven, ikke siste."""
-        self._faktura(5, belop=2000.0, type_="in_invoice")   # ut → drar saldo ned
+        self._faktura(5, belop=2000.0, type_="in_invoice")  # ut → drar saldo ned
         c = self.Data.hent_cashflow(uker=8)
         saldoer = [p["saldo"] for p in c["punkter"]]
         self.assertEqual(c["laveste"]["saldo"], min(saldoer + [c["start_saldo"]]))
@@ -274,9 +309,12 @@ class TestRgsData(TransactionCase):
         """
         for key in ("inn", "ut", "haster", "kritisk", "ubetalt"):
             domene = self.Data.apne_botte(key)["domain"]
-            firma_ledd = [d for d in domene if isinstance(d, (list, tuple))
-                          and d[0] == "company_id"]
-            self.assertTrue(firma_ledd, "%s mangler company_id — tenant-lekkasje" % key)
+            firma_ledd = [
+                d
+                for d in domene
+                if isinstance(d, (list, tuple)) and d[0] == "company_id"
+            ]
+            self.assertTrue(firma_ledd, f"{key} mangler company_id — tenant-lekkasje")
             self.assertEqual(firma_ledd[0][2], self.env.company.id)
 
     def test_scope_merket_teller_tilgang_ikke_aktiverte(self):
@@ -308,10 +346,17 @@ class TestRgsData(TransactionCase):
         Speiler fiqas Production: betalingen blir REGISTRERT, men ikke avstemt
         mot bank (`is_matched = False`). Motoren må finne den likevel.
         """
-        betalingsdato = fields.Date.add(faktura.invoice_date_due, days=dager_etter_forfall)
-        wizard = self.env["account.payment.register"].with_context(
-            active_model="account.move", active_ids=faktura.ids,
-        ).create({"payment_date": betalingsdato})
+        betalingsdato = fields.Date.add(
+            faktura.invoice_date_due, days=dager_etter_forfall
+        )
+        wizard = (
+            self.env["account.payment.register"]
+            .with_context(
+                active_model="account.move",
+                active_ids=faktura.ids,
+            )
+            .create({"payment_date": betalingsdato})
+        )
         wizard.action_create_payments()
         return self.env["account.payment"].search(
             [("partner_id", "=", faktura.partner_id.id)], order="id desc", limit=1
@@ -348,8 +393,11 @@ class TestRgsData(TransactionCase):
         self._betal(faktura, 10)
 
         m = self.Data.hent_betalingsmonster()
-        self.assertGreater(m["antall_fakturaer"], 0,
-                           "Motoren fant ingen betalinger — bygger den på payment_state?")
+        self.assertGreater(
+            m["antall_fakturaer"],
+            0,
+            "Motoren fant ingen betalinger — bygger den på payment_state?",
+        )
 
     def test_tynt_grunnlag_gir_ikke_anbefaling(self):
         """🛑 «ALDRI gjett»: ett tilfelle er en anekdote, ikke et mønster.
@@ -362,8 +410,10 @@ class TestRgsData(TransactionCase):
         self._betal(faktura, 5)
 
         m = self.Data.hent_betalingsmonster()
-        self.assertFalse(m["godt_nok"],
-                         "Én motpart skal ikke være godt nok grunnlag for en anbefaling")
+        self.assertFalse(
+            m["godt_nok"],
+            "Én motpart skal ikke være godt nok grunnlag for en anbefaling",
+        )
 
     def test_ubekreftede_betalinger_telles_men_merkes(self):
         """Registrert ≠ bekreftet. Begge deler må være synlig.
@@ -376,9 +426,14 @@ class TestRgsData(TransactionCase):
         self._betal(faktura, 7)
 
         m = self.Data.hent_betalingsmonster()
-        self.assertGreater(m["ubekreftede_betalinger"], 0,
-                           "Uavstemt betaling skal telles som ubekreftet")
-        self.assertTrue(m["forbehold"], "Forbeholdet må stå i datasettet, ikke bare i visningen")
+        self.assertGreater(
+            m["ubekreftede_betalinger"],
+            0,
+            "Uavstemt betaling skal telles som ubekreftet",
+        )
+        self.assertTrue(
+            m["forbehold"], "Forbeholdet må stå i datasettet, ikke bare i visningen"
+        )
 
     def test_grunnbildet_sier_fra_om_uavstemte_bilag(self):
         """🔴 «Registrert betalt» er ikke «bekreftet betalt» — og det må SYNES.
@@ -411,10 +466,15 @@ class TestRgsData(TransactionCase):
         # nettopp det. Vi tester i stedet det som ALLTID er sant: er bilaget
         # fortsatt utestående, MÅ flaten forklare hvorfor.
         if faktura.payment_state == "in_payment":
-            self.assertGreater(d["i_betaling_antall"], 0,
-                               "Grunnbildet må si fra om bilag som er registrert betalt")
-            self.assertTrue(d["i_betaling_merknad"],
-                            "Merknaden må stå i datasettet, ikke bare i visningen")
+            self.assertGreater(
+                d["i_betaling_antall"],
+                0,
+                "Grunnbildet må si fra om bilag som er registrert betalt",
+            )
+            self.assertTrue(
+                d["i_betaling_merknad"],
+                "Merknaden må stå i datasettet, ikke bare i visningen",
+            )
         else:
             # Basen avstemmer automatisk → bilaget er ute av bildet. Da skal det
             # heller ikke meldes som ventende. Feltene må uansett finnes.
@@ -437,12 +497,17 @@ class TestRgsData(TransactionCase):
         faktura = self._faktura(-45, belop=8000.0)
         betaling = self._betal(faktura, 15)
 
-        self.assertFalse(betaling.is_matched,
-                         "Forutsetningen for testen: betalingen skal være uavstemt")
+        self.assertFalse(
+            betaling.is_matched,
+            "Forutsetningen for testen: betalingen skal være uavstemt",
+        )
         m = self.Data.hent_betalingsmonster()
-        self.assertGreater(m["antall_fakturaer"], 0,
-                           "Uavstemt betaling må finnes i mønsteret — bruker koden "
-                           "reconciled_invoice_ids i stedet for invoice_ids?")
+        self.assertGreater(
+            m["antall_fakturaer"],
+            0,
+            "Uavstemt betaling må finnes i mønsteret — bruker koden "
+            "reconciled_invoice_ids i stedet for invoice_ids?",
+        )
 
     def test_malen_leser_manglerlista_slik_modellen_gir_den(self):
         """🔴 REGRESJON — Gjermund så «[object Object]» fire ganger i flaten 23.07.
@@ -460,18 +525,26 @@ class TestRgsData(TransactionCase):
         den utaktsfeilen som oppsto her.
         """
         import os
-        sti = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                           "static", "src", "rgs.xml")
+
+        sti = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "static", "src", "rgs.xml"
+        )
         with open(sti, encoding="utf-8") as f:
             mal = f.read()
 
-        self.assertNotIn("mangler.join", mal,
-                         "Malen join-er mangler-lista — det gir «[object Object]» "
-                         "siden lista inneholder objekter, ikke tekst")
+        self.assertNotIn(
+            "mangler.join",
+            mal,
+            "Malen join-er mangler-lista — det gir «[object Object]» "
+            "siden lista inneholder objekter, ikke tekst",
+        )
         # Feltene modellen faktisk leverer må brukes, ellers vises ingenting.
         self.assertIn("m.navn", mal, "Malen må vise navnet på hver manglende type")
-        self.assertIn("m.forklaring", mal,
-                      "Malen må vise forklaringen — hele poenget med å strukturere lista")
+        self.assertIn(
+            "m.forklaring",
+            mal,
+            "Malen må vise forklaringen — hele poenget med å strukturere lista",
+        )
 
         # Og feltene må finnes i det modellen gir, ikke bare i malen.
         for m in self.Data.hent_cashflow()["mangler"]:
@@ -482,13 +555,17 @@ class TestRgsData(TransactionCase):
         # og også den ville gitt «[object Object]» om noen join-et lista.
         self.assertNotIn("korrigering.forslag.join", mal)
         for felt in ("f.motpart", "f.tiltak", "f.begrunnelse"):
-            self.assertIn(felt, mal,
-                          "Malen må vise %r — et forslag uten begrunnelse "
-                          "kan ikke overprøves av mennesket" % felt)
+            self.assertIn(
+                felt,
+                mal,
+                f"Malen må vise {felt!r} — et forslag uten begrunnelse "
+                "kan ikke overprøves av mennesket",
+            )
         # Årsaken når vi IKKE kan anbefale må også vises. Et tomt forslagsfelt
         # leses som «ingen tiltak nødvendig» — helt annen beskjed enn «vet ikke».
-        self.assertIn("hvorfor_ikke", mal,
-                      "Malen må vise hvorfor det ikke gis anbefaling")
+        self.assertIn(
+            "hvorfor_ikke", mal, "Malen må vise hvorfor det ikke gis anbefaling"
+        )
 
     def test_mangler_sier_hvorfor_ikke_bare_hva(self):
         """🔴 TRE TILSTANDER, IKKE TO (funnet 23.07 sammen med 2.20 Lønn).
@@ -506,9 +583,10 @@ class TestRgsData(TransactionCase):
         self.assertTrue(c["mangler"], "Lista skal ikke være tom før alt er koblet")
         for m in c["mangler"]:
             for felt in ("type", "navn", "grunn", "forklaring"):
-                self.assertIn(felt, m, "mangler-linja mangler feltet %r" % felt)
-            self.assertTrue(m["forklaring"],
-                            "En manglende type må forklares, ikke bare navngis")
+                self.assertIn(felt, m, f"mangler-linja mangler feltet {felt!r}")
+            self.assertTrue(
+                m["forklaring"], "En manglende type må forklares, ikke bare navngis"
+            )
 
     def test_grunnen_hentes_fra_lonn_naar_modulen_finnes(self):
         """🔴 REGRESJON (min egen feil, 1.22.3 → 1.22.4) — koblingen var DØD.
@@ -523,24 +601,32 @@ class TestRgsData(TransactionCase):
         Denne testen sammenligner flatens `grunn` med Lønns egen status. Er de
         ulike, er koblingen brutt — uansett hva de andre testene sier.
         """
-        if not self.env["ir.model"].sudo().search_count(
-                [("model", "=", "fiq.lonnsforpliktelse")]):
+        if (
+            not self.env["ir.model"]
+            .sudo()
+            .search_count([("model", "=", "fiq.lonnsforpliktelse")])
+        ):
             self.skipTest("Lønnsmodulen er ikke installert på denne basen")
 
         i_dag = fields.Date.context_today(self.Data)
         status = self.env["fiq.lonnsforpliktelse"].status_forpliktelser(
-            i_dag, fields.Date.add(i_dag, days=84))
+            i_dag, fields.Date.add(i_dag, days=84)
+        )
         mine = {m["type"]: m["grunn"] for m in self.Data.hent_cashflow()["mangler"]}
 
         for kode, info in status.items():
             if info.get("levert"):
-                self.assertNotIn(kode, mine,
-                                 "%s er levert av Lønn og skal være ute av lista" % kode)
+                self.assertNotIn(
+                    kode, mine, f"{kode} er levert av Lønn og skal være ute av lista"
+                )
                 continue
             self.assertEqual(
-                mine.get(kode), info.get("grunn"),
-                "Flaten melder «%s» for %s, men Lønn sier «%s» — koblingen er brutt"
-                % (mine.get(kode), kode, info.get("grunn")))
+                mine.get(kode),
+                info.get("grunn"),
+                "Flaten melder «{}» for {}, men Lønn sier «{}» — koblingen er brutt".format(
+                    mine.get(kode), kode, info.get("grunn")
+                ),
+            )
 
     def _falsk_lonn(self, dager_frem, belop=50000.0, sikkerhet="planlagt"):
         """Setter inn en kjent lønnsforpliktelse i kurven, uten lønnsmodulen.
@@ -556,17 +642,23 @@ class TestRgsData(TransactionCase):
         og merking av dem. Deres side testes hos dem (test 25 hos Lønn).
         """
         i_dag = fields.Date.context_today(self.Data)
-        linjer = [{
-            "type": "aga", "label": "Arbeidsgiveravgift",
-            "forfall": fields.Date.add(i_dag, days=dager_frem),
-            "belop": belop, "sikkerhet": sikkerhet, "kilde": "Odoo",
-            "periode": "Termin 1 2026", "merknad": "",
-        }]
+        linjer = [
+            {
+                "type": "aga",
+                "label": "Arbeidsgiveravgift",
+                "forfall": fields.Date.add(i_dag, days=dager_frem),
+                "belop": belop,
+                "sikkerhet": sikkerhet,
+                "kilde": "Odoo",
+                "periode": "Termin 1 2026",
+                "merknad": "",
+            }
+        ]
         Data = type(self.Data)
         original = Data._hent_lonnslinjer
 
         def falsk(self_, fra, til):
-            return [l for l in linjer if fra <= l["forfall"] < til]
+            return [linje for linje in linjer if fra <= linje["forfall"] < til]
 
         Data._hent_lonnslinjer = api.model(falsk)
         self.addCleanup(setattr, Data, "_hent_lonnslinjer", original)
@@ -588,7 +680,9 @@ class TestRgsData(TransactionCase):
         # 🔴 VAKTPOST: uten denne itererer testen over en tom liste og passerer
         # alltid — feilen 2.20 Lønn fant i sine egne kontrakttester 23.07.
         antall = sum(len(p["lonn_linjer"]) for p in c["punkter"])
-        self.assertEqual(antall, 1, "Testen må ha data å måle på, ellers beviser den ingenting")
+        self.assertEqual(
+            antall, 1, "Testen må ha data å måle på, ellers beviser den ingenting"
+        )
 
         for p in c["punkter"]:
             for linje in p["lonn_linjer"]:
@@ -596,8 +690,10 @@ class TestRgsData(TransactionCase):
                 til = fields.Date.add(fra, days=7)
                 self.assertTrue(
                     fra <= linje["forfall"] < til,
-                    "Lønnslinje med forfall %s havnet i uka som starter %s"
-                    % (linje["forfall"], p["fra"]))
+                    "Lønnslinje med forfall {} havnet i uka som starter {}".format(
+                        linje["forfall"], p["fra"]
+                    ),
+                )
 
     def test_planlagt_lonn_ser_aldri_ut_som_bokfort(self):
         """🛑 «ALDRI gjett — regnskap er juridisk bindende.»
@@ -615,14 +711,20 @@ class TestRgsData(TransactionCase):
         funnet = []
         for p in self.Data.hent_cashflow()["punkter"]:
             for linje in p["lonn_linjer"]:
-                self.assertIn(linje["sikkerhet"], gyldige,
-                              "Ukjent sikkerhetsnivå %r" % linje["sikkerhet"])
+                self.assertIn(
+                    linje["sikkerhet"],
+                    gyldige,
+                    "Ukjent sikkerhetsnivå {!r}".format(linje["sikkerhet"]),
+                )
                 funnet.append(linje["sikkerhet"])
 
         # Vaktpost mot tom-liste-fella, og bevis på at nivået faktisk bæres helt
         # ut i kurven — ikke bare at det er gyldig når det finnes.
-        self.assertEqual(funnet, ["planlagt"],
-                         "«planlagt» må følge uendret ut i flaten, ikke bli bokført")
+        self.assertEqual(
+            funnet,
+            ["planlagt"],
+            "«planlagt» må følge uendret ut i flaten, ikke bli bokført",
+        )
 
     def test_lonn_teller_med_i_ut_og_saldo(self):
         """Lønn er penger UT — den må påvirke saldoen, ikke bare vises.
@@ -635,19 +737,25 @@ class TestRgsData(TransactionCase):
         punkter = self.Data.hent_cashflow()["punkter"]
 
         # Vaktpost: uten lønn i kurven ville løkka under ikke bevist noe.
-        self.assertGreater(sum(p["lonn_ut"] for p in punkter), 0,
-                           "Testen må ha et lønnsbeløp å måle på")
+        self.assertGreater(
+            sum(p["lonn_ut"] for p in punkter),
+            0,
+            "Testen må ha et lønnsbeløp å måle på",
+        )
 
         for p in punkter:
             self.assertGreaterEqual(
-                p["ut"], p["lonn_ut"],
-                "Lønnsbeløpet må være inkludert i ukas «ut», ikke stå utenfor")
+                p["ut"],
+                p["lonn_ut"],
+                "Lønnsbeløpet må være inkludert i ukas «ut», ikke stå utenfor",
+            )
 
         # Og saldoen må faktisk trekkes ned — ellers vises likviditet firmaet
         # ikke har. `lonn_ut` skal være en del av regnestykket, ikke pynt.
         uke = next(p for p in punkter if p["lonn_ut"] > 0)
-        self.assertGreaterEqual(uke["ut"], 50000.0,
-                                "Lønnsutbetalingen må slå ut i ukas «ut»")
+        self.assertGreaterEqual(
+            uke["ut"], 50000.0, "Lønnsutbetalingen må slå ut i ukas «ut»"
+        )
 
     def test_flaten_virker_uten_lonnsmodulen(self):
         """🛑 `fiq_rgs_lonn` er IKKE en avhengighet — og skal aldri bli det.
@@ -669,20 +777,27 @@ class TestRgsData(TransactionCase):
         # var å låse et miljø, ikke en regel — Dev `35326209` har den installert,
         # Production har den ikke. Testen må gjelde BEGGE veier, ellers feiler
         # den på annenhver base.
-        finnes = bool(self.env["ir.model"].sudo().search_count(
-            [("model", "=", "fiq.lonnsforpliktelse")]))
+        finnes = bool(
+            self.env["ir.model"]
+            .sudo()
+            .search_count([("model", "=", "fiq.lonnsforpliktelse")])
+        )
         c = self.Data.hent_cashflow()
 
-        self.assertIsInstance(c["mangler"], list,
-                              "Flaten må svare uansett om lønnsmodulen finnes")
+        self.assertIsInstance(
+            c["mangler"], list, "Flaten må svare uansett om lønnsmodulen finnes"
+        )
         for m in c["mangler"]:
             self.assertTrue(m["forklaring"], "Hver manglende type må forklares")
 
         if not finnes:
             # Uten modulen: alle fire meldes som ikke bygd — aldri en tom liste,
             # for en tom `mangler` leses som «alt er med i kurven».
-            self.assertEqual(len(c["mangler"]), 4,
-                             "Uten lønnsmodulen skal alle fire meldes som manglende")
+            self.assertEqual(
+                len(c["mangler"]),
+                4,
+                "Uten lønnsmodulen skal alle fire meldes som manglende",
+            )
             self.assertTrue(all(m["grunn"] == "ikke_bygd" for m in c["mangler"]))
 
     def test_bilag_forsvinner_forst_naar_bekreftet_mot_bank(self):
@@ -709,13 +824,15 @@ class TestRgsData(TransactionCase):
         # bilaget bli stående. Er den bekreftet, skal det ut.
         if faktura.payment_state == "in_payment":
             self.assertGreaterEqual(
-                etter, for_,
+                etter,
+                for_,
                 "Registrert-men-ubekreftet betaling skal IKKE fjerne bilaget "
-                "fra utestående (Gjermund 08.10)")
+                "fra utestående (Gjermund 08.10)",
+            )
         else:
             self.assertLessEqual(
-                etter, for_,
-                "Bekreftet betaling skal ta bilaget UT av utestående")
+                etter, for_, "Bekreftet betaling skal ta bilaget UT av utestående"
+            )
 
     def test_flaten_sier_om_bankavstemming_er_mulig(self):
         """Tallet må kunne forklare seg selv — ellers leses det som slurv.
@@ -726,14 +843,20 @@ class TestRgsData(TransactionCase):
         eller kilde, og det finnes 0 kontoutskriftslinjer.
         """
         b = self.Data.hent_grunnbilde()["bankavstemming"]
-        for felt in ("bankjournaler", "uten_kilde", "utskriftslinjer",
-                     "avstemming_mulig", "merknad"):
-            self.assertIn(felt, b, "bankavstemming mangler feltet %r" % felt)
+        for felt in (
+            "bankjournaler",
+            "uten_kilde",
+            "utskriftslinjer",
+            "avstemming_mulig",
+            "merknad",
+        ):
+            self.assertIn(felt, b, f"bankavstemming mangler feltet {felt!r}")
         # Er avstemming umulig, MÅ merknaden forklare hvorfor — ellers står
         # brukeren igjen med et tall uten årsak.
         if not b["avstemming_mulig"]:
-            self.assertTrue(b["merknad"],
-                            "Umulig avstemming må forklares, ikke bare flagges")
+            self.assertTrue(
+                b["merknad"], "Umulig avstemming må forklares, ikke bare flagges"
+            )
 
     # ---------- TIDLIG KORRIGERING (08.03.02) ----------
 
@@ -746,7 +869,8 @@ class TestRgsData(TransactionCase):
         """
         data = {
             "motparter": motparter,
-            "antall_fakturaer": antall_fakturaer if antall_fakturaer is not None
+            "antall_fakturaer": antall_fakturaer
+            if antall_fakturaer is not None
             else sum(m["antall_fakturaer"] for m in motparter),
             "antall_motparter": len(motparter),
             "ubekreftede_betalinger": 0,
@@ -762,9 +886,14 @@ class TestRgsData(TransactionCase):
 
     @staticmethod
     def _mp(navn, snitt, antall=5, verste=None, ubekreftede=0):
-        return {"motpart": navn, "snitt_dager": snitt, "antall_fakturaer": antall,
-                "verste_dager": verste if verste is not None else snitt + 10,
-                "betaler_sent": snitt > 0, "ubekreftede": ubekreftede}
+        return {
+            "motpart": navn,
+            "snitt_dager": snitt,
+            "antall_fakturaer": antall,
+            "verste_dager": verste if verste is not None else snitt + 10,
+            "betaler_sent": snitt > 0,
+            "ubekreftede": ubekreftede,
+        }
 
     def test_tier_helt_naar_grunnlaget_ikke_baerer(self):
         """🛑 «ALDRI gjett» — ingen anbefaling på ett tilfelle.
@@ -776,14 +905,16 @@ class TestRgsData(TransactionCase):
         Testen låser at vi da gir NULL forslag — og sier hvorfor, i stedet for
         å tie stille. Et tomt svar uten årsak leses som «ingen tiltak nødvendig».
         """
-        self._falsk_monster([self._mp("Enslig AS", 40, antall=1)],
-                            antall_fakturaer=1, godt_nok=False)
+        self._falsk_monster(
+            [self._mp("Enslig AS", 40, antall=1)], antall_fakturaer=1, godt_nok=False
+        )
         r = self.Data.hent_tidlig_korrigering()
 
         self.assertFalse(r["kan_anbefale"])
         self.assertEqual(r["forslag"], [], "Tynt grunnlag skal gi NULL forslag")
-        self.assertTrue(r["hvorfor_ikke"],
-                        "Fraværet av forslag må forklares, ikke bare være tomt")
+        self.assertTrue(
+            r["hvorfor_ikke"], "Fraværet av forslag må forklares, ikke bare være tomt"
+        )
 
     def test_foreslaar_tiltak_som_passer_forsinkelsen(self):
         """Tiltaket må stå i forhold til hvor sent kunden faktisk betaler.
@@ -792,11 +923,13 @@ class TestRgsData(TransactionCase):
         Foreslår vi forskuddsfakturering til en som betaler 6 dager for sent,
         skader vi kundeforholdet uten grunn.
         """
-        self._falsk_monster([
-            self._mp("Treig AS", 45),      # grovt forsinket
-            self._mp("Litt sen AS", 16),   # moderat
-            self._mp("Nesten AS", 7),      # så vidt over terskelen
-        ])
+        self._falsk_monster(
+            [
+                self._mp("Treig AS", 45),  # grovt forsinket
+                self._mp("Litt sen AS", 16),  # moderat
+                self._mp("Nesten AS", 7),  # så vidt over terskelen
+            ]
+        )
         r = self.Data.hent_tidlig_korrigering()
 
         self.assertEqual(len(r["forslag"]), 3, "Alle tre skal få forslag")
@@ -811,16 +944,19 @@ class TestRgsData(TransactionCase):
         Uten denne grensa ville flaten foreslått innstramminger mot gode
         betalere fordi snittet var 1–2 dager over — støy presentert som funn.
         """
-        self._falsk_monster([
-            self._mp("Punktlig AS", 2),     # under terskelen
-            self._mp("Forskudd AS", -5),    # betaler FØR forfall
-            self._mp("Sen AS", 20),         # skal få forslag
-        ])
+        self._falsk_monster(
+            [
+                self._mp("Punktlig AS", 2),  # under terskelen
+                self._mp("Forskudd AS", -5),  # betaler FØR forfall
+                self._mp("Sen AS", 20),  # skal få forslag
+            ]
+        )
         r = self.Data.hent_tidlig_korrigering()
 
         navn = [f["motpart"] for f in r["forslag"]]
-        self.assertEqual(navn, ["Sen AS"],
-                         "Bare den som faktisk betaler sent skal få et tiltak")
+        self.assertEqual(
+            navn, ["Sen AS"], "Bare den som faktisk betaler sent skal få et tiltak"
+        )
 
     def test_tynt_grunnlag_per_motpart_utelates(self):
         """Samlet grunnlag kan bære, uten at det gjør det for HVER motpart.
@@ -828,16 +964,21 @@ class TestRgsData(TransactionCase):
         En kunde med én faktura skal ikke få et forslag mot seg selv om
         totalen har nok data. Snittet sier ingenting om akkurat den kunden.
         """
-        self._falsk_monster([
-            self._mp("Godt grunnlag AS", 30, antall=8),
-            self._mp("Én faktura AS", 60, antall=1),
-        ])
+        self._falsk_monster(
+            [
+                self._mp("Godt grunnlag AS", 30, antall=8),
+                self._mp("Én faktura AS", 60, antall=1),
+            ]
+        )
         r = self.Data.hent_tidlig_korrigering()
 
         navn = [f["motpart"] for f in r["forslag"]]
         self.assertEqual(navn, ["Godt grunnlag AS"])
-        self.assertNotIn("Én faktura AS", navn,
-                         "Én faktura er ikke grunnlag for et tiltak mot en kunde")
+        self.assertNotIn(
+            "Én faktura AS",
+            navn,
+            "Én faktura er ikke grunnlag for et tiltak mot en kunde",
+        )
 
     def test_forslaget_baerer_sin_egen_begrunnelse(self):
         """🛑 Rådgiver, ikke beslutter — mennesket må kunne overprøve forslaget.
@@ -851,9 +992,15 @@ class TestRgsData(TransactionCase):
 
         self.assertEqual(len(r["forslag"]), 1, "Testen må ha et forslag å måle på")
         f = r["forslag"][0]
-        for felt in ("motpart", "tiltak", "begrunnelse", "grunnlag",
-                     "snitt_dager", "verste_dager"):
-            self.assertIn(felt, f, "Forslaget mangler %r" % felt)
+        for felt in (
+            "motpart",
+            "tiltak",
+            "begrunnelse",
+            "grunnlag",
+            "snitt_dager",
+            "verste_dager",
+        ):
+            self.assertIn(felt, f, f"Forslaget mangler {felt!r}")
         self.assertIn("22", f["begrunnelse"])
         self.assertIn("41", f["begrunnelse"])
         self.assertIn("6", f["grunnlag"])
@@ -866,6 +1013,7 @@ class TestRgsData(TransactionCase):
         kan et demodata-tall leses som ekte i en rapport bygget oppå flaten.
         """
         m = self.Data.hent_betalingsmonster()
-        self.assertIn("url", m["base"], "Base-merket må oppgi server-URL, ikke bare firma")
+        self.assertIn(
+            "url", m["base"], "Base-merket må oppgi server-URL, ikke bare firma"
+        )
         self.assertIn("firma", m["base"])
-
