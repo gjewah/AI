@@ -179,6 +179,108 @@ class TestFinData(TransactionCase):
             "Ukjent nøkkel skal gi False, ikke en tilfeldig handling",
         )
 
+    # ---------- GRENSER OG KANTER ----------
+
+    def test_noyaktig_paa_terskelen_teller_med(self):
+        """🔴 GRENSE: ≥10 000 og ≥30 dager — ikke «over».
+
+        Fanger: at noen bytter >= til > ved en opprydding. En kunde som skylder
+        nøyaktig 10 000 i nøyaktig 30 dager ville da forsvunnet fra faresignalet
+        uten at noe annet endret seg. Grensetilfeller er der regler ryker først.
+        """
+        kunde = self._kunde("FIQ Test Eksakt Terskel AS")
+        self._faktura(kunde, -self.Data.FARE_DAGER, self.Data.FARE_BELOP)
+        self.assertIn("FIQ Test Eksakt Terskel AS", self._faresignal_navn())
+
+    def test_ett_hakk_under_terskelen_teller_ikke(self):
+        """Motstykket: én krone og én dag under skal IKKE gi faresignal.
+
+        Fanger: at terskelen flyttes stille. Uten begge sider vet vi ikke om
+        grensen ligger der vi tror — bare at den finnes et sted.
+        """
+        kunde = self._kunde("FIQ Test Under Terskel AS")
+        self._faktura(kunde, -(self.Data.FARE_DAGER - 1), self.Data.FARE_BELOP - 1)
+        self.assertNotIn("FIQ Test Under Terskel AS", self._faresignal_navn())
+
+    def test_kreditnota_trekker_ned_kundens_utestaaende(self):
+        """🔴 En kreditnota reduserer det kunden faktisk skylder.
+
+        Fanger: at `out_refund` faller ut av domenet ved en opprydding. Da ville
+        en kunde med 25 000 i faktura og 20 000 i kreditnota blitt flagget for
+        25 000 — et faresignal på penger som er kreditert bort. Det er feil tall
+        foran daglig leder, ikke en kosmetisk bug.
+        """
+        kunde = self._kunde("FIQ Test Kreditnota AS")
+        self._faktura(kunde, -60, 25000.0)
+        kreditnota = self.Move.create(
+            {
+                "move_type": "out_refund",
+                "partner_id": kunde.id,
+                "invoice_date": self.i_dag,
+                "invoice_date_due": fields.Date.add(self.i_dag, days=-60),
+                "invoice_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "product_id": self.produkt.id,
+                            "quantity": 1,
+                            "price_unit": 20000.0,
+                            "tax_ids": [(6, 0, [])],
+                        },
+                    )
+                ],
+            }
+        )
+        kreditnota.action_post()
+        # 25 000 − 20 000 = 5 000 → under terskelen, ikke lenger faresignal.
+        self.assertNotIn("FIQ Test Kreditnota AS", self._faresignal_navn())
+
+    # ---------- KONTRAKT MOT KONTROLLROMMET ----------
+
+    def test_boksen_viser_hoyeste_beloep_forst(self):
+        """🔴 KR viser bare de 5 øverste linjene. Rekkefølgen ER innholdet.
+
+        Fanger: at sorteringen faller ut eller snus. Da ville daglig leder sett
+        de fem minste kravene i stedet for de fem største — boksen ville sett
+        riktig ut og vært verdiløs. Stille feil, verste sorten.
+        """
+        for belop in (15000.0, 90000.0, 40000.0):
+            self._faktura(self._kunde(f"FIQ Sorttest {int(belop)} AS"), -60, belop)
+        linjer = self.Data.get_kr_boks()["linjer"]
+        beloep = [
+            int(t) for linje in linjer for t in linje["tekst"].split() if t.isdigit()
+        ]
+        self.assertEqual(
+            beloep, sorted(beloep, reverse=True), "Største krav skal stå øverst"
+        )
+
+    def test_boksen_klipper_paa_fem_linjer(self):
+        """KR klipper uansett på 5 — men vi skal ikke sende mer enn vi lover.
+
+        Fanger: at `[:5]` fjernes. Med 40 kunder ville boksen sendt 40 linjer
+        over nettverket ved hver forsidelasting, og KR ville kastet 35 av dem.
+        """
+        for i in range(7):
+            self._faktura(self._kunde(f"FIQ Klipptest {i} AS"), -60, 20000.0 + i)
+        self.assertLessEqual(len(self.Data.get_kr_boks()["linjer"]), 5)
+
+    def test_haster_teller_kunder_ikke_fakturaer(self):
+        """🔴 2.70 teller KUNDER, 2.80 teller BILAG. Blandes de, er tallene like.
+
+        Fanger: at noen «forenkler» ved å telle fakturaer. Én kunde med tre
+        forfalte fakturaer skal gi haster=1, ikke 3 — ellers svarer boksen på
+        2.80s spørsmål, og de to flatene blir duplikater.
+        """
+        kunde = self._kunde("FIQ Test Tre Fakturaer AS")
+        for _n in range(3):
+            self._faktura(kunde, -60, 15000.0)
+        self.assertEqual(
+            self.Data.get_kr_boks()["haster"],
+            1,
+            "Tre fakturaer fra SAMME kunde er ÉN kunde med faresignal",
+        )
+
     # ---------- TENANT ----------
 
     def test_kun_eget_firma(self):
