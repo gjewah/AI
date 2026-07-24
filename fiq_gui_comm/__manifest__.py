@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 {
     "name": "Kommunikasjon",
-    "version": "19.0.1.10.4",
+    "version": "19.0.1.10.5",
     "summary": "FIQ Kommunikasjon – paraply-flaten for ALL kommunikasjon. "
-               "E-post, WhatsApp, Teams og chat er KANALER inne i denne flaten.",
+    "E-post, WhatsApp, Teams og chat er KANALER inne i denne flaten.",
     "description": """
 FIQ Kommunikasjon (paraply)
 ===========================
@@ -46,7 +45,6 @@ Kommunikasjon = paraply. E-post = ÉN kanal inne i den, vises ikke i hovedmenyen
             "fiq_gui_comm/static/src/comm.scss",
             "fiq_gui_comm/static/src/comm.js",
             "fiq_gui_comm/static/src/comm.xml",
-
         ],
     },
     "application": True,

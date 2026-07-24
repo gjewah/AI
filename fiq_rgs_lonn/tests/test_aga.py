@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from odoo.tests import TransactionCase, tagged
 
 
@@ -12,14 +11,17 @@ class TestAgaSatser(TransactionCase):
         # (verifisert i hr_payroll/models/hr_rule_parameter.py:75).
         # Datoen avgjoer hvilken versjon av satsen som gjelder.
         from datetime import date
+
         return self.env["hr.rule.parameter"]._get_parameter_from_code(
-            kode, date(2026, 6, 1),
+            kode,
+            date(2026, 6, 1),
         )
 
     def test_01_alle_syv_soner_finnes(self):
         satser = self._sats("no_aga_sonesatser")
         self.assertEqual(
-            sorted(satser), ["1", "1a", "2", "3", "4", "4a", "5"],
+            sorted(satser),
+            ["1", "1a", "2", "3", "4", "4a", "5"],
             "Norge har sju AGA-soner. Mangler en, blir loennskjoeringen feil "
             "for alle i den sonen.",
         )
@@ -27,8 +29,15 @@ class TestAgaSatser(TransactionCase):
     def test_02_satsene_stemmer_med_stortingsvedtaket(self):
         # Kilde: FOR-2025-12-18-2748 § 3 foerste ledd, bekreftet mot
         # skatteetaten.no/satser/arbeidsgiveravgift.
-        fasit = {"1": 14.1, "1a": 10.6, "2": 10.6, "3": 6.4,
-                 "4": 5.1, "4a": 7.9, "5": 0.0}
+        fasit = {
+            "1": 14.1,
+            "1a": 10.6,
+            "2": 10.6,
+            "3": 6.4,
+            "4": 5.1,
+            "4a": 7.9,
+            "5": 0.0,
+        }
         self.assertEqual(self._sats("no_aga_sonesatser"), fasit)
 
     def test_03_fribelop_2026(self):
@@ -46,13 +55,14 @@ class TestAgaSatser(TransactionCase):
 
 @tagged("post_install", "-at_install", "fiq")
 class TestAgaSone(TransactionCase):
-
     def setUp(self):
         super().setUp()
-        self.company = self.env["res.company"].create({
-            "name": "Testfirma AGA",
-            "fiq_aga_sone": "2",
-        })
+        self.company = self.env["res.company"].create(
+            {
+                "name": "Testfirma AGA",
+                "fiq_aga_sone": "2",
+            }
+        )
 
     def test_05_selskapets_sone_er_hovedregelen(self):
         slip = self.env["hr.payslip"].new({"company_id": self.company.id})
@@ -74,10 +84,12 @@ class TestAgaFribelop(TransactionCase):
 
     def setUp(self):
         super().setUp()
-        self.company = self.env["res.company"].create({
-            "name": "Sone Ia-firma",
-            "fiq_aga_sone": "1a",
-        })
+        self.company = self.env["res.company"].create(
+            {
+                "name": "Sone Ia-firma",
+                "fiq_aga_sone": "1a",
+            }
+        )
 
     def _belop(self, grunnlag, brukt=0.0, aar=2026):
         # Grunnlaget sendes inn som parameter. Metoder paa Odoo-modeller kan
@@ -88,14 +100,18 @@ class TestAgaFribelop(TransactionCase):
         # 🔑 `fiq_aga_fribelop_aar` MAA settes sammen med forbruket. Uten det
         # ser aarsskifte-logikken et annet aar og nullstiller telleren — som
         # er RIKTIG oppfoersel, og som avslørte at disse testene manglet aaret.
-        self.company.write({
-            "fiq_aga_fribelop_brukt": brukt,
-            "fiq_aga_fribelop_aar": aar,
-        })
-        slip = self.env["hr.payslip"].new({
-            "company_id": self.company.id,
-            "date_to": "%s-06-30" % aar,
-        })
+        self.company.write(
+            {
+                "fiq_aga_fribelop_brukt": brukt,
+                "fiq_aga_fribelop_aar": aar,
+            }
+        )
+        slip = self.env["hr.payslip"].new(
+            {
+                "company_id": self.company.id,
+                "date_to": f"{aar}-06-30",
+            }
+        )
         return slip.fiq_aga_belop(grunnlag=grunnlag)
 
     def test_07_under_fribelopet_gir_redusert_sats(self):
@@ -104,7 +120,9 @@ class TestAgaFribelop(TransactionCase):
 
     def test_08_oppbrukt_fribelop_gir_full_sats(self):
         self.assertAlmostEqual(
-            self._belop(1_000_000, brukt=850_000), 141_000.0, places=2,
+            self._belop(1_000_000, brukt=850_000),
+            141_000.0,
+            places=2,
         )
 
     def test_09_delvis_fribelop_splitter_grunnlaget(self):
@@ -127,17 +145,23 @@ class TestAgaFribelop(TransactionCase):
         Denne testen finnes fordi test_08 og test_09 feilet paa nettopp dette:
         de satte forbruket uten aaret, og aarsskifte-logikken nullstilte
         korrekt. Feilen var i testene, ikke i beregningen."""
-        self.company.write({
-            "fiq_aga_fribelop_brukt": 850_000,
-            "fiq_aga_fribelop_aar": 2025,
-        })
-        slip = self.env["hr.payslip"].new({
-            "company_id": self.company.id,
-            "date_to": "2026-06-30",
-        })
+        self.company.write(
+            {
+                "fiq_aga_fribelop_brukt": 850_000,
+                "fiq_aga_fribelop_aar": 2025,
+            }
+        )
+        slip = self.env["hr.payslip"].new(
+            {
+                "company_id": self.company.id,
+                "date_to": "2026-06-30",
+            }
+        )
         # Fjoraarets forbruk er utdatert -> redusert sats gjelder igjen.
         self.assertAlmostEqual(
-            slip.fiq_aga_belop(grunnlag=1_000_000), 106_000.0, places=2,
+            slip.fiq_aga_belop(grunnlag=1_000_000),
+            106_000.0,
+            places=2,
         )
 
 
@@ -148,37 +172,48 @@ class TestFribelopAarsskifte(TransactionCase):
 
     def setUp(self):
         super().setUp()
-        self.company = self.env["res.company"].create({
-            "name": "Årsskifte-firma",
-            "fiq_aga_sone": "1a",
-        })
+        self.company = self.env["res.company"].create(
+            {
+                "name": "Årsskifte-firma",
+                "fiq_aga_sone": "1a",
+            }
+        )
 
     def test_13_nytt_aar_gir_fullt_fribelop(self):
-        self.company.write({
-            "fiq_aga_fribelop_brukt": 850_000,
-            "fiq_aga_fribelop_aar": 2025,
-        })
+        self.company.write(
+            {
+                "fiq_aga_fribelop_brukt": 850_000,
+                "fiq_aga_fribelop_aar": 2025,
+            }
+        )
         self.assertEqual(
-            self.company.fiq_aga_fribelop_gjenstaaende(850_000, 2026), 850_000,
+            self.company.fiq_aga_fribelop_gjenstaaende(850_000, 2026),
+            850_000,
             "Fribeløpet skal være helt tilbake i et nytt år.",
         )
 
     def test_14_samme_aar_beholder_forbruket(self):
-        self.company.write({
-            "fiq_aga_fribelop_brukt": 300_000,
-            "fiq_aga_fribelop_aar": 2026,
-        })
+        self.company.write(
+            {
+                "fiq_aga_fribelop_brukt": 300_000,
+                "fiq_aga_fribelop_aar": 2026,
+            }
+        )
         self.assertEqual(
-            self.company.fiq_aga_fribelop_gjenstaaende(850_000, 2026), 550_000,
+            self.company.fiq_aga_fribelop_gjenstaaende(850_000, 2026),
+            550_000,
         )
 
     def test_15_forbruk_kan_ikke_bli_negativt(self):
-        self.company.write({
-            "fiq_aga_fribelop_brukt": 900_000,
-            "fiq_aga_fribelop_aar": 2026,
-        })
+        self.company.write(
+            {
+                "fiq_aga_fribelop_brukt": 900_000,
+                "fiq_aga_fribelop_aar": 2026,
+            }
+        )
         self.assertEqual(
-            self.company.fiq_aga_fribelop_gjenstaaende(850_000, 2026), 0.0,
+            self.company.fiq_aga_fribelop_gjenstaaende(850_000, 2026),
+            0.0,
         )
 
 
@@ -189,9 +224,11 @@ class TestStatusForpliktelser(TransactionCase):
 
     def test_16_manglende_sone_gir_grunn_ikke_stillhet(self):
         company = self.env["res.company"].create({"name": "Uten sone"})
-        status = self.env["fiq.lonnsforpliktelse"].with_company(
-            company
-        ).status_forpliktelser("2026-01-01", "2026-12-31")
+        status = (
+            self.env["fiq.lonnsforpliktelse"]
+            .with_company(company)
+            .status_forpliktelser("2026-01-01", "2026-12-31")
+        )
         self.assertFalse(status["aga"]["levert"])
         self.assertEqual(status["aga"]["grunn"], "mangler_sone")
         self.assertTrue(
@@ -201,7 +238,8 @@ class TestStatusForpliktelser(TransactionCase):
 
     def test_17_ikke_bygde_typer_er_merket(self):
         status = self.env["fiq.lonnsforpliktelse"].status_forpliktelser(
-            "2026-01-01", "2026-12-31",
+            "2026-01-01",
+            "2026-12-31",
         )
         for type_ in ("lonn", "feriepenger", "otp"):
             self.assertEqual(status[type_]["grunn"], "ikke_bygget")
@@ -210,7 +248,8 @@ class TestStatusForpliktelser(TransactionCase):
         # Speiler `mangler`-lista i fiq_gui_rgs. Mangler en type her, kan RGS
         # ikke avgjøre om den skal stå i lista.
         status = self.env["fiq.lonnsforpliktelse"].status_forpliktelser(
-            "2026-01-01", "2026-12-31",
+            "2026-01-01",
+            "2026-12-31",
         )
         self.assertEqual(set(status), {"aga", "lonn", "feriepenger", "otp"})
 
@@ -233,7 +272,8 @@ class TestOdoo19Tilstander(TransactionCase):
         gyldige = {verdi for verdi, _ in felt.selection}
         brukt = {"validated", "paid"}
         self.assertEqual(
-            brukt - gyldige, set(),
+            brukt - gyldige,
+            set(),
             "Aggregatet filtrerer på tilstander som ikke finnes i denne "
             "Odoo-versjonen. Da blir cashflow stille tom, ikke rød.",
         )
@@ -242,7 +282,8 @@ class TestOdoo19Tilstander(TransactionCase):
         felt = self.env["hr.payslip"]._fields["state"]
         gyldige = {verdi for verdi, _ in felt.selection}
         self.assertEqual(
-            gyldige & {"done", "verify"}, set(),
+            gyldige & {"done", "verify"},
+            set(),
             "Dukker Odoo 18-navnene opp igjen, må filteret vurderes på nytt.",
         )
 
@@ -258,25 +299,31 @@ class TestLonnskostnad(TransactionCase):
 
     def setUp(self):
         super().setUp()
-        self.company = self.env["res.company"].create({
-            "name": "Lønnsfirma",
-            "fiq_aga_sone": "2",
-        })
+        self.company = self.env["res.company"].create(
+            {
+                "name": "Lønnsfirma",
+                "fiq_aga_sone": "2",
+            }
+        )
         struktur = self.env.ref("fiq_rgs_lonn.hr_payroll_structure_no_employee")
         self.slipper = self.env["hr.payslip"]
         for i in range(3):
-            ansatt = self.env["hr.employee"].create({
-                "name": "Lønnsansatt %s" % i,
-                "company_id": self.company.id,
-            })
-            slip = self.env["hr.payslip"].create({
-                "name": "Lønnsslipp %s" % i,
-                "employee_id": ansatt.id,
-                "company_id": self.company.id,
-                "date_from": "2026-08-01",
-                "date_to": "2026-08-31",
-                "struct_id": struktur.id,
-            })
+            ansatt = self.env["hr.employee"].create(
+                {
+                    "name": f"Lønnsansatt {i}",
+                    "company_id": self.company.id,
+                }
+            )
+            slip = self.env["hr.payslip"].create(
+                {
+                    "name": f"Lønnsslipp {i}",
+                    "employee_id": ansatt.id,
+                    "company_id": self.company.id,
+                    "date_from": "2026-08-01",
+                    "date_to": "2026-08-31",
+                    "struct_id": struktur.id,
+                }
+            )
             # net_wage er et LAGRET felt (som `total` paa linja) — det fylles
             # av compute_sheet(). Settes eksplisitt her, jf. laerdommen fra AGA.
             slip.net_wage = 30000.0
@@ -284,9 +331,10 @@ class TestLonnskostnad(TransactionCase):
 
     def _lonnslinjer(self):
         return [
-            l for l in self.env["fiq.lonnsforpliktelse"].with_company(
-                self.company
-            ).hent_lonnsforpliktelser("2026-01-01", "2026-12-31")
+            l
+            for l in self.env["fiq.lonnsforpliktelse"]
+            .with_company(self.company)
+            .hent_lonnsforpliktelser("2026-01-01", "2026-12-31")
             if l["type"] == "lonn"
         ]
 
@@ -311,7 +359,9 @@ class TestLonnskostnad(TransactionCase):
         linjer = self._lonnslinjer()
         self.assertTrue(linjer, "Ingen lønnslinjer å måle på.")
         self.assertAlmostEqual(
-            sum(l["belop"] for l in linjer), 90_000.0, 2,
+            sum(l["belop"] for l in linjer),
+            90_000.0,
+            2,
             "Beløpet er ikke summen av nettolønn — testen måler noe annet "
             "enn den tror.",
         )
@@ -319,9 +369,13 @@ class TestLonnskostnad(TransactionCase):
     def test_29_desemberlonn_forfaller_i_januar_neste_aar(self):
         """Aarsskiftet i forfallsberegningen. Uten det ville desemberlønn
         forfalt 15. maaned 13."""
-        self.slipper.write({
-            "date_from": "2026-12-01", "date_to": "2026-12-31", "state": "paid",
-        })
+        self.slipper.write(
+            {
+                "date_from": "2026-12-01",
+                "date_to": "2026-12-31",
+                "state": "paid",
+            }
+        )
         linjer = self._lonnslinjer()
         self.assertTrue(linjer)
         self.assertEqual(linjer[0]["forfall"].year, 2027)
@@ -331,23 +385,22 @@ class TestLonnskostnad(TransactionCase):
         """Samme skille som for AGA — og det MAA holdes her, fordi 2.80 RGS
         viser det vi sender uten aa overproeve det."""
         self.slipper.write({"state": "validated"})
-        self.assertTrue(all(
-            l["sikkerhet"] == "planlagt" for l in self._lonnslinjer()
-        ))
+        self.assertTrue(all(l["sikkerhet"] == "planlagt" for l in self._lonnslinjer()))
         self.slipper.write({"state": "paid"})
-        self.assertTrue(all(
-            l["sikkerhet"] == "bokfort" for l in self._lonnslinjer()
-        ))
+        self.assertTrue(all(l["sikkerhet"] == "bokfort" for l in self._lonnslinjer()))
 
     def test_31_status_og_linjer_er_enige(self):
         """🤝 Kryss-testen — motstykket til 2.80 RGS' egen. Bygget FRA START
         denne gangen, ikke etterpaa."""
         self.slipper.write({"state": "paid"})
-        status = self.env["fiq.lonnsforpliktelse"].with_company(
-            self.company
-        ).status_forpliktelser("2026-01-01", "2026-12-31")
+        status = (
+            self.env["fiq.lonnsforpliktelse"]
+            .with_company(self.company)
+            .status_forpliktelser("2026-01-01", "2026-12-31")
+        )
         self.assertEqual(
-            bool(self._lonnslinjer()), status["lonn"]["levert"],
+            bool(self._lonnslinjer()),
+            status["lonn"]["levert"],
             "status_forpliktelser() og aggregatet spriker — kontrakten er "
             "brutt selv om begge sider ser riktige ut hver for seg.",
         )
@@ -371,50 +424,60 @@ class TestFeriepenger(TransactionCase):
     def setUp(self):
         super().setUp()
         from datetime import date
+
         self.date = date
-        self.company = self.env["res.company"].create({
-            "name": "Feriefirma", "fiq_aga_sone": "2",
-        })
-        self.struktur = self.env.ref(
-            "fiq_rgs_lonn.hr_payroll_structure_no_employee")
+        self.company = self.env["res.company"].create(
+            {
+                "name": "Feriefirma",
+                "fiq_aga_sone": "2",
+            }
+        )
+        self.struktur = self.env.ref("fiq_rgs_lonn.hr_payroll_structure_no_employee")
 
     def _slip(self, fodselsaar=1990, fem_uker=False, aar=2026):
         vals = {"name": "Ferieansatt", "company_id": self.company.id}
         if fodselsaar:
-            vals["birthday"] = "%s-03-15" % fodselsaar
+            vals["birthday"] = f"{fodselsaar}-03-15"
         ansatt = self.env["hr.employee"].create(vals)
-        slip = self.env["hr.payslip"].create({
-            "name": "Slipp",
-            "employee_id": ansatt.id,
-            "company_id": self.company.id,
-            "date_from": "%s-01-01" % aar,
-            "date_to": "%s-01-31" % aar,
-            "struct_id": self.struktur.id,
-        })
+        slip = self.env["hr.payslip"].create(
+            {
+                "name": "Slipp",
+                "employee_id": ansatt.id,
+                "company_id": self.company.id,
+                "date_from": f"{aar}-01-01",
+                "date_to": f"{aar}-01-31",
+                "struct_id": self.struktur.id,
+            }
+        )
         slip.version_id.fiq_ferie_fem_uker = fem_uker
         return slip
 
     def _param(self, kode, aar=2026, mnd=6):
         return self.env["hr.rule.parameter"]._get_parameter_from_code(
-            kode, self.date(aar, mnd, 1))
+            kode, self.date(aar, mnd, 1)
+        )
 
     def test_33_satsene_stemmer_med_ferieloven(self):
-        self.assertEqual(self._param("no_feriepenger_satser"), {
-            "ordinaer": 10.2, "fem_uker": 12.0,
-            "over_60": 12.5, "over_60_fem_uker": 14.3,
-        }, "Satsene er ferieloven § 10 — ikke en preferanse.")
+        self.assertEqual(
+            self._param("no_feriepenger_satser"),
+            {
+                "ordinaer": 10.2,
+                "fem_uker": 12.0,
+                "over_60": 12.5,
+                "over_60_fem_uker": 14.3,
+            },
+            "Satsene er ferieloven § 10 — ikke en preferanse.",
+        )
 
     def test_34_ordinaer_sats_er_10_2(self):
         self.assertEqual(self._slip().fiq_feriepenger_sats(2026), 10.2)
 
     def test_35_fem_uker_gir_12(self):
-        self.assertEqual(
-            self._slip(fem_uker=True).fiq_feriepenger_sats(2026), 12.0)
+        self.assertEqual(self._slip(fem_uker=True).fiq_feriepenger_sats(2026), 12.0)
 
     def test_36_over_60_gir_12_5(self):
         # Foedt 1966 → fyller 60 i 2026.
-        self.assertEqual(
-            self._slip(fodselsaar=1966).fiq_feriepenger_sats(2026), 12.5)
+        self.assertEqual(self._slip(fodselsaar=1966).fiq_feriepenger_sats(2026), 12.5)
 
     def test_37_fyller_60_I_LOPET_av_aaret_teller(self):
         """🔑 «Over 60» er IKKE alder paa utbetalingsdagen. Retten gjelder fra
@@ -423,7 +486,8 @@ class TestFeriepenger(TransactionCase):
         slip = self._slip(fodselsaar=1966)
         slip.employee_id.birthday = "1966-12-31"
         self.assertEqual(
-            slip.fiq_feriepenger_sats(2026), 12.5,
+            slip.fiq_feriepenger_sats(2026),
+            12.5,
             "Fyller 60 i desember — skal ha forhøyet sats fra januar.",
         )
 
@@ -431,14 +495,14 @@ class TestFeriepenger(TransactionCase):
         """Det forsiktige valget. Aa gjette paa hoeyere sats ville gitt for
         stor avsetning — og gjetning er forbudt naar grunnlaget er juridisk
         bindende."""
-        self.assertEqual(
-            self._slip(fodselsaar=None).fiq_feriepenger_sats(2026), 10.2)
+        self.assertEqual(self._slip(fodselsaar=None).fiq_feriepenger_sats(2026), 10.2)
 
     def test_39_avsetning_under_60(self):
         """🛡️ Bevis-vaktpost: 500 000 x 10,2 % = 51 000."""
         self.assertAlmostEqual(
             self._slip().fiq_feriepenger_avsetning(500_000, 2026),
-            51_000.0, 2,
+            51_000.0,
+            2,
             "Avsetningen er ikke grunnlag x sats — testen måler noe annet.",
         )
 
@@ -446,7 +510,8 @@ class TestFeriepenger(TransactionCase):
         # 6 G for 2026 = 819 294. Grunnlag 500 000 ligger under taket.
         self.assertAlmostEqual(
             self._slip(fodselsaar=1966).fiq_feriepenger_avsetning(500_000, 2026),
-            62_500.0, 2,   # 500 000 x 12,5 %
+            62_500.0,
+            2,  # 500 000 x 12,5 %
         )
 
     def test_41_over_60_OVER_6G_splitter_ved_taket(self):
@@ -455,9 +520,9 @@ class TestFeriepenger(TransactionCase):
         tak = self._param("no_feriepenger_6g")
         forventet = tak * 0.125 + 100_000 * 0.102
         self.assertAlmostEqual(
-            self._slip(fodselsaar=1966).fiq_feriepenger_avsetning(
-                tak + 100_000, 2026),
-            forventet, 2,
+            self._slip(fodselsaar=1966).fiq_feriepenger_avsetning(tak + 100_000, 2026),
+            forventet,
+            2,
         )
 
     def test_42_6g_folger_opptjeningsaaret(self):
@@ -482,28 +547,36 @@ class TestOtp(TransactionCase):
     def setUp(self):
         super().setUp()
         from datetime import date
+
         self.date = date
-        self.company = self.env["res.company"].create({
-            "name": "Pensjonsfirma", "fiq_aga_sone": "2",
-        })
-        self.struktur = self.env.ref(
-            "fiq_rgs_lonn.hr_payroll_structure_no_employee")
+        self.company = self.env["res.company"].create(
+            {
+                "name": "Pensjonsfirma",
+                "fiq_aga_sone": "2",
+            }
+        )
+        self.struktur = self.env.ref("fiq_rgs_lonn.hr_payroll_structure_no_employee")
 
     def _slip(self, fodselsaar=1990, aar=2026):
         vals = {"name": "Pensjonsansatt", "company_id": self.company.id}
         if fodselsaar:
-            vals["birthday"] = "%s-03-15" % fodselsaar
+            vals["birthday"] = f"{fodselsaar}-03-15"
         ansatt = self.env["hr.employee"].create(vals)
-        return self.env["hr.payslip"].create({
-            "name": "Slipp", "employee_id": ansatt.id,
-            "company_id": self.company.id,
-            "date_from": "%s-01-01" % aar, "date_to": "%s-01-31" % aar,
-            "struct_id": self.struktur.id,
-        })
+        return self.env["hr.payslip"].create(
+            {
+                "name": "Slipp",
+                "employee_id": ansatt.id,
+                "company_id": self.company.id,
+                "date_from": f"{aar}-01-01",
+                "date_to": f"{aar}-01-31",
+                "struct_id": self.struktur.id,
+            }
+        )
 
     def _param(self, kode, aar=2026, mnd=6):
         return self.env["hr.rule.parameter"]._get_parameter_from_code(
-            kode, self.date(aar, mnd, 1))
+            kode, self.date(aar, mnd, 1)
+        )
 
     def test_43_minstesatsen_er_2_prosent(self):
         """OTP-loven § 4 — lovens gulv."""
@@ -520,13 +593,16 @@ class TestOtp(TransactionCase):
         """🛑 Uten denne sperren kunne noen satt 1 % i god tro — og foretaket
         ville brutt loven uten at noe feilet."""
         from odoo.exceptions import ValidationError
+
         with self.assertRaises(ValidationError):
             self.company.fiq_otp_sats = 1.0
 
     def test_47_innskudd_under_taket(self):
         """🛡️ Bevis-vaktpost: 500 000 x 2 % = 10 000."""
         self.assertAlmostEqual(
-            self._slip().fiq_otp_innskudd(500_000), 10_000.0, 2,
+            self._slip().fiq_otp_innskudd(500_000),
+            10_000.0,
+            2,
             "Innskuddet er ikke grunnlag x sats — testen måler noe annet.",
         )
 
@@ -553,8 +629,7 @@ class TestOtp(TransactionCase):
         self.assertTrue(self._slip(fodselsaar=None).fiq_otp_omfattet())
 
     def test_52_ikke_omfattet_gir_null_innskudd(self):
-        self.assertEqual(
-            self._slip(fodselsaar=2015).fiq_otp_innskudd(500_000), 0.0)
+        self.assertEqual(self._slip(fodselsaar=2015).fiq_otp_innskudd(500_000), 0.0)
 
     def test_53_12g_folger_aaret(self):
         """G justeres 1. mai — taket maa finnes for hvert aar."""
@@ -567,23 +642,40 @@ class TestPersonvern(TransactionCase):
     """🔒 Re-identifiseringsgrensen. 2.80 RGS har bedt om aa bli holdt til den."""
 
     def test_11_aggregatet_har_ingen_persondata(self):
-        felt_som_aldri_skal_finnes = {"employee_id", "employee", "navn", "name", "res_id"}
+        felt_som_aldri_skal_finnes = {
+            "employee_id",
+            "employee",
+            "navn",
+            "name",
+            "res_id",
+        }
         linjer = self.env["fiq.lonnsforpliktelse"].hent_lonnsforpliktelser(
-            "2026-01-01", "2026-12-31",
+            "2026-01-01",
+            "2026-12-31",
         )
         for linje in linjer:
             self.assertFalse(
                 felt_som_aldri_skal_finnes & set(linje),
-                "Aggregatet lekker persondata: %s" % linje,
+                f"Aggregatet lekker persondata: {linje}",
             )
 
     def test_12_kontraktens_felter_er_komplette(self):
-        paakrevd = {"type", "label", "forfall", "belop", "sikkerhet", "kilde", "periode"}
+        paakrevd = {
+            "type",
+            "label",
+            "forfall",
+            "belop",
+            "sikkerhet",
+            "kilde",
+            "periode",
+        }
         for linje in self.env["fiq.lonnsforpliktelse"].hent_lonnsforpliktelser(
-            "2026-01-01", "2026-12-31",
+            "2026-01-01",
+            "2026-12-31",
         ):
             self.assertEqual(
-                paakrevd - set(linje), set(),
+                paakrevd - set(linje),
+                set(),
                 "Kontrakten med 2.80 RGS krever alle sju feltene.",
             )
 
@@ -603,54 +695,64 @@ class TestKontraktMedEkteData(TransactionCase):
 
     def setUp(self):
         super().setUp()
-        self.company = self.env["res.company"].create({
-            "name": "Kontraktfirma",
-            "fiq_aga_sone": "2",          # 10,6 % — ingen fribeloepsmekanikk
-        })
+        self.company = self.env["res.company"].create(
+            {
+                "name": "Kontraktfirma",
+                "fiq_aga_sone": "2",  # 10,6 % — ingen fribeloepsmekanikk
+            }
+        )
         struktur = self.env.ref("fiq_rgs_lonn.hr_payroll_structure_no_employee")
         # Tre ansatte: under grensen ville linja blitt utelatt (GDPR).
         self.slipper = self.env["hr.payslip"]
         for i in range(3):
-            ansatt = self.env["hr.employee"].create({
-                "name": "Testansatt %s" % i,
-                "company_id": self.company.id,
-            })
-            slip = self.env["hr.payslip"].create({
-                "name": "Slipp %s" % i,
-                "employee_id": ansatt.id,
-                "company_id": self.company.id,
-                "date_from": "2026-01-01",
-                "date_to": "2026-01-31",
-                "struct_id": struktur.id,
-            })
+            ansatt = self.env["hr.employee"].create(
+                {
+                    "name": f"Testansatt {i}",
+                    "company_id": self.company.id,
+                }
+            )
+            slip = self.env["hr.payslip"].create(
+                {
+                    "name": f"Slipp {i}",
+                    "employee_id": ansatt.id,
+                    "company_id": self.company.id,
+                    "date_from": "2026-01-01",
+                    "date_to": "2026-01-31",
+                    "struct_id": struktur.id,
+                }
+            )
             # Loennslinjer MAA finnes — uten dem er grunnlaget 0 og aggregatet
             # gir ingen linjer. Det var nettopp det testene avslørte foerste
             # gang: beregningen leste linjer som ingenting skrev.
-            self.env["hr.payslip.line"].create({
-                "name": "Grunnlønn",
-                "code": "BASIC",
-                # salary_rule_id er PAAKREVD (NOT NULL) — en loennslinje maa
-                # peke paa loennsarten som skapte den. `category_id` settes
-                # IKKE her: det er et `related`-felt fra loennsarten og ville
-                # blitt overstyrt uansett.
-                "salary_rule_id": self.env.ref("fiq_rgs_lonn.rule_no_basic").id,
-                "employee_id": ansatt.id,
-                "slip_id": slip.id,
-                "amount": 40000.0,
-                "quantity": 1.0,
-                "rate": 100.0,
-                # 🔑 `total` er et LAGRET felt, ikke beregnet — det fylles av
-                # loennsmotoren under `compute_sheet()`. Opprettes linja
-                # direkte, maa total settes eksplisitt, ellers er den 0 og
-                # grunnlaget blir null. Det var derfor testene ga tomme lister.
-                "total": 40000.0,
-            })
+            self.env["hr.payslip.line"].create(
+                {
+                    "name": "Grunnlønn",
+                    "code": "BASIC",
+                    # salary_rule_id er PAAKREVD (NOT NULL) — en loennslinje maa
+                    # peke paa loennsarten som skapte den. `category_id` settes
+                    # IKKE her: det er et `related`-felt fra loennsarten og ville
+                    # blitt overstyrt uansett.
+                    "salary_rule_id": self.env.ref("fiq_rgs_lonn.rule_no_basic").id,
+                    "employee_id": ansatt.id,
+                    "slip_id": slip.id,
+                    "amount": 40000.0,
+                    "quantity": 1.0,
+                    "rate": 100.0,
+                    # 🔑 `total` er et LAGRET felt, ikke beregnet — det fylles av
+                    # loennsmotoren under `compute_sheet()`. Opprettes linja
+                    # direkte, maa total settes eksplisitt, ellers er den 0 og
+                    # grunnlaget blir null. Det var derfor testene ga tomme lister.
+                    "total": 40000.0,
+                }
+            )
             self.slipper |= slip
 
     def _linjer(self):
-        return self.env["fiq.lonnsforpliktelse"].with_company(
-            self.company
-        ).hent_lonnsforpliktelser("2026-01-01", "2026-12-31")
+        return (
+            self.env["fiq.lonnsforpliktelse"]
+            .with_company(self.company)
+            .hent_lonnsforpliktelser("2026-01-01", "2026-12-31")
+        )
 
     def test_21_draft_slipper_gir_ingen_linjer(self):
         """Utkast er ikke en forpliktelse. Kommer de med, blaeses cashflow opp."""
@@ -671,7 +773,8 @@ class TestKontraktMedEkteData(TransactionCase):
         )
         for linje in linjer:
             self.assertEqual(
-                linje["sikkerhet"], "planlagt",
+                linje["sikkerhet"],
+                "planlagt",
                 "Bekreftet, men ikke utbetalt lønn er PLANLAGT — ikke bokført.",
             )
 
@@ -693,11 +796,21 @@ class TestKontraktMedEkteData(TransactionCase):
         self.assertTrue(linjer, "Ingen linjer å teste kontrakten mot.")
         # 3 ansatte x 40 000 = 120 000 grunnlag, sone II = 10,6 %
         self.assertAlmostEqual(
-            sum(l["belop"] for l in linjer), 12_720.0, 2,
+            sum(l["belop"] for l in linjer),
+            12_720.0,
+            2,
             "Beløpet er ikke det grunnlaget tilsier — testen måler noe annet "
             "enn den tror.",
         )
-        paakrevd = {"type", "label", "forfall", "belop", "sikkerhet", "kilde", "periode"}
+        paakrevd = {
+            "type",
+            "label",
+            "forfall",
+            "belop",
+            "sikkerhet",
+            "kilde",
+            "periode",
+        }
         for linje in linjer:
             self.assertEqual(paakrevd - set(linje), set())
             self.assertEqual(linje["kilde"], "Odoo")
@@ -712,9 +825,11 @@ class TestKontraktMedEkteData(TransactionCase):
         status = modell.status_forpliktelser("2026-01-01", "2026-12-31")
         linjer = [l for l in self._linjer() if l["type"] == "aga"]
         self.assertEqual(
-            bool(linjer), status["aga"]["levert"],
-            "status_forpliktelser() sier «%s», men aggregatet ga %s AGA-linjer."
-            % (status["aga"]["levert"], len(linjer)),
+            bool(linjer),
+            status["aga"]["levert"],
+            "status_forpliktelser() sier «{}», men aggregatet ga {} AGA-linjer.".format(
+                status["aga"]["levert"], len(linjer)
+            ),
         )
 
     def test_26_faerre_enn_tre_ansatte_gir_ingen_linje(self):
@@ -728,6 +843,7 @@ class TestKontraktMedEkteData(TransactionCase):
         # og den mekanikken er ikke det denne testen skal måle.
         self.slipper[0].state = "draft"
         self.assertEqual(
-            self._linjer(), [],
+            self._linjer(),
+            [],
             "En sum for under tre ansatte er personopplysning selv uten navn.",
         )

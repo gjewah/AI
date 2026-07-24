@@ -60,7 +60,7 @@ class FiqGuiRelation(models.Model):
     def _compute_display_name(self):
         for rec in self:
             if rec.partner_a_id and rec.partner_b_id and rec.type_id:
-                rec.display_name = "%s %s %s" % (
+                rec.display_name = "{} {} {}".format(
                     rec.partner_a_id.display_name,
                     rec.type_id.name,
                     rec.partner_b_id.display_name,
@@ -123,7 +123,11 @@ class FiqGuiRelation(models.Model):
         try:
             config = self.env["fiq.gui.control.config"]
             lovlige = config.tillatte_firmaer().ids
-        except Exception:
+        except Exception:  # noqa: BLE001 - deliberate: see below
+            # Broad on purpose, and narrow in effect. Whatever goes wrong reaching the
+            # control room - module absent, model renamed, access denied - the answer
+            # must be ONE company, never all of them. A narrower except would let an
+            # unforeseen error escape and, worse, could leave scope undefined.
             lovlige = self.env.company.ids
         if firma_id and int(firma_id) in lovlige:
             lovlige = [int(firma_id)]
@@ -190,7 +194,11 @@ class FiqGuiRelation(models.Model):
         try:
             config = self.env["fiq.gui.control.config"]
             lovlige = config.tillatte_firmaer().ids
-        except Exception:
+        except Exception:  # noqa: BLE001 - deliberate: see below
+            # Broad on purpose, and narrow in effect. Whatever goes wrong reaching the
+            # control room - module absent, model renamed, access denied - the answer
+            # must be ONE company, never all of them. A narrower except would let an
+            # unforeseen error escape and, worse, could leave scope undefined.
             lovlige = self.env.company.ids
         if firma_id and int(firma_id) in lovlige:
             lovlige = [int(firma_id)]
@@ -261,7 +269,9 @@ class FiqGuiRelation(models.Model):
         try:
             projects = Project.search(
                 [("partner_id", "=", eiendom.id)], order="id desc", limit=10)
-        except Exception:
+        except Exception:  # noqa: BLE001 - an optional module must not break the view
+            # project may be absent, or its fields may differ between editions. No
+            # projects is a valid answer for a card view; a traceback is not.
             return []
         return [{
             "id": p.id,

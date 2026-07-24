@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tester for Regnskapsflatens datalag (fiq.gui.rgs.data).
 
 Hvorfor de finnes: flaten viser BOKFØRTE tall som er juridisk bindende. En feil her

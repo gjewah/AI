@@ -225,10 +225,13 @@ class TestFiqGuiRelation(TransactionCase):
         from odoo.tools.misc import mute_logger
         self.Type.create({
             "code": "test_unique", "name": "a", "name_inverse": "b"})
-        with mute_logger("odoo.sql_db"), self.assertRaises(IntegrityError):
-            with self.env.cr.savepoint():
-                self.Type.create({
-                    "code": "test_unique", "name": "c", "name_inverse": "d"})
+        with (
+            mute_logger("odoo.sql_db"),
+            self.assertRaises(IntegrityError),
+            self.env.cr.savepoint(),
+        ):
+            self.Type.create({
+                "code": "test_unique", "name": "c", "name_inverse": "d"})
 
     # ---- partner counters ----------------------------------------------------------
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Meldingssenter – per-melding arbeidstilstand + interne notater (V00.05).
 # mail.message er delt/flyktig; disse slanke sidecar-modellene lagrer FIQ-arbeidsflyt PÅ en melding:
@@ -13,12 +12,17 @@ class FiqMeldingssenterState(models.Model):
     _name = "fiq.meldingssenter.state"
     _description = "Meldingssenter – arbeidsstatus per melding"
 
-    message_id = fields.Many2one("mail.message", required=True, ondelete="cascade", index=True)
+    message_id = fields.Many2one(
+        "mail.message", required=True, ondelete="cascade", index=True
+    )
     status = fields.Selection(
         [("apen", "Åpen"), ("pagar", "Pågår"), ("ferdig", "Ferdig")],
-        default="apen", required=True)
+        default="apen",
+        required=True,
+    )
     company_id = fields.Many2one(
-        "res.company", default=lambda self: self.env.company, index=True)
+        "res.company", default=lambda self: self.env.company, index=True
+    )
 
     # Manuell overstyring av tverrgående gruppe (Gjermund 19.07: «hvordan endrer jeg
     # på denne statusen på en e-post?» — svaret var: det kunne du ikke).
@@ -33,7 +37,8 @@ class FiqMeldingssenterState(models.Model):
     tverr_kode = fields.Char(
         string="Overstyrt gruppe",
         help="Tom = maskinen bestemmer ut fra nøkkelord. Satt = mennesket har bestemt, "
-             "og nøkkelordene overstyres for denne meldingen.")
+        "og nøkkelordene overstyres for denne meldingen.",
+    )
     tverr_av = fields.Many2one("res.users", string="Overstyrt av", readonly=True)
     tverr_dato = fields.Datetime(string="Overstyrt", readonly=True)
 
@@ -43,9 +48,13 @@ class FiqMeldingssenterNote(models.Model):
     _description = "Meldingssenter – internt notat (team-only) per melding"
     _order = "create_date desc"
 
-    message_id = fields.Many2one("mail.message", required=True, ondelete="cascade", index=True)
+    message_id = fields.Many2one(
+        "mail.message", required=True, ondelete="cascade", index=True
+    )
     body = fields.Text(required=True)
     user_id = fields.Many2one(
-        "res.users", default=lambda self: self.env.user, required=True)
+        "res.users", default=lambda self: self.env.user, required=True
+    )
     company_id = fields.Many2one(
-        "res.company", default=lambda self: self.env.company, index=True)
+        "res.company", default=lambda self: self.env.company, index=True
+    )

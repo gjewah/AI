@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Meldingssenter V00.04 – referanse-visning.
 # Serverer den GODKJENTE mockupen (docs/mockups/meldingssenter_v0104.html) som en
@@ -45,8 +44,8 @@ class FiqMeldingssenterRef(http.Controller):
                 "<meta charset='utf-8'>"
                 "<meta name='viewport' content='width=device-width,initial-scale=1'>"
                 "<title>Meldingssenter V00.04</title></head><body>"
-                + body +
-                "</body></html>"
+                + body
+                + "</body></html>"
             )
 
         return request.make_response(

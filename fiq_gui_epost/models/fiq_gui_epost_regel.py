@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Meldingssenter – rutingregler (if/then, config-drevet) med audit (V00.05, lag 4).
 # Bruker definerer regler i klartekst: «HVIS <felt> <operator> <verdi> → GJØR <handling>».
@@ -16,23 +15,39 @@ class FiqKommRegel(models.Model):
     name = fields.Char(string="Regelnavn", required=True)
     active = fields.Boolean(default=True)
     sequence = fields.Integer(default=10)
-    felt = fields.Selection([
-        ("avsender", "Avsender"),
-        ("emne", "Emne"),
-        ("innhold", "Innhold"),
-        ("element", "Element"),
-    ], string="Felt", default="emne", required=True)
-    operator = fields.Selection([
-        ("inneholder", "inneholder"),
-        ("er_lik", "er lik"),
-    ], string="Operator", default="inneholder", required=True)
+    felt = fields.Selection(
+        [
+            ("avsender", "Avsender"),
+            ("emne", "Emne"),
+            ("innhold", "Innhold"),
+            ("element", "Element"),
+        ],
+        string="Felt",
+        default="emne",
+        required=True,
+    )
+    operator = fields.Selection(
+        [
+            ("inneholder", "inneholder"),
+            ("er_lik", "er lik"),
+        ],
+        string="Operator",
+        default="inneholder",
+        required=True,
+    )
     verdi = fields.Char(string="Verdi", required=True)
-    handling = fields.Selection([
-        ("status_apen", "Sett status: Åpen"),
-        ("status_pagar", "Sett status: Pågår"),
-        ("status_ferdig", "Sett status: Ferdig"),
-    ], string="Handling", default="status_apen", required=True)
+    handling = fields.Selection(
+        [
+            ("status_apen", "Sett status: Åpen"),
+            ("status_pagar", "Sett status: Pågår"),
+            ("status_ferdig", "Sett status: Ferdig"),
+        ],
+        string="Handling",
+        default="status_apen",
+        required=True,
+    )
     sist_kjort = fields.Datetime(string="Sist kjørt", readonly=True)
     treff = fields.Integer(string="Treff totalt", readonly=True, default=0)
     company_id = fields.Many2one(
-        "res.company", default=lambda self: self.env.company, index=True)
+        "res.company", default=lambda self: self.env.company, index=True
+    )

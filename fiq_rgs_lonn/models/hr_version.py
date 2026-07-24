@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from odoo import fields, models
 
 from .res_company import AGA_SONER
@@ -28,13 +27,12 @@ class HrVersion(models.Model):
         AGA_SONER,
         string="Sone — ambulerende arbeid",
         help="Fylles KUN ut naar arbeidstakeren utfoerer hoveddelen av arbeidet i "
-             "en annen sone enn virksomheten er registrert i, OG virksomhetens "
-             "karakter ikke tillater registrering av underenhet der arbeidet "
-             "utfoeres (typisk transport, bygg og anlegg). "
-             "Gjelder IKKE utleie av arbeidskraft. "
-             "Staar feltet tomt, brukes selskapets sone.",
+        "en annen sone enn virksomheten er registrert i, OG virksomhetens "
+        "karakter ikke tillater registrering av underenhet der arbeidet "
+        "utfoeres (typisk transport, bygg og anlegg). "
+        "Gjelder IKKE utleie av arbeidskraft. "
+        "Staar feltet tomt, brukes selskapets sone.",
     )
-
 
     # FERIEPENGER — ferieuker avgjoer satsen (ferieloven § 10).
     # Lovens minstekrav er 4 uker + 1 dag (10,2 %). Fem uker er AVTALT, ikke
@@ -42,7 +40,7 @@ class HrVersion(models.Model):
     fiq_ferie_fem_uker = fields.Boolean(
         string="Fem ukers ferie avtalt",
         help="Gir 12 % feriepenger i stedet for lovens 10,2 %. Foelger av "
-             "tariffavtale eller individuell avtale, ikke av ferieloven.",
+        "tariffavtale eller individuell avtale, ikke av ferieloven.",
     )
 
 
