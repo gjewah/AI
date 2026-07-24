@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Kommunikasjon – paraply-flatens data-lag (V01, 17.07.2026).
 #
@@ -13,6 +12,7 @@
 # (fiq.gui.control.config.har_000_rettighet) — ALDRI fra klienten. Fail-closed.
 
 from odoo import api, models
+
 # Import-stien er verifisert mot Odoo 19s egen kilde (ir_actions.py:23), ikke antatt:
 # `from odoo.tools.safe_eval import safe_eval`. Den ligger IKKE i `odoo.tools`-roten.
 from odoo.tools.safe_eval import safe_eval
@@ -43,8 +43,14 @@ class FiqKommunikasjonData(models.AbstractModel):
         Rekkefølge = sekvens. Tomt register → kun «Alle» (flaten er da et skall)."""
         kanaler = sorted(self._kanaler(), key=lambda k: k.get("sekvens", 50))
         total = sum(int(k.get("antall") or 0) for k in kanaler)
-        alle = {"kode": "alle", "navn": "Alle", "ikon": "✳", "farge": "accent",
-                "antall": total, "sekvens": 0}
+        alle = {
+            "kode": "alle",
+            "navn": "Alle",
+            "ikon": "✳",
+            "farge": "accent",
+            "antall": total,
+            "sekvens": 0,
+        }
         return [alle] + kanaler
 
     # ---- Scope (000-kanon) ----------------------------------------------------------
@@ -77,9 +83,10 @@ class FiqKommunikasjonData(models.AbstractModel):
         tilgangsmekanisme — den viser kun firmaer brukeren FAKTISK har rett til."""
         kryss = self._har_000_rettighet()
         tillatte = self._tillatte_firmaer()
-        firms = [{"id": c.id, "navn": c.name,
-                  "kode": c.code if "code" in c._fields else ""}
-                 for c in self.env["res.company"].browse(tillatte).exists()]
+        firms = [
+            {"id": c.id, "navn": c.name, "kode": c.code if "code" in c._fields else ""}
+            for c in self.env["res.company"].browse(tillatte).exists()
+        ]
         if kryss and len(firms) > 1:
             firms = [{"id": False, "navn": "Alle", "kode": "∗"}] + firms
         return {
@@ -110,8 +117,11 @@ class FiqKommunikasjonData(models.AbstractModel):
         grupper = {"basis": [], "tverrgaende": [], "omraade": []}
         for b in bokser:
             grupper.setdefault(b.get("gruppe", "omraade"), []).append(b)
-        return {"grupper": grupper, "presence": self.get_presence(),
-                "kr_meny": self.get_kr_meny()}
+        return {
+            "grupper": grupper,
+            "presence": self.get_presence(),
+            "kr_meny": self.get_kr_meny(),
+        }
 
     @api.model
     def get_kr_meny(self):
@@ -162,7 +172,7 @@ class FiqKommunikasjonData(models.AbstractModel):
             # 🛑 Aldri `eval()` her: konteksten kommer fra databasen.
             raa = act.get("context") or {}
             ctx = dict(safe_eval(raa)) if isinstance(raa, str) else dict(raa)
-            ctx["fiq_boks"] = kode                  # kanalflaten åpner filtrert på denne
+            ctx["fiq_boks"] = kode  # kanalflaten åpner filtrert på denne
             act["context"] = ctx
             return act
         return False

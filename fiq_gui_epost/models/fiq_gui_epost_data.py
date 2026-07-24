@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Meldingssenter – data-lag (steg 1 av "native Meldingssenter").
 # Leser EKTE tall fra Odoos meldingstabell (mail.message) i stedet for de
@@ -24,7 +23,6 @@ from urllib.parse import quote
 # `markupsafe.escape` brukes av odoo/tools/translate.py:33 og er det samme som
 # `odoo.tools.misc.html_escape` (misc.py:1305). Vi tar den direkte fra markupsafe.
 from markupsafe import escape
-
 from odoo import api, fields, models
 
 # Basisfilter: ekte kommunikasjon PÅ et element, ikke Discuss-kanaler.
@@ -51,29 +49,29 @@ _PERIOD_DAYS = {"dag": 1, "uke": 7, "maaned": 30}
 #   7 PRJ   → lysere grønn        ┘  ellers blir boksene like
 #   8 FAG   → grønn/blå (teal)       (ikon er gul — overstyrt)
 _AREA_FARGE = {
-    "0": "graa",        # Info
-    "1": "blaam",       # Ledelse — samme som 2.70
-    "2": "blaa",        # Administrasjon (lys blå #0078CC)
-    "3": "gronnk",      # Drift — knall grønn
-    "4": "oransje",     # Logistikk (#E47830)
-    "5": "gronnm",      # Marked — mørk kraftig grønn
-    "6": "rod",         # Salg (#D80000)
-    "7": "gronnl",      # Prosjekter — lysere grønn
-    "8": "tealx",       # FAG — grønn/blå
-    "9": "turkis",      # Privat (#78D8D8)
+    "0": "graa",  # Info
+    "1": "blaam",  # Ledelse — samme som 2.70
+    "2": "blaa",  # Administrasjon (lys blå #0078CC)
+    "3": "gronnk",  # Drift — knall grønn
+    "4": "oransje",  # Logistikk (#E47830)
+    "5": "gronnm",  # Marked — mørk kraftig grønn
+    "6": "rod",  # Salg (#D80000)
+    "7": "gronnl",  # Prosjekter — lysere grønn
+    "8": "tealx",  # FAG — grønn/blå
+    "9": "turkis",  # Privat (#78D8D8)
 }
 # UNNTAK: underområder med EGEN farge — arver IKKE hovedområdets.
 # Verifisert mot ikonene i mediebiblioteket (lest fra pikslene, ikke antatt).
 _AREA_FARGE_UNNTAK = {
     # Finans under Admin — mørk blå #243C6C (ikon-verifisert)
-    "2.70": "blaam",    # BPA / FIi
-    "2.71": "blaam",    # FIe
-    "2.80": "blaam",    # RGS
+    "2.70": "blaam",  # BPA / FIi
+    "2.71": "blaam",  # FIe
+    "2.80": "blaam",  # RGS
     # IT-familien — lilla #7830A8 (ikon-verifisert). AI hører hit, ikke til gul 8-serie.
-    "2.90": "lilla",    # IT
-    "2.91": "lilla",    # ERP
-    "8.50": "lilla",    # AI
-    "8.51": "lilla",    # AID
+    "2.90": "lilla",  # IT
+    "2.91": "lilla",  # ERP
+    "8.50": "lilla",  # AI
+    "8.51": "lilla",  # AID
 }
 # 8.50–8.99 er AI-serien og skal være lilla som 2.90 IT (Gjermund 18.07.2026),
 # selv om 8 FAG ellers er grønn/blå. Håndteres i _omraade_farge().
@@ -90,8 +88,9 @@ def _omraade_farge(kode):
     if kode in _AREA_FARGE_UNNTAK:
         return _AREA_FARGE_UNNTAK[kode]
     if _AI_SERIE.match(kode):
-        return "lilla"                       # hele AI-serien, som 2.90 IT
+        return "lilla"  # hele AI-serien, som 2.90 IT
     return _AREA_FARGE.get(kode.split(".")[0], "graa")
+
 
 # Reserve hvis prosjekt-treet ikke er lesbart (tom base / manglende rettigheter).
 # Den LEVENDE taksonomien leses fra treet — se _taksonomi_levende().
@@ -119,13 +118,35 @@ _TVERRGAENDE = [
 _TVERR_KW_DEFAULT = {
     "haster": ["haster", "urgent", "asap", "snarest", "umiddelbart"],
     "viktig": ["viktig", "important", "prioritet", "high priority"],
-    "motereferater": ["referat", "møtereferat", "moetereferat", "minutes of meeting", "referat fra"],
-    "reklame": ["nyhetsbrev", "newsletter", "avmeld", "meld deg av", "unsubscribe",
-                "kampanje", "black friday", "rabattkode"],
+    "motereferater": [
+        "referat",
+        "møtereferat",
+        "moetereferat",
+        "minutes of meeting",
+        "referat fra",
+    ],
+    "reklame": [
+        "nyhetsbrev",
+        "newsletter",
+        "avmeld",
+        "meld deg av",
+        "unsubscribe",
+        "kampanje",
+        "black friday",
+        "rabattkode",
+    ],
 }
 # Avsender-mønstre (email_from) som markerer reklame/automatisk post.
-_REKLAME_FROM = ["noreply", "no-reply", "no_reply", "newsletter", "nyhetsbrev",
-                 "marketing", "mailchimp", "sendgrid"]
+_REKLAME_FROM = [
+    "noreply",
+    "no-reply",
+    "no_reply",
+    "newsletter",
+    "nyhetsbrev",
+    "marketing",
+    "mailchimp",
+    "sendgrid",
+]
 
 _TVERR_CODES = {k for k, _, _ in _TVERRGAENDE}
 _AREA_CODES = {k for k, _, _ in _TAKSONOMI}
@@ -159,7 +180,7 @@ class FiqMeldingssenterData(models.AbstractModel):
             try:
                 return bool(self.env[KR].har_000_rettighet())
             except Exception:
-                return False                            # fail-closed ved feil
+                return False  # fail-closed ved feil
         return False
 
     def _tillatte_firmaer(self):
@@ -187,7 +208,7 @@ class FiqMeldingssenterData(models.AbstractModel):
                 # ikke send vår egen sjekk inn, da får vi to oppslag som kan divergere.
                 return self.env[KR].firma_domene(firm=firm, felt="record_company_id")
             except Exception:
-                pass                                    # fail-closed under
+                pass  # fail-closed under
         return [("record_company_id", "in", self.env.company.ids)]
 
     @api.model
@@ -198,10 +219,15 @@ class FiqMeldingssenterData(models.AbstractModel):
         # firmaer brukeren FAKTISK har rett til å se post fra (sesjons-utledet, fail-closed).
         kryss = self._har_000_rettighet()
         tillatte = self._tillatte_firmaer()
-        firms = [{"id": c.id, "navn": c.name,
-                  "kode": c.code if "code" in c._fields else "",
-                  "logo": self._logo_data(c)}
-                 for c in self.env["res.company"].browse(tillatte).exists()]
+        firms = [
+            {
+                "id": c.id,
+                "navn": c.name,
+                "kode": c.code if "code" in c._fields else "",
+                "logo": self._logo_data(c),
+            }
+            for c in self.env["res.company"].browse(tillatte).exists()
+        ]
         # «Alle» tilbys KUN med 000-rettighet — uten den gir «alle» null ekstra innsyn.
         if kryss and len(firms) > 1:
             firms = [{"id": False, "navn": "Alle", "kode": "∗", "logo": ""}] + firms
@@ -211,7 +237,7 @@ class FiqMeldingssenterData(models.AbstractModel):
             "logo": self._logo_data(self.env.company),
             "presence": self.get_presence(),
             "user": self.env.user.name,
-            "kryss_firma": kryss,          # flaten kan vise at man er på plattform-nivå
+            "kryss_firma": kryss,  # flaten kan vise at man er på plattform-nivå
             "theme": "system",
         }
 
@@ -221,11 +247,12 @@ class FiqMeldingssenterData(models.AbstractModel):
         faller tilbake til Kontrollrom-logoen (fiq_control_logo) hvis satt. Tom
         streng = ingen logo → flaten viser «FIQ»-reserven."""
         logo = company.logo or (
-            company.fiq_control_logo if "fiq_control_logo" in company._fields else False)
+            company.fiq_control_logo if "fiq_control_logo" in company._fields else False
+        )
         if not logo:
             return ""
         logo = logo.decode() if isinstance(logo, bytes) else logo
-        return "data:image/png;base64,%s" % logo
+        return f"data:image/png;base64,{logo}"
 
     @api.model
     def get_meldingssenter_data(self, firm=False, period="alle"):
@@ -263,17 +290,26 @@ class FiqMeldingssenterData(models.AbstractModel):
         }
 
     @api.model
-    def get_messages(self, boks="innboks", firm=False, period="alle", q=False, limit=80):
+    def get_messages(
+        self, boks="innboks", firm=False, period="alle", q=False, limit=80
+    ):
         """Outlook-stil meldingsliste for en boks. Ekte mail.message, kjørt som brukeren.
         boks = innboks | sendt | uleste (0–8-taksonomi krever paring, kommer med fiq_komm_match).
         Rader: {id, fra, adresse, til, emne, preview, dato, ulest, retning, model, res_id, element}."""
         Msg = self.env["mail.message"]
-        dom = (_ON_RECORD + [("message_type", "in", ["email", "comment"])]
-               + self._period_domain(period) + self._firma_domene(firm))
+        dom = (
+            _ON_RECORD
+            + [("message_type", "in", ["email", "comment"])]
+            + self._period_domain(period)
+            + self._firma_domene(firm)
+        )
         if boks == "uleste":
             dom.append(("needaction", "=", True))
         elif boks == "sendt":
-            dom += [("message_type", "=", "email"), ("author_id.user_ids.share", "=", False)]
+            dom += [
+                ("message_type", "=", "email"),
+                ("author_id.user_ids.share", "=", False),
+            ]
         elif boks == "innboks":
             dom.append(("message_type", "=", "email"))
         elif boks in _TVERR_CODES or re.match(r"^\d+(\.\d+)*$", str(boks) or ""):
@@ -283,14 +319,22 @@ class FiqMeldingssenterData(models.AbstractModel):
             src = tverr_ids if boks in _TVERR_CODES else omr_ids
             dom.append(("id", "in", list(src.get(boks, ()))))
         if q:
-            dom = ["|", "|", ("subject", "ilike", q), ("email_from", "ilike", q),
-                   ("record_name", "ilike", q)] + dom
+            dom = [
+                "|",
+                "|",
+                ("subject", "ilike", q),
+                ("email_from", "ilike", q),
+                ("record_name", "ilike", q),
+            ] + dom
         msgs = Msg.search(dom, order="date desc", limit=limit)
         status_map = self._status_map(msgs.ids)
         out = []
         for m in msgs:
-            internal = bool(m.author_id and m.author_id.user_ids
-                            and any(not u.share for u in m.author_id.user_ids))
+            internal = bool(
+                m.author_id
+                and m.author_id.user_ids
+                and any(not u.share for u in m.author_id.user_ids)
+            )
             # Mottakere ("Til") — kun der Odoo har løst dem (ellers tomt, ikke dikt)
             til = m.partner_ids.mapped("display_name") if m.partner_ids else []
             element = ""
@@ -301,7 +345,9 @@ class FiqMeldingssenterData(models.AbstractModel):
                 # display_name gir «25_040 - 012 FIQ (MP)» (sekvensnr foran) — SP-mappa
                 # heter «012 FIQ (MP)». Bruk `name` der modellen har det; ellers display_name.
                 rec = self.env[m.model].browse(m.res_id)
-                element = (rec.name if "name" in rec._fields else rec.display_name) or ""
+                element = (
+                    rec.name if "name" in rec._fields else rec.display_name
+                ) or ""
                 # Gjermund 19.07.2026: «Skjønner ikke igjen dette som prosjekter. Er det
                 # oppgaver??» — nei. Gruppering på «Prosjekt» viste EMNELINJER (RE, FACEBOOK,
                 # IWRYRECY.JPEG), fordi `element` ble satt for ENHVER modell meldingen hang
@@ -310,39 +356,50 @@ class FiqMeldingssenterData(models.AbstractModel):
                 if m.model in ("project.project", "project.task"):
                     er_paret = True
                     f = rec._fields
-                    nrfelt = "code" if (m.model == "project.task" and "code" in f) else (
-                        "sequence_code" if "sequence_code" in f else False)
+                    nrfelt = (
+                        "code"
+                        if (m.model == "project.task" and "code" in f)
+                        else ("sequence_code" if "sequence_code" in f else False)
+                    )
                     element_nr = (rec[nrfelt] or "") if nrfelt else ""
             except Exception:
                 element = ""
-            out.append({
-                "id": m.id,
-                "fra": m.author_id.display_name if m.author_id else (m.email_from or "—"),
-                "adresse": m.email_from or "",
-                "til": til,
-                "emne": (m.subject or m.preview or "").strip()[:120] or "(uten emne)",
-                "preview": (m.preview or "")[:140],
-                "dato": m.date.strftime("%d.%m %H:%M") if m.date else "",
-                # Full ISO-dato I TILLEGG til visningsformatet. Uten årstall kan front-enden
-                # ikke gruppere riktig: «01.06» kan være i år eller for tre år siden, og en
-                # e-post fra i fjor ville havnet i «denne uka». Visningen er uendret.
-                "dato_iso": m.date.strftime("%Y-%m-%d") if m.date else "",
-                "ulest": bool(m.needaction) if "needaction" in m._fields else False,
-                "retning": "sendt" if internal else "mottatt",
-                "model": m.model,
-                "res_id": m.res_id,
-                "element": element,
-                "element_nr": element_nr,     # prosjekt-/oppgavenummer (tomt om uparet)
-                "er_paret": er_paret,         # TRUE kun for project.project/project.task
-                # 000-KANON krav 2: tydelig firmakode per melding i samlet visning
-                "firma": m.record_company_id.name if m.record_company_id else "",
-                "firmakode": (m.record_company_id.code
-                              if m.record_company_id and "code" in m.record_company_id._fields
-                              else "") or "",
-                "status": status_map.get(m.id, ""),
-                "status_navn": self._STATUS_NAVN.get(status_map.get(m.id), ""),
-                "risiko": self._risiko(m.subject, m.email_from, m.preview),
-            })
+            out.append(
+                {
+                    "id": m.id,
+                    "fra": m.author_id.display_name
+                    if m.author_id
+                    else (m.email_from or "—"),
+                    "adresse": m.email_from or "",
+                    "til": til,
+                    "emne": (m.subject or m.preview or "").strip()[:120]
+                    or "(uten emne)",
+                    "preview": (m.preview or "")[:140],
+                    "dato": m.date.strftime("%d.%m %H:%M") if m.date else "",
+                    # Full ISO-dato I TILLEGG til visningsformatet. Uten årstall kan front-enden
+                    # ikke gruppere riktig: «01.06» kan være i år eller for tre år siden, og en
+                    # e-post fra i fjor ville havnet i «denne uka». Visningen er uendret.
+                    "dato_iso": m.date.strftime("%Y-%m-%d") if m.date else "",
+                    "ulest": bool(m.needaction) if "needaction" in m._fields else False,
+                    "retning": "sendt" if internal else "mottatt",
+                    "model": m.model,
+                    "res_id": m.res_id,
+                    "element": element,
+                    "element_nr": element_nr,  # prosjekt-/oppgavenummer (tomt om uparet)
+                    "er_paret": er_paret,  # TRUE kun for project.project/project.task
+                    # 000-KANON krav 2: tydelig firmakode per melding i samlet visning
+                    "firma": m.record_company_id.name if m.record_company_id else "",
+                    "firmakode": (
+                        m.record_company_id.code
+                        if m.record_company_id and "code" in m.record_company_id._fields
+                        else ""
+                    )
+                    or "",
+                    "status": status_map.get(m.id, ""),
+                    "status_navn": self._STATUS_NAVN.get(status_map.get(m.id), ""),
+                    "risiko": self._risiko(m.subject, m.email_from, m.preview),
+                }
+            )
         return out
 
     # ---- Crawl / sortering: legg hver e-post i riktige bokser ------------------------
@@ -351,7 +408,11 @@ class FiqMeldingssenterData(models.AbstractModel):
     # elementet e-posten henger på (prosjekt/oppgave → område-kode i prosjekt-treet).
 
     def _tverr_keywords(self):
-        raw = self.env["ir.config_parameter"].sudo().get_param("fiq_gui_epost.tverr_keywords")
+        raw = (
+            self.env["ir.config_parameter"]
+            .sudo()
+            .get_param("fiq_gui_epost.tverr_keywords")
+        )
         if raw:
             try:
                 data = json.loads(raw)
@@ -363,7 +424,7 @@ class FiqMeldingssenterData(models.AbstractModel):
 
     def _classify_tverr(self, subject, preview, email_from):
         """Hvilke tverrgående bokser matcher e-posten (multi-label)."""
-        text = ("%s %s" % (subject or "", preview or "")).lower()
+        text = ("{} {}".format(subject or "", preview or "")).lower()
         frm = (email_from or "").lower()
         hits = set()
         for code, words in self._tverr_keywords().items():
@@ -425,38 +486,54 @@ class FiqMeldingssenterData(models.AbstractModel):
             # skal hete fagområdet → foretrekk (MP)-prosjektet, ellers korteste navn.
             er_mp = "(MP)" in navn
             if kode in ut:
-                if not er_mp and (ut[kode]["er_mp"] or len(rest) >= len(ut[kode]["rest"])):
+                if not er_mp and (
+                    ut[kode]["er_mp"] or len(rest) >= len(ut[kode]["rest"])
+                ):
                     continue
             ut[kode] = {
-                "navn": ("%s %s" % (kode, rest)).strip() if rest else kode,
+                "navn": (f"{kode} {rest}").strip() if rest else kode,
                 "farge": _omraade_farge(kode),
-                "nivaa": kode.count("."),                  # 0 = hovedområde, 1 = undergruppe …
+                "nivaa": kode.count("."),  # 0 = hovedområde, 1 = undergruppe …
                 "forelder": kode.rsplit(".", 1)[0] if "." in kode else False,
-                "er_mp": er_mp, "rest": rest,
+                "er_mp": er_mp,
+                "rest": rest,
             }
-        for v in ut.values():                              # interne hjelpefelt ut
-            v.pop("er_mp", None); v.pop("rest", None)
+        for v in ut.values():  # interne hjelpefelt ut
+            v.pop("er_mp", None)
+            v.pop("rest", None)
         return ut
 
     def _classify_all(self, firm, period, limit=3000):
         """{boks-kode: sett av message-id} for tverrgående + område + uavklart.
         Én lettvekts-crawl over e-postene i scope."""
         Msg = self.env["mail.message"]
-        dom = (_ON_RECORD + [("message_type", "=", "email")]
-               + self._period_domain(period) + self._firma_domene(firm))
+        dom = (
+            _ON_RECORD
+            + [("message_type", "=", "email")]
+            + self._period_domain(period)
+            + self._firma_domene(firm)
+        )
         rows = Msg.search_read(
-            dom, ["id", "subject", "email_from", "model", "res_id"],
-            limit=limit, order="date desc")
+            dom,
+            ["id", "subject", "email_from", "model", "res_id"],
+            limit=limit,
+            order="date desc",
+        )
         area_idx = self._area_index()
         # Oppgave→prosjekt for e-post som henger på oppgaver (ett batch-søk)
-        task_ids = list({r["res_id"] for r in rows
-                         if r.get("model") == "project.task" and r.get("res_id")})
+        task_ids = list(
+            {
+                r["res_id"]
+                for r in rows
+                if r.get("model") == "project.task" and r.get("res_id")
+            }
+        )
         task_proj = {}
         if task_ids:
             for t in self.env["project.task"].browse(task_ids).exists():
                 task_proj[t.id] = t.project_id.id if t.project_id else False
         tverr = {k: set() for k, _, _ in _TVERRGAENDE}
-        omr = {}                                    # dynamisk: kun koder som får treff
+        omr = {}  # dynamisk: kun koder som får treff
         for r in rows:
             hits = self._classify_tverr(r.get("subject"), "", r.get("email_from"))
             area = None
@@ -469,7 +546,7 @@ class FiqMeldingssenterData(models.AbstractModel):
                 # summen, og undergruppene sine egne tall — uten dobbelttelling i hver boks.
                 deler = area.split(".")
                 for i in range(len(deler)):
-                    kode = ".".join(deler[:i + 1])
+                    kode = ".".join(deler[: i + 1])
                     omr.setdefault(kode, set()).add(r["id"])
             for h in hits:
                 if h in tverr:
@@ -484,7 +561,8 @@ class FiqMeldingssenterData(models.AbstractModel):
         ids = [r["id"] for r in rows]
         if ids:
             for st in self.env["fiq.meldingssenter.state"].search(
-                    [("message_id", "in", ids), ("tverr_kode", "!=", False)]):
+                [("message_id", "in", ids), ("tverr_kode", "!=", False)]
+            ):
                 mid = st.message_id.id
                 for kode in tverr:
                     tverr[kode].discard(mid)
@@ -501,31 +579,59 @@ class FiqMeldingssenterData(models.AbstractModel):
         fiq_gui_epost.tverr_keywords (JSON)."""
         d = self.get_meldingssenter_data(firm=firm, period=period)
         basis = [
-            {"kode": "innboks", "navn": "Innboks", "count": d["innboks"], "farge": "graa"},
-            {"kode": "uleste", "navn": "Uleste", "count": d["uleste"], "farge": "amber"},
+            {
+                "kode": "innboks",
+                "navn": "Innboks",
+                "count": d["innboks"],
+                "farge": "graa",
+            },
+            {
+                "kode": "uleste",
+                "navn": "Uleste",
+                "count": d["uleste"],
+                "farge": "amber",
+            },
             {"kode": "sendt", "navn": "Sendt", "count": d["sendt"], "farge": "gronn"},
         ]
         tverr_ids, omr_ids = self._classify_all(firm, period)
-        tverr = [{"kode": k, "navn": n, "count": len(tverr_ids.get(k, ())), "farge": f}
-                 for k, n, f in _TVERRGAENDE]
+        tverr = [
+            {"kode": k, "navn": n, "count": len(tverr_ids.get(k, ())), "farge": f}
+            for k, n, f in _TVERRGAENDE
+        ]
 
         # DYNAMISKE områdebokser (masterspec §C.4): KUN koder som faktisk har post.
         # Taksonomien leses fra prosjekt-treet → undergrupper (2.05 JUR, 2.61 FUe …)
         # kommer med av seg selv når de får innhold. Ingen hardkodet liste, ingen 0-bokser.
         levende = self._taksonomi_levende()
-        reserve = {k: {"navn": n, "farge": f, "nivaa": 0, "forelder": False}
-                   for k, n, f in _TAKSONOMI}
+        reserve = {
+            k: {"navn": n, "farge": f, "nivaa": 0, "forelder": False}
+            for k, n, f in _TAKSONOMI
+        }
         taks = []
         for kode, ids in omr_ids.items():
             if not ids:
-                continue                                   # tom = vises ikke
-            meta = levende.get(kode) or reserve.get(kode) or {
-                "navn": kode, "farge": _omraade_farge(kode),
-                "nivaa": kode.count("."), "forelder": kode.rsplit(".", 1)[0] if "." in kode else False}
-            taks.append({
-                "kode": kode, "navn": meta["navn"], "count": len(ids),
-                "farge": meta["farge"], "nivaa": meta["nivaa"], "forelder": meta["forelder"],
-            })
+                continue  # tom = vises ikke
+            meta = (
+                levende.get(kode)
+                or reserve.get(kode)
+                or {
+                    "navn": kode,
+                    "farge": _omraade_farge(kode),
+                    "nivaa": kode.count("."),
+                    "forelder": kode.rsplit(".", 1)[0] if "." in kode else False,
+                }
+            )
+            taks.append(
+                {
+                    "kode": kode,
+                    "navn": meta["navn"],
+                    "count": len(ids),
+                    "farge": meta["farge"],
+                    "nivaa": meta["nivaa"],
+                    "forelder": meta["forelder"],
+                }
+            )
+
         # Sorter som taksonomien leses: 1, 2, 2.05, 2.30, 2.61, 3 …
         # STIGENDE, hierarkisk sortering. Foreldre kommer FØR barna sine, og «2.9» < «2.10»
         # (numerisk, ikke alfabetisk — ellers hadde 2.10 kommet før 2.9).
@@ -543,9 +649,15 @@ class FiqMeldingssenterData(models.AbstractModel):
                 else:
                     ut.append((1, 0, ledd.lower()))
             return ut
+
         taks.sort(key=lambda b: _sortnokkel(b["kode"]))
-        return {"basis": basis, "tverrgaende": tverr, "taksonomi": taks,
-                "firm": firm, "period": period}
+        return {
+            "basis": basis,
+            "tverrgaende": tverr,
+            "taksonomi": taks,
+            "firm": firm,
+            "period": period,
+        }
 
     # ---- Paring: søk etter mål (prosjekt · oppgave · ansvarlig) ----
     #
@@ -568,7 +680,7 @@ class FiqMeldingssenterData(models.AbstractModel):
         if not term:
             return []
         firmaer = self._tillatte_firmaer()
-        if firm:                                   # klientvalg kan kun SNEVRE INN
+        if firm:  # klientvalg kan kun SNEVRE INN
             try:
                 f = int(firm)
                 firmaer = [f] if f in firmaer else firmaer
@@ -585,8 +697,11 @@ class FiqMeldingssenterData(models.AbstractModel):
         Rec = self.env[model]
         f = Rec._fields
         # Nummerfeltet heter ulikt: prosjekt = sequence_code, oppgave = code.
-        nrfelt = "code" if (slag == "oppgave" and "code" in f) else (
-            "sequence_code" if "sequence_code" in f else False)
+        nrfelt = (
+            "code"
+            if (slag == "oppgave" and "code" in f)
+            else ("sequence_code" if "sequence_code" in f else False)
+        )
         dom = ["|", ("name", "ilike", term)] if nrfelt else [("name", "ilike", term)]
         if nrfelt:
             dom.append((nrfelt, "ilike", term))
@@ -600,11 +715,13 @@ class FiqMeldingssenterData(models.AbstractModel):
             dom.append(("company_id", "=", False))
             dom.append(("company_id", "in", firmaer))
         for rec in Rec.search(dom, limit=int(limit), order="write_date desc"):
-            ut.append({
-                "id": rec.id,
-                "navn": rec.name or "",
-                "no": (rec[nrfelt] or "") if nrfelt else "",
-            })
+            ut.append(
+                {
+                    "id": rec.id,
+                    "navn": rec.name or "",
+                    "no": (rec[nrfelt] or "") if nrfelt else "",
+                }
+            )
         return ut
 
     @api.model
@@ -634,8 +751,9 @@ class FiqMeldingssenterData(models.AbstractModel):
         m.sudo().write({"model": model, "res_id": target.id})
         if hasattr(target, "message_post"):
             target.message_post(
-                body="Melding paret hit fra Kommunikasjon av %s: %s" % (
-                    self.env.user.name, m.subject or "(uten emne)"),
+                body="Melding paret hit fra Kommunikasjon av {}: {}".format(
+                    self.env.user.name, m.subject or "(uten emne)"
+                ),
                 message_type="comment",
             )
         return {"id": target.id, "navn": target.name or "", "model": model}
@@ -733,8 +851,15 @@ class FiqMeldingssenterData(models.AbstractModel):
             return {"prosjekt": [], "oppgave": []}
         Msg = self.env["mail.message"]
         pros, opp, seen_p, seen_o = [], [], set(), set()
-        for mm in Msg.search(base + [("model", "in", ["project.project", "project.task"]),
-                                     ("res_id", "!=", False)], order="date desc", limit=200):
+        for mm in Msg.search(
+            base
+            + [
+                ("model", "in", ["project.project", "project.task"]),
+                ("res_id", "!=", False),
+            ],
+            order="date desc",
+            limit=200,
+        ):
             try:
                 rec = self.env[mm.model].browse(mm.res_id).exists()
             except Exception:
@@ -744,13 +869,23 @@ class FiqMeldingssenterData(models.AbstractModel):
             f = rec._fields
             if mm.model == "project.project" and rec.id not in seen_p:
                 seen_p.add(rec.id)
-                pros.append({"id": rec.id, "navn": rec.name or "",
-                             "no": (rec.sequence_code if "sequence_code" in f else "") or ""})
+                pros.append(
+                    {
+                        "id": rec.id,
+                        "navn": rec.name or "",
+                        "no": (rec.sequence_code if "sequence_code" in f else "") or "",
+                    }
+                )
             elif mm.model == "project.task" and rec.id not in seen_o:
                 seen_o.add(rec.id)
-                opp.append({"id": rec.id, "navn": rec.name or "",
-                            "no": (rec.code if "code" in f else "") or "",
-                            "prosjekt": rec.project_id.name or ""})
+                opp.append(
+                    {
+                        "id": rec.id,
+                        "navn": rec.name or "",
+                        "no": (rec.code if "code" in f else "") or "",
+                        "prosjekt": rec.project_id.name or "",
+                    }
+                )
             if len(pros) >= 5 and len(opp) >= 5:
                 break
         return {"prosjekt": pros[:5], "oppgave": opp[:5]}
@@ -759,15 +894,23 @@ class FiqMeldingssenterData(models.AbstractModel):
     _STATUS_NAVN = {"apen": "Åpen", "pagar": "Pågår", "ferdig": "Ferdig"}
 
     # Konservativ phishing-/risiko-heuristikk (v1 — oppgraderes til AI-klassifisering).
-    _RISIKO_PAY = ["bekreft betaling", "verify your account", "confirm payment",
-                   "passord utløper", "kontoen din er sperret", "klikk her innen",
-                   "frigi forsendel", "oppdater betalingskort", "reset your password"]
+    _RISIKO_PAY = [
+        "bekreft betaling",
+        "verify your account",
+        "confirm payment",
+        "passord utløper",
+        "kontoen din er sperret",
+        "klikk her innen",
+        "frigi forsendel",
+        "oppdater betalingskort",
+        "reset your password",
+    ]
     _RISIKO_DOM = [".info", ".xyz", ".top", "-secure", "verify-", "account-", "-verify"]
 
     def _risiko(self, subject, email_from, body=""):
         """Enkelt risiko-signal for en innkommende e-post. Konservativ: 'hoy' kun ved
         tydelig svindel-mønster (betalings-/konto-press + mistenkelig avsender), ellers ''."""
-        text = ("%s %s" % (subject or "", body or "")).lower()
+        text = ("{} {}".format(subject or "", body or "")).lower()
         frm = (email_from or "").lower()
         pay = any(w in text for w in self._RISIKO_PAY)
         susp = any(d in frm for d in self._RISIKO_DOM)
@@ -780,14 +923,19 @@ class FiqMeldingssenterData(models.AbstractModel):
         if not message_ids:
             return {}
         recs = self.env["fiq.meldingssenter.state"].search(
-            [("message_id", "in", list(message_ids))])
+            [("message_id", "in", list(message_ids))]
+        )
         return {r.message_id.id: r.status for r in recs}
 
     def _melding_firma(self, message_id):
         """000-KANON krav 5: arbeidsstatus/notat skal bære MELDINGENS firma — ikke brukerens
         aktive firma. Ellers havner en 040-melding i 012s taksonomi."""
         m = self.env["mail.message"].browse(int(message_id)).exists()
-        return m.record_company_id.id if (m and m.record_company_id) else self.env.company.id
+        return (
+            m.record_company_id.id
+            if (m and m.record_company_id)
+            else self.env.company.id
+        )
 
     @api.model
     def set_status(self, message_id, status):
@@ -799,8 +947,13 @@ class FiqMeldingssenterData(models.AbstractModel):
         if rec:
             rec.status = status
         else:
-            S.create({"message_id": int(message_id), "status": status,
-                      "company_id": self._melding_firma(message_id)})
+            S.create(
+                {
+                    "message_id": int(message_id),
+                    "status": status,
+                    "company_id": self._melding_firma(message_id),
+                }
+            )
         return True
 
     @api.model
@@ -837,8 +990,12 @@ class FiqMeldingssenterData(models.AbstractModel):
         if rec:
             rec.write(vals)
         else:
-            vals.update({"message_id": int(message_id),
-                         "company_id": self._melding_firma(message_id)})
+            vals.update(
+                {
+                    "message_id": int(message_id),
+                    "company_id": self._melding_firma(message_id),
+                }
+            )
             S.create(vals)
         return {"kode": kode, "av": self.env.user.name if kode else ""}
 
@@ -849,16 +1006,27 @@ class FiqMeldingssenterData(models.AbstractModel):
         if not body:
             return False
         note = self.env["fiq.meldingssenter.note"].create(
-            {"message_id": int(message_id), "body": body,
-             "company_id": self._melding_firma(message_id)})
-        return {"navn": note.user_id.name or "", "body": note.body,
-                "dato": note.create_date.strftime("%d.%m %H:%M") if note.create_date else ""}
+            {
+                "message_id": int(message_id),
+                "body": body,
+                "company_id": self._melding_firma(message_id),
+            }
+        )
+        return {
+            "navn": note.user_id.name or "",
+            "body": note.body,
+            "dato": note.create_date.strftime("%d.%m %H:%M")
+            if note.create_date
+            else "",
+        }
 
     @api.model
     def get_thread(self, message_id):
         """Lese-panel-tilstand for en melding: arbeidsstatus + interne notater (nyeste øverst)."""
         mid = int(message_id)
-        S = self.env["fiq.meldingssenter.state"].search([("message_id", "=", mid)], limit=1)
+        S = self.env["fiq.meldingssenter.state"].search(
+            [("message_id", "=", mid)], limit=1
+        )
         notes = self.env["fiq.meldingssenter.note"].search([("message_id", "=", mid)])
         return {
             "status": S.status if S else "",
@@ -866,11 +1034,16 @@ class FiqMeldingssenterData(models.AbstractModel):
             # vises så det er tydelig at et MENNESKE har valgt, ikke et nøkkelord.
             "tverr_kode": (S.tverr_kode or "") if S else "",
             "tverr_av": (S.tverr_av.name or "") if (S and S.tverr_av) else "",
-            "notater": [{
-                "navn": n.user_id.name or "",
-                "body": n.body or "",
-                "dato": n.create_date.strftime("%d.%m %H:%M") if n.create_date else "",
-            } for n in notes],
+            "notater": [
+                {
+                    "navn": n.user_id.name or "",
+                    "body": n.body or "",
+                    "dato": n.create_date.strftime("%d.%m %H:%M")
+                    if n.create_date
+                    else "",
+                }
+                for n in notes
+            ],
         }
 
     # ---- V00.05: person-visning (klikk «Til stede» → person) + relasjoner (§C.2) -----
@@ -889,11 +1062,24 @@ class FiqMeldingssenterData(models.AbstractModel):
         Rel = self.env["fiq.partner.relation"]
         rtlabels = dict(Rel._fields["relation_type"].selection)
         rels = []
-        for r in Rel.search(["|", ("partner_id", "=", partner.id),
-                             ("related_partner_id", "=", partner.id)]):
-            other = r.related_partner_id if r.partner_id.id == partner.id else r.partner_id
-            rels.append({"id": other.id, "navn": other.display_name or "",
-                         "type": r.relation_type, "type_navn": rtlabels.get(r.relation_type, "")})
+        for r in Rel.search(
+            [
+                "|",
+                ("partner_id", "=", partner.id),
+                ("related_partner_id", "=", partner.id),
+            ]
+        ):
+            other = (
+                r.related_partner_id if r.partner_id.id == partner.id else r.partner_id
+            )
+            rels.append(
+                {
+                    "id": other.id,
+                    "navn": other.display_name or "",
+                    "type": r.relation_type,
+                    "type_navn": rtlabels.get(r.relation_type, ""),
+                }
+            )
         return {
             "id": partner.id,
             "navn": partner.display_name or "",
@@ -936,7 +1122,7 @@ class FiqMeldingssenterData(models.AbstractModel):
         if not epost:
             return partner
         andre = self.env["res.partner"].search([("email", "=ilike", epost)])
-        return (partner | andre)
+        return partner | andre
 
     @api.model
     def get_person_kommunikasjon(self, partner_id, limit=40):
@@ -955,10 +1141,13 @@ class FiqMeldingssenterData(models.AbstractModel):
 
         # Meldinger FRA personen (forfatter eller avsenderadresse) ELLER TIL personen
         # (mottaker). Begge veier — «all kommunikasjon» betyr ikke bare innkommende.
-        dom = ["|", "|",
-               ("author_id", "in", alle.ids),
-               ("partner_ids", "in", alle.ids),
-               ("email_from", "=ilike", adresser[0] if adresser else "___ingen___")]
+        dom = [
+            "|",
+            "|",
+            ("author_id", "in", alle.ids),
+            ("partner_ids", "in", alle.ids),
+            ("email_from", "=ilike", adresser[0] if adresser else "___ingen___"),
+        ]
         for a in adresser[1:]:
             dom = ["|"] + dom + [("email_from", "=ilike", a)]
         # 🔴 FANGET AV EGEN TEST: `record_company_id in [...]` utestenger meldinger UTEN
@@ -972,27 +1161,38 @@ class FiqMeldingssenterData(models.AbstractModel):
             dom = dom + ["|", ("record_company_id", "=", False)] + firma
 
         ut = []
-        for m in self.env["mail.message"].search(dom, order="date desc", limit=int(limit)):
+        for m in self.env["mail.message"].search(
+            dom, order="date desc", limit=int(limit)
+        ):
             lokal = fields.Datetime.context_timestamp(self, m.date) if m.date else False
             # Retning sett fra OSS: sendte personen den, eller fikk personen den?
-            fra_personen = (m.author_id.id in alle.ids) or \
-                           ((m.email_from or "").strip().lower() in adresser)
-            ut.append({
-                "id": m.id,
-                "emne": (m.subject or m.preview or "").strip()[:120] or "(uten emne)",
-                "preview": (m.preview or "")[:120],
-                "dato": lokal.strftime("%d.%m.%Y %H:%M") if lokal else "",
-                "retning": "fra" if fra_personen else "til",
-                "kanal": "epost" if m.message_type == "email" else "notat",
-                "element": m.model or "",
-                "res_id": m.res_id or 0,
-            })
+            fra_personen = (m.author_id.id in alle.ids) or (
+                (m.email_from or "").strip().lower() in adresser
+            )
+            ut.append(
+                {
+                    "id": m.id,
+                    "emne": (m.subject or m.preview or "").strip()[:120]
+                    or "(uten emne)",
+                    "preview": (m.preview or "")[:120],
+                    "dato": lokal.strftime("%d.%m.%Y %H:%M") if lokal else "",
+                    "retning": "fra" if fra_personen else "til",
+                    "kanal": "epost" if m.message_type == "email" else "notat",
+                    "element": m.model or "",
+                    "res_id": m.res_id or 0,
+                }
+            )
 
         return {
-            "personer": [{"id": p.id, "navn": p.display_name or "",
-                          "epost": p.email or "",
-                          "firma": p.parent_id.display_name if p.parent_id else ""}
-                         for p in alle],
+            "personer": [
+                {
+                    "id": p.id,
+                    "navn": p.display_name or "",
+                    "epost": p.email or "",
+                    "firma": p.parent_id.display_name if p.parent_id else "",
+                }
+                for p in alle
+            ],
             "meldinger": ut,
             "antall": len(ut),
         }
@@ -1033,8 +1233,15 @@ class FiqMeldingssenterData(models.AbstractModel):
         # ikke chattes med — å vise knappen ville lovet noe systemet ikke kan holde.
         brukere = alle.mapped("user_ids").filtered(lambda u: not u.share)
         if brukere:
-            ut.append({"kode": "chat", "navn": "Chat", "verdi": brukere[0].name,
-                       "ikon": "💬", "user_id": brukere[0].id})
+            ut.append(
+                {
+                    "kode": "chat",
+                    "navn": "Chat",
+                    "verdi": brukere[0].name,
+                    "ikon": "💬",
+                    "user_id": brukere[0].id,
+                }
+            )
 
         # Teams/WhatsApp: kanal-modulene finnes ikke ennå. Vi later ikke som noe annet —
         # de dukker opp her automatisk når `fiq_gui_teams`/`_whatsapp` melder seg inn i
@@ -1046,56 +1253,118 @@ class FiqMeldingssenterData(models.AbstractModel):
         out = []
         if "crm.lead" in self.env:
             for l in self.env["crm.lead"].search(
-                    [("partner_id", "=", partner.id)], order="write_date desc", limit=3):
-                out.append({"type": "salg", "navn": l.name or "",
-                            "dato": l.write_date.strftime("%d.%m") if l.write_date else ""})
+                [("partner_id", "=", partner.id)], order="write_date desc", limit=3
+            ):
+                out.append(
+                    {
+                        "type": "salg",
+                        "navn": l.name or "",
+                        "dato": l.write_date.strftime("%d.%m") if l.write_date else "",
+                    }
+                )
         for t in self.env["project.task"].search(
-                [("partner_id", "=", partner.id)], order="write_date desc", limit=3):
-            out.append({"type": "opg", "navn": t.name or "",
-                        "dato": t.write_date.strftime("%d.%m") if t.write_date else ""})
+            [("partner_id", "=", partner.id)], order="write_date desc", limit=3
+        ):
+            out.append(
+                {
+                    "type": "opg",
+                    "navn": t.name or "",
+                    "dato": t.write_date.strftime("%d.%m") if t.write_date else "",
+                }
+            )
         if "helpdesk.ticket" in self.env:
             for h in self.env["helpdesk.ticket"].search(
-                    [("partner_id", "=", partner.id)], order="write_date desc", limit=3):
-                out.append({"type": "hd", "navn": h.name or "",
-                            "dato": h.write_date.strftime("%d.%m") if h.write_date else ""})
+                [("partner_id", "=", partner.id)], order="write_date desc", limit=3
+            ):
+                out.append(
+                    {
+                        "type": "hd",
+                        "navn": h.name or "",
+                        "dato": h.write_date.strftime("%d.%m") if h.write_date else "",
+                    }
+                )
         return out[:6]
 
     def _ukesplan_for_partner(self, partner):
         """Ukesplan denne uka: kalender-hendelser kontakten deltar på + oppgavefrister for
         tilknyttet bruker. (v1 — kan senere delegere til Prosjekt-modulen [[gui-naming]].)"""
         today = fields.Date.context_today(self)
-        start = today - timedelta(days=today.weekday())          # mandag denne uka
+        start = today - timedelta(days=today.weekday())  # mandag denne uka
         end = start + timedelta(days=6)
         out = []
         Cal = self.env["calendar.event"]
         # `calendar.event.start` er DATETIME (verifisert mot levende Odoo 19) — samme
         # felle som date_deadline: `<= end` mot et date-objekt kuttet ved midnatt og
         # skjulte alt som lå senere på ukas siste dag.
-        for e in Cal.search([("partner_ids", "in", partner.id),
-                             ("start", ">=", fields.Datetime.to_string(
-                                 datetime.combine(start, datetime.min.time()))),
-                             ("start", "<=", fields.Datetime.to_string(
-                                 datetime.combine(end, datetime.max.time())))],
-                            order="start", limit=30):
-            lokal = fields.Datetime.context_timestamp(self, e.start) if e.start else False
-            out.append({"type": "kal", "navn": e.name or "",
-                        "dato": lokal.strftime("%a %d.%m") if lokal else ""})
+        for e in Cal.search(
+            [
+                ("partner_ids", "in", partner.id),
+                (
+                    "start",
+                    ">=",
+                    fields.Datetime.to_string(
+                        datetime.combine(start, datetime.min.time())
+                    ),
+                ),
+                (
+                    "start",
+                    "<=",
+                    fields.Datetime.to_string(
+                        datetime.combine(end, datetime.max.time())
+                    ),
+                ),
+            ],
+            order="start",
+            limit=30,
+        ):
+            lokal = (
+                fields.Datetime.context_timestamp(self, e.start) if e.start else False
+            )
+            out.append(
+                {
+                    "type": "kal",
+                    "navn": e.name or "",
+                    "dato": lokal.strftime("%a %d.%m") if lokal else "",
+                }
+            )
         users = partner.user_ids
         if users:
             # Samme datetime-felle som i get_kalender(): `date_deadline` er DATETIME.
             # `<= end` mot et rent date-objekt kuttet ved midnatt og skjulte fredagens
             # frister i en ukesplan som skulle vist dem. Verifisert mot levende Odoo 19.
             for t in self.env["project.task"].search(
-                    [("user_ids", "in", users.ids),
-                     ("date_deadline", ">=", fields.Datetime.to_string(
-                         datetime.combine(start, datetime.min.time()))),
-                     ("date_deadline", "<=", fields.Datetime.to_string(
-                         datetime.combine(end, datetime.max.time())))],
-                    order="date_deadline", limit=30):
-                lokal_f = fields.Datetime.context_timestamp(self, t.date_deadline) \
-                    if t.date_deadline else False
-                out.append({"type": "opg", "navn": t.name or "",
-                            "dato": lokal_f.strftime("%a %d.%m") if lokal_f else ""})
+                [
+                    ("user_ids", "in", users.ids),
+                    (
+                        "date_deadline",
+                        ">=",
+                        fields.Datetime.to_string(
+                            datetime.combine(start, datetime.min.time())
+                        ),
+                    ),
+                    (
+                        "date_deadline",
+                        "<=",
+                        fields.Datetime.to_string(
+                            datetime.combine(end, datetime.max.time())
+                        ),
+                    ),
+                ],
+                order="date_deadline",
+                limit=30,
+            ):
+                lokal_f = (
+                    fields.Datetime.context_timestamp(self, t.date_deadline)
+                    if t.date_deadline
+                    else False
+                )
+                out.append(
+                    {
+                        "type": "opg",
+                        "navn": t.name or "",
+                        "dato": lokal_f.strftime("%a %d.%m") if lokal_f else "",
+                    }
+                )
         return out
 
     # ---- Kalender INNE i flaten (Gjermund 19.07.2026: «kalenderen mangler») ----------
@@ -1115,6 +1384,7 @@ class FiqMeldingssenterData(models.AbstractModel):
         Kjøres som brukeren (record rules gjelder) — ingen sudo, ingen fremmed kalender.
         """
         today = fields.Date.context_today(self)
+
         # 🔴 KRASJET I NETTLESEREN 23.07 (meldt av AI PK, funnet i loggen på Gjermunds base):
         # `TypeError: int() argument must be ... not 'dict'`. Rotårsak i front-enden —
         # `t-on-click="aapneKalender"` sendte KLIKK-EVENTET som `aar`, og et event blir en
@@ -1126,9 +1396,10 @@ class FiqMeldingssenterData(models.AbstractModel):
                 return int(v)
             except (TypeError, ValueError):
                 return standard
+
         aar = _som_tall(aar, today.year) if aar else today.year
         mnd = _som_tall(mnd, today.month) if mnd else today.month
-        if not (1 <= mnd <= 12):        # ugyldig måned ville sprengt date()
+        if not (1 <= mnd <= 12):  # ugyldig måned ville sprengt date()
             mnd = today.month
         start = date(aar, mnd, 1)
         end = date(aar + (mnd == 12), (mnd % 12) + 1, 1) - timedelta(days=1)
@@ -1156,19 +1427,40 @@ class FiqMeldingssenterData(models.AbstractModel):
         # 1) Møter der brukeren selv deltar. `partner_ids` — ikke alle møter i basen.
         meg = self.env.user.partner_id
         Cal = self.env["calendar.event"]
-        for e in Cal.search([("partner_ids", "in", meg.ids),
-                             ("start", ">=", fields.Datetime.to_string(
-                                 datetime.combine(hent_fra, datetime.min.time()))),
-                             ("start", "<=", fields.Datetime.to_string(
-                                 datetime.combine(hent_til, datetime.max.time())))],
-                            order="start", limit=300):
-            lokal = fields.Datetime.context_timestamp(self, e.start) if e.start else False
-            _legg(lokal.date() if lokal else False, {
-                "type": "mote",
-                "navn": e.name or "(uten tittel)",
-                "tid": lokal.strftime("%H:%M") if (lokal and not e.allday) else "",
-                "id": e.id, "model": "calendar.event",
-            })
+        for e in Cal.search(
+            [
+                ("partner_ids", "in", meg.ids),
+                (
+                    "start",
+                    ">=",
+                    fields.Datetime.to_string(
+                        datetime.combine(hent_fra, datetime.min.time())
+                    ),
+                ),
+                (
+                    "start",
+                    "<=",
+                    fields.Datetime.to_string(
+                        datetime.combine(hent_til, datetime.max.time())
+                    ),
+                ),
+            ],
+            order="start",
+            limit=300,
+        ):
+            lokal = (
+                fields.Datetime.context_timestamp(self, e.start) if e.start else False
+            )
+            _legg(
+                lokal.date() if lokal else False,
+                {
+                    "type": "mote",
+                    "navn": e.name or "(uten tittel)",
+                    "tid": lokal.strftime("%H:%M") if (lokal and not e.allday) else "",
+                    "id": e.id,
+                    "model": "calendar.event",
+                },
+            )
 
         # 2) Oppgavefrister som er MINE — ellers drukner møtene i andres frister.
         Task = self.env["project.task"]
@@ -1178,34 +1470,70 @@ class FiqMeldingssenterData(models.AbstractModel):
             # et rent date-objekt, ble `<= end` tolket som «<= end 00:00:00» → ALLE frister
             # senere enn midnatt på månedens siste dag falt ut av kalenderen, stille.
             # Derfor eksplisitt tidsvindu til slutten av siste dag.
-            dom = [("date_deadline", ">=", fields.Datetime.to_string(
-                        datetime.combine(hent_fra, datetime.min.time()))),
-                   ("date_deadline", "<=", fields.Datetime.to_string(
-                        datetime.combine(hent_til, datetime.max.time()))),
-                   ("user_ids", "in", self.env.user.ids)]
+            dom = [
+                (
+                    "date_deadline",
+                    ">=",
+                    fields.Datetime.to_string(
+                        datetime.combine(hent_fra, datetime.min.time())
+                    ),
+                ),
+                (
+                    "date_deadline",
+                    "<=",
+                    fields.Datetime.to_string(
+                        datetime.combine(hent_til, datetime.max.time())
+                    ),
+                ),
+                ("user_ids", "in", self.env.user.ids),
+            ]
             if firm and "company_id" in Task._fields:
                 try:
                     # Samme rettelse som i sok_mal: en oppgave UTEN firma er synlig
                     # for alle og skal ikke filtreres bort av et firmavalg.
-                    dom += ["|", ("company_id", "=", False),
-                            ("company_id", "in", [int(firm)])]
+                    dom += [
+                        "|",
+                        ("company_id", "=", False),
+                        ("company_id", "in", [int(firm)]),
+                    ]
                 except (TypeError, ValueError):
                     pass
             for t in Task.search(dom, order="date_deadline", limit=300):
                 # datetime → brukerens tidssone FØR vi plukker datoen. En frist
                 # «30.04 23:00 UTC» er 1. mai i Oslo og hører i mai-ruta, ikke april.
                 frist = t.date_deadline
-                lokal_frist = fields.Datetime.context_timestamp(self, frist) if frist else False
-                _legg(lokal_frist.date() if lokal_frist else False, {
-                    "type": "frist", "navn": t.name or "",
-                    "tid": lokal_frist.strftime("%H:%M") if lokal_frist else "",
-                    "id": t.id, "model": "project.task",
-                })
+                lokal_frist = (
+                    fields.Datetime.context_timestamp(self, frist) if frist else False
+                )
+                _legg(
+                    lokal_frist.date() if lokal_frist else False,
+                    {
+                        "type": "frist",
+                        "navn": t.name or "",
+                        "tid": lokal_frist.strftime("%H:%M") if lokal_frist else "",
+                        "id": t.id,
+                        "model": "project.task",
+                    },
+                )
 
-        MND = ["Januar", "Februar", "Mars", "April", "Mai", "Juni",
-               "Juli", "August", "September", "Oktober", "November", "Desember"]
+        MND = [
+            "Januar",
+            "Februar",
+            "Mars",
+            "April",
+            "Mai",
+            "Juni",
+            "Juli",
+            "August",
+            "September",
+            "Oktober",
+            "November",
+            "Desember",
+        ]
         return {
-            "aar": aar, "mnd": mnd, "mnd_navn": MND[mnd - 1],
+            "aar": aar,
+            "mnd": mnd,
+            "mnd_navn": MND[mnd - 1],
             "dager": dager,
             "antall": sum(len(v) for v in dager.values()),
             # Mandag=0. Rutenettet må vite hvor 1. i måneden skal starte, ellers
@@ -1226,7 +1554,9 @@ class FiqMeldingssenterData(models.AbstractModel):
     @staticmethod
     def _partner_linje(partners):
         """[{navn, adresse}] for et partner-sett — navn OG adresse (navn ikke ID)."""
-        return [{"navn": p.display_name or "", "adresse": p.email or ""} for p in partners]
+        return [
+            {"navn": p.display_name or "", "adresse": p.email or ""} for p in partners
+        ]
 
     @api.model
     def get_brodtekst(self, message_id):
@@ -1253,7 +1583,7 @@ class FiqMeldingssenterData(models.AbstractModel):
         html = m.body or ""
         if not html and m.preview:
             # Ren tekst uten HTML-kropp: pakk i <pre> så linjeskift overlever.
-            html = "<pre style='white-space:pre-wrap;font-family:inherit;margin:0'>%s</pre>" % escape(m.preview)
+            html = f"<pre style='white-space:pre-wrap;font-family:inherit;margin:0'>{escape(m.preview)}</pre>"
 
         # «Åpne i Outlook» (Gjermund 23.07): `message_id` er e-postens RFC-header — samme
         # identifikator Outlook selv bruker. Med den kan brukeren åpne DEN e-posten i sin
@@ -1267,7 +1597,7 @@ class FiqMeldingssenterData(models.AbstractModel):
         if rfc and "@" in rfc and m.message_type == "email":
             # Websøk i Outlook på RFC-headeren. Fungerer i Outlook på nett og i
             # skrivebordsklienten via protokollhåndtereren.
-            outlook = "https://outlook.office.com/mail/search/id/%s" % quote(rfc)
+            outlook = f"https://outlook.office.com/mail/search/id/{quote(rfc)}"
 
         return {
             "html": html,
@@ -1285,8 +1615,10 @@ class FiqMeldingssenterData(models.AbstractModel):
         if not m:
             return {}
         f = m._fields
-        fra = {"navn": m.author_id.display_name if m.author_id else "",
-               "adresse": m.email_from or ""}
+        fra = {
+            "navn": m.author_id.display_name if m.author_id else "",
+            "adresse": m.email_from or "",
+        }
         # Til: rå adresser fra e-posten (innkommende/utgående) + koblede kontakter
         raa_til = []
         if "incoming_email_to" in f and m.incoming_email_to:
@@ -1295,15 +1627,23 @@ class FiqMeldingssenterData(models.AbstractModel):
             raa_til = self._adr_liste(m.outgoing_email_to)
         til = self._partner_linje(m.partner_ids)
         # Kopi: rå CC-adresser + koblede CC-kontakter
-        raa_kopi = self._adr_liste(m.incoming_email_cc) if "incoming_email_cc" in f else []
-        kopi = self._partner_linje(m.recipient_cc_ids) if "recipient_cc_ids" in f else []
-        blindkopi = self._partner_linje(m.recipient_bcc_ids) if "recipient_bcc_ids" in f else []
+        raa_kopi = (
+            self._adr_liste(m.incoming_email_cc) if "incoming_email_cc" in f else []
+        )
+        kopi = (
+            self._partner_linje(m.recipient_cc_ids) if "recipient_cc_ids" in f else []
+        )
+        blindkopi = (
+            self._partner_linje(m.recipient_bcc_ids) if "recipient_bcc_ids" in f else []
+        )
         # «Svar alle» treffer: avsender + alle mottakere (samme som svar(reply_all=True))
         svar_alle = self._partner_linje(m.author_id | m.partner_ids)
         return {
             "fra": fra,
-            "til": til, "raa_til": raa_til,
-            "kopi": kopi, "raa_kopi": raa_kopi,
+            "til": til,
+            "raa_til": raa_til,
+            "kopi": kopi,
+            "raa_kopi": raa_kopi,
             "blindkopi": blindkopi,
             "svar_til": (m.reply_to or "") if "reply_to" in f else "",
             "svar_alle": svar_alle,
@@ -1317,9 +1657,14 @@ class FiqMeldingssenterData(models.AbstractModel):
         m = self.env["mail.message"].browse(int(message_id)).exists()
         if not m:
             return []
-        return [{"id": a.id, "navn": a.name or "",
-                 "kb": int(round((a.file_size or 0) / 1024.0))}
-                for a in m.attachment_ids]
+        return [
+            {
+                "id": a.id,
+                "navn": a.name or "",
+                "kb": int(round((a.file_size or 0) / 1024.0)),
+            }
+            for a in m.attachment_ids
+        ]
 
     @api.model
     def lagre_paa_element(self, message_id, model, res_id):
@@ -1335,7 +1680,9 @@ class FiqMeldingssenterData(models.AbstractModel):
         target.message_post(
             body="Vedlegg fra e-post: %s" % (m.subject or ""),
             attachment_ids=m.attachment_ids.ids,
-            message_type="comment", subtype_xmlid="mail.mt_note")
+            message_type="comment",
+            subtype_xmlid="mail.mt_note",
+        )
         return len(m.attachment_ids)
 
     # ---- Dokumentnavn · PDF · forhåndsvisning (Gjermund 19.07.2026) -----------------
@@ -1390,26 +1737,35 @@ class FiqMeldingssenterData(models.AbstractModel):
                 return {"ok": False, "feil": "Kunne ikke lese filinnholdet."}
             if "html" not in mime:
                 # Ren tekst → minimal HTML. `escape` hindrer at innhold tolkes som markup.
-                tekst = "<pre style='white-space:pre-wrap;font-family:monospace'>%s</pre>" % escape(tekst)
+                tekst = f"<pre style='white-space:pre-wrap;font-family:monospace'>{escape(tekst)}</pre>"
             try:
                 pdf = self.env["ir.actions.report"]._run_wkhtmltopdf([tekst])
             except Exception as e:
-                return {"ok": False, "feil": "PDF-motoren feilet: %s" % e}
+                return {"ok": False, "feil": f"PDF-motoren feilet: {e}"}
         else:
-            return {"ok": False,
-                    "feil": "Kan ikke konvertere %s ennå. Støtter tekst og HTML; "
-                            "Office-filer krever LibreOffice på serveren." % (a.mimetype or "ukjent type")}
+            return {
+                "ok": False,
+                "feil": "Kan ikke konvertere %s ennå. Støtter tekst og HTML; "
+                "Office-filer krever LibreOffice på serveren."
+                % (a.mimetype or "ukjent type"),
+            }
 
         navn = os.path.splitext(a.name or "vedlegg")[0] + ".pdf"
-        ny = self.env["ir.attachment"].create({
-            "name": navn,
-            "raw": pdf,
-            "mimetype": "application/pdf",
-            "res_model": a.res_model,
-            "res_id": a.res_id,
-        })
-        return {"ok": True, "id": ny.id, "navn": ny.name,
-                "kb": int(round((ny.file_size or 0) / 1024.0))}
+        ny = self.env["ir.attachment"].create(
+            {
+                "name": navn,
+                "raw": pdf,
+                "mimetype": "application/pdf",
+                "res_model": a.res_model,
+                "res_id": a.res_id,
+            }
+        )
+        return {
+            "ok": True,
+            "id": ny.id,
+            "navn": ny.name,
+            "kb": int(round((ny.file_size or 0) / 1024.0)),
+        }
 
     @api.model
     def forhandsvis(self, attachment_id):
@@ -1421,12 +1777,18 @@ class FiqMeldingssenterData(models.AbstractModel):
             return False
         mime = (a.mimetype or "").lower()
         return {
-            "id": a.id, "navn": a.name or "", "mimetype": a.mimetype or "",
+            "id": a.id,
+            "navn": a.name or "",
+            "mimetype": a.mimetype or "",
             "kb": int(round((a.file_size or 0) / 1024.0)),
-            "url": "/web/content/%s?download=false" % a.id,
-            "last_ned": "/web/content/%s?download=true" % a.id,
-            "kan_vises": bool(mime.endswith("pdf") or mime.startswith("image/")
-                              or mime.startswith("text/") or "html" in mime),
+            "url": f"/web/content/{a.id}?download=false",
+            "last_ned": f"/web/content/{a.id}?download=true",
+            "kan_vises": bool(
+                mime.endswith("pdf")
+                or mime.startswith("image/")
+                or mime.startswith("text/")
+                or "html" in mime
+            ),
         }
 
     @api.model
@@ -1437,19 +1799,29 @@ class FiqMeldingssenterData(models.AbstractModel):
         if not regler:
             return {"regler": 0, "treff": 0}
         Msg = self.env["mail.message"]
-        dom = (_ON_RECORD + [("message_type", "=", "email")]
-               + self._period_domain(period) + self._firma_domene(firm))
+        dom = (
+            _ON_RECORD
+            + [("message_type", "=", "email")]
+            + self._period_domain(period)
+            + self._firma_domene(firm)
+        )
         rows = Msg.search_read(
-            dom, ["id", "subject", "email_from", "preview", "record_name"],
-            limit=limit, order="date desc")
+            dom,
+            ["id", "subject", "email_from", "preview", "record_name"],
+            limit=limit,
+            order="date desc",
+        )
         getters = {
-            "avsender": lambda r: (r.get("email_from") or ""),
-            "emne": lambda r: (r.get("subject") or ""),
-            "innhold": lambda r: (r.get("preview") or ""),
-            "element": lambda r: (r.get("record_name") or ""),
+            "avsender": lambda r: r.get("email_from") or "",
+            "emne": lambda r: r.get("subject") or "",
+            "innhold": lambda r: r.get("preview") or "",
+            "element": lambda r: r.get("record_name") or "",
         }
-        status_av_handling = {"status_apen": "apen", "status_pagar": "pagar",
-                              "status_ferdig": "ferdig"}
+        status_av_handling = {
+            "status_apen": "apen",
+            "status_pagar": "pagar",
+            "status_ferdig": "ferdig",
+        }
         total = 0
         for regel in regler:
             getter = getters.get(regel.felt, getters["emne"])
@@ -1477,14 +1849,26 @@ class FiqMeldingssenterData(models.AbstractModel):
         farge2status = {"green": "online", "orange": "away", "red": "offline"}
         try:
             kr = self.env["fiq.gui.control.config"].get_presence()
-            return [{"id": p.get("id"), "navn": p.get("navn") or "",
-                     "status": farge2status.get(p.get("farge"), "offline")}
-                    for p in kr]
+            return [
+                {
+                    "id": p.get("id"),
+                    "navn": p.get("navn") or "",
+                    "status": farge2status.get(p.get("farge"), "offline"),
+                }
+                for p in kr
+            ]
         except Exception:
             out = []
-            for u in self.env["res.users"].search([("share", "=", False), ("active", "=", True)]):
-                out.append({
-                    "id": u.id, "navn": u.name,
-                    "status": u.im_status if "im_status" in u._fields else "offline",
-                })
+            for u in self.env["res.users"].search(
+                [("share", "=", False), ("active", "=", True)]
+            ):
+                out.append(
+                    {
+                        "id": u.id,
+                        "navn": u.name,
+                        "status": u.im_status
+                        if "im_status" in u._fields
+                        else "offline",
+                    }
+                )
             return out

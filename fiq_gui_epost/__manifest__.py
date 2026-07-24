@@ -1,13 +1,12 @@
-# -*- coding: utf-8 -*-
 {
     # Paraplyen (fiq_gui_comm) eier navnet «Kommunikasjon» utad. Denne modulen er
     # E-POST-KANALEN under den → egen etikett, ellers to like app-fliser i Apper.
     # Teknisk modulnavn (fiq_gui_epost) er URØRT — modulen er live på Staging + Production.
     "name": "Kommunikasjon — E-post",
-    "version": "19.0.6.23.0",
+    "version": "19.0.6.23.1",
     "summary": "FIQ Meldingssenter – kommunikasjonsflaten i Kontrollrommet. "
-               "V00.04-designet (godkjent) som levende flate: tilstede-topplinje, firmavelger "
-               "m/ logo, taksonomi 0–8, kompakte meldingsrader, lesepanel, paring/tildeling og AI-flate.",
+    "V00.04-designet (godkjent) som levende flate: tilstede-topplinje, firmavelger "
+    "m/ logo, taksonomi 0–8, kompakte meldingsrader, lesepanel, paring/tildeling og AI-flate.",
     "description": """
 FIQ Meldingssenter (V00.04)
 ===========================
@@ -47,7 +46,6 @@ V00.04 bygges først som levende referanse; native OWL-port mot ekte Odoo-data
             "fiq_gui_epost/static/src/epost.scss",
             "fiq_gui_epost/static/src/epost.js",
             "fiq_gui_epost/static/src/epost.xml",
-
         ],
     },
     # IKKE lenger egen app-flis: E-post er en KANAL inne i Kommunikasjon-paraplyen,

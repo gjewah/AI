@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Samleboks til KR-forsiden (kontrakten fra AI KR, 19.07.2026).
 #
@@ -37,7 +36,7 @@ class FiqGuiKommKrBoks(models.AbstractModel):
         tom = {"haster": 0, "i_dag": 0, "totalt": 0, "linjer": []}
         DATA = "fiq.meldingssenter.data"
         if DATA not in self.env:
-            return tom                      # e-post-kanalen er ikke installert
+            return tom  # e-post-kanalen er ikke installert
         kilde = self.env[DATA]
 
         # Firmavalget fra KR kan kun SNEVRE INN — kildens egen `_firma_domene()` gjør
@@ -45,10 +44,10 @@ class FiqGuiKommKrBoks(models.AbstractModel):
         try:
             data = kilde.get_boxes(firm=company_id or False, period="alle") or {}
         except Exception:
-            return tom                      # en feilende boks skal aldri velte forsiden
+            return tom  # en feilende boks skal aldri velte forsiden
 
         def _tell(gruppe, kode):
-            for b in (data.get(gruppe) or []):
+            for b in data.get(gruppe) or []:
                 if b.get("kode") == kode:
                     return int(b.get("count") or 0)
             return 0
@@ -61,17 +60,23 @@ class FiqGuiKommKrBoks(models.AbstractModel):
         i_dag = 0
         linjer = []
         try:
-            meldinger = kilde.get_messages(boks="uleste", firm=company_id or False,
-                                           period="dag") or []
+            meldinger = (
+                kilde.get_messages(
+                    boks="uleste", firm=company_id or False, period="dag"
+                )
+                or []
+            )
             i_dag = len(meldinger)
-            for m in meldinger[:5]:          # topp 5, ikke en hel liste
+            for m in meldinger[:5]:  # topp 5, ikke en hel liste
                 avsender = (m.get("fra") or "").strip()
                 emne = (m.get("emne") or "").strip()
-                linjer.append({
-                    "tekst": ("%s: %s" % (avsender, emne)).strip(": ")[:90],
-                    "res_id": m.get("id"),
-                })
+                linjer.append(
+                    {
+                        "tekst": (f"{avsender}: {emne}").strip(": ")[:90],
+                        "res_id": m.get("id"),
+                    }
+                )
         except Exception:
-            pass                             # tallene står selv om linjene mangler
+            pass  # tallene står selv om linjene mangler
 
         return {"haster": haster, "i_dag": i_dag, "totalt": uleste, "linjer": linjer}

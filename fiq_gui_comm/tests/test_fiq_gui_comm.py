@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Tester for Kommunikasjon-paraplyen.
 #
@@ -23,7 +22,6 @@ from odoo.tests.common import TransactionCase
 
 @tagged("-at_install", "post_install")
 class TestKommunikasjon(TransactionCase):
-
     def setUp(self):
         super().setUp()
         self.Data = self.env["fiq.kommunikasjon.data"]
@@ -89,11 +87,14 @@ class TestKommunikasjon(TransactionCase):
         på en samleboks. Skal aldri kaste igjen."""
         try:
             act = self.Data.aapne_boks("uleste", kanal="epost")
-        except Exception as e:                                  # pragma: no cover
-            self.fail("aapne_boks kastet: %s" % e)
-        if act:                                                 # kanalen er installert
-            self.assertIsInstance(act.get("context"), dict,
-                                  "context skal være parset til dict før den sendes videre")
+        except Exception as e:  # pragma: no cover
+            self.fail(f"aapne_boks kastet: {e}")
+        if act:  # kanalen er installert
+            self.assertIsInstance(
+                act.get("context"),
+                dict,
+                "context skal være parset til dict før den sendes videre",
+            )
             self.assertEqual(act["context"].get("fiq_boks"), "uleste")
 
     def test_aapne_boks_ukjent_kanal_gir_false(self):
@@ -108,11 +109,15 @@ class TestKommunikasjon(TransactionCase):
         låser feltet til String. Vi leser vår egen registrering fra kilden."""
         import os
         import re
+
         sti = os.path.join(os.path.dirname(__file__), "..", "static", "src", "comm.js")
         with open(os.path.abspath(sti), encoding="utf-8") as f:
             kilde = f.read()
-        self.assertIn('registry.category("fiq_gui_flates")', kilde,
-                      "flaten må registrere seg i skallet")
+        self.assertIn(
+            'registry.category("fiq_gui_flates")',
+            kilde,
+            "flaten må registrere seg i skallet",
+        )
 
         # 🔑 NØKKELEN SKAL VÆRE «komm» (avklart 23.07). Menyen kaller «kommunikasjon»,
         # men KR oversetter selv i `_slotKomponent()` via `NOKKEL_ALIAS`
@@ -121,13 +126,16 @@ class TestKommunikasjon(TransactionCase):
         # `fiq_gui_comm_flate.xml` og modellen `fiq.gui.komm.data` — bytter vi her,
         # brytes de to.
         nokler = re.findall(r'fiq_gui_flates"\)\.add\("([a-z_]+)"', kilde)
-        self.assertIn("komm", nokler,
-                      "nøkkelen må være «komm» — KR oversetter menyens navn via NOKKEL_ALIAS")
+        self.assertIn(
+            "komm",
+            nokler,
+            "nøkkelen må være «komm» — KR oversetter menyens navn via NOKKEL_ALIAS",
+        )
 
         # `label` MÅ være streng-literal uansett hvor i fila den står. Vi sjekker ALLE
         # forekomster, ikke bare den etter registreringen — feilklasse 10 er at et
         # objekt {en_US, nb_NO} feller HELE grensesnittet.
-        labels = re.findall(r'label:\s*(.)', kilde)
+        labels = re.findall(r"label:\s*(.)", kilde)
         self.assertTrue(labels, "fant ingen label å kontrollere")
         for tegn in labels:
             self.assertEqual(tegn, '"', "label må være streng-literal, ikke objekt")
@@ -136,15 +144,20 @@ class TestKommunikasjon(TransactionCase):
         """Malformert JSON i selvregistreringen droppes STILLE av
         `get_fiq_flater()` → flaten blir usynlig uten feilmelding."""
         import os
-        sti = os.path.join(os.path.dirname(__file__), "..", "data", "fiq_gui_comm_flate.xml")
+
+        sti = os.path.join(
+            os.path.dirname(__file__), "..", "data", "fiq_gui_comm_flate.xml"
+        )
         with open(os.path.abspath(sti), encoding="utf-8") as f:
             xml = f.read()
-        verdi = xml.split("<field name=\"value\">", 1)[1].split("</field>", 1)[0]
-        spec = json.loads(verdi)                                # kaster hvis malformert
+        verdi = xml.split('<field name="value">', 1)[1].split("</field>", 1)[0]
+        spec = json.loads(verdi)  # kaster hvis malformert
         self.assertIsInstance(spec.get("label"), str)
         self.assertTrue(spec.get("xmlid"))
-        self.assertTrue(self.env.ref(spec["xmlid"], raise_if_not_found=False),
-                        "xmlid i selvregistreringen må finnes i basen")
+        self.assertTrue(
+            self.env.ref(spec["xmlid"], raise_if_not_found=False),
+            "xmlid i selvregistreringen må finnes i basen",
+        )
 
     # ---- Samleboks til KR-forsiden ------------------------------------------------
 
