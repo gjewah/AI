@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tester for datalaget som mater Gantt-visningen (fiq_gui_gantt).
 
 Modulen hadde NULL tester. «0 failed, 0 error(s) of 0 tests» er ikke grønt — det
@@ -38,7 +37,6 @@ from odoo.tests import TransactionCase, tagged
 # (project/tests/test_project_mail_features.py:9).
 @tagged("post_install", "-at_install", "fiq_gantt")
 class TestFiqGuiGantt(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -60,8 +58,7 @@ class TestFiqGuiGantt(TransactionCase):
         return self.Project.create(dict({"name": navn}, **vals))
 
     def _oppgave(self, prosjekt, navn="Oppgave", **vals):
-        return self.Task.create(
-            dict({"name": navn, "project_id": prosjekt.id}, **vals))
+        return self.Task.create(dict({"name": navn, "project_id": prosjekt.id}, **vals))
 
     def _sett_fremdrift(self, oppgave, andel):
         """Sett `progress` via de EKTE driverne — den kan ikke skrives direkte.
@@ -83,23 +80,30 @@ class TestFiqGuiGantt(TransactionCase):
         # companies», hr_timesheet/models/hr_timesheet.py:332). Vi lager vaar
         # egen ansatt for testbrukeren i stedet for aa anta at det finnes en.
         firma = oppgave.company_id or oppgave.project_id.company_id or self.env.company
-        ansatt = self.env["hr.employee"].search([
-            ("user_id", "=", self.env.user.id),
-            ("company_id", "=", firma.id),
-        ], limit=1)
+        ansatt = self.env["hr.employee"].search(
+            [
+                ("user_id", "=", self.env.user.id),
+                ("company_id", "=", firma.id),
+            ],
+            limit=1,
+        )
         if not ansatt:
-            ansatt = self.env["hr.employee"].create({
-                "name": "FIQ testansatt",
-                "user_id": self.env.user.id,
-                "company_id": firma.id,
-            })
-        self.env["account.analytic.line"].with_company(firma).create({
-            "name": "FIQ testtimer",
-            "task_id": oppgave.id,
-            "project_id": oppgave.project_id.id,
-            "employee_id": ansatt.id,
-            "unit_amount": 10.0 * andel,
-        })
+            ansatt = self.env["hr.employee"].create(
+                {
+                    "name": "FIQ testansatt",
+                    "user_id": self.env.user.id,
+                    "company_id": firma.id,
+                }
+            )
+        self.env["account.analytic.line"].with_company(firma).create(
+            {
+                "name": "FIQ testtimer",
+                "task_id": oppgave.id,
+                "project_id": oppgave.project_id.id,
+                "employee_id": ansatt.id,
+                "unit_amount": 10.0 * andel,
+            }
+        )
         oppgave.invalidate_recordset(["progress", "effective_hours"])
         return oppgave
 
@@ -127,16 +131,18 @@ class TestFiqGuiGantt(TransactionCase):
         forventet/faktisk-regnestykket, ikke krasje i det.
         """
         opg = self._oppgave(
-            self._prosjekt(), "Uten start",
-            date_deadline=self.naa + timedelta(days=10))
+            self._prosjekt(), "Uten start", date_deadline=self.naa + timedelta(days=10)
+        )
         self.assertFalse(opg.planned_date_begin)
         self.assertEqual(opg.time_status, "gronn")
 
     def test_oppgave_uten_startdato_med_passert_frist_er_rod(self):
         """Frist passert veier tyngst, også når start mangler."""
         opg = self._oppgave(
-            self._prosjekt(), "Uten start, forfalt",
-            date_deadline=self.naa - timedelta(days=3))
+            self._prosjekt(),
+            "Uten start, forfalt",
+            date_deadline=self.naa - timedelta(days=3),
+        )
         self.assertFalse(opg.planned_date_begin)
         self.assertEqual(opg.time_status, "rod")
 
@@ -148,8 +154,10 @@ class TestFiqGuiGantt(TransactionCase):
         uten grunnlag.
         """
         opg = self._oppgave(
-            self._prosjekt(), "Uten frist",
-            planned_date_begin=self.naa - timedelta(days=30))
+            self._prosjekt(),
+            "Uten frist",
+            planned_date_begin=self.naa - timedelta(days=30),
+        )
         self.assertFalse(opg.date_deadline)
         self.assertEqual(opg.time_status, "gronn")
 
@@ -164,9 +172,11 @@ class TestFiqGuiGantt(TransactionCase):
 
     def test_oppgave_forfalt_er_rod(self):
         opg = self._oppgave(
-            self._prosjekt(), "Forfalt",
+            self._prosjekt(),
+            "Forfalt",
             planned_date_begin=self.naa - timedelta(days=10),
-            date_deadline=self.naa - timedelta(days=1))
+            date_deadline=self.naa - timedelta(days=1),
+        )
         self.assertEqual(opg.time_status, "rod")
 
     def test_lukket_oppgave_er_alltid_gronn(self):
@@ -176,8 +186,10 @@ class TestFiqGuiGantt(TransactionCase):
         is_closed følge etter i stedet for å skrive direkte på et compute-felt.
         """
         opg = self._oppgave(
-            self._prosjekt(), "Ferdig men forfalt",
-            date_deadline=self.naa - timedelta(days=5))
+            self._prosjekt(),
+            "Ferdig men forfalt",
+            date_deadline=self.naa - timedelta(days=5),
+        )
         self.assertEqual(opg.time_status, "rod")
         opg.state = "1_done"
         if not opg.is_closed:
@@ -190,18 +202,22 @@ class TestFiqGuiGantt(TransactionCase):
         Halvveis i tid med 100 % fremdrift ligger klart over forventningen.
         """
         opg = self._oppgave(
-            self._prosjekt(), "I rute",
+            self._prosjekt(),
+            "I rute",
             planned_date_begin=self.naa - timedelta(days=5),
-            date_deadline=self.naa + timedelta(days=5))
+            date_deadline=self.naa + timedelta(days=5),
+        )
         self._sett_fremdrift(opg, 1.0)
         self.assertEqual(opg.time_status, "gronn")
 
     def test_oppgave_bak_skjema_midt_i_vinduet(self):
         """Halvveis i tid, 0 % gjort → 0 + 0,15 < 0,5 → oransje."""
         opg = self._oppgave(
-            self._prosjekt(), "Bak skjema",
+            self._prosjekt(),
+            "Bak skjema",
             planned_date_begin=self.naa - timedelta(days=5),
-            date_deadline=self.naa + timedelta(days=5))
+            date_deadline=self.naa + timedelta(days=5),
+        )
         self.assertEqual(opg.progress, 0.0)
         self.assertEqual(opg.time_status, "oransje")
 
@@ -212,9 +228,11 @@ class TestFiqGuiGantt(TransactionCase):
         alt oransje og fargen slutter å bety noe.
         """
         opg = self._oppgave(
-            self._prosjekt(), "Innenfor margin",
+            self._prosjekt(),
+            "Innenfor margin",
             planned_date_begin=self.naa - timedelta(days=5),
-            date_deadline=self.naa + timedelta(days=5))
+            date_deadline=self.naa + timedelta(days=5),
+        )
         self._sett_fremdrift(opg, 0.45)
         self.assertEqual(opg.time_status, "gronn")
 
@@ -234,11 +252,15 @@ class TestFiqGuiGantt(TransactionCase):
         Testen låser tolkningen: FULL fremdrift midt i vinduet er grønn.
         """
         opg = self._oppgave(
-            self._prosjekt(), "Andel ikke prosent",
+            self._prosjekt(),
+            "Andel ikke prosent",
             planned_date_begin=self.naa - timedelta(days=5),
-            date_deadline=self.naa + timedelta(days=5))
+            date_deadline=self.naa + timedelta(days=5),
+        )
         self._sett_fremdrift(opg, 1.0)
-        self.assertEqual(opg.progress, 1.0, "progress skal vaere en andel (1.0 = 100 %)")
+        self.assertEqual(
+            opg.progress, 1.0, "progress skal vaere en andel (1.0 = 100 %)"
+        )
         self.assertEqual(opg.time_status, "gronn")
 
     def test_oppgave_med_null_lang_vindu_deler_ikke_paa_null(self):
@@ -250,17 +272,21 @@ class TestFiqGuiGantt(TransactionCase):
         """
         tidspunkt = self.naa + timedelta(days=2)
         opg = self._oppgave(
-            self._prosjekt(), "Null-vindu",
+            self._prosjekt(),
+            "Null-vindu",
             planned_date_begin=tidspunkt,
-            date_deadline=tidspunkt)
+            date_deadline=tidspunkt,
+        )
         self.assertEqual(opg.time_status, "gronn")
 
     def test_oppgave_uten_fremdrift_behandles_som_null(self):
         """`progress or 0.0`: en tom fremdrift må ikke bli None i regnestykket."""
         opg = self._oppgave(
-            self._prosjekt(), "Tom fremdrift",
+            self._prosjekt(),
+            "Tom fremdrift",
             planned_date_begin=self.naa - timedelta(days=5),
-            date_deadline=self.naa + timedelta(days=5))
+            date_deadline=self.naa + timedelta(days=5),
+        )
         self.assertIn(opg.time_status, ("gronn", "oransje"))
         self.assertIsNotNone(opg.time_status)
 
@@ -280,8 +306,8 @@ class TestFiqGuiGantt(TransactionCase):
         prosjekt = self._prosjekt()
         tom = self._oppgave(prosjekt, "Blandet tom")
         forfalt = self._oppgave(
-            prosjekt, "Blandet forfalt",
-            date_deadline=self.naa - timedelta(days=1))
+            prosjekt, "Blandet forfalt", date_deadline=self.naa - timedelta(days=1)
+        )
         alle = tom | forfalt
         alle.invalidate_recordset(["time_status"])
         self.assertEqual(tom.time_status, "gronn")
@@ -382,8 +408,10 @@ class TestFiqGuiGantt(TransactionCase):
         self.assertEqual(barn.project_id, til)
         self.assertEqual(barn.parent_id, mor)
         self.assertEqual(
-            barn.wbs_number, "01",
-            "barn med forelder i et ANNET prosjekt skal telle som rot her")
+            barn.wbs_number,
+            "01",
+            "barn med forelder i et ANNET prosjekt skal telle som rot her",
+        )
 
     def test_wbs_oppgave_uten_prosjekt_faar_ingen_nummer(self):
         """🔴 NULL: uten prosjekt finnes det ikke noe tre å nummerere i."""
@@ -453,15 +481,15 @@ class TestFiqGuiGantt(TransactionCase):
 
     def test_prosjekt_uten_startdato_men_passert_slutt_er_rod(self):
         """🔴 NULL: start mangler — sluttgrenen må virke likevel."""
-        prosjekt = self._prosjekt(
-            "Uten start", date=self.i_dag - timedelta(days=5))
+        prosjekt = self._prosjekt("Uten start", date=self.i_dag - timedelta(days=5))
         self.assertFalse(prosjekt.date_start)
         self.assertEqual(prosjekt.time_status, "rod")
 
     def test_prosjekt_uten_sluttdato_er_gronn(self):
         """🔴 NULL: uten utløpsdato finnes ingen frist å bryte."""
         prosjekt = self._prosjekt(
-            "Uten slutt", date_start=self.i_dag - timedelta(days=100))
+            "Uten slutt", date_start=self.i_dag - timedelta(days=100)
+        )
         self.assertFalse(prosjekt.date)
         self.assertEqual(prosjekt.time_status, "gronn")
 
@@ -479,8 +507,7 @@ class TestFiqGuiGantt(TransactionCase):
         rød/oransje-grenene ikke slår inn først.
         """
         dagen = self.i_dag + timedelta(days=3)
-        prosjekt = self._prosjekt(
-            "Endagsprosjekt", date_start=dagen, date=dagen)
+        prosjekt = self._prosjekt("Endagsprosjekt", date_start=dagen, date=dagen)
         self.assertEqual(prosjekt.time_status, "gronn")
 
     def test_prosjekt_kan_ikke_ha_slutt_foer_start(self):
@@ -506,7 +533,8 @@ class TestFiqGuiGantt(TransactionCase):
                 self._prosjekt(
                     "Bakvendt",
                     date_start=self.i_dag + timedelta(days=10),
-                    date=self.i_dag - timedelta(days=10))
+                    date=self.i_dag - timedelta(days=10),
+                )
 
     def test_prosjekt_time_status_paa_tomt_recordset(self):
         """🔴 NULL: tomt recordset skal ikke kaste."""
@@ -517,8 +545,7 @@ class TestFiqGuiGantt(TransactionCase):
     def test_prosjekt_time_status_paa_blandet_recordset(self):
         """Alle poster får verdi i ETT kall — også den uten datoer."""
         uten = self._prosjekt("Blandet uten")
-        forfalt = self._prosjekt(
-            "Blandet forfalt", date=self.i_dag - timedelta(days=5))
+        forfalt = self._prosjekt("Blandet forfalt", date=self.i_dag - timedelta(days=5))
         alle = uten | forfalt
         alle.invalidate_recordset(["time_status"])
         self.assertEqual(uten.time_status, "gronn")
@@ -630,8 +657,7 @@ class TestFiqGuiGantt(TransactionCase):
         Slår denne feil, er det et signal om at noe har begynt å sette
         company_id selv, og da må isolasjonen vurderes på nytt.
         """
-        prosjekt = self._prosjekt(
-            "Firma-test", company_id=self.env.company.id)
+        prosjekt = self._prosjekt("Firma-test", company_id=self.env.company.id)
         opg = self._oppgave(prosjekt, "Firma-oppgave")
         self.assertEqual(opg.company_id, prosjekt.company_id)
 

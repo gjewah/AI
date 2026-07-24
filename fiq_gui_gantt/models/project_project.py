@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # FIQ GUI Gantt — utvidelse av project.project.
 # Kun VISNINGS-status for tid (time_status) til Gantt-pilledekorasjon.
@@ -20,7 +19,7 @@ class ProjectProject(models.Model):
         compute="_compute_time_status",
         store=False,
         help="🟢 i rute · 🟠 bak skjema · 🔴 forfalt. Beregnet av utløpsdato og "
-             "fullføringsgrad. Brukes til fargedekorasjon i prosjekt-Gantt.",
+        "fullføringsgrad. Brukes til fargedekorasjon i prosjekt-Gantt.",
     )
 
     def action_open_task_gantt(self):
@@ -43,13 +42,15 @@ class ProjectProject(models.Model):
 
     @api.depends("date", "date_start", "task_completion_percentage")
     def _compute_time_status(self):
-        now = fields.Datetime.now()
+        # `now` var tildelt her, men aldri brukt (F841) — verifisert: eneste forekomst
+        # i fila. Beregningen under bruker `today` (Date), fordi feltene den sammenligner
+        # med (`date`, `date_start`) er Date, ikke Datetime. Fjernet.
         today = fields.Date.context_today(self)
         for project in self:
             status = "gronn"
-            slutt = project.date          # Utløpsdato (Date)
-            start = project.date_start    # Startdato (Date)
-            ferdig = (project.task_completion_percentage or 0.0)  # 0..100
+            slutt = project.date  # Utløpsdato (Date)
+            start = project.date_start  # Startdato (Date)
+            ferdig = project.task_completion_percentage or 0.0  # 0..100
             if slutt and slutt < today and ferdig < 100.0:
                 status = "rod"
             elif slutt and slutt == today and ferdig < 100.0:

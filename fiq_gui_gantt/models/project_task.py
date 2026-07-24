@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # FIQ GUI Gantt — utvidelse av project.task.
 #
@@ -28,9 +27,9 @@ class ProjectTask(models.Model):
         copy=False,
         index=True,
         help="Dynamisk disposisjonsnummer i MS-Project-stil (01, 01.01, 01.01.01) "
-             "utledet av rekkefølge (sequence) og oppgavehierarki (parent_id) innen "
-             "prosjektet. ENDRES automatisk når oppgaver flyttes/omorganiseres. "
-             "Kommer i TILLEGG til den stabile FIQ-koden (Task No.).",
+        "utledet av rekkefølge (sequence) og oppgavehierarki (parent_id) innen "
+        "prosjektet. ENDRES automatisk når oppgaver flyttes/omorganiseres. "
+        "Kommer i TILLEGG til den stabile FIQ-koden (Task No.).",
     )
 
     # --- Tids-status (kun visning, alltid ferskt → ikke lagret) -------------------
@@ -44,13 +43,15 @@ class ProjectTask(models.Model):
         compute="_compute_time_status",
         store=False,
         help="🟢 i rute · 🟠 bak skjema · 🔴 forfalt. Beregnet av frist, planlagt "
-             "start og fremdrift mot dagens dato. Brukes til fargedekorasjon i Gantt.",
+        "start og fremdrift mot dagens dato. Brukes til fargedekorasjon i Gantt.",
     )
 
     # =====================================================================
     #  Tids-status
     # =====================================================================
-    @api.depends("date_deadline", "planned_date_begin", "progress", "is_closed", "state")
+    @api.depends(
+        "date_deadline", "planned_date_begin", "progress", "is_closed", "state"
+    )
     def _compute_time_status(self):
         """Utled en enkel, faktabasert tids-status.
 
@@ -119,11 +120,18 @@ class ProjectTask(models.Model):
 
             new_values = {}
 
-            def _walk(parent_id, prefix):
-                for idx, t in enumerate(by_parent.get(parent_id, []), start=1):
-                    number = "%s%02d" % (prefix, idx)
-                    new_values[t.id] = number
-                    _walk(t.id, number + ".")
+            # B023: `by_parent` og `new_values` bindes EKSPLISITT som standardverdier.
+            # Koden var korrekt slik den sto — `_walk` kalles i samme løkkerunde som den
+            # defineres, så den ser alltid riktig prosjekt. Men bindingen var implisitt:
+            # flyttet noen kallet ut av løkka (eller la det i en liste for senere kjøring),
+            # ville ALLE prosjekter fått siste prosjekts data — uten feilmelding, bare gale
+            # WBS-numre. Eksplisitt binding gjør riktig oppførsel til noe koden garanterer,
+            # ikke noe den tilfeldigvis får til.
+            def _walk(parent_id, prefix, _bp=by_parent, _nv=new_values):
+                for idx, t in enumerate(_bp.get(parent_id, []), start=1):
+                    number = f"{prefix}{idx:02d}"
+                    _nv[t.id] = number
+                    _walk(t.id, number + ".", _bp, _nv)
 
             _walk(False, "")
 
@@ -147,7 +155,9 @@ class ProjectTask(models.Model):
     def write(self, vals):
         # Fang gamle prosjekter FØR skriving (ved flytting mellom prosjekter).
         recompute = bool(_WBS_TRIGGER_FIELDS.intersection(vals))
-        old_projects = self.mapped("project_id") if recompute else self.env["project.project"]
+        old_projects = (
+            self.mapped("project_id") if recompute else self.env["project.project"]
+        )
         res = super().write(vals)
         if recompute:
             self._fiq_recompute_wbs(old_projects | self.mapped("project_id"))

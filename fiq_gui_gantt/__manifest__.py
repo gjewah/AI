@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 {
     "name": "FIQ GUI Gantt",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.2.0",
     "summary": "Native web_gantt for prosjekt og oppgaver + FIQ-tillegg: "
-               "disposisjonsnummer (WBS), tids-status-farge (grønn/oransje/rød), "
-               "drill prosjekt→oppgave og milepæl-Gantt. Generisk, multicompany, "
-               "tenant-isolert — for alle FIQ AS-kunder.",
+    "disposisjonsnummer (WBS), tids-status-farge (grønn/oransje/rød), "
+    "drill prosjekt→oppgave og milepæl-Gantt. Generisk, multicompany, "
+    "tenant-isolert — for alle FIQ AS-kunder.",
     "description": """
 FIQ GUI Gantt
 =============

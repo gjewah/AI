@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # FIQ GUI Gantt — utvidelse av project.milestone.
 # Milepæler har kun én dato (deadline). For å vise dem som endagssøyler i Gantt
@@ -23,7 +22,7 @@ class ProjectMilestone(models.Model):
         compute="_compute_fiq_gantt_dates",
         store=False,
         help="Avledet sluttidspunkt (fristens dato kl. 23:59) — kun for Gantt-visning "
-             "(gjør milepælen synlig som en endagssøyle).",
+        "(gjør milepælen synlig som en endagssøyle).",
     )
     time_status = fields.Selection(
         selection=[
