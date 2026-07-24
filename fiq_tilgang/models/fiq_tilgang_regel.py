@@ -31,10 +31,15 @@ class FiqTilgangRegel(models.Model):
         default="rolle",
         required=True,
     )
-    rolle_id = fields.Many2one("fiq.tilgang.rolle", string="Rolle")
+    # `string=` utelatt på de tre under (pylint-odoo W8113): Odoo utleder samme
+    # etikett fra feltnavnet — `rolle_id` → «Rolle». Feltnavnene er norske, så
+    # etiketten forblir norsk uten parameteren.
+    # 🛑 `gruppe_id` BEHOLDER sin: «Odoo-gruppe» er ULIKT feltnavnet, og ville
+    #    blitt til «Gruppe» — som er upresist når det er en Odoo-rettighetsgruppe.
+    rolle_id = fields.Many2one("fiq.tilgang.rolle")
     gruppe_id = fields.Many2one("res.groups", string="Odoo-gruppe")
-    bruker_id = fields.Many2one("res.users", string="Bruker")
-    partner_id = fields.Many2one("res.partner", string="Partner")
+    bruker_id = fields.Many2one("res.users")
+    partner_id = fields.Many2one("res.partner")
     nivaa = fields.Selection(
         [("lese", "Lese"), ("skrive", "Skrive"), ("administrere", "Administrere")],
         string="Nivå",
