@@ -86,7 +86,6 @@ class FiqAiSpor(models.Model):
         help="F.eks. «AI Kontrollrom», «Prosjekt», «Kommunikasjon».",
     )
     kode = fields.Char(
-        string="Kode",
         index=True,
         help="Kort kode brukt i øktnavn, f.eks. «AI KR», «PRJ», «KOMM».",
     )
@@ -110,7 +109,6 @@ class FiqAiSpor(models.Model):
         help="Teller opp for hver ny økt innenfor samme milepæl.",
     )
     versjon = fields.Char(
-        string="Versjon",
         compute="_compute_versjon",
         store=True,
         help="«00.03» — vises i øktnavnet.",
@@ -132,7 +130,6 @@ class FiqAiSpor(models.Model):
             ("produksjon", "I Production"),
             ("godkjent", "Godkjent ferdig"),
         ],
-        string="Status",
         default="bygges",
         index=True,
     )

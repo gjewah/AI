@@ -49,7 +49,6 @@ class FiqAiMelding(models.Model):
     # Brukeren meldingen GJELDER — nøkkelen til «mine forespørsler» i Meldingssenteret.
     bruker_id = fields.Many2one(
         "res.users",
-        string="Bruker",
         index=True,
         help="Brukeren som spurte, eller som svaret gjelder. Tomt = ren drift mellom økter.",
     )
@@ -77,14 +76,13 @@ class FiqAiMelding(models.Model):
             ("i_dag", "Viktig i dag"),
             ("orientering", "Til orientering"),
         ],
-        string="Viktighet",
         default="orientering",
         index=True,
         tracking=True,
     )
 
     krever_svar = fields.Boolean(string="Krever svar", index=True, tracking=True)
-    besvart = fields.Boolean(string="Besvart", tracking=True)
+    besvart = fields.Boolean(tracking=True)
     # 🔴 Filtrert bort = NEDPRIORITERT, ikke slettet. Postmesteren kan ta feil, og da må
     # meldingen kunne finnes igjen. En stille filtrering er et tap forkledd som orden.
     filtrert_bort = fields.Boolean(
@@ -95,7 +93,7 @@ class FiqAiMelding(models.Model):
     )
     filtrert_grunn = fields.Char(string="Hvorfor filtrert")
 
-    sendt = fields.Datetime(string="Sendt", default=fields.Datetime.now, index=True)
+    sendt = fields.Datetime(default=fields.Datetime.now, index=True)
     company_id = fields.Many2one(
         "res.company", string="Firma", index=True, default=lambda self: self.env.company
     )
@@ -106,7 +104,7 @@ class FiqAiMelding(models.Model):
         string="Gjelder (post)", model_field="res_model", index=True
     )
 
-    alder = fields.Char(string="Alder", compute="_compute_alder")
+    alder = fields.Char(compute="_compute_alder")
 
     def _compute_alder(self):
         """«12 min» / «3 t» / «2 d» — menneskelig, ikke et tidsstempel å regne på."""

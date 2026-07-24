@@ -65,14 +65,12 @@ class FiqAiKonklusjon(models.Model):
         help="ÉN setning. «Nøkkelen må hentes fra Odoo.sh i denne økta, aldri fra minnet.»",
     )
     grunnlag = fields.Text(
-        string="Grunnlag",
         tracking=True,
         help="Hva konklusjonen bygger på. «Verifisert i project_task.py:154.»",
     )
 
     sikkerhet = fields.Selection(
         SIKKERHET,
-        string="Sikkerhet",
         index=True,
         tracking=True,
         help="Settes av økta som konkluderer — ALDRI i etterkant.",
@@ -100,7 +98,6 @@ class FiqAiKonklusjon(models.Model):
             ("bestridt", "🛑 Bestridt — arbeid stoppet"),
             ("korrigert", "Korrigert"),
         ],
-        string="Status",
         default="staar",
         required=True,
         index=True,
@@ -122,7 +119,7 @@ class FiqAiKonklusjon(models.Model):
     # Sporet EIER konklusjonen. Økta som skrev den er borte om to dager; konklusjonen
     # skal stå, og ny økt må ARVE at Gjermund har bestridt den.
     spor_id = fields.Many2one(
-        "fiq.ai.spor", string="Spor", index=True, ondelete="set null", tracking=True
+        "fiq.ai.spor", index=True, ondelete="set null", tracking=True
     )
     okt_id = fields.Many2one(
         "fiq.ai.okt",
@@ -141,12 +138,11 @@ class FiqAiKonklusjon(models.Model):
     )
 
     kilde = fields.Char(
-        string="Kilde",
         help="Fil/commit konklusjonen står i, for den som vil grave. "
         "«brain/ai_ktrl_koordinering.md @ bfb604d»",
     )
 
-    skrevet = fields.Datetime(string="Skrevet", default=fields.Datetime.now, index=True)
+    skrevet = fields.Datetime(default=fields.Datetime.now, index=True)
     company_id = fields.Many2one(
         "res.company", string="Firma", index=True, default=lambda self: self.env.company
     )

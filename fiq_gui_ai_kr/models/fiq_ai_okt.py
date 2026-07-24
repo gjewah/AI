@@ -24,7 +24,6 @@ class FiqAiOkt(models.Model):
             ("cowork", "Cowork"),
             ("annet", "Annet"),
         ],
-        string="Kilde",
         default="claude_code",
         index=True,
     )
@@ -38,7 +37,6 @@ class FiqAiOkt(models.Model):
             ("ferdig", "Ferdig"),
             ("feilet", "Feilet"),
         ],
-        string="Status",
         default="aktiv",
         index=True,
     )

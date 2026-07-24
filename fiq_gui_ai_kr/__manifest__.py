@@ -1,11 +1,30 @@
 # ruff: noqa: B018 — Odoos manifest ER en ordbok paa toppnivaa, ikke et uttrykk paa avveie
 {
     "name": "FIQ AI KR – AI Kontrollrom",
-    "version": "19.0.3.2.4",
+    "version": "19.0.3.2.5",
     "summary": "FIQ AI Kontrollrom (AI KR) – operatør-cockpit: oversikt over alle AI-økter "
     "(Claude Code + Cowork), AI-organisasjonskart, redigerbare roller/skills, "
     "ressursbruk og ROI. Snippet-basert (firma → rolle → person).",
-    "description": """19.0.3.2.4 - LINT REN: 13 funn rettet (AI PK maalte dem i gaten):
+    "description": """19.0.3.2.5 - PORT 2 REN: 21 x W8113 fjernet (10.00/10):
+* AI PK kjorte pylint-odoo og meldte 21 funn jeg ikke kunne se. Sa oppdaget
+  jeg at pylint FINNES lokalt (py -m pylint --load-plugins=pylint_odoo).
+  Kjorte den selv: noyaktig samme 21. Verifisert, ikke arvet.
+* 🔴 IKKE RYDDET MEKANISK. Skriptet har en SPERRE som nekter aa fjerne en
+  etikett med mindre den er IDENTISK med Odoos utledning. Den slo inn to
+  ganger og stoppet meg:
+    1. spor_id = «Spor» - min regel ga «Spor id» og ropte FALSK ALARM.
+       Odoo stripper _id paa relasjonsfelt. Regelen var for enkel, ikke koden.
+    2. pylint peker paa FELTETS startlinje, ikke paa string=-linja. Ved
+       flerlinjede felt las feil linje. Rettet til aa soke framover.
+* 🔑 54 ETIKETTER STAAR: name=«Spoersmaal», noekkel=«Gjentakelsesnoekkel»,
+  ubesvart=«Venter paa deg», art=«Svarform». De BAERER informasjon feltnavnet
+  ikke har. RGS' regel: W8113 kan ikke ryddes mekanisk - i moduler med
+  ENGELSKE feltnavn ville fjerning gjort det verre.
+* Verifisert etter: pylint-odoo 10.00/10 (var 9.82) · ruff check All checks
+  passed · format 18 filer · alle filer parser · de fire etikettene over
+  bekreftet fortsatt til stede.
+
+19.0.3.2.4 - LINT REN: 13 funn rettet (AI PK maalte dem i gaten):
 * 12 UP031 (%-formatering) + 1 E741 (variabelnavnet `l`). AI PK la modulen inn
   i apps-ai, kjorte port 1, og tok den UT igjen - den var ikke klar.
 * 🔴 NULLPOLSTRINGEN BEVART, og BEVIST: %02d -> :02d. Uten den ville «01.03»

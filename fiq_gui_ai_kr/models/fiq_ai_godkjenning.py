@@ -91,12 +91,10 @@ class FiqAiGodkjenning(models.Model):
             ("senere", "🟠 Senere"),
             ("dropp", "🔴 Dropp"),
         ],
-        string="Svar",
         index=True,
         tracking=True,
     )
     forbehold = fields.Text(
-        string="Forbehold",
         tracking=True,
         help="«Ja, men…» uten tekst er verdiløst — økta må vite HVA forbeholdet er.",
     )
@@ -105,7 +103,7 @@ class FiqAiGodkjenning(models.Model):
         string="Venter på deg", compute="_compute_ubesvart", store=True, index=True
     )
     haster = fields.Boolean(
-        string="Haster", default=False, index=True, help="Blokkerer arbeid akkurat nå."
+        default=False, index=True, help="Blokkerer arbeid akkurat nå."
     )
 
     # ── HVEM SPØR ───────────────────────────────────────────────────────────────
@@ -114,7 +112,6 @@ class FiqAiGodkjenning(models.Model):
     )
     spor_id = fields.Many2one(
         "fiq.ai.spor",
-        string="Spor",
         index=True,
         ondelete="set null",
         help="Sporet eier spørsmålet — økta som spurte er borte om to dager.",
@@ -135,7 +132,7 @@ class FiqAiGodkjenning(models.Model):
     )
 
     opprettet = fields.Datetime(string="Spurt", default=fields.Datetime.now, index=True)
-    besvart = fields.Datetime(string="Besvart", readonly=True)
+    besvart = fields.Datetime(readonly=True)
     besvart_av = fields.Many2one("res.users", string="Besvart av", readonly=True)
     company_id = fields.Many2one(
         "res.company", string="Firma", index=True, default=lambda self: self.env.company
