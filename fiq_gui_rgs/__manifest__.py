@@ -1,6 +1,6 @@
 {
     "name": "FIQ Regnskap",
-    "version": "19.0.1.28.1",
+    "version": "19.0.1.28.2",
     "summary": "AI GUI Regnskap (2.80) — visningen av AI Regnskap-Rådgiveren: likviditet, "
     "cashflow, kritiske datoer og tidlig korrigering.",
     "description": """

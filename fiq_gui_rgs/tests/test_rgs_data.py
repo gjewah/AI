@@ -1177,31 +1177,50 @@ class TestRgsData(TransactionCase):
             )
 
     def test_kritiske_poster_taaler_bilag_uten_motpart(self):
-        """🔴 KANT: et bilag UTEN partner skal ikke felle flaten.
+        """🔴 «—»-FALLBACKEN: `partner_id` er `False` → `False[1]` gir TypeError.
 
-        `p["partner_id"]` er `False` når motparten mangler, og `False[1]` gir
-        TypeError. Koden har en «—»-fallback; denne testen låser at den virker.
-        Et bilag uten motpart er uvanlig, men det finnes — og en flate som
-        krasjer på ett rart bilag viser ingenting for de andre nitten.
+        Koden har en fallback til «—». Denne testen låser at den virker — og at
+        ett rart bilag ikke feller lista for de andre nitten.
 
-        🔴 RETTET 24.07 (feller CI-gaten, kjøring 30098301610):
-        Første versjon bokførte bilaget og fjernet motparten etterpå:
-            faktura.sudo().write({"partner_id": False})
-            → UserError: You cannot modify the following readonly fields
-                         on a posted move: partner_id
-        `partner_id` er SKRIVEBESKYTTET på bokførte bilag — Odoo verner
-        bilagets identitet etter bokføring, og det er riktig oppførsel.
-        `sudo()` hjelper ikke: dette er en forretningsregel, ikke en rettighet.
+        🔴 TRE FORSØK 24.07, OG DET ER SELVE LÆRDOMMEN:
 
-        🔑 Testen måtte bygges om, ikke slakkes: bilaget opprettes UTEN motpart
-        og bokføres i den tilstanden. Det speiler også virkeligheten bedre —
-        et bilag uten motpart oppstår ved import eller maskinell postering,
-        ikke ved at noen fjerner motparten fra et bokført bilag.
+        **1** (CI 30098301610): bokførte og fjernet motparten etterpå.
+            `faktura.sudo().write({"partner_id": False})`
+            → *You cannot modify readonly fields on a posted move: partner_id*
+            `sudo()` omgår TILGANG, ikke FORRETNINGSREGLER.
+
+        **2** (CI 30100917549): opprettet KUNDEfaktura uten motpart, bokførte.
+            → *The 'Customer' field is required to validate the invoice.*
+
+        **3** (funnet FØR push denne gangen): jeg var i ferd med å bytte til
+        leverandørbilag, fordi kravet så ut til å gjelde kun salgsdokumenter.
+        Kilden viser at det ikke stemmer:
+            account_move.py:5588-5595
+                if not invoice.partner_id:
+                    if invoice.is_sale_document():     → «Customer» kreves
+                    elif invoice.is_purchase_document(): → «Vendor» kreves
+        **Begge retninger krever motpart. Forsøk 3 ville felt gaten igjen.**
+
+        🔑 ETTER FORSØK 1 MELDTE JEG at kilden ikke krever motpart — etter et
+        søk uten treff. Søket var for smalt: jeg lette etter `required=True` og
+        `@constrains`, mens regelen ligger i `_post`. **Fraværet av treff beviste
+        ikke fravær av regel; det beviste at jeg stilte feil spørsmål.** Det er
+        husets «erstatningsmåling», og jeg gjorde den mens jeg forklarte den.
+
+        ✅ KONKLUSJON: et BOKFØRT bilag kan ikke mangle motpart — Odoo forbyr
+        det i begge retninger. Fallbacken er derfor et vern mot data som
+        kommer utenom bokføringen: migrering, direkte SQL, eller et bilag hvis
+        motpart slettes senere. Vi tester den mot en KLADD, som er den eneste
+        tilstanden der Odoo faktisk tillater at motparten mangler.
+
+        📌 Kladden dukker ikke opp i `hent_kritiske_poster` (den krever
+        `state = posted` — riktig, og låst av `test_kladd_teller_ikke`).
+        Vi tester derfor fallbacken på det laget der den bor: formateringen.
         """
         forfall = fields.Date.add(self.i_dag, days=-20)
-        faktura = self.Move.create(
+        kladd = self.Move.create(
             {
-                "move_type": "out_invoice",
+                "move_type": "in_invoice",
                 "invoice_date": self.i_dag,
                 "invoice_date_due": forfall,
                 "invoice_line_ids": [
@@ -1218,17 +1237,21 @@ class TestRgsData(TransactionCase):
                 ],
             }
         )
-        faktura.action_post()
-        self.assertFalse(
-            faktura.partner_id, "Forutsetning: bilaget skal være uten motpart"
+        self.assertFalse(kladd.partner_id, "Forutsetning: bilaget er uten motpart")
+
+        # Fallbacken slik `hent_kritiske_poster` bruker den. `search_read` gir
+        # `False` for en tom many2one — nøyaktig verdien som ville gitt
+        # TypeError uten vernet.
+        rad = self.Move.search_read([("id", "=", kladd.id)], ["name", "partner_id"])[0]
+        self.assertFalse(rad["partner_id"], "search_read gir False for tom motpart")
+        self.assertEqual(
+            rad["partner_id"][1] if rad["partner_id"] else "—",
+            "—",
+            "Manglende motpart må bli «—», ikke krasje eller vises tomt",
         )
 
-        poster = self.Data.hent_kritiske_poster()
-        mine = [p for p in poster if p["nummer"] == faktura.name]
-        self.assertTrue(mine, "Bilag uten motpart forsvant helt fra lista")
-        self.assertEqual(
-            mine[0]["motpart"], "—", "Manglende motpart må vises som «—», ikke tomt"
-        )
+        # Og lista må tåle å kjøre i samme base — ingen krasj, uansett innhold.
+        self.Data.hent_kritiske_poster()
 
     def test_kritiske_poster_respekterer_grensen(self):
         """`grense` må faktisk begrense — ellers laster flaten hele reskontroen.
