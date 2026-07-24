@@ -55,7 +55,7 @@ class FiqKommProfil(models.Model):
         help="Valgfri fritekst-referanse til Odoos innhentingsserver (unngår hard "
         "avhengighet til fetchmail-modulen — kobles hardt senere ved behov).",
     )
-    aktiv = fields.Boolean(string="Aktiv", default=True, index=True)
+    aktiv = fields.Boolean(default=True, index=True)
 
     _mailbox_uniq = models.Constraint(
         "unique(mailbox, company_id)",

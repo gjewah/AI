@@ -1,6 +1,6 @@
 {
     "name": "FIQ Komm Ruting — profil→firma",
-    "version": "19.0.1.2.2",
+    "version": "19.0.1.2.3",
     "summary": "E-post-ruting (B5): kanaliser innkommende post til riktig firma ut fra "
     "postkasse/profil. Generisk mapping-lag fordi fetchmail.server mangler firma-felt. "
     "Per-bruker-samtykke (eier) + felles-postkasse-flagg. Tenant-isolert, alle kunder.",
