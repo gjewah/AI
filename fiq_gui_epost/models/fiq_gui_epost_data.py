@@ -813,6 +813,40 @@ class FiqMeldingssenterData(models.AbstractModel):
 
     # ---- Skriv-API: handle på en melding (tildel · arkivér · svar · presence) ----
 
+    def _flytt_pinn(self, message_id, til_user_id):
+        """La pinnen FØLGE MED når meldingen tilegnes en annen bruker.
+
+        Gjermund 24.07.2026: «pinnen bør følge med hvis e-posten tilegnes en annen
+        bruker eller knyttes til en annen bruker».
+
+        🔑 Hvorfor dette ikke er en detalj: pinnen betyr «denne må ikke forsvinne i
+        mengden». Overleverer jeg saken til deg, er det NETTOPP da den er i fare for
+        å forsvinne — den er ny for deg og ligger blant hundre andre. Uten dette
+        stoppet påminnelsen hos den som ga fra seg saken, og oppsto aldri hos den
+        som overtok den.
+
+        Vi FLYTTER ikke: begge beholder pinnen. Avgiveren følger ofte saken videre,
+        og å fjerne hens pinne ville vært å bestemme på hens vegne. Løsne er ett klikk.
+        """
+        P = self.env["fiq.meldingssenter.pinn"]
+        # sudo: vi leser og skriver pinner for en ANNEN bruker enn den innloggede.
+        # Record-rulen (`user_id = user.id`) er nettopp det som skal hindre at man
+        # ser andres pinner i flaten — her er poenget å GI en, ikke å lese noens.
+        Ps = P.sudo()
+        finnes = Ps.search_count(
+            [("message_id", "=", int(message_id)), ("user_id", "=", int(til_user_id))]
+        )
+        if finnes:
+            return False
+        Ps.create(
+            {
+                "message_id": int(message_id),
+                "user_id": int(til_user_id),
+                "company_id": self._melding_firma(message_id),
+            }
+        )
+        return True
+
     @api.model
     def tildel(self, message_id, user_id, deadline=False, note=False):
         """Tildel en melding til en ansvarlig med frist (leder-dirigering §C.1).
@@ -821,6 +855,9 @@ class FiqMeldingssenterData(models.AbstractModel):
         m = self.env["mail.message"].browse(int(message_id)).exists()
         if not m or not m.model or not m.res_id:
             return False
+        # Pinnen følger saken til den som overtar den (se _flytt_pinn).
+        if self._pinn_sett([m.id]):
+            self._flytt_pinn(m.id, user_id)
         todo = self.env.ref("mail.mail_activity_data_todo", raise_if_not_found=False)
         vals = {
             "res_model_id": self.env["ir.model"]._get_id(m.model),

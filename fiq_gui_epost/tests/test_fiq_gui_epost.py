@@ -566,6 +566,263 @@ class TestEpost(TransactionCase):
         self.Data.sett_pinn(m.id, False)
         self.assertNotIn(m.id, self.Data._pinn_sett([m.id]))
 
+    def test_pinn_FOELGER_MED_naar_meldingen_tildeles_en_annen(self):
+        """🔴 Gjermund 24.07: «pinnen bør følge med hvis e-posten tilegnes en annen
+        bruker».
+
+        Hvorfor dette ikke er en detalj: pinnen betyr «denne må ikke forsvinne i
+        mengden». Overleveres saken, er det NETTOPP da den er i fare — den er ny for
+        mottakeren og ligger blant hundre andre. Uten dette stoppet påminnelsen hos
+        den som ga fra seg saken, og oppsto aldri hos den som overtok den."""
+        prosjekt = self.env["project.project"].create({"name": "TEST pinn tildel"})
+        m = self.env["mail.message"].create(
+            {
+                "subject": "TEST pinn følger",
+                "message_type": "email",
+                "model": "project.project",
+                "res_id": prosjekt.id,
+                "body": "<p>x</p>",
+            }
+        )
+        mottaker = self.env["res.users"].create(
+            {
+                "name": "TEST Mottaker",
+                "login": "fiq_test_pinn_mottaker",
+                "group_ids": [(6, 0, [self.env.ref("base.group_user").id])],
+            }
+        )
+        self.Data.sett_pinn(m.id, True)
+        self.Data.tildel(m.id, mottaker.id)
+        self.assertTrue(
+            self.env["fiq.meldingssenter.pinn"]
+            .sudo()
+            .search_count([("message_id", "=", m.id), ("user_id", "=", mottaker.id)]),
+            "mottakeren må ha fått pinnen — ellers stopper påminnelsen hos avgiveren",
+        )
+
+    def test_pinn_beholdes_hos_avgiver_ved_tildeling(self):
+        """Vi FLYTTER ikke pinnen: avgiveren følger ofte saken videre, og å fjerne
+        hens pinne ville vært å bestemme på hens vegne. Løsne er ett klikk."""
+        prosjekt = self.env["project.project"].create({"name": "TEST pinn behold"})
+        m = self.env["mail.message"].create(
+            {
+                "subject": "TEST pinn behold",
+                "message_type": "email",
+                "model": "project.project",
+                "res_id": prosjekt.id,
+                "body": "<p>x</p>",
+            }
+        )
+        mottaker = self.env["res.users"].create(
+            {
+                "name": "TEST Mottaker 2",
+                "login": "fiq_test_pinn_mottaker2",
+                "group_ids": [(6, 0, [self.env.ref("base.group_user").id])],
+            }
+        )
+        self.Data.sett_pinn(m.id, True)
+        self.Data.tildel(m.id, mottaker.id)
+        self.assertIn(
+            m.id, self.Data._pinn_sett([m.id]), "avgiveren skal beholde sin egen pinne"
+        )
+
+    def test_upinnet_melding_gir_ingen_pinn_ved_tildeling(self):
+        """Tildeling skal ikke FINNE PÅ en pinne. Var den ikke pinnet, er det ingen
+        påminnelse å føre videre — da ville vi laget støy hos mottakeren."""
+        prosjekt = self.env["project.project"].create({"name": "TEST upinnet"})
+        m = self.env["mail.message"].create(
+            {
+                "subject": "TEST upinnet tildel",
+                "message_type": "email",
+                "model": "project.project",
+                "res_id": prosjekt.id,
+                "body": "<p>x</p>",
+            }
+        )
+        mottaker = self.env["res.users"].create(
+            {
+                "name": "TEST Mottaker 3",
+                "login": "fiq_test_pinn_mottaker3",
+                "group_ids": [(6, 0, [self.env.ref("base.group_user").id])],
+            }
+        )
+        self.Data.tildel(m.id, mottaker.id)
+        self.assertFalse(
+            self.env["fiq.meldingssenter.pinn"]
+            .sudo()
+            .search_count([("message_id", "=", m.id)]),
+            "en upinnet melding skal ikke bli pinnet av at den tildeles",
+        )
+
+    # ---- Ta e-posten videre (Gjermund 24.07) ---------------------------------------
+
+    def test_pdf_av_epost_tar_med_avsender_og_dato(self):
+        """En arkivert e-post uten avsender og dato er ikke dokumentasjon, bare
+        tekst. Hodet MÅ med i PDF-grunnlaget."""
+        H = self.env["fiq.meldingssenter.handling"]
+        p = self.env["res.partner"].create(
+            {"name": "TEST Avsender PDF", "email": "pdf@x.no"}
+        )
+        m = self.env["mail.message"].create(
+            {
+                "subject": "TEST PDF-hode",
+                "message_type": "email",
+                "author_id": p.id,
+                "body": "<p>selve teksten</p>",
+                "date": fields.Datetime.now(),
+            }
+        )
+        html = H._epost_som_html(m)
+        self.assertIn("TEST Avsender PDF", html, "avsender må stå i arkivet")
+        self.assertIn("TEST PDF-hode", html, "emnet må stå i arkivet")
+        self.assertIn("selve teksten", html, "kroppen må være med")
+
+    def test_pdf_krever_et_element_aa_feste_seg_paa(self):
+        """En PDF som ikke havner noe sted er ikke arkivering."""
+        H = self.env["fiq.meldingssenter.handling"]
+        m = self.env["mail.message"].create(
+            {
+                "subject": "TEST PDF uten mål",
+                "message_type": "email",
+                "body": "<p>x</p>",
+            }
+        )
+        r = H.epost_til_pdf(m.id)
+        self.assertFalse(r["ok"])
+        self.assertIn("prosjekt", r["feil"].lower())
+
+    def test_sp_sier_NEI_naar_mappa_ikke_finnes(self):
+        """🛑 Flaten spør FØR den viser «Lagre på SP» som valg. En knapp som alltid
+        vises og noen ganger svarer «går ikke», er samme feil som de døde
+        paringsfeltene: den ser ut som en funksjon.
+
+        Målt 24.07: `fiq_dokument_sp_id` er IKKE installert i Production, så
+        `sp_mappe_item_id` finnes ikke på project.task. Feature-deteksjonen er
+        derfor nødvendig, ikke overforsiktig."""
+        H = self.env["fiq.meldingssenter.handling"]
+        prosjekt = self.env["project.project"].create({"name": "TEST SP"})
+        oppgave = self.env["project.task"].create(
+            {"name": "TEST SP-oppgave", "project_id": prosjekt.id}
+        )
+        r = H.sp_status("project.task", oppgave.id)
+        self.assertFalse(r["klar"], "uten SP-mappe skal svaret være nei")
+        self.assertTrue(r["grunn"], "og det skal stå HVORFOR, ikke bare «nei»")
+
+    def test_oppgave_fra_epost_legger_mailen_i_LOGGEN(self):
+        """🔑 Masterspec §C.6 er presis: «mailen i LOGGEN (ikke beskrivelsen)».
+
+        I beskrivelsesfeltet blir e-posten redigerbar og mister avsender og dato —
+        den slutter å være dokumentasjon på hva som faktisk ble sagt."""
+        H = self.env["fiq.meldingssenter.handling"]
+        prosjekt = self.env["project.project"].create({"name": "TEST oppgave fra mail"})
+        p = self.env["res.partner"].create(
+            {"name": "TEST Kunde mail", "email": "kunde@x.no"}
+        )
+        m = self.env["mail.message"].create(
+            {
+                "subject": "TEST henvendelse",
+                "message_type": "email",
+                "author_id": p.id,
+                "body": "<p>kan dere hjelpe</p>",
+            }
+        )
+        r = H.opprett_oppgave(m.id, prosjekt.id)
+        self.assertTrue(r["ok"])
+        oppgave = self.env["project.task"].browse(r["id"])
+        self.assertEqual(oppgave.name, "TEST henvendelse")
+        logg = oppgave.message_ids.mapped("body")
+        self.assertTrue(
+            any("kan dere hjelpe" in (b or "") for b in logg),
+            "e-posten må ligge i loggen",
+        )
+        self.assertNotIn(
+            "kan dere hjelpe",
+            oppgave.description or "",
+            "e-posten skal IKKE stå i beskrivelsen — der blir den redigerbar",
+        )
+
+    def test_oppgave_fra_epost_parer_meldingen_med_oppgaven(self):
+        """Etter opprettelsen skal meldingen henge på den nye oppgaven — ellers
+        står den fortsatt som «ikke paret» i lista."""
+        H = self.env["fiq.meldingssenter.handling"]
+        prosjekt = self.env["project.project"].create({"name": "TEST paring ny oppg"})
+        m = self.env["mail.message"].create(
+            {"subject": "TEST par ny", "message_type": "email", "body": "<p>x</p>"}
+        )
+        r = H.opprett_oppgave(m.id, prosjekt.id)
+        m.invalidate_recordset()
+        self.assertEqual(m.model, "project.task")
+        self.assertEqual(m.res_id, r["id"])
+
+    def test_oppgave_krever_prosjekt(self):
+        """En oppgave uten prosjekt havner utenfor alt."""
+        H = self.env["fiq.meldingssenter.handling"]
+        m = self.env["mail.message"].create(
+            {
+                "subject": "TEST uten prosjekt",
+                "message_type": "email",
+                "body": "<p>x</p>",
+            }
+        )
+        self.assertFalse(H.opprett_oppgave(m.id, 999999999)["ok"])
+
+    def test_lead_oppretter_ALDRI_en_ny_kontakt(self):
+        """En e-post er for tynt grunnlag til å lage en kunde av — det gir dubletter
+        i kunderegisteret, og dublett-problemet er nettopp det person-oversikten
+        finnes for å rydde opp i. Ukjent avsender → bare adressen."""
+        H = self.env["fiq.meldingssenter.handling"]
+        for_antall = self.env["res.partner"].search_count([])
+        m = self.env["mail.message"].create(
+            {
+                "subject": "TEST lead ukjent",
+                "message_type": "email",
+                "email_from": "ukjent@ekstern.no",
+                "body": "<p>tilbud?</p>",
+            }
+        )
+        r = H.opprett_lead(m.id)
+        self.assertTrue(r["ok"])
+        self.assertEqual(
+            self.env["res.partner"].search_count([]),
+            for_antall,
+            "det skal IKKE ha blitt opprettet en ny kontakt",
+        )
+        lead = self.env["crm.lead"].browse(r["id"])
+        self.assertEqual(lead.email_from, "ukjent@ekstern.no")
+
+    def test_lenke_FLYTTER_ikke_meldingen(self):
+        """🔑 Forskjellen fra paring: paring flytter meldingen dit, og den forsvinner
+        fra der den var. Noen ganger gjelder én e-post to steder — da er en lenke
+        riktig svar, ikke en flytting."""
+        H = self.env["fiq.meldingssenter.handling"]
+        p1 = self.env["project.project"].create({"name": "TEST lenke hjem"})
+        p2 = self.env["project.project"].create({"name": "TEST lenke mål"})
+        m = self.env["mail.message"].create(
+            {
+                "subject": "TEST lenke",
+                "message_type": "email",
+                "model": "project.project",
+                "res_id": p1.id,
+                "body": "<p>x</p>",
+            }
+        )
+        r = H.legg_lenke(m.id, "project.project", p2.id)
+        self.assertTrue(r["ok"])
+        m.invalidate_recordset()
+        self.assertEqual(m.res_id, p1.id, "meldingen skal IKKE ha flyttet seg")
+        self.assertTrue(
+            any("TEST lenke" in (b or "") for b in p2.message_ids.mapped("body")),
+            "lenken skal ligge i målets logg",
+        )
+
+    def test_lenke_avviser_modeller_vi_ikke_stotter(self):
+        """Fail-closed: en modell vi ikke har vurdert, skal avvises — ikke prøves."""
+        H = self.env["fiq.meldingssenter.handling"]
+        m = self.env["mail.message"].create(
+            {"subject": "TEST lenke feil", "message_type": "email", "body": "<p>x</p>"}
+        )
+        self.assertFalse(H.legg_lenke(m.id, "res.users", self.env.uid)["ok"])
+
     # ---- Søk med nn*nn (Gjermund 24.07) -------------------------------------------
 
     def test_nummersok_snevrer_inn_mens_du_skriver(self):

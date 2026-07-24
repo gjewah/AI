@@ -11,6 +11,9 @@ const DATA = "fiq.meldingssenter.data";
 // AI-handlingene ligger i en EGEN modell, ikke i datamodellen: de har et annet
 // ansvar (kaller en ekstern tjeneste, koster penger, kan feile på andre måter).
 const AI = "fiq.meldingssenter.ai";
+// «Ta e-posten videre»: PDF · SharePoint · oppgave · lead · lenke. Egen modell
+// fordi disse SKRIVER noe varig, mens DATA stort sett leser.
+const HANDLING = "fiq.meldingssenter.handling";
 
 export class FiqMeldingssenter extends Component {
     static template = "fiq_gui_epost.MsgSenter";
@@ -58,6 +61,13 @@ export class FiqMeldingssenter extends Component {
             ai: {
                 apen: false, laster: false, hva: "", tekst: "",
                 punkter: [], sporsmal: "", feil: "", utelatt: 0,
+            },
+            // «Ta videre»-panelet (Gjermund 24.07). `sp` fylles når man velger et
+            // element, så «Lagre på SP» kan si NEI før man trykker — en knapp som
+            // alltid vises og noen ganger svarer «går ikke» er en død knapp.
+            handling: {
+                apen: false, laster: false, melding: "", feil: "",
+                url: "", sp: false, nyttNavn: "",
             },
         });
         onWillStart(async () => {
@@ -688,6 +698,141 @@ export class FiqMeldingssenter extends Component {
                 || (e && e.message) || "AI-tjenesten svarte ikke.";
         } finally {
             a.laster = false;
+        }
+    }
+
+    // ---- Ta e-posten videre (Gjermund 24.07) ---------------------------------------
+    //
+    // PDF · lagre på SP · lenke på oppgave · opprett oppgave · opprett lead.
+    // Alt oppretter INTERNT — ingenting sendes ut. E-post ut går via «Svar», som
+    // åpner komposeren og lar mennesket trykke send (masterspec §A.7).
+
+    /** Hvilket element handlingen gjelder: valgt i paringsfeltet, ellers det
+     *  meldingen alt henger på. Returnerer [model, id] eller [false, false]. */
+    _malElement() {
+        const p = this.state.paring;
+        if (p.oppgave.valgt) { return ["project.task", p.oppgave.valgt.id]; }
+        if (p.prosjekt.valgt) { return ["project.project", p.prosjekt.valgt.id]; }
+        const m = this.state.valgt;
+        if (m && (m.model === "project.task" || m.model === "project.project")) {
+            return [m.model, m.res_id];
+        }
+        return [false, false];
+    }
+
+    async vekslHandling() {
+        const h = this.state.handling;
+        h.apen = !h.apen;
+        h.melding = ""; h.feil = ""; h.url = "";
+        if (h.apen) { await this.sjekkSp(); }
+    }
+
+    /** Spør om elementet HAR en SharePoint-mappe, før vi tilbyr å lagre dit. */
+    async sjekkSp() {
+        const [mal, id] = this._malElement();
+        if (!mal) { this.state.handling.sp = false; return; }
+        try {
+            this.state.handling.sp = await this.orm.call(HANDLING, "sp_status", [mal, id]);
+        } catch (e) {
+            this.state.handling.sp = false;
+        }
+    }
+
+    async _kjorHandling(metode, args) {
+        const h = this.state.handling;
+        h.laster = true; h.melding = ""; h.feil = ""; h.url = "";
+        try {
+            const r = await this.orm.call(HANDLING, metode, args);
+            if (r && r.ok) { return r; }
+            h.feil = (r && r.feil) || "Handlingen kunne ikke fullføres.";
+            return false;
+        } catch (e) {
+            h.feil = (e && e.message && e.message.data && e.message.data.message)
+                || (e && e.message) || "Handlingen feilet.";
+            return false;
+        } finally {
+            h.laster = false;
+        }
+    }
+
+    /** E-posten som PDF, festet på elementet. */
+    async tilPdf() {
+        const [mal, id] = this._malElement();
+        if (!mal) {
+            this.state.handling.feil = "Velg et prosjekt eller en oppgave først.";
+            return;
+        }
+        const r = await this._kjorHandling("epost_til_pdf", [this.state.valgt.id, mal, id]);
+        if (r) {
+            this.state.handling.melding = "«" + r.navn + "» er lagt på " + r.element + ".";
+            this.state.handling.url = r.url;
+        }
+    }
+
+    /** Lagre på SharePoint. Svarer ÆRLIG at opplastingen ikke er koblet opp ennå —
+     *  PDF-en lages og festes i Odoo, men fila må inntil videre legges i SP-mappa
+     *  manuelt. Å si «lagret på SharePoint» og bare feste den i Odoo ville vært
+     *  verre enn å la være: man oppdager det først når man leter etter den der. */
+    async lagreSp() {
+        const [mal, id] = this._malElement();
+        if (!mal) {
+            this.state.handling.feil = "Velg et prosjekt eller en oppgave først.";
+            return;
+        }
+        const r = await this._kjorHandling("lagre_pa_sp", [this.state.valgt.id, mal, id]);
+        if (r) {
+            this.state.handling.melding = r.sp_melding || "";
+            this.state.handling.url = r.url;
+        }
+    }
+
+    /** Lenke til e-posten på elementet — uten å FLYTTE meldingen dit. */
+    async leggLenke() {
+        const [mal, id] = this._malElement();
+        if (!mal) {
+            this.state.handling.feil = "Velg et prosjekt eller en oppgave først.";
+            return;
+        }
+        const r = await this._kjorHandling("legg_lenke", [this.state.valgt.id, mal, id]);
+        if (r) { this.state.handling.melding = "Lenke lagt på " + r.element + "."; }
+    }
+
+    /** Opprett oppgave AV e-posten. Krever et prosjekt — en oppgave uten prosjekt
+     *  havner utenfor alt. */
+    async nyOppgave() {
+        const p = this.state.paring.prosjekt.valgt;
+        const m = this.state.valgt;
+        const pid = (p && p.id)
+            || (m && m.model === "project.project" ? m.res_id : false);
+        if (!pid) {
+            this.state.handling.feil = "Velg et prosjekt oppgaven skal ligge i.";
+            return;
+        }
+        const ansv = this.state.paring.ansvarlig.valgt;
+        const r = await this._kjorHandling("opprett_oppgave", [
+            m.id, pid, this.state.handling.nyttNavn || false, (ansv && ansv.id) || false,
+        ]);
+        if (r) {
+            this.state.handling.melding =
+                "Oppgave «" + r.navn + "» opprettet i " + r.prosjekt + ".";
+            this.state.handling.nyttNavn = "";
+            // Meldingen er nå paret med oppgaven — hent lista på nytt så raden stemmer.
+            await this.lastMeldinger();
+        }
+    }
+
+    /** Opprett salgsmulighet av e-posten. */
+    async nyttLead() {
+        const ansv = this.state.paring.ansvarlig.valgt;
+        const r = await this._kjorHandling("opprett_lead", [
+            this.state.valgt.id,
+            this.state.handling.nyttNavn || false,
+            (ansv && ansv.id) || false,
+        ]);
+        if (r) {
+            this.state.handling.melding = "Salgsmulighet «" + r.navn + "» opprettet"
+                + (r.kunde ? " på " + r.kunde : "") + ".";
+            this.state.handling.nyttNavn = "";
         }
     }
 

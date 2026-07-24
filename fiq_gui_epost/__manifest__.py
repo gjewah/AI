@@ -3,7 +3,7 @@
     # E-POST-KANALEN under den → egen etikett, ellers to like app-fliser i Apper.
     # Teknisk modulnavn (fiq_gui_epost) er URØRT — modulen er live på Staging + Production.
     "name": "Kommunikasjon — E-post",
-    "version": "19.0.7.0.0",
+    "version": "19.0.7.1.0",
     "summary": "FIQ Meldingssenter – kommunikasjonsflaten i Kontrollrommet. "
     "V00.04-designet (godkjent) som levende flate: tilstede-topplinje, firmavelger "
     "m/ logo, taksonomi 0–8, kompakte meldingsrader, lesepanel, paring/tildeling og AI-flate.",
@@ -32,7 +32,19 @@ V00.04 bygges først som levende referanse; native OWL-port mot ekte Odoo-data
     # Verifisert installert i Production 24.07: fiq_ai 19.0.1.2.0 · ai 19.0.1.0.
     # project = sjekkliste legges som deloppgaver på project.task (Odoo 19s egen
     # mekanikk) — vi lager ikke en konkurrerende sjekkliste-modell ved siden av.
-    "depends": ["fiq_gui_comm", "fiq_gui_control", "fiq_ai", "project", "web", "mail"],
+    # crm = «opprett salgsmulighet» fra en e-post (Gjermund 24.07). Verifisert
+    # installert i Production 24.07 (crm 19.0.1.9). Koden sjekker likevel
+    # «crm.lead in env» før bruk — en avhengighet i manifestet er ikke det samme
+    # som en garanti på hver base.
+    "depends": [
+        "fiq_gui_comm",
+        "fiq_gui_control",
+        "fiq_ai",
+        "project",
+        "crm",
+        "web",
+        "mail",
+    ],
     "data": [
         "security/fiq_gui_epost_groups.xml",
         "security/ir.model.access.csv",

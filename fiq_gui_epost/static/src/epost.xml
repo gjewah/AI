@@ -249,13 +249,44 @@
                                 <button class="tbtn pri" t-on-click="() => this.svar(false)">Svar</button>
                                 <button class="tbtn" t-on-click="() => this.svar(true)">Svar alle</button>
                                 <button class="tbtn">Videresend</button>
-                                <button class="tbtn">Arkivér</button>
+                                <button class="tbtn" t-on-click="vekslHandling"
+                                        t-att-class="'tbtn' + (state.handling.apen ? ' on' : '')">Ta videre ▾</button>
                                 <button class="tbtn">Tildel ansvarlig</button>
                                 <!-- ✦ AI sto som en DØD knapp fram til 24.07 — samme
                                      mønster som paringsfeltene: den så ut som en
                                      funksjon og gjorde ingenting. -->
                                 <button class="tbtn ai" t-on-click="vekslAi"
                                         t-att-class="'tbtn ai' + (state.ai.apen ? ' on' : '')">✦ AI</button>
+                            </div>
+
+                            <!-- «Ta videre» (Gjermund 24.07): PDF · SP · lenke · oppgave · lead.
+                                 Alt oppretter INTERNT. E-post ut går via «Svar». -->
+                            <div class="aipanel" t-if="state.handling.apen">
+                                <div class="aihode">Ta e-posten videre</div>
+                                <div class="aitools">
+                                    <button class="tbtn" t-on-click="tilPdf">Arkivér som PDF</button>
+                                    <button class="tbtn" t-on-click="lagreSp"
+                                            t-att-disabled="!state.handling.sp.klar">Lagre på SharePoint</button>
+                                    <button class="tbtn" t-on-click="leggLenke">Legg lenke på elementet</button>
+                                    <button class="tbtn" t-on-click="nyOppgave">Opprett oppgave</button>
+                                    <button class="tbtn" t-on-click="nyttLead">Opprett salgsmulighet</button>
+                                </div>
+                                <div class="aiask">
+                                    <input placeholder="Navn på oppgaven/salgsmuligheten (valgfritt — emnet brukes ellers)"
+                                           t-att-value="state.handling.nyttNavn"
+                                           t-on-input="(ev) => this.state.handling.nyttNavn = ev.target.value"/>
+                                </div>
+                                <!-- 🛑 Si NEI før man trykker. En knapp som alltid vises og
+                                     noen ganger svarer «går ikke», er en død knapp. -->
+                                <div class="aiavkort" t-if="state.handling.sp and !state.handling.sp.klar"
+                                     t-esc="state.handling.sp.grunn"/>
+                                <div class="ailaster" t-if="state.handling.laster">Jobber …</div>
+                                <div class="aifeil" t-if="state.handling.feil" t-esc="state.handling.feil"/>
+                                <div class="aitekst" t-if="state.handling.melding">
+                                    <t t-esc="state.handling.melding"/>
+                                    <a t-if="state.handling.url" class="hodebtn olbtn"
+                                       t-att-href="state.handling.url" target="_blank">Åpne</a>
+                                </div>
                             </div>
 
                             <!-- AI-panel (masterspec §C.6/§C.13). Alt her VISER tekst;
