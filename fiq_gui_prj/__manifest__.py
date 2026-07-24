@@ -1,6 +1,6 @@
 {
     "name": "FIQ Prosjekt",
-    "version": "19.0.1.34.7",
+    "version": "19.0.1.34.8",
     "summary": "FIQ Prosjekt – WBS-tre med timer mot budsjett (rød ved overforbruk) + "
                "native disposisjonsnummer + generisk sjekkliste-motor (nivå × type, "
                "krav dok/foto/signatur) + OWL sjekkliste-flate. Alt synlig i Odoos egne visninger.",

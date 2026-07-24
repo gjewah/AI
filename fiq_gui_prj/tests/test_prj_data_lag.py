@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tester for DATALAGETS BEREGNINGER i fiq.gui.prj.data.
 
 🔑 HVA SOM HØRER HJEMME HER — og hvorfor skillet finnes (23.07.2026):
@@ -119,8 +118,8 @@ class TestPrjDataLag(TransactionCase):
             oppgave.fiq_prioritet = verdi
             self.assertEqual(
                 oppgave.priority, "0",
-                "FIQ-prioritet «%s» endret Odoos eget priority-felt — "
-                "de skal være uavhengige" % verdi,
+                f"FIQ-prioritet «{verdi}» endret Odoos eget priority-felt — "
+                "de skal være uavhengige",
             )
 
     def test_prioritet_ukjent_verdi_faller_til_normal(self):
@@ -363,8 +362,10 @@ class TestPrjDataLag(TransactionCase):
                     )
                     self.assertIn(
                         dom, lovlige,
-                        "Ukjent dom «%s» for (%s t / %s t / %s %% / frist %s / ferdig %s)"
-                        % (dom, fort, budsjett, fremdrift, frist, ferdig),
+                        "Ukjent dom «{}» for ({} t / {} t / {} % / frist {} / "
+                        "ferdig {})".format(
+                            dom, fort, budsjett, fremdrift, frist, ferdig
+                        ),
                     )
 
     # ---------- BEGRUNNELSEN ----------
@@ -471,10 +472,13 @@ class TestPrjDataLag(TransactionCase):
             )
             self.assertIn(
                 dom, ("avgjores", "tett_tid"),
-                "Frist om %d dager skal gi en tidsdom" % dager,
+                f"Frist om {dager} dager skal gi en tidsdom",
             )
             self.assertIn(
                 ord, tekst.lower(),
-                "Dommen «%s» handler om fristen, men begrunnelsen nevner den ikke: %r"
-                % (dom, tekst),
+                # 🔑 `%r` → `{!r}`, ikke `{}`. repr() beholder anførselstegn og
+                # viser usynlige tegn — i en feilmelding om manglende tekst er
+                # det nettopp forskjellen mellom «tom» og «bare mellomrom».
+                "Dommen «{}» handler om fristen, men begrunnelsen nevner den "
+                "ikke: {!r}".format(dom, tekst),
             )
