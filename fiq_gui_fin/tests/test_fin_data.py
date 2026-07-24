@@ -248,9 +248,17 @@ class TestFinData(TransactionCase):
         for belop in (15000.0, 90000.0, 40000.0):
             self._faktura(self._kunde(f"FIQ Sorttest {int(belop)} AS"), -60, belop)
         linjer = self.Data.get_kr_boks()["linjer"]
-        beloep = [
-            int(t) for linje in linjer for t in linje["tekst"].split() if t.isdigit()
-        ]
+
+        # 🔴 RETTET 24.07: første utgave plukket ALLE tall fra teksten og fikk
+        # med «60 dager» sammen med beløpet — [90000, 90000, 60, 40000, …].
+        # Testen målte da en blanding av to størrelser og feilet av feil grunn.
+        # Sorteringen i koden var riktig hele tiden.
+        # Nå leses beløpet der det faktisk står: mellom «skylder» og «kr».
+        beloep = []
+        for linje in linjer:
+            ord_ = linje["tekst"].split()
+            beloep.append(int(ord_[ord_.index("skylder") + 1]))
+
         self.assertEqual(
             beloep, sorted(beloep, reverse=True), "Største krav skal stå øverst"
         )
@@ -374,8 +382,21 @@ class TestFinData(TransactionCase):
         vi ikke får det firmaets tall.
         """
         annet = self.env["res.company"].create({"name": "FIQ Testfirma Uten Tilgang"})
-        # Brukeren har ikke dette firmaet i company_ids.
-        self.assertNotIn(annet.id, self.env.user.company_ids.ids)
+
+        # 🔴 RETTET 24.07: Odoo 19 legger et NYOPPRETTET firma automatisk til den
+        # brukeren som oppretter det. Første utgave antok at et nytt firma var
+        # utilgjengelig — det er det ikke når du selv lager det, og testen feilet
+        # på sin egen forutsetning (`54 unexpectedly found in [54, 3, 2, 4, 1]`)
+        # uten å måle lekkasje i det hele tatt.
+        self.env.user.company_ids = [(3, annet.id)]  # fjern koblingen igjen
+
+        # Forutsetningssjekk — den skal STÅ. Den fanget nettopp at oppsettet ikke
+        # holdt; uten den ville testen sett grønn ut mens den målte ingenting.
+        self.assertNotIn(
+            annet.id,
+            self.env.user.company_ids.ids,
+            "Forutsetningen holder ikke: brukeren har fortsatt tilgang til firmaet",
+        )
 
         kunde = self._kunde("FIQ Test Annet Firma AS")
         faktura = self.Move.with_company(annet).create(
