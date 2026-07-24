@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 {
     "name": "FIQ Prosjekt",
     "version": "19.0.1.34.5",

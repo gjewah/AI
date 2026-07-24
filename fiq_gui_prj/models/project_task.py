@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """FIQ Prosjekt — native felt på project.task.
 
 KANON «Odoo-native først» (Gjermund 2026-07-16): KR er et LAG, ikke systemet.
@@ -130,4 +129,4 @@ class ProjectTask(models.Model):
                 pos = len(sibs_ids) + 1
 
             nr = str(pos).zfill(2)
-            task.fiq_wbs_number = "%s.%s" % (prefix, nr) if prefix else nr
+            task.fiq_wbs_number = f"{prefix}.{nr}" if prefix else nr

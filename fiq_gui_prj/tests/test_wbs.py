@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tester for dynamisk disposisjonsnummer (fiq_wbs_number på project.task).
 
 NUMMER-MODELLEN (må ALDRI blandes):
@@ -57,8 +56,7 @@ class TestFiqWbs(TransactionCase):
         barn = self._task("Barn", parent=mor, sequence=10)
         self.assertTrue(
             barn.fiq_wbs_number.startswith(mor.fiq_wbs_number + "."),
-            "Barn '%s' skal starte med mors '%s.'" % (
-                barn.fiq_wbs_number, mor.fiq_wbs_number),
+            f"Barn '{barn.fiq_wbs_number}' skal starte med mors '{mor.fiq_wbs_number}.'",
         )
         self.assertEqual(barn.fiq_wbs_number.count("."), 1)
 
@@ -78,7 +76,7 @@ class TestFiqWbs(TransactionCase):
         b2 = self._task("B2", parent=mor, sequence=20)
         b3 = self._task("B3", parent=mor, sequence=30)
         numre = [b1.fiq_wbs_number, b2.fiq_wbs_number, b3.fiq_wbs_number]
-        self.assertEqual(len(set(numre)), 3, "Duplikate WBS-numre: %s" % numre)
+        self.assertEqual(len(set(numre)), 3, f"Duplikate WBS-numre: {numre}")
 
     def test_soesken_med_LIK_sequence_faar_ulike_nummer(self):
         """🔴 REGRESJONSTEST for den ekte produksjonsfeilen (AI KR-sporet, 18.07.2026).
@@ -104,8 +102,8 @@ class TestFiqWbs(TransactionCase):
         numre = [b.fiq_wbs_number for b in barn]
         self.assertEqual(
             len(set(numre)), len(barn),
-            "Søsken med LIK sequence fikk duplikate WBS-numre: %s "
-            "(dette er produksjonsfeilen der 66 oppgaver alle fikk «01»)" % numre,
+            f"Søsken med LIK sequence fikk duplikate WBS-numre: {numre} "
+            "(dette er produksjonsfeilen der 66 oppgaver alle fikk «01»)",
         )
 
     def test_toppnivaa_med_lik_sequence_faar_ulike_nummer(self):
@@ -114,7 +112,7 @@ class TestFiqWbs(TransactionCase):
         numre = [t.fiq_wbs_number for t in toppnivaa]
         self.assertEqual(
             len(set(numre)), len(toppnivaa),
-            "Toppnivå-oppgaver med lik sequence fikk duplikate numre: %s" % numre,
+            f"Toppnivå-oppgaver med lik sequence fikk duplikate numre: {numre}",
         )
 
     def test_wbs_rekalkuleres_naar_oppgave_flyttes(self):
@@ -129,8 +127,7 @@ class TestFiqWbs(TransactionCase):
         barn.invalidate_recordset(["fiq_wbs_number"])
         self.assertTrue(
             barn.fiq_wbs_number.startswith(mor_b.fiq_wbs_number + "."),
-            "Etter flytting skal barnet arve MorBs prefiks (var %s, ble %s)" % (
-                for_flytting, barn.fiq_wbs_number),
+            f"Etter flytting skal barnet arve MorBs prefiks (var {for_flytting}, ble {barn.fiq_wbs_number})",
         )
 
     def test_endret_rekkefoelge_endrer_egen_oppgaves_nummer(self):
@@ -206,5 +203,5 @@ class TestFiqWbs(TransactionCase):
         verdi = ny.fiq_wbs_number
         self.assertTrue(
             verdi is False or verdi.startswith(mor.fiq_wbs_number + "."),
-            "Uventet WBS i onchange-kontekst: %r" % (verdi,),
+            f"Uventet WBS i onchange-kontekst: {verdi!r}",
         )

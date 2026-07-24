@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """FIQ-prioritet på project.task — tre nivåer der Odoo har to.
 
 AI PK-avgjørelse 23.07.2026 (kravspek spørsmål 4), ordrett:

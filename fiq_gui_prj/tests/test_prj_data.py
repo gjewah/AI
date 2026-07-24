@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tester for Prosjektoversikt-flatens datalag (fiq.gui.prj.data).
 
 Hvorfor de finnes: datalaget ble skrevet 18.07 for å erstatte «Kommer»-stubben.
@@ -46,8 +45,7 @@ class TestPrjData(TransactionCase):
         maler = self.Project.search([("id", "in", viste_ider), ("is_template", "=", True)])
         self.assertFalse(
             maler,
-            "Maler skal ALDRI vises i Prosjektoversikt, men disse kom med: %s"
-            % maler.mapped("name"),
+            "Maler skal ALDRI vises i Prosjektoversikt, men disse kom med: {}".format(maler.mapped("name")),
         )
 
     # ---------- FREMDRIFT: ÆRLIG OM KILDEN ----------
@@ -65,8 +63,8 @@ class TestPrjData(TransactionCase):
             if not p["budsjett_timer"]:
                 self.assertNotEqual(
                     p["fremdrift_kilde"], "timer",
-                    "«%s» har ingen estimerte timer, men oppgir «timer» som "
-                    "fremdriftskilde — det er villedende." % p["navn"],
+                    "«{}» har ingen estimerte timer, men oppgir «timer» som "
+                    "fremdriftskilde — det er villedende.".format(p["navn"]),
                 )
 
     def test_overforbruk_vises_ekte_og_kappes_aldri(self):
@@ -100,14 +98,14 @@ class TestPrjData(TransactionCase):
                 # Over budsjett: prosenten SKAL passere 100 og statusen SKAL være «over».
                 self.assertGreater(
                     pst, 100.0,
-                    "«%s» har ført %s t mot budsjett %s t — det er over budsjett, "
-                    "men forbruket vises som %s %%. Kappes tallet, skjuler flaten "
-                    "overforbruket." % (p["navn"], fort, budsjett, pst),
+                    "«{}» har ført {} t mot budsjett {} t — det er over budsjett, "
+                    "men forbruket vises som {} %. Kappes tallet, skjuler flaten "
+                    "overforbruket.".format(p["navn"], fort, budsjett, pst),
                 )
                 self.assertEqual(
                     p["budsjett_status"], "over",
-                    "«%s» er over budsjett (%s t mot %s t), men status er «%s» — "
-                    "skal være «over» (rød)." % (p["navn"], fort, budsjett, p["budsjett_status"]),
+                    "«{}» er over budsjett ({} t mot {} t), men status er «{}» — "
+                    "skal være «over» (rød).".format(p["navn"], fort, budsjett, p["budsjett_status"]),
                 )
 
     # 📌 FLYTTET til tests/test_prj_data_lag.py (23.07, datalags-delingen):
@@ -135,14 +133,14 @@ class TestPrjData(TransactionCase):
         for p in res["prosjekter"]:
             self.assertIn(
                 p["firma_id"], tillatte,
-                "Prosjekt «%s» tilhører firma utenfor sesjonens scope" % p["navn"],
+                "Prosjekt «{}» tilhører firma utenfor sesjonens scope".format(p["navn"]),
             )
 
     def test_firmaliste_er_sesjonens_firmaer(self):
         """Firma-velgeren skal kun tilby firmaer brukeren faktisk har."""
         res = self.Data.get_prosjektoversikt(grense=1)
         tillatte = set(self.env.companies.ids or [self.env.company.id])
-        self.assertEqual(set(f["id"] for f in res["firmaer"]), tillatte)
+        self.assertEqual({f["id"] for f in res["firmaer"]}, tillatte)
 
     # ---------- DRILL: OPPGAVER ----------
 
@@ -240,8 +238,7 @@ class TestPrjData(TransactionCase):
                 ventet = node["egne_timer"] + sum(b["forte_timer"] for b in node["barn"])
                 self.assertAlmostEqual(
                     node["forte_timer"], round(ventet, 1), places=1,
-                    msg="«%s»: rollup gir %s t, men egne (%s) + barnas (%s) = %s"
-                    % (node["navn"], node["forte_timer"], node["egne_timer"],
+                    msg="«{}»: rollup gir {} t, men egne ({}) + barnas ({}) = {}".format(node["navn"], node["forte_timer"], node["egne_timer"],
                        sum(b["forte_timer"] for b in node["barn"]), ventet),
                 )
             for b in node["barn"]:
@@ -264,9 +261,8 @@ class TestPrjData(TransactionCase):
             if any(b["budsjett_status"] == "over" for b in node["barn"]):
                 self.assertEqual(
                     node["budsjett_status"], "over",
-                    "«%s» har et barn over budsjett, men står som «%s» — "
-                    "overforbruk skal aldri skjules bak en forelder."
-                    % (node["navn"], node["budsjett_status"]),
+                    "«{}» har et barn over budsjett, men står som «{}» — "
+                    "overforbruk skal aldri skjules bak en forelder.".format(node["navn"], node["budsjett_status"]),
                 )
             for b in node["barn"]:
                 sjekk(b)
@@ -349,9 +345,8 @@ class TestPrjData(TransactionCase):
                 verdi = str(s.get(felt) or "")
                 self.assertIsNone(
                     okt_monster.search(verdi),
-                    "Øktnummer lekket inn i «%s» på sporet «%s»: %r. "
-                    "Gjermund skal se ARBEID, ikke Claudes bokføring."
-                    % (felt, s.get("navn"), verdi),
+                    "Øktnummer lekket inn i «{}» på sporet «{}»: {!r}. "
+                    "Gjermund skal se ARBEID, ikke Claudes bokføring.".format(felt, s.get("navn"), verdi),
                 )
             # `aktivitet` er et TALL (hvor mye som skjer) — aldri et øktnummer.
             self.assertIsInstance(s["aktivitet"], int, s.get("navn"))
@@ -371,7 +366,7 @@ class TestPrjData(TransactionCase):
         for s in res["spor"]:
             self.assertEqual(
                 s["koblet"], bool(s["project_id"]),
-                "«%s»: «koblet» må speile om project_id faktisk finnes" % s.get("navn"),
+                "«{}»: «koblet» må speile om project_id faktisk finnes".format(s.get("navn")),
             )
         self.assertEqual(
             res["antall_koblet"], sum(1 for s in res["spor"] if s["koblet"]),
@@ -431,17 +426,17 @@ class TestPrjData(TransactionCase):
         # Statusen må også være RIKTIG, ikke bare fri for krasj.
         per_id = {r["id"]: r for r in res["oppgaver"]}
         forventet = ["krit", "folg", "rute"]
-        for opg, vent in zip(oppgaver, forventet):
+        for opg, vent in zip(oppgaver, forventet, strict=False):
             r = per_id.get(opg.id)
             if r:
                 self.assertEqual(
                     r["tid_status"], vent,
-                    "«%s» fikk status «%s», forventet «%s»" % (opg.name, r["tid_status"], vent),
+                    "«{}» fikk status «{}», forventet «{}»".format(opg.name, r["tid_status"], vent),
                 )
                 # Frist skal være en ren datostreng, ikke et tidsstempel.
                 self.assertRegex(
                     str(r["frist"]), r"^\d{4}-\d{2}-\d{2}$",
-                    "Frist skal være dato uten klokkeslett, fikk %r" % r["frist"],
+                    "Frist skal være dato uten klokkeslett, fikk {!r}".format(r["frist"]),
                 )
 
     def test_frist_sent_paa_dagen_forsvinner_ikke(self):
@@ -472,7 +467,7 @@ class TestPrjData(TransactionCase):
             "project_id": prosjekt.id,
             # 15:00 samme dag — ville falt utenfor med midnatt-grense
             "date_deadline": fields.Datetime.to_datetime(
-                "%s 15:00:00" % fields.Date.to_string(siste_dag)
+                f"{fields.Date.to_string(siste_dag)} 15:00:00"
             ),
         })
 
@@ -545,7 +540,7 @@ class TestPrjData(TransactionCase):
         t = self.env["project.task"].create({
             "name": "TEST med sjekkliste", "project_id": prosjekt.id,
         })
-        s = self.env["fiq.sjekkliste"].create({
+        self.env["fiq.sjekkliste"].create({
             "name": "Testliste", "task_id": t.id,
             "punkt_ids": [(0, 0, {"name": "Krever dok", "krav_dok": True})],
         })
@@ -605,7 +600,7 @@ class TestPrjData(TransactionCase):
             self.assertIn("risiko_hvorfor", p, "Dommen må ha en begrunnelse")
             self.assertTrue(
                 str(p["risiko_hvorfor"]).strip(),
-                "Begrunnelsen var tom for %s" % p["navn"],
+                "Begrunnelsen var tom for {}".format(p["navn"]),
             )
 
     # 📌 FLYTTET til tests/test_prj_data_lag.py:
@@ -671,11 +666,11 @@ class TestPrjData(TransactionCase):
         """
         ai = self.Data.get_ai_arbeid(firma_id=999999)
         for n in ("spor", "tilgjengelig", "valgt_firma", "antall_koblet"):
-            self.assertIn(n, ai, "get_ai_arbeid mangler «%s» i en av utgangene" % n)
+            self.assertIn(n, ai, f"get_ai_arbeid mangler «{n}» i en av utgangene")
 
         sj = self.Data.get_sjekklister(oppgave_id=999999999)
         for n in ("tilgjengelig", "lister", "oppgave"):
-            self.assertIn(n, sj, "get_sjekklister mangler «%s» i en av utgangene" % n)
+            self.assertIn(n, sj, f"get_sjekklister mangler «{n}» i en av utgangene")
 
     def test_risiko_dommen_er_KOBLET_til_flaten(self):
         """🔴 REGRESJON: jeg bygde dommen i 1.26.0 og VISTE DEN ALDRI.
@@ -701,8 +696,7 @@ class TestPrjData(TransactionCase):
         for p in res["prosjekter"]:
             self.assertIn(
                 p["risiko"], lovlige,
-                "«%s» har ukjent dom «%s» — flaten kan ikke farge den"
-                % (p["navn"], p["risiko"]),
+                "«{}» har ukjent dom «{}» — flaten kan ikke farge den".format(p["navn"], p["risiko"]),
             )
             self.assertIn("nummer", p, "Risikoraden viser prosjektnummer")
             self.assertIn("forbruk_prosent", p, "Risikoraden viser en stolpe")

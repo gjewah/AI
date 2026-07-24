@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Datalag for Prosjektoversikt-flaten — WBS-tre med timer mot budsjett.
 
 Hvorfor denne finnes (GUI Prosjekt V0.02, 2026-07-18):
@@ -383,11 +382,11 @@ class FiqGuiPrjData(models.AbstractModel):
 
         if budsjett > 0:
             brukt = (fort / budsjett) * 100.0
-            deler.append("%.0f %% brukt / %.0f %% fremdrift" % (brukt, fremdrift))
+            deler.append(f"{brukt:.0f} % brukt / {fremdrift:.0f} % fremdrift")
         elif fort > 0:
             # Timer ført uten budsjett: ikke en dom, men verdt å si. Uten dette
             # ville linja stått tom og sett ut som manglende data.
-            deler.append("%.1f timer ført, uten budsjett" % fort)
+            deler.append(f"{fort:.1f} timer ført, uten budsjett")
 
         return " · ".join(deler) if deler else "ingen frist eller budsjett satt"
 
