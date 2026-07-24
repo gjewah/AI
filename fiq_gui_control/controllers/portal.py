@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Portal reuse (sketch).
 
@@ -15,12 +14,12 @@ Plan:
 The actual route is activated once the portal design is ready – kept here as a documented
 starting point so we do not ship a half-finished public route.
 """
+
 from odoo import http
 from odoo.http import request
 
 
 class FiqControlRoomPortal(http.Controller):
-
     @http.route(["/fiq/control-room/ping"], type="http", auth="user", website=False)
     def fiq_gui_control_ping(self, **kw):
         # Simple health check – confirms the module is loaded. Portal UI is built later.

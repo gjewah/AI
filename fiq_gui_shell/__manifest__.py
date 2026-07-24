@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 {
     "name": "FIQ GUI Skall (V00.04 delt skall)",
-    "version": "19.0.1.7.1",
+    "version": "19.0.1.7.2",
     "summary": "Vei C: delt V00.04-skall — fast presence-linje + firma-band + sidemeny + innmat-slot. "
-               "Flatene registrerer innmaten sin i registry-kategorien 'fiq_gui_flates'; klikk i "
-               "sidemenyen bytter INNMAT, ikke hele siden. PULS-KR blir én flate til slutt (med S07).",
+    "Flatene registrerer innmaten sin i registry-kategorien 'fiq_gui_flates'; klikk i "
+    "sidemenyen bytter INNMAT, ikke hele siden. PULS-KR blir én flate til slutt (med S07).",
     "description": """
 FIQ GUI Skall — det delte V00.04-skallet (Vei C)
 ==================================================
@@ -43,7 +42,6 @@ flate SIST.
             "fiq_gui_shell/static/src/demo_flates.js",
             "fiq_gui_shell/static/src/shell.js",
             "fiq_gui_shell/static/src/shell.xml",
-
         ],
     },
     "application": True,

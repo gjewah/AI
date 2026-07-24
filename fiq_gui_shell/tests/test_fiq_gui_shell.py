@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Tester for FIQ GUI-skallet.
 #
@@ -26,7 +25,6 @@ from odoo.tools import file_path
 # installasjonen, der registeret kun har modulens egne depends.
 @tagged("-at_install", "post_install")
 class TestFiqGuiShell(TransactionCase):
-
     def _les(self, sti):
         with open(file_path(sti), "r", encoding="utf-8") as f:
             return f.read()
@@ -43,13 +41,15 @@ class TestFiqGuiShell(TransactionCase):
         self.assertIn("addValidation", js, "flate-registeret mangler validering")
         # Skjemaet skal IKKE låse label til String alene.
         self.assertNotRegex(
-            js, r"label:\s*\{\s*type:\s*String\s*\}",
+            js,
+            r"label:\s*\{\s*type:\s*String\s*\}",
             "label er låst til String — en flate med {en_US, nb_NO} vil felle "
             "HELE grensesnittet. Det skjedde 22.07 (Relasjoner).",
         )
         # Den skal ha en validator som slipper gjennom begge former.
         self.assertRegex(
-            js, r"label:\s*\{\s*validate:",
+            js,
+            r"label:\s*\{\s*validate:",
             "label mangler validator som godtar både tekst og språk-oppslag",
         )
 
@@ -60,12 +60,8 @@ class TestFiqGuiShell(TransactionCase):
         menyen vist «[object Object]» — koden ville kjørt fint, resultatet vært feil.
         """
         js = self._les("fiq_gui_shell/static/src/shell.js")
-        self.assertRegex(
-            js, r"_tekst\s*\(", "skallet mangler oversettelse av label før visning"
-        )
-        self.assertIn(
-            "nb_NO", js, "oversettelsen må kjenne nb_NO — norsk før engelsk (kanon 19.07)"
-        )
+        self.assertRegex(js, r"_tekst\s*\(", "skallet mangler oversettelse av label før visning")
+        self.assertIn("nb_NO", js, "oversettelsen må kjenne nb_NO — norsk før engelsk (kanon 19.07)")
 
     # ── VAKTEN SOM SELV VAR EN ENKELTFEILKILDE ────────────────────────────────────
     def test_meny_er_valgfri(self):
@@ -76,7 +72,8 @@ class TestFiqGuiShell(TransactionCase):
         """
         js = self._les("fiq_gui_shell/static/src/shell.js")
         self.assertRegex(
-            js, r"meny:\s*\{[^}]*optional:\s*true",
+            js,
+            r"meny:\s*\{[^}]*optional:\s*true",
             "meny må være optional — ellers avvises alle flater som ikke har undermeny",
         )
 
@@ -91,7 +88,8 @@ class TestFiqGuiShell(TransactionCase):
         xml = self._les("fiq_gui_shell/static/src/shell.xml")
         for treff in re.findall(r't-on-\w+="([^"]*)"', xml):
             self.assertNotRegex(
-                treff, r"\bif\s*\(",
+                treff,
+                r"\bif\s*\(",
                 "`if (` i en inline t-on-handler dreper hele malen — bruk ternær",
             )
 
@@ -103,9 +101,10 @@ class TestFiqGuiShell(TransactionCase):
         årsaken ser helt harmløs ut i en diff.
         """
         xml = self._les("fiq_gui_shell/static/src/shell.xml")
-        for kommentar in re.findall(r"<!--(.*?)-->", xml, re.S):
+        for kommentar in re.findall(r"<!--(.*?)-->", xml, re.DOTALL):
             self.assertNotIn(
-                "--", kommentar,
+                "--",
+                kommentar,
                 "to bindestreker i en XML-kommentar gjør hele malfila ugyldig",
             )
 
@@ -118,6 +117,7 @@ class TestFiqGuiShell(TransactionCase):
         """
         js = self._les("fiq_gui_shell/static/src/shell.js")
         self.assertNotIn(
-            "GUI_BUILD", js,
+            "GUI_BUILD",
+            js,
             "skallet skal ikke ha egen versjonskonstant — Kontrollrommet eier den",
         )

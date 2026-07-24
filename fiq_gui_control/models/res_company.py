@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-from odoo import models, fields
+from odoo import fields, models
 
 
 class ResCompany(models.Model):
@@ -15,12 +14,12 @@ class ResCompany(models.Model):
     fiq_control_logo = fields.Binary(
         string="Control room logo (light variant)",
         help="Logo shown in the Control room top bar and sidebar. Use a variant that reads "
-             "on a dark background (white/silver) for the sidebar.",
+        "on a dark background (white/silver) for the sidebar.",
     )
     fiq_control_as_home = fields.Boolean(
         string="Start in Control room",
         default=False,
         help="When ON: internal users in this company get the Control room as their start page. "
-             "When OFF: users keep/get back Odoo's standard start page (unlocks). "
-             "Admin-controlled — turn on only once the dashboard is verified stable.",
+        "When OFF: users keep/get back Odoo's standard start page (unlocks). "
+        "Admin-controlled — turn on only once the dashboard is verified stable.",
     )

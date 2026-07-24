@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from datetime import timedelta
 
 from odoo import fields
@@ -42,10 +41,9 @@ class TestKrLister(TransactionCase):
             ("get_kr_akt_perioder", "botter"),
         ):
             res = getattr(self.Config, metode)()
-            self.assertIsInstance(res, dict, "%s må gi en dict" % metode)
-            self.assertIn("totalt", res, "%s mangler «totalt»" % metode)
-            self.assertIn(listenokkel, res,
-                          "%s mangler «%s»" % (metode, listenokkel))
+            self.assertIsInstance(res, dict, f"{metode} må gi en dict")
+            self.assertIn("totalt", res, f"{metode} mangler «totalt»")
+            self.assertIn(listenokkel, res, f"{metode} mangler «{listenokkel}»")
             self.assertIsInstance(res[listenokkel], list)
 
     def test_radene_har_fire_adskilte_kolonner(self):
@@ -60,7 +58,7 @@ class TestKrLister(TransactionCase):
         self.assertTrue(rader, "den nye oppgaven skulle vært i lista")
         rad = rader[0]
         for felt in ("kilde", "kode", "tekst", "naar"):
-            self.assertIn(felt, rad, "raden mangler kolonnen «%s»" % felt)
+            self.assertIn(felt, rad, f"raden mangler kolonnen «{felt}»")
 
     # ------------------------------------------------------------------
     #  Datoer: årstall er ikke valgfritt
@@ -76,10 +74,8 @@ class TestKrLister(TransactionCase):
         rader = [r for r in res["rader"] if r["res_id"] == oppgave.id]
         self.assertTrue(rader)
         naar = rader[0]["naar"]
-        forventet_ar = str((fields.Date.context_today(self.Config)
-                            + timedelta(days=5)).year)
-        self.assertIn(forventet_ar, naar,
-                      "fristen «%s» mangler årstall" % naar)
+        forventet_ar = str((fields.Date.context_today(self.Config) + timedelta(days=5)).year)
+        self.assertIn(forventet_ar, naar, f"fristen «{naar}» mangler årstall")
 
     def test_tid_tekst_gir_de_tre_formene(self):
         """«i dag HH:MM» · «i går HH:MM» · «dd.mm.åååå» — og den absolutte har år."""
@@ -90,11 +86,11 @@ class TestKrLister(TransactionCase):
 
         gammel = fields.Datetime.now() - timedelta(days=30)
         tekst = self.Config._kr_tid_tekst(naa, gammel)
-        self.assertRegex(tekst, r"^\d{2}\.\d{2}\.\d{4}$",
-                         "gammel dato må være dd.mm.åååå, fikk «%s»" % tekst)
+        self.assertRegex(tekst, r"^\d{2}\.\d{2}\.\d{4}$", f"gammel dato må være dd.mm.åååå, fikk «{tekst}»")
 
-        self.assertEqual(self.Config._kr_tid_tekst(naa, False), "",
-                         "manglende tidspunkt skal gi tom streng, ikke krasje")
+        self.assertEqual(
+            self.Config._kr_tid_tekst(naa, False), "", "manglende tidspunkt skal gi tom streng, ikke krasje"
+        )
 
     # ------------------------------------------------------------------
     #  Tilstanden koden må tåle
@@ -110,18 +106,15 @@ class TestKrLister(TransactionCase):
         self.assertIsInstance(res["rader"], list)
         treff = [r for r in res["rader"] if r["res_id"] == oppgave.id]
         if treff:
-            self.assertTrue(treff[0]["naar"],
-                            "en oppgave uten frist skal SI det, ikke stå tom")
+            self.assertTrue(treff[0]["naar"], "en oppgave uten frist skal SI det, ikke stå tom")
 
     def test_sokefilteret_snevrer_inn_og_meldes_tilbake(self):
         """Filteret må returneres, så overskriften viser det som FAKTISK ble brukt."""
         self._lag_oppgave("Prisjustering SDV-avtale", frist_om_dager=2)
         res = self.Config.get_kr_apne_oppgaver(sok="SDV-avtale")
-        self.assertEqual(res["filter"], "SDV-avtale",
-                         "filteret må speiles tilbake til klienten")
+        self.assertEqual(res["filter"], "SDV-avtale", "filteret må speiles tilbake til klienten")
         for rad in res["rader"]:
-            self.assertIn("SDV-avtale", rad["tekst"],
-                          "filteret skal snevre inn, ikke bare pyntes med")
+            self.assertIn("SDV-avtale", rad["tekst"], "filteret skal snevre inn, ikke bare pyntes med")
 
     def test_ferdig_oppgave_er_ikke_apen(self):
         """«Åpne oppgaver» skal ikke vise noe som er ferdig.
@@ -130,14 +123,18 @@ class TestKrLister(TransactionCase):
         noensinne er gjort, og seksjonen blir ubrukelig over tid.
         """
         oppgave = self._lag_oppgave("Ferdig sak", frist_om_dager=1)
-        ferdig = self.env["project.task.type"].create({
-            "name": "Ferdig (test)", "fold": True,
-            "project_ids": [(4, oppgave.project_id.id)],
-        })
+        ferdig = self.env["project.task.type"].create(
+            {
+                "name": "Ferdig (test)",
+                "fold": True,
+                "project_ids": [(4, oppgave.project_id.id)],
+            }
+        )
         oppgave.stage_id = ferdig
         res = self.Config.get_kr_apne_oppgaver(grense=200)
-        self.assertNotIn(oppgave.id, [r["res_id"] for r in res["rader"]],
-                         "en oppgave i foldet fase skal ikke stå som åpen")
+        self.assertNotIn(
+            oppgave.id, [r["res_id"] for r in res["rader"]], "en oppgave i foldet fase skal ikke stå som åpen"
+        )
 
     def test_perioder_grupperer_paa_frist(self):
         """Aktiviteter havner i riktig periode-bøtte etter fristen sin.
@@ -164,23 +161,25 @@ class TestKrLister(TransactionCase):
         pid = self.env.user.partner_id.id
         # To aktiviteter denne uken → skal ende i SAMME bøtte med antall 2.
         for n in ("A", "B"):
-            Akt.create({
-                "res_model_id": modell, "res_id": pid, "activity_type_id": todo,
-                "user_id": self.env.uid, "summary": "Denne uken " + n,
-                "date_deadline": fields.Date.context_today(self.Config),
-            })
+            Akt.create(
+                {
+                    "res_model_id": modell,
+                    "res_id": pid,
+                    "activity_type_id": todo,
+                    "user_id": self.env.uid,
+                    "summary": "Denne uken " + n,
+                    "date_deadline": fields.Date.context_today(self.Config),
+                }
+            )
         res = self.Config.get_kr_akt_perioder()
         self.assertIsInstance(res["botter"], list)
         for b in res["botter"]:
             for felt in ("key", "navn", "antall"):
                 self.assertIn(felt, b)
-            self.assertGreater(b["antall"], 0,
-                               "en bøtte med 0 skal ikke vises i det hele tatt")
+            self.assertGreater(b["antall"], 0, "en bøtte med 0 skal ikke vises i det hele tatt")
         denne_uken = [b for b in res["botter"] if b["key"] == "denne_uken"]
         self.assertTrue(denne_uken, "de to aktivitetene skulle gitt en «denne uken»-bøtte")
-        self.assertGreaterEqual(
-            denne_uken[0]["antall"], 2,
-            "begge aktivitetene skulle telt i samme bøtte")
+        self.assertGreaterEqual(denne_uken[0]["antall"], 2, "begge aktivitetene skulle telt i samme bøtte")
 
     def test_krever_handling_teller_saker_ikke_kategorier(self):
         """`totalt` skal være antall SAKER — det var nettopp feilen i dagens kode.
@@ -189,13 +188,12 @@ class TestKrLister(TransactionCase):
         der. Overskriftstallet må følge radene, ellers sier den «2» når det er 40.
         """
         res = self.Config.get_kr_krever_handling(grense=50)
-        self.assertEqual(res["totalt"], len(res["rader"]),
-                         "overskriftstallet må stemme med antall rader")
+        self.assertEqual(res["totalt"], len(res["rader"]), "overskriftstallet må stemme med antall rader")
 
     def test_grensen_respekteres(self):
         """Forsiden skal aldri få en uendelig liste i fanget."""
         for i in range(4):
-            self._lag_oppgave("Grensetest %s" % i, frist_om_dager=i + 1)
+            self._lag_oppgave(f"Grensetest {i}", frist_om_dager=i + 1)
         res = self.Config.get_kr_apne_oppgaver(grense=2)
         self.assertLessEqual(len(res["rader"]), 2)
 
@@ -215,10 +213,13 @@ class TestKrLister(TransactionCase):
         # den virker — den beviser det motsatte av det den later som. Fiksen hører i
         # testdataen, ikke i domenet: å løsne `stage_id.fold = False` ville vist LUKKEDE
         # oppgaver i «åpne oppgaver». Målt mot dev-bygg 35368345, ikke antatt.
-        aapen = self.env["project.task.type"].create({
-            "name": "Åpen (test)", "fold": False,
-            "project_ids": [(4, prosjekt.id)],
-        })
+        aapen = self.env["project.task.type"].create(
+            {
+                "name": "Åpen (test)",
+                "fold": False,
+                "project_ids": [(4, prosjekt.id)],
+            }
+        )
         vals = {"name": navn, "project_id": prosjekt.id, "stage_id": aapen.id}
         if frist_om_dager is not None:
             # `date_deadline` er Datetime i Odoo 19 — ikke Date.

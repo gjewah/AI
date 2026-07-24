@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
+from odoo.modules.module import get_manifest
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase, new_test_user
-from odoo.modules.module import get_manifest
 
 
 # Runs after ALL modules are loaded, not during fiq_gui_control's own install.
@@ -14,7 +13,6 @@ from odoo.modules.module import get_manifest
 # post_install gives the full registry, matching how the code actually runs.
 @tagged("-at_install", "post_install")
 class TestFiqControlRoom(TransactionCase):
-
     def setUp(self):
         super().setUp()
         self.Config = self.env["fiq.gui.control.config"]
@@ -35,15 +33,16 @@ class TestFiqControlRoom(TransactionCase):
         cfg = self.Config.get_my_config()
         for key in ("show", "level", "is_admin", "company_name", "accent", "company_id", "companies"):
             self.assertIn(key, cfg)
-        self.assertEqual(set(cfg["show"].keys()),
-                         {"kpis", "projects", "kommunikasjon", "activity", "tasks", "chart", "copilot", "quick"})
+        self.assertEqual(
+            set(cfg["show"].keys()),
+            {"kpis", "projects", "kommunikasjon", "activity", "tasks", "chart", "copilot", "quick"},
+        )
         self.assertTrue(self.Config.search([("user_id", "=", self.env.uid)]))
 
     def test_set_widget_persists(self):
         self.Config.get_my_config()
         self.Config.set_widget("kpis", False)
-        rec = self.Config.search(
-            [("user_id", "=", self.env.uid), ("company_id", "=", self.env.company.id)], limit=1)
+        rec = self.Config.search([("user_id", "=", self.env.uid), ("company_id", "=", self.env.company.id)], limit=1)
         self.assertFalse(rec.show_kpis)
         self.Config.set_widget("kpis", True)
         self.assertTrue(rec.show_kpis)
@@ -51,12 +50,11 @@ class TestFiqControlRoom(TransactionCase):
     def test_unique_per_user_company(self):
         self.Config.get_my_config()
         # andre kall gir samme record (ikke duplikat)
-        n = self.Config.search_count(
-            [("user_id", "=", self.env.uid), ("company_id", "=", self.env.company.id)])
+        n = self.Config.search_count([("user_id", "=", self.env.uid), ("company_id", "=", self.env.company.id)])
         self.Config.get_my_config()
         self.assertEqual(
-            self.Config.search_count(
-                [("user_id", "=", self.env.uid), ("company_id", "=", self.env.company.id)]), n)
+            self.Config.search_count([("user_id", "=", self.env.uid), ("company_id", "=", self.env.company.id)]), n
+        )
 
     def test_record_rule_isolation(self):
         userA = new_test_user(self.env, login="hm_a", groups="fiq_gui_control.group_user")
@@ -74,8 +72,18 @@ class TestFiqControlRoom(TransactionCase):
         self.assertIsInstance(rows, list)
         if rows:
             r = rows[0]
-            for key in ("id", "kind", "author", "author_id", "direction",
-                        "subject", "date", "model", "res_id", "element"):
+            for key in (
+                "id",
+                "kind",
+                "author",
+                "author_id",
+                "direction",
+                "subject",
+                "date",
+                "model",
+                "res_id",
+                "element",
+            ):
                 self.assertIn(key, r)
             self.assertIn(r["direction"], ("sendt", "mottatt"))
 
@@ -127,9 +135,11 @@ class TestFiqControlRoom(TransactionCase):
         feiler testen FØR push i stedet for at Gjermund oppdager et rødt banner i Odoo.
         """
         import re
+
         # Odoo 19: `tools.file_path` — `get_module_resource` finnes IKKE lenger.
         # Verifisert i kilden (odoo/tools/misc.py:196) før bruk, ikke antatt fra hukommelsen.
         from odoo.tools import file_path
+
         sti = file_path("fiq_gui_control/static/src/control_room.js")
         with open(sti, "r", encoding="utf-8") as f:
             js = f.read()
@@ -137,10 +147,11 @@ class TestFiqControlRoom(TransactionCase):
         self.assertTrue(m, "GUI_BUILD mangler i control_room.js")
         manifest = get_manifest("fiq_gui_control").get("version", "")
         self.assertEqual(
-            m.group(1), manifest,
-            "GUI_BUILD (%s) != manifest (%s). Bump BEGGE i SAMME commit — ellers viser "
+            m.group(1),
+            manifest,
+            f"GUI_BUILD ({m.group(1)}) != manifest ({manifest}). Bump BEGGE i SAMME commit — ellers viser "
             "Kontrollrommet «A new version is installed»-banneret som aldri forsvinner, "
-            "og Gjermund ser en leveranse som ser ødelagt ut." % (m.group(1), manifest),
+            "og Gjermund ser en leveranse som ser ødelagt ut.",
         )
 
     def test_nokkel_alias_dekker_menyens_faste_noekler(self):
@@ -162,15 +173,16 @@ class TestFiqControlRoom(TransactionCase):
         feiler dette FØR push i stedet for at rammen forsvinner hos Gjermund.
         """
         import re
+
         from odoo.tools import file_path
-        with open(file_path("fiq_gui_control/static/src/control_room.js"),
-                  "r", encoding="utf-8") as f:
+
+        with open(file_path("fiq_gui_control/static/src/control_room.js"), "r", encoding="utf-8") as f:
             js = f.read()
 
         # De faste menynøklene (navItems)
         faste = set(re.findall(r'key:\s*"([a-z_]+)"', js))
         # Aliastabellen
-        blokk = re.search(r"NOKKEL_ALIAS\s*=\s*\{(.*?)\}", js, re.S)
+        blokk = re.search(r"NOKKEL_ALIAS\s*=\s*\{(.*?)\}", js, re.DOTALL)
         self.assertTrue(blokk, "NOKKEL_ALIAS mangler — nøkkelsplittelsen er ikke håndtert")
         alias = dict(re.findall(r"(\w+):\s*\"([a-z_]+)\"", blokk.group(1)))
 
@@ -184,15 +196,16 @@ class TestFiqControlRoom(TransactionCase):
         }
         for menynokkel, flatenokkel in kjent_splittelse.items():
             self.assertIn(
-                menynokkel, faste,
-                "menynøkkelen «%s» er borte fra navItems — er den omdøpt, må aliaset "
-                "oppdateres i samme commit" % menynokkel,
+                menynokkel,
+                faste,
+                f"menynøkkelen «{menynokkel}» er borte fra navItems — er den omdøpt, må aliaset "
+                "oppdateres i samme commit",
             )
             self.assertEqual(
-                alias.get(menynokkel), flatenokkel,
-                "«%s» mangler alias til «%s». Uten det finner runAction ingen komponent, "
-                "faller til doAction, og RAMMEN FORSVINNER for brukeren." % (
-                    menynokkel, flatenokkel),
+                alias.get(menynokkel),
+                flatenokkel,
+                f"«{menynokkel}» mangler alias til «{flatenokkel}». Uten det finner runAction ingen komponent, "
+                "faller til doAction, og RAMMEN FORSVINNER for brukeren.",
             )
 
     def test_posisjonsdeling_av_som_standard_og_en_bryter(self):
@@ -229,8 +242,7 @@ class TestFiqControlRoom(TransactionCase):
         for _ in range(3):
             self.Config.get_my_config()
         rec.invalidate_recordset(["del_posisjon"])
-        self.assertFalse(rec.del_posisjon,
-                         "posisjonsdeling ble slått PÅ av systemet — det skal aldri skje")
+        self.assertFalse(rec.del_posisjon, "posisjonsdeling ble slått PÅ av systemet — det skal aldri skje")
 
     def test_responsiv_ramme_har_mobilhaandtering(self):
         """Rammen må fungere på mobil (Gjermund 23.07).
@@ -247,21 +259,20 @@ class TestFiqControlRoom(TransactionCase):
         og feilen ville først vist seg på en telefon, der ingen av oss tester daglig.
         """
         from odoo.tools import file_path
-        with open(file_path("fiq_gui_control/static/src/control_room.scss"),
-                  "r", encoding="utf-8") as f:
+
+        with open(file_path("fiq_gui_control/static/src/control_room.scss"), "r", encoding="utf-8") as f:
             scss = f.read()
-        with open(file_path("fiq_gui_control/static/src/control_room.xml"),
-                  "r", encoding="utf-8") as f:
+        with open(file_path("fiq_gui_control/static/src/control_room.xml"), "r", encoding="utf-8") as f:
             xml = f.read()
 
         self.assertIn("fiq_hm_menyknapp", xml, "menyknappen mangler i malen")
         self.assertIn("fiq_hm_menyknapp", scss, "menyknappen mangler stil")
         self.assertRegex(
-            scss, r"@media\s*\(max-width:\s*760px\)",
+            scss,
+            r"@media\s*\(max-width:\s*760px\)",
             "ingen bruddpunkt for liten skjerm",
         )
-        self.assertIn("min-height: 40px", scss,
-                      "berøringsmål under 40px — en finger treffer ikke en 20px-knapp")
+        self.assertIn("min-height: 40px", scss, "berøringsmål under 40px — en finger treffer ikke en 20px-knapp")
 
     # ── INNBOKSEN: nøyaktig to kilder ─────────────────────────────────────────────────
 
@@ -284,16 +295,18 @@ class TestFiqControlRoom(TransactionCase):
         handlinger = self.Config.get_actions()
         for nokkel in ("oppgaver", "aktiviteter"):
             self.assertNotIn(
-                nokkel, handlinger,
-                "«%s» er tilbake i innboksens oppslagstabell — den peker ut av "
-                "Kontrollrommet og skal ikke finnes" % nokkel,
+                nokkel,
+                handlinger,
+                f"«{nokkel}» er tilbake i innboksens oppslagstabell — den peker ut av "
+                "Kontrollrommet og skal ikke finnes",
             )
         # De to som SKAL være der. At de er ukoblet i en base er PORT 0 (modulen ikke
         # installert), ikke en kodefeil — men nøkkelen skal alltid finnes i tabellen.
         for nokkel in ("epost", "ai"):
             self.assertIn(
-                nokkel, handlinger,
-                "innboksens kilde «%s» mangler i oppslagstabellen" % nokkel,
+                nokkel,
+                handlinger,
+                f"innboksens kilde «{nokkel}» mangler i oppslagstabellen",
             )
 
     def test_innboksen_har_noeyaktig_to_kilder(self):
@@ -304,16 +317,18 @@ class TestFiqControlRoom(TransactionCase):
         valg noen må endre denne testen for å gjøre.
         """
         import re
+
         from odoo.tools import file_path
-        with open(file_path("fiq_gui_control/static/src/control_room.js"),
-                  "r", encoding="utf-8") as f:
+
+        with open(file_path("fiq_gui_control/static/src/control_room.js"), "r", encoding="utf-8") as f:
             js = f.read()
-        blokk = re.search(r"get innboksKilder\(\)\s*\{(.*?)\n    \}", js, re.S)
+        blokk = re.search(r"get innboksKilder\(\)\s*\{(.*?)\n    \}", js, re.DOTALL)
         self.assertTrue(blokk, "fant ikke innboksKilder")
         kilder = re.findall(r'nr:\s*"(0\.\d)"', blokk.group(1))
         self.assertEqual(
-            kilder, ["0.1", "0.2"],
-            "innboksen skal ha nøyaktig to kilder (E-post, AI-meldinger), fant: %s" % kilder,
+            kilder,
+            ["0.1", "0.2"],
+            f"innboksen skal ha nøyaktig to kilder (E-post, AI-meldinger), fant: {kilder}",
         )
 
     # ── AVDELING-raden (utkast 08) ────────────────────────────────────────────────────
@@ -331,7 +346,8 @@ class TestFiqControlRoom(TransactionCase):
         """
         ut = self.Config.get_avdelinger()
         self.assertIsInstance(
-            ut, list,
+            ut,
+            list,
             "get_avdelinger må returnere en liste også når personalmodulen mangler",
         )
         for rad in ut:
@@ -351,7 +367,8 @@ class TestFiqControlRoom(TransactionCase):
         for rad in self.Config.get_avdelinger(company_id=firma.id):
             dep = self.env["hr.department"].sudo().browse(rad["id"])
             self.assertIn(
-                dep.company_id.id, (False, firma.id),
+                dep.company_id.id,
+                (False, firma.id),
                 "avdeling fra et annet firma lekket inn i raden",
             )
 
@@ -364,19 +381,20 @@ class TestFiqControlRoom(TransactionCase):
         Berøringsmålet er med her fordi avdelingsknappene er de minste på flaten.
         """
         from odoo.tools import file_path
-        with open(file_path("fiq_gui_control/static/src/control_room.xml"),
-                  "r", encoding="utf-8") as f:
+
+        with open(file_path("fiq_gui_control/static/src/control_room.xml"), "r", encoding="utf-8") as f:
             xml = f.read()
-        with open(file_path("fiq_gui_control/static/src/control_room.scss"),
-                  "r", encoding="utf-8") as f:
+        with open(file_path("fiq_gui_control/static/src/control_room.scss"), "r", encoding="utf-8") as f:
             scss = f.read()
         self.assertIn(
-            't-if="state.avdelinger.length"', xml,
+            't-if="state.avdelinger.length"',
+            xml,
             "avdelingsbåndet mangler t-if — det ville stått tomt uten personalmodulen",
         )
         self.assertIn("fiq_hm_avdrad", scss, "avdelingsbåndet mangler stil")
         self.assertRegex(
-            scss, r"\.fiq_hm_nav,[^\n]*\.fiq_hm_avd,",
+            scss,
+            r"\.fiq_hm_nav,[^\n]*\.fiq_hm_avd,",
             "fiq_hm_avd mangler i 40px-regelen — de minste knappene på flaten",
         )
 
@@ -393,18 +411,20 @@ class TestFiqControlRoom(TransactionCase):
         en tidslinje der alt ser like travelt ut. Derfor sjekkes også at de er forskjellige.
         """
         from odoo.tools import file_path
-        with open(file_path("fiq_gui_control/static/src/control_room.scss"),
-                  "r", encoding="utf-8") as f:
+
+        with open(file_path("fiq_gui_control/static/src/control_room.scss"), "r", encoding="utf-8") as f:
             scss = f.read()
         import re
+
         farger = {}
         for trinn in ("t0", "t20", "t40", "t60", "t80", "t100"):
-            treff = re.search(r"--%s:\s*(#[0-9a-fA-F]{3,8})" % trinn, scss)
-            self.assertTrue(treff, "travelhetstrinn --%s mangler i stilarket" % trinn)
+            treff = re.search(rf"--{trinn}:\s*(#[0-9a-fA-F]{{3,8}})", scss)
+            self.assertTrue(treff, f"travelhetstrinn --{trinn} mangler i stilarket")
             farger[trinn] = treff.group(1).lower()
         self.assertEqual(
-            len(set(farger.values())), 6,
-            "to travelhetstrinn har SAMME farge — da kan de ikke skilles: %s" % farger,
+            len(set(farger.values())),
+            6,
+            f"to travelhetstrinn har SAMME farge — da kan de ikke skilles: {farger}",
         )
 
     def test_tidslinjen_viser_aldri_aar(self):
@@ -415,12 +435,13 @@ class TestFiqControlRoom(TransactionCase):
         senere «utvider» en velger i beste mening.
         """
         from odoo.tools import file_path
-        with open(file_path("fiq_gui_control/static/src/control_room.js"),
-                  "r", encoding="utf-8") as f:
+
+        with open(file_path("fiq_gui_control/static/src/control_room.js"), "r", encoding="utf-8") as f:
             js = f.read()
         self.assertIn('tlMode: "uke"', js, "tidslinjen mangler standardvisning")
         self.assertNotRegex(
-            js, r'setTlMode\(["\']aar["\']\)',
+            js,
+            r'setTlMode\(["\']aar["\']\)',
             "tidslinjen har fått årsvisning — spec §2.5 forbyr den",
         )
 
@@ -433,14 +454,14 @@ class TestFiqControlRoom(TransactionCase):
         Fryses data i stedet for valg, viser flaten gamle avdelinger etter en endring.
         """
         from odoo.tools import file_path
-        with open(file_path("fiq_gui_control/static/src/control_room.js"),
-                  "r", encoding="utf-8") as f:
+
+        with open(file_path("fiq_gui_control/static/src/control_room.js"), "r", encoding="utf-8") as f:
             js = f.read()
         import re
-        blokk = re.search(r"FREEZE_KEYS\s*=\s*\[(.*?)\]", js, re.S)
+
+        blokk = re.search(r"FREEZE_KEYS\s*=\s*\[(.*?)\]", js, re.DOTALL)
         self.assertTrue(blokk, "fant ikke FREEZE_KEYS")
         nokler = blokk.group(1)
         self.assertIn('"avdelingId"', nokler, "avdelingsvalget fryses ikke")
         self.assertIn('"tlMode"', nokler, "tidslinjens uke/måned fryses ikke")
-        self.assertNotIn('"avdelinger"', nokler,
-                         "selve avdelingslista skal IKKE fryses — kun valget")
+        self.assertNotIn('"avdelinger"', nokler, "selve avdelingslista skal IKKE fryses — kun valget")

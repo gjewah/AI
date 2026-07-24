@@ -1,13 +1,14 @@
-# -*- coding: utf-8 -*-
 import json
 import logging
 import re
 from datetime import datetime, timedelta
+from typing import ClassVar
+
 import pytz
-from odoo.tools import html2plaintext
-from odoo import models, fields, api, _
+from odoo import _, api, fields, models
 from odoo.exceptions import AccessError
 from odoo.modules.module import get_manifest
+from odoo.tools import html2plaintext
 
 _logger = logging.getLogger(__name__)
 
@@ -18,21 +19,31 @@ class FiqControlRoomConfig(models.Model):
     """Per-user/per-company setup for the Control room (FIQ's own governance layer
     on top of res.groups): level + which widgets are shown. Governed by access groups
     + record rules (a user only sees their own)."""
+
     _name = "fiq.gui.control.config"
     _description = "FIQ Control room – user setup"
     _rec_name = "user_id"
 
     user_id = fields.Many2one(
-        "res.users", string="User", required=True, index=True, ondelete="cascade",
+        "res.users",
+        string="User",
+        required=True,
+        index=True,
+        ondelete="cascade",
         default=lambda s: s.env.user,
     )
     company_id = fields.Many2one(
-        "res.company", string="Company", required=True, index=True,
+        "res.company",
+        string="Company",
+        required=True,
+        index=True,
         default=lambda s: s.env.company,
     )
     level = fields.Selection(
         [("pulse", "Pulse (summary)"), ("balansert", "Balanced"), ("detaljert", "Detailed")],
-        string="Detail level", default="balansert", required=True,
+        string="Detail level",
+        default="balansert",
+        required=True,
         help="Role-based detail level: Pulse (executive) · Balanced (project manager) · Detailed (power).",
     )
     # ── POSISJONSDELING — ÉN BRYTER FOR BEGGE FLATER (Gjermund 20.07) ──────────────────
@@ -50,15 +61,19 @@ class FiqControlRoomConfig(models.Model):
     # eller andre steder i denne modulen. Selve innsamlingen er ikke bygget, og krever
     # eget rettslig grunnlag ([[fiq-oppmote-lokasjon-gdpr]]). Dette er bryteren, ikke sporet.
     del_posisjon = fields.Boolean(
-        "Share my location", default=False,
+        "Share my location",
+        default=False,
         help="Off by default. Covers BOTH the control room and the mobile assistant — "
-             "one switch, so you always know where you stand.")
+        "one switch, so you always know where you stand.",
+    )
     # Satt av systemet når ferie slår den av, slik at vi kan VARSLE brukeren om at det
     # skjedde. Uten dette ville avslaget vært stille — og et stille avslag er like
     # forvirrende som en stille deling.
     del_posisjon_auto_av = fields.Boolean(
-        "Turned off automatically", default=False,
-        help="Set when leave switched sharing off, so the user can be told it happened.")
+        "Turned off automatically",
+        default=False,
+        help="Set when leave switched sharing off, so the user can be told it happened.",
+    )
 
     show_kpis = fields.Boolean("KPI row", default=True)
     show_projects = fields.Boolean("Project overview", default=True)
@@ -144,9 +159,7 @@ class FiqControlRoomConfig(models.Model):
         return [(felt, "in", tillatte)]
 
     def _get_or_create_current(self):
-        rec = self.search(
-            [("user_id", "=", self.env.uid), ("company_id", "=", self.env.company.id)], limit=1
-        )
+        rec = self.search([("user_id", "=", self.env.uid), ("company_id", "=", self.env.company.id)], limit=1)
         if not rec:
             rec = self.create({})
         return rec
@@ -170,8 +183,7 @@ class FiqControlRoomConfig(models.Model):
         # Firmavelgeren viser det sesjonen tillater — samme kilde som scope-hjelperen,
         # så velgeren aldri tilbyr noe server-siden vil avvise.
         companies = [
-            {"id": c.id, "name": c.name}
-            for c in self.env["res.company"].browse(self.tillatte_firmaer()).exists()
+            {"id": c.id, "name": c.name} for c in self.env["res.company"].browse(self.tillatte_firmaer()).exists()
         ]
         # Config-drevet per-linje fremdrift (lag 2): form (bar/ring) + metrikk. Fornuftige
         # defaults, overstyrbare via system-parametere (Innstillinger → Teknisk → Parametere).
@@ -195,7 +207,7 @@ class FiqControlRoomConfig(models.Model):
             "company_id": comp.id,
             "companies": companies,
             "accent": comp.fiq_control_accent or "#38B44A",
-            "logo": ("data:image/png;base64,%s" % logo) if logo else False,
+            "logo": (f"data:image/png;base64,{logo}") if logo else False,
             "progress_shape": ICP.get_param("fiq_gui_control.progress_shape", "bar"),
             "progress_metric": ICP.get_param("fiq_gui_control.progress_metric", "timer"),
             # Versjon: installert (DB, endres av «Oppgrader» i Apper) + filene på disk.
@@ -205,8 +217,9 @@ class FiqControlRoomConfig(models.Model):
             # Auto-oppdatering: intervall i minutter (config-drevet, overstyrbar)
             "auto_refresh_min": int(ICP.get_param("fiq_gui_control.auto_refresh_min", "5") or 5),
             # Hvem kan kjøre modul-oppgradering fra brikken (FIQ-admin ELLER Settings-admin)
-            "can_upgrade": (self.env.user.has_group("fiq_gui_control.group_admin")
-                            or self.env.user.has_group("base.group_system")),
+            "can_upgrade": (
+                self.env.user.has_group("fiq_gui_control.group_admin") or self.env.user.has_group("base.group_system")
+            ),
             # SP-lenker per fagområde (config-drevet, PER FIRMA): systemparameter
             # fiq_gui_control.sp_urls.<company_id> (fallback .sp_urls) = JSON {"1": "https://…", "8.50": "https://…"}
             "sp_urls": self._sp_urls(comp),
@@ -224,33 +237,53 @@ class FiqControlRoomConfig(models.Model):
         fiq_gui_control.pagaende_oppgaver (JSON) overstyrer standarden — så listen
         kan vedlikeholdes uten ny modulversjon. Navn er innhold (norsk), ikke UI."""
         import json
-        raw = self.env["ir.config_parameter"].sudo().get_param(
-            "fiq_gui_control.pagaende_oppgaver")
+
+        raw = self.env["ir.config_parameter"].sudo().get_param("fiq_gui_control.pagaende_oppgaver")
         if raw:
             try:
                 return json.loads(raw)
             except Exception:
                 pass
         return [
-            {"nr": "01", "navn": "Plattform-konsolidering — én FIQ-eid kilde",
-             "hvem": "ai", "status": "pagar", "under": [
-                {"nr": "01.01", "navn": "Sikring — mist ingenting", "hvem": "ai", "status": "ferdig"},
-                {"nr": "01.02", "navn": "Kopier loym-modulene inn i plattformen", "hvem": "ai", "status": "apen"},
-                {"nr": "01.03", "navn": "Rydd bort de doble kopiene", "hvem": "ai", "status": "apen"},
-                {"nr": "01.04", "navn": "Koble FIQ (pilot) på + verifiser på test", "hvem": "ai", "status": "apen"},
-                {"nr": "01.05", "navn": "Rull ut til Vidir, SDV, JPC", "hvem": "ai", "status": "venter"},
-                {"nr": "01.06", "navn": "Versjonskontroll + rulle-bakover", "hvem": "ai", "status": "apen"},
-                {"nr": "01.07", "navn": "Oversiktsmodul i Kontrollrommet", "hvem": "ai", "status": "pagar"},
-            ]},
-            {"nr": "02", "navn": "Norsk + firmalogo i Kontrollrommet",
-             "hvem": "ai", "status": "parkert", "under": [
-                {"nr": "02.01", "navn": "Norsk-språk-vask på flatene", "hvem": "ai", "status": "apen"},
-                {"nr": "02.02", "navn": "Firmalogo i topplinja", "hvem": "ai", "status": "apen"},
-            ]},
-            {"nr": "03", "navn": "OCA-minimering — bytt tunge moduler mot slanke FIQ-egne",
-             "hvem": "ai", "status": "venter", "under": [
-                {"nr": "03.01", "navn": "Kandidater kartlagt; starter når plattformen er ryddet", "hvem": "ai", "status": "apen"},
-            ]},
+            {
+                "nr": "01",
+                "navn": "Plattform-konsolidering — én FIQ-eid kilde",
+                "hvem": "ai",
+                "status": "pagar",
+                "under": [
+                    {"nr": "01.01", "navn": "Sikring — mist ingenting", "hvem": "ai", "status": "ferdig"},
+                    {"nr": "01.02", "navn": "Kopier loym-modulene inn i plattformen", "hvem": "ai", "status": "apen"},
+                    {"nr": "01.03", "navn": "Rydd bort de doble kopiene", "hvem": "ai", "status": "apen"},
+                    {"nr": "01.04", "navn": "Koble FIQ (pilot) på + verifiser på test", "hvem": "ai", "status": "apen"},
+                    {"nr": "01.05", "navn": "Rull ut til Vidir, SDV, JPC", "hvem": "ai", "status": "venter"},
+                    {"nr": "01.06", "navn": "Versjonskontroll + rulle-bakover", "hvem": "ai", "status": "apen"},
+                    {"nr": "01.07", "navn": "Oversiktsmodul i Kontrollrommet", "hvem": "ai", "status": "pagar"},
+                ],
+            },
+            {
+                "nr": "02",
+                "navn": "Norsk + firmalogo i Kontrollrommet",
+                "hvem": "ai",
+                "status": "parkert",
+                "under": [
+                    {"nr": "02.01", "navn": "Norsk-språk-vask på flatene", "hvem": "ai", "status": "apen"},
+                    {"nr": "02.02", "navn": "Firmalogo i topplinja", "hvem": "ai", "status": "apen"},
+                ],
+            },
+            {
+                "nr": "03",
+                "navn": "OCA-minimering — bytt tunge moduler mot slanke FIQ-egne",
+                "hvem": "ai",
+                "status": "venter",
+                "under": [
+                    {
+                        "nr": "03.01",
+                        "navn": "Kandidater kartlagt; starter når plattformen er ryddet",
+                        "hvem": "ai",
+                        "status": "apen",
+                    },
+                ],
+            },
         ]
 
     @api.model
@@ -280,17 +313,22 @@ class FiqControlRoomConfig(models.Model):
             f = T._fields
             today = fields.Date.context_today(self)
             week_end = today + timedelta(days=6 - today.weekday())
-            for t in T.search([("user_ids", "in", [self.env.uid]),
-                               ("date_deadline", "!=", False)],
-                              order="date_deadline", limit=120):
+            for t in T.search(
+                [("user_ids", "in", [self.env.uid]), ("date_deadline", "!=", False)], order="date_deadline", limit=120
+            ):
                 if self._stage_is_done(t.stage_id if "stage_id" in f else False):
                     continue
                 d = fields.Date.to_date(str(t.date_deadline)[:10])
                 if d > week_end:
                     break
-                row = {"id": t.id, "no": (t.code if "code" in f else "") or "",
-                       "name": t.name or "", "frist": str(d),
-                       "prosjekt": t.project_id.name or "", "over": d < today}
+                row = {
+                    "id": t.id,
+                    "no": (t.code if "code" in f else "") or "",
+                    "name": t.name or "",
+                    "frist": str(d),
+                    "prosjekt": t.project_id.name or "",
+                    "over": d < today,
+                }
                 (out["idag"] if d <= today else out["uke"]).append(row)
             out["idag"], out["uke"] = out["idag"][:15], out["uke"][:15]
         except Exception:
@@ -321,8 +359,7 @@ class FiqControlRoomConfig(models.Model):
     @api.model
     def _sp_urls(self, comp):
         ICP = self.env["ir.config_parameter"].sudo()
-        raw = ICP.get_param("fiq_gui_control.sp_urls.%s" % comp.id) \
-            or ICP.get_param("fiq_gui_control.sp_urls", "{}")
+        raw = ICP.get_param(f"fiq_gui_control.sp_urls.{comp.id}") or ICP.get_param("fiq_gui_control.sp_urls", "{}")
         try:
             data = json.loads(raw)
             return data if isinstance(data, dict) else {}
@@ -334,8 +371,7 @@ class FiqControlRoomConfig(models.Model):
         """(installert DB-versjon, fil-versjon) for fiq_gui_control — defensivt."""
         installed = files = ""
         try:
-            mod = self.env["ir.module.module"].sudo().search(
-                [("name", "=", "fiq_gui_control")], limit=1)
+            mod = self.env["ir.module.module"].sudo().search([("name", "=", "fiq_gui_control")], limit=1)
             installed = mod.latest_version or ""
         except Exception:
             pass
@@ -378,8 +414,7 @@ class FiqControlRoomConfig(models.Model):
         if not ids:
             return {}
         if not metric:
-            metric = self.env["ir.config_parameter"].sudo().get_param(
-                "fiq_gui_control.progress_metric", "timer")
+            metric = self.env["ir.config_parameter"].sudo().get_param("fiq_gui_control.progress_metric", "timer")
         if model == "project.task":
             recs = self.env["project.task"].browse(ids).exists()
             return {t.id: self._task_progress(t, metric) for t in recs}
@@ -391,7 +426,7 @@ class FiqControlRoomConfig(models.Model):
     def _mk(pct, est=0.0, logged=0.0):
         """Normalisert fremdriftsobjekt: prosent + estimerte/førte timer."""
         return {
-            "pct": max(0, min(100, int(round(pct or 0)))),
+            "pct": max(0, min(100, round(pct or 0))),
             "est": round(est or 0.0, 1),
             "logged": round(logged or 0.0, 1),
         }
@@ -401,9 +436,7 @@ class FiqControlRoomConfig(models.Model):
             return False
         if "fold" in stage._fields and stage.fold:
             return True
-        if "is_closed" in stage._fields and getattr(stage, "is_closed", False):
-            return True
-        return False
+        return bool("is_closed" in stage._fields and getattr(stage, "is_closed", False))
 
     def _task_progress(self, task, metric):
         # 🎚 Manuell %-overstyring (detaljboksen): erstatter eller adderes til timebasert
@@ -448,11 +481,8 @@ class FiqControlRoomConfig(models.Model):
             try:
                 kids = task.child_ids
                 if kids:
-                    done = sum(
-                        1 for k in kids
-                        if self._stage_is_done(k.stage_id if "stage_id" in k._fields else False)
-                    )
-                    return int(round(done * 100.0 / len(kids)))
+                    done = sum(1 for k in kids if self._stage_is_done(k.stage_id if "stage_id" in k._fields else False))
+                    return round(done * 100.0 / len(kids))
             except Exception:
                 pass
         return None
@@ -467,7 +497,7 @@ class FiqControlRoomConfig(models.Model):
             ordered = self.env["project.task.type"].search([], order="sequence, id").ids
             sid = task.stage_id.id
             if sid in ordered and len(ordered) > 1:
-                return int(round(ordered.index(sid) * 100.0 / (len(ordered) - 1)))
+                return round(ordered.index(sid) * 100.0 / (len(ordered) - 1))
         except Exception:
             pass
         return 10  # i et stadium, men uten rekkefølge-signal
@@ -483,8 +513,8 @@ class FiqControlRoomConfig(models.Model):
             try:
                 agg = {}
                 recs = Task.search_read(
-                    [("project_id", "in", ids)],
-                    ["project_id", "allocated_hours", "effective_hours"])
+                    [("project_id", "in", ids)], ["project_id", "allocated_hours", "effective_hours"]
+                )
                 for r in recs:
                     pid = r["project_id"][0] if r.get("project_id") else None
                     if pid is None:
@@ -551,8 +581,7 @@ class FiqControlRoomConfig(models.Model):
                 # fra firmaer brukeren ikke står i — nøyaktig feilen `get_areas()` hadde
                 # (17 treff, én ekte rot) og som ble rettet i 7.2.0.
                 if company_id:
-                    domain = ["|", ("company_id", "=", int(company_id)),
-                              ("company_id", "=", False)]
+                    domain = ["|", ("company_id", "=", int(company_id)), ("company_id", "=", False)]
                 for d in Dep.sudo().search(domain, order="complete_name"):
                     out.append({"id": d.id, "name": d.complete_name or d.name or ""})
         except Exception:
@@ -621,25 +650,31 @@ class FiqControlRoomConfig(models.Model):
         out = []
         try:
             if model == "project.project":
-                P = self.env["project.project"]; f = P._fields
+                P = self.env["project.project"]
+                f = P._fields
                 dom = [("parent_id", "=", parent_id)]
                 if "active" in f:
                     dom.append(("active", "=", True))
                 for r in P.search(dom, order="id"):
-                    out.append({
-                        "id": r.id,
-                        "no": (r.sequence_code if "sequence_code" in f else "") or "",
-                        "name": r.name or "",
-                        "taskCount": (r.task_count if "task_count" in f else 0) or 0,
-                    })
+                    out.append(
+                        {
+                            "id": r.id,
+                            "no": (r.sequence_code if "sequence_code" in f else "") or "",
+                            "name": r.name or "",
+                            "taskCount": (r.task_count if "task_count" in f else 0) or 0,
+                        }
+                    )
             elif model == "project.task":
-                T = self.env["project.task"]; f = T._fields
+                T = self.env["project.task"]
+                f = T._fields
                 for r in T.search([("parent_id", "=", parent_id)], order="id"):
-                    out.append({
-                        "id": r.id,
-                        "no": (r.code if "code" in f else "") or "",
-                        "name": r.name or "",
-                    })
+                    out.append(
+                        {
+                            "id": r.id,
+                            "no": (r.code if "code" in f else "") or "",
+                            "name": r.name or "",
+                        }
+                    )
         except Exception:
             pass
         return out
@@ -658,9 +693,14 @@ class FiqControlRoomConfig(models.Model):
                 out["beskrivelse"] = rec.description or ""
             # Logg + e-post (mail.message på posten)
             msgs = self.env["mail.message"].search(
-                [("model", "=", model), ("res_id", "=", res_id),
-                 ("message_type", "in", ["email", "comment", "notification"])],
-                order="date desc", limit=30)
+                [
+                    ("model", "=", model),
+                    ("res_id", "=", res_id),
+                    ("message_type", "in", ["email", "comment", "notification"]),
+                ],
+                order="date desc",
+                limit=30,
+            )
             for m in msgs:
                 author = m.author_id.display_name if m.author_id else (m.email_from or "—")
                 item = {
@@ -676,15 +716,18 @@ class FiqControlRoomConfig(models.Model):
                     out["logg"].append(item)
             # Dokumenter (vedlegg)
             atts = self.env["ir.attachment"].search(
-                [("res_model", "=", model), ("res_id", "=", res_id)], order="id desc", limit=30)
+                [("res_model", "=", model), ("res_id", "=", res_id)], order="id desc", limit=30
+            )
             for a in atts:
                 # mimetype + checksum → forhåndsvisning (FileViewer); ALDRI nedlasting
-                out["dok"].append({
-                    "id": a.id,
-                    "name": a.name or _("Document"),
-                    "mimetype": a.mimetype or "",
-                    "checksum": a.checksum or "",
-                })
+                out["dok"].append(
+                    {
+                        "id": a.id,
+                        "name": a.name or _("Document"),
+                        "mimetype": a.mimetype or "",
+                        "checksum": a.checksum or "",
+                    }
+                )
         except Exception:
             pass
         return out
@@ -694,8 +737,7 @@ class FiqControlRoomConfig(models.Model):
         """«Oppgrader» rett fra Kontrollrommet — samme som Oppgrader-knappen i Apper.
         Kontrollert løft: FIQ-admin-gruppen (eller Odoo Settings-admin) kan oppgradere
         AKKURAT denne modulen, uavhengig av tekniske innstillingsrettigheter."""
-        if not (self.env.user.has_group("fiq_gui_control.group_admin")
-                or self.env.user.has_group("base.group_system")):
+        if not (self.env.user.has_group("fiq_gui_control.group_admin") or self.env.user.has_group("base.group_system")):
             raise AccessError(_("Only administrators can upgrade the Control room."))
         mod = self.env["ir.module.module"].sudo().search([("name", "=", "fiq_gui_control")], limit=1)
         if mod and mod.state == "installed":
@@ -707,14 +749,12 @@ class FiqControlRoomConfig(models.Model):
         """Endre cockpit-adressen rett fra AI Kontrollrom-flaten — config-drevet
         (systemparameter fiq_gui_control.ai_cockpit_url), så adressen kan byttes
         UTEN ny modulversjon. Kontrollert løft: FIQ-admin eller Settings-admin."""
-        if not (self.env.user.has_group("fiq_gui_control.group_admin")
-                or self.env.user.has_group("base.group_system")):
+        if not (self.env.user.has_group("fiq_gui_control.group_admin") or self.env.user.has_group("base.group_system")):
             raise AccessError(_("Only administrators can change the cockpit address."))
         url = (url or "").strip()
         if url and not url.startswith(("https://", "http://")):
             url = "https://" + url
-        self.env["ir.config_parameter"].sudo().set_param(
-            "fiq_gui_control.ai_cockpit_url", url)
+        self.env["ir.config_parameter"].sudo().set_param("fiq_gui_control.ai_cockpit_url", url)
         return url
 
     # ---- «KREVER HANDLING NÅ» — globalt over hele AI-scopet (alle 0.-røttene) ----------
@@ -725,31 +765,33 @@ class FiqControlRoomConfig(models.Model):
         out = []
         try:
             P = self.env["project.project"]
-            roots = P.search([("parent_id", "=", False), ("name", "=ilike", "0.%"),
-                              ("active", "=", True)])
+            roots = P.search([("parent_id", "=", False), ("name", "=ilike", "0.%"), ("active", "=", True)])
             if not roots:
                 return out
             T = self.env["project.task"]
             f = T._fields
             today = fields.Date.context_today(self)
-            for t in T.search([("project_id", "child_of", roots.ids),
-                               ("user_ids", "in", [self.env.uid])],
-                              order="date_deadline asc", limit=60):
+            for t in T.search(
+                [("project_id", "child_of", roots.ids), ("user_ids", "in", [self.env.uid])],
+                order="date_deadline asc",
+                limit=60,
+            ):
                 if self._stage_is_done(t.stage_id if "stage_id" in f else False):
                     continue
                 over = False
                 try:
-                    over = bool(t.date_deadline
-                                and fields.Date.to_date(str(t.date_deadline)[:10]) < today)
+                    over = bool(t.date_deadline and fields.Date.to_date(str(t.date_deadline)[:10]) < today)
                 except Exception:
                     over = False
-                out.append({
-                    "id": t.id,
-                    "no": (t.code if "code" in f else "") or "",
-                    "name": t.name or "",
-                    "prosjekt": t.project_id.name or "",
-                    "over": over,
-                })
+                out.append(
+                    {
+                        "id": t.id,
+                        "no": (t.code if "code" in f else "") or "",
+                        "name": t.name or "",
+                        "prosjekt": t.project_id.name or "",
+                        "over": over,
+                    }
+                )
             out.sort(key=lambda r: (not r["over"], r["no"]))
             out = out[:8]
         except Exception:
@@ -763,24 +805,31 @@ class FiqControlRoomConfig(models.Model):
         Kommunikasjon: Gjermund svarer i flaten → message_post på øktens oppgave."""
         out = []
         try:
-            proj = self.env["project.project"].search(
-                [("name", "ilike", "AI Økter")], limit=1)
+            proj = self.env["project.project"].search([("name", "ilike", "AI Økter")], limit=1)
             if not proj:
                 return out
             Msg = self.env["mail.message"]
-            for t in self.env["project.task"].search(
-                    [("project_id", "=", proj.id)], order="id"):
+            for t in self.env["project.task"].search([("project_id", "=", proj.id)], order="id"):
                 m = Msg.search(
-                    [("model", "=", "project.task"), ("res_id", "=", t.id),
-                     ("message_type", "in", ["comment", "notification"])],
-                    order="date desc", limit=1)
-                out.append({
-                    "id": t.id,
-                    "name": t.name or "",
-                    "ferdig": self._stage_is_done(t.stage_id),
-                    "sist": m.date.strftime("%d.%m %H:%M") if m and m.date else "",
-                    "melding": html2plaintext(m.body or "").strip()[:160] if m and m.body else ((m.preview or "").strip()[:160] if m else ""),
-                })
+                    [
+                        ("model", "=", "project.task"),
+                        ("res_id", "=", t.id),
+                        ("message_type", "in", ["comment", "notification"]),
+                    ],
+                    order="date desc",
+                    limit=1,
+                )
+                out.append(
+                    {
+                        "id": t.id,
+                        "name": t.name or "",
+                        "ferdig": self._stage_is_done(t.stage_id),
+                        "sist": m.date.strftime("%d.%m %H:%M") if m and m.date else "",
+                        "melding": html2plaintext(m.body or "").strip()[:160]
+                        if m and m.body
+                        else ((m.preview or "").strip()[:160] if m else ""),
+                    }
+                )
         except Exception:
             pass
         return out
@@ -809,8 +858,7 @@ class FiqControlRoomConfig(models.Model):
         # AI KTRL handler KUN om AI-prosjektene, aldri hele prosjektregisteret.
         kunder, ai_root_ids = [], []
         if "parent_id" in f:
-            for r in P.search(dom + [("parent_id", "=", False), ("name", "=ilike", "0.%")],
-                              order="name"):
+            for r in P.search(dom + [("parent_id", "=", False), ("name", "=ilike", "0.%")], order="name"):
                 kunder.append({"id": r.id, "name": r.name or ""})
                 ai_root_ids.append(r.id)
         pdom = dom + [("id", "child_of", ai_root_ids)] if ai_root_ids else dom + [("id", "=", 0)]
@@ -819,12 +867,15 @@ class FiqControlRoomConfig(models.Model):
         tag = self.env["project.tags"].search([("name", "=", "AI-plattform")], limit=1)
         return {
             "kunder": kunder,
-            "prosjekter": [{
-                "id": p.id,
-                "no": (p.sequence_code if "sequence_code" in f else "") or "",
-                "name": p.name or "",
-                "ai": bool(tag and "tag_ids" in f and tag.id in p.tag_ids.ids),
-            } for p in projs],
+            "prosjekter": [
+                {
+                    "id": p.id,
+                    "no": (p.sequence_code if "sequence_code" in f else "") or "",
+                    "name": p.name or "",
+                    "ai": bool(tag and "tag_ids" in f and tag.id in p.tag_ids.ids),
+                }
+                for p in projs
+            ],
         }
 
     @api.model
@@ -843,8 +894,11 @@ class FiqControlRoomConfig(models.Model):
             dom.append(("name", "=ilike", "0.%"))
         else:
             # «Alle» = alle AI-prosjektene (under hjernene/0.-røttene) — ALDRI hele registeret
-            roots = P.search([("parent_id", "=", False), ("name", "=ilike", "0.%"),
-                              ("active", "=", True)]) if "parent_id" in f else P.browse()
+            roots = (
+                P.search([("parent_id", "=", False), ("name", "=ilike", "0.%"), ("active", "=", True)])
+                if "parent_id" in f
+                else P.browse()
+            )
             dom += [("id", "child_of", roots.ids)] if roots else [("id", "=", 0)]
         # AI-plattform vs interne (knappen i toppmenyen): taggen «AI-plattform»
         tag = self.env["project.tags"].search([("name", "=", "AI-plattform")], limit=1)
@@ -867,15 +921,21 @@ class FiqControlRoomConfig(models.Model):
         for p in projs:
             pr = prog.get(p.id) or self._mk(0)
             rt = _root(p)
-            out.append({
-                "id": p.id,
-                "no": (p.sequence_code if "sequence_code" in f else "") or "",
-                "name": p.name or "",
-                "pct": pr["pct"], "est": pr["est"], "logged": pr["logged"],
-                "taskCount": (p.task_count if "task_count" in f else 0) or 0,
-                # Gruppering på kunde/hjerne (toppnivå-rot) ved «Alle»
-                "root_id": rt.id, "root_name": rt.name or "", "is_root": rt.id == p.id,
-            })
+            out.append(
+                {
+                    "id": p.id,
+                    "no": (p.sequence_code if "sequence_code" in f else "") or "",
+                    "name": p.name or "",
+                    "pct": pr["pct"],
+                    "est": pr["est"],
+                    "logged": pr["logged"],
+                    "taskCount": (p.task_count if "task_count" in f else 0) or 0,
+                    # Gruppering på kunde/hjerne (toppnivå-rot) ved «Alle»
+                    "root_id": rt.id,
+                    "root_name": rt.name or "",
+                    "is_root": rt.id == p.id,
+                }
+            )
         return out
 
     # ---- AI-cockpit (fremdrifts-hub) — speiler Artifact-cockpiten mot ekte oppgaver -----
@@ -885,11 +945,9 @@ class FiqControlRoomConfig(models.Model):
         oppgaver, Du/AI-merke, status og «krever handling». Config-drevet: systemparameter
         `fiq_gui_control.cockpit_project_id` = rotprosjektets id. Defensivt/felt-guardet."""
         ICP = self.env["ir.config_parameter"].sudo()
-        out = {"groups": [], "tot": {"done": 0, "pag": 0, "vent": 0, "tot": 0, "pct": 0},
-               "krever": [], "root": ""}
+        out = {"groups": [], "tot": {"done": 0, "pag": 0, "vent": 0, "tot": 0, "pct": 0}, "krever": [], "root": ""}
         try:
-            pid = int(project_id or 0) \
-                or int(ICP.get_param("fiq_gui_control.cockpit_project_id", "0") or 0)
+            pid = int(project_id or 0) or int(ICP.get_param("fiq_gui_control.cockpit_project_id", "0") or 0)
         except Exception:
             pid = 0
         if not pid:
@@ -901,8 +959,7 @@ class FiqControlRoomConfig(models.Model):
         out["root"] = root.name or ""
         projects = list(root)
         if "parent_id" in P._fields:
-            projects += list(P.search(
-                [("parent_id", "=", root.id), ("active", "=", True)], order="id"))
+            projects += list(P.search([("parent_id", "=", root.id), ("active", "=", True)], order="id"))
         Task = self.env["project.task"]
         f = Task._fields
         today = fields.Date.context_today(self)
@@ -922,34 +979,38 @@ class FiqControlRoomConfig(models.Model):
                     done += 1
                 over = False
                 try:
-                    over = bool(t.date_deadline
-                                and fields.Date.to_date(str(t.date_deadline)[:10]) < today)
+                    over = bool(t.date_deadline and fields.Date.to_date(str(t.date_deadline)[:10]) < today)
                 except Exception:
                     over = False
-                rows.append({
-                    "id": t.id,
-                    "no": (t.code if "code" in f else "") or "",
-                    "name": t.name or "",
-                    "who": "du" if t.user_ids else "ai",
-                    "st": st,
-                    "stage": stage.name if stage else "",
-                    "over": over,
-                    "frist": str(t.date_deadline)[:10] if t.date_deadline else "",
-                })
+                rows.append(
+                    {
+                        "id": t.id,
+                        "no": (t.code if "code" in f else "") or "",
+                        "name": t.name or "",
+                        "who": "du" if t.user_ids else "ai",
+                        "st": st,
+                        "stage": stage.name if stage else "",
+                        "over": over,
+                        "frist": str(t.date_deadline)[:10] if t.date_deadline else "",
+                    }
+                )
                 out["tot"]["tot"] += 1
                 out["tot"][stmap[st]] += 1
-            out["groups"].append({
-                "id": p.id,
-                "no": (p.sequence_code if "sequence_code" in P._fields else "") or "",
-                "name": p.name or "",
-                "done": done, "total": len(rows), "tasks": rows,
-            })
-        mine = [r for g in out["groups"] for r in g["tasks"]
-                if r["who"] == "du" and r["st"] != "ferdig"]
+            out["groups"].append(
+                {
+                    "id": p.id,
+                    "no": (p.sequence_code if "sequence_code" in P._fields else "") or "",
+                    "name": p.name or "",
+                    "done": done,
+                    "total": len(rows),
+                    "tasks": rows,
+                }
+            )
+        mine = [r for g in out["groups"] for r in g["tasks"] if r["who"] == "du" and r["st"] != "ferdig"]
         mine.sort(key=lambda r: (not r["over"], r["no"]))
         out["krever"] = mine[:4]
         t = out["tot"]
-        t["pct"] = int(round(t["done"] * 100.0 / t["tot"])) if t["tot"] else 0
+        t["pct"] = round(t["done"] * 100.0 / t["tot"]) if t["tot"] else 0
         return out
 
     @api.model
@@ -961,8 +1022,7 @@ class FiqControlRoomConfig(models.Model):
         if not t:
             return False
         Stage = self.env["project.task.type"]
-        dom = [("project_ids", "in", t.project_id.id)] \
-            if "project_ids" in Stage._fields and t.project_id else []
+        dom = [("project_ids", "in", t.project_id.id)] if "project_ids" in Stage._fields and t.project_id else []
         stages = Stage.search(dom, order="sequence, id")
         if not stages:
             return False
@@ -1017,27 +1077,33 @@ class FiqControlRoomConfig(models.Model):
         Ev = self.env["calendar.event"].sudo() if other else self.env["calendar.event"]
         Act = self.env["mail.activity"].sudo() if other else self.env["mail.activity"]
         try:
-            evs = Ev.search([
-                ("partner_ids", "in", user.partner_id.ids),
-                ("start", "<", end), ("stop", ">=", start)], order="start", limit=60)
+            evs = Ev.search(
+                [("partner_ids", "in", user.partner_id.ids), ("start", "<", end), ("stop", ">=", start)],
+                order="start",
+                limit=60,
+            )
             for e in evs:
                 st = fields.Datetime.context_timestamp(e, e.start) if e.start else None
                 sl = fields.Datetime.context_timestamp(e, e.stop) if e.stop else None
-                out["moter"].append({
-                    "id": e.id, "name": e.name or "",
-                    # ÅRSTALL MED: «%d.%m» alene lyver så snart lista spenner over et
-                    # årsskifte — «03.01» kan være i år eller for fjorten måneder siden.
-                    # Samme felle Gjermund fant i Meldingssenteret. Kort år (%y) holder
-                    # bredden nede uten å miste informasjonen.
-                    "dato": st.strftime("%d.%m.%y") if st else "",
-                    "tid": st.strftime("%H:%M") if st else "",
-                    "slutt": sl.strftime("%H:%M") if sl else "",
-                })
+                out["moter"].append(
+                    {
+                        "id": e.id,
+                        "name": e.name or "",
+                        # ÅRSTALL MED: «%d.%m» alene lyver så snart lista spenner over et
+                        # årsskifte — «03.01» kan være i år eller for fjorten måneder siden.
+                        # Samme felle Gjermund fant i Meldingssenteret. Kort år (%y) holder
+                        # bredden nede uten å miste informasjonen.
+                        "dato": st.strftime("%d.%m.%y") if st else "",
+                        "tid": st.strftime("%H:%M") if st else "",
+                        "slutt": sl.strftime("%H:%M") if sl else "",
+                    }
+                )
             # Måneds-markører: dager med MØTER (ikke aktiviteter)
             dager = set()
-            for e in Ev.search([
-                    ("partner_ids", "in", user.partner_id.ids),
-                    ("start", "<", month_end), ("stop", ">=", month_start)], limit=300):
+            for e in Ev.search(
+                [("partner_ids", "in", user.partner_id.ids), ("start", "<", month_end), ("stop", ">=", month_start)],
+                limit=300,
+            ):
                 st = fields.Datetime.context_timestamp(e, e.start) if e.start else None
                 if st:
                     dager.add(st.strftime("%Y-%m-%d"))
@@ -1048,8 +1114,9 @@ class FiqControlRoomConfig(models.Model):
             today = fields.Date.context_today(self)
             end_d = str(end)[:10]
             mdl_names = {}
-            for a in Act.search([("user_id", "=", uid), ("date_deadline", "<=", end_d)],
-                                order="date_deadline", limit=30):
+            for a in Act.search(
+                [("user_id", "=", uid), ("date_deadline", "<=", end_d)], order="date_deadline", limit=30
+            ):
                 # Tilhørighet: modellens VISNINGSNAVN (Salg, Kontakt, Prosjekt …), ikke teknisk navn
                 mn = a.res_model or ""
                 if mn and mn not in mdl_names:
@@ -1060,22 +1127,25 @@ class FiqControlRoomConfig(models.Model):
                 note = ""
                 try:
                     from odoo.tools import html2plaintext
+
                     note = (html2plaintext(a.note or "") or "").strip()[:400]
                 except Exception:
                     note = ""
-                out["aktiviteter"].append({
-                    "id": a.id,
-                    "name": a.summary or (a.activity_type_id.name or _("Activity")),
-                    "type": a.activity_type_id.name or "",
-                    "frist": str(a.date_deadline or ""),
-                    "forsinket": bool(a.date_deadline and a.date_deadline < today),
-                    "model": a.res_model or "",
-                    "modell_navn": mdl_names.get(mn, ""),
-                    "res_id": a.res_id or 0,
-                    "res_name": a.res_name or "",
-                    "ansvarlig": a.user_id.name or "",
-                    "note": note,
-                })
+                out["aktiviteter"].append(
+                    {
+                        "id": a.id,
+                        "name": a.summary or (a.activity_type_id.name or _("Activity")),
+                        "type": a.activity_type_id.name or "",
+                        "frist": str(a.date_deadline or ""),
+                        "forsinket": bool(a.date_deadline and a.date_deadline < today),
+                        "model": a.res_model or "",
+                        "modell_navn": mdl_names.get(mn, ""),
+                        "res_id": a.res_id or 0,
+                        "res_name": a.res_name or "",
+                        "ansvarlig": a.user_id.name or "",
+                        "note": note,
+                    }
+                )
         except Exception:
             pass
         return out
@@ -1097,14 +1167,15 @@ class FiqControlRoomConfig(models.Model):
     @api.model
     def get_presence(self):
         """«Til stede nå»: interne brukere med SAMMENSATT status som farger HELE kortet:
-           🟢 grønn = Til stede · 🟠 oransje = I møte / Ute · 🔴 rød = Fraværende / Ikke møtt.
-           Kombinerer im_status (pålogget/borte/av) + pågående møte (calendar.event) +
-           oppmøte (hr.attendance åpen = møtt på jobb). Alt defensivt/felt-guardet.
-           Møte/oppmøte leses sudo (fri/opptatt-indikator på en delt tilstede-tavle)."""
+        🟢 grønn = Til stede · 🟠 oransje = I møte / Ute · 🔴 rød = Fraværende / Ikke møtt.
+        Kombinerer im_status (pålogget/borte/av) + pågående møte (calendar.event) +
+        oppmøte (hr.attendance åpen = møtt på jobb). Alt defensivt/felt-guardet.
+        Møte/oppmøte leses sudo (fri/opptatt-indikator på en delt tilstede-tavle)."""
         Users = self.env["res.users"]
         users = Users.search(
             [("share", "=", False), ("active", "=", True)],
-            order="name", limit=24,
+            order="name",
+            limit=24,
         )
 
         # Batch: hvem er i et møte NÅ (calendar.event der nå ∈ [start, stop]) → partner_ids
@@ -1148,9 +1219,9 @@ class FiqControlRoomConfig(models.Model):
                         if a.state == "declined":
                             continue
                         if "availability" in Att._fields and a.availability == "free":
-                            continue          # deltakeren har selv markert seg som ledig
+                            continue  # deltakeren har selv markert seg som ledig
                         in_meeting.add(a.partner_id.id)
-                    if not e.attendee_ids:    # møte uten deltakerliste → som før
+                    if not e.attendee_ids:  # møte uten deltakerliste → som før
                         in_meeting.update(e.partner_ids.ids)
         except Exception:
             pass
@@ -1170,14 +1241,17 @@ class FiqControlRoomConfig(models.Model):
             with self.env.cr.savepoint():
                 Leave = self.env["hr.leave"].sudo()
                 today = fields.Date.context_today(self)
-                lv = Leave.search([
-                    ("state", "=", "validate"),
-                    ("date_from", "<=", today), ("date_to", ">=", today),
-                ])
+                lv = Leave.search(
+                    [
+                        ("state", "=", "validate"),
+                        ("date_from", "<=", today),
+                        ("date_to", ">=", today),
+                    ]
+                )
                 emp_ids = lv.mapped("employee_id").ids
                 if emp_ids:
                     emps = self.env["hr.employee"].sudo().browse(emp_ids)
-                    away_users = set(x for x in emps.mapped("user_id").ids if x)
+                    away_users = {x for x in emps.mapped("user_id").ids if x}
         except Exception:
             # hr_holidays er valgfri. Mangler den, er ingen markert fraværende — ikke en krasj.
             away_users = set()
@@ -1300,8 +1374,7 @@ class FiqControlRoomConfig(models.Model):
                 # Savepoint: dette kjører i en løkke PER bruker. Uten den ville én feilende
                 # oppslag avbrutt transaksjonen midt i, og alle gjenstående brukere falt med.
                 with self.env.cr.savepoint():
-                    emp = self.env["hr.employee"].sudo().search(
-                        [("user_id", "=", u.id)], limit=1)
+                    emp = self.env["hr.employee"].sudo().search([("user_id", "=", u.id)], limit=1)
                     avatar = (emp and emp.image_128) or u.avatar_128 or False
             except Exception:
                 avatar = u.avatar_128 or False
@@ -1326,8 +1399,7 @@ class FiqControlRoomConfig(models.Model):
                         if u.out_of_office_to < fields.Datetime.now():
                             merknad = ""
                         else:
-                            merknad_til = fields.Datetime.context_timestamp(
-                                u, u.out_of_office_to).strftime("%H:%M")
+                            merknad_til = fields.Datetime.context_timestamp(u, u.out_of_office_to).strftime("%H:%M")
             except Exception:
                 merknad, merknad_til = "", ""
 
@@ -1348,8 +1420,7 @@ class FiqControlRoomConfig(models.Model):
             sted, sted_type = "", ""
             try:
                 with self.env.cr.savepoint():
-                    emp = self.env["hr.employee"].sudo().search(
-                        [("user_id", "=", u.id)], limit=1)
+                    emp = self.env["hr.employee"].sudo().search([("user_id", "=", u.id)], limit=1)
                     if emp and "work_location_name" in emp._fields:
                         sted = (emp.work_location_name or "")[:40]
                     if emp and "work_location_type" in emp._fields:
@@ -1359,22 +1430,24 @@ class FiqControlRoomConfig(models.Model):
                 # ingen sted — ikke en krasj.
                 sted, sted_type = "", ""
 
-            out.append({
-                "id": u.id,
-                "partner_id": u.partner_id.id,
-                "navn": name,
-                "merknad": merknad,
-                "merknad_til": merknad_til,
-                "sted": sted,
-                "sted_type": sted_type,
-                "er_meg": u.id == self.env.uid,
-                "initialer": initialer,
-                "status": im,        # bakoverkomp (dot)
-                "farge": farge,      # green | orange | red – farger HELE kortet
-                "tekst": tekst,      # Til stede | I møte | Ute | Fraværende | Ikke møtt
-                "has_photo": bool(avatar),
-                "avatar": ("data:image/png;base64,%s" % avatar) if avatar else False,
-            })
+            out.append(
+                {
+                    "id": u.id,
+                    "partner_id": u.partner_id.id,
+                    "navn": name,
+                    "merknad": merknad,
+                    "merknad_til": merknad_til,
+                    "sted": sted,
+                    "sted_type": sted_type,
+                    "er_meg": u.id == self.env.uid,
+                    "initialer": initialer,
+                    "status": im,  # bakoverkomp (dot)
+                    "farge": farge,  # green | orange | red – farger HELE kortet
+                    "tekst": tekst,  # Til stede | I møte | Ute | Fraværende | Ikke møtt
+                    "has_photo": bool(avatar),
+                    "avatar": (f"data:image/png;base64,{avatar}") if avatar else False,
+                }
+            )
         return out
 
     @api.model
@@ -1481,25 +1554,23 @@ class FiqControlRoomConfig(models.Model):
             # Direction "sent from": messages written by an internal user = SENT (outgoing/
             # logged by us); everything else (external sender, plain incoming email) = RECEIVED.
             # Makes it easy for AI/user to tell what came in vs. what we sent.
-            internal = bool(
-                m.author_id
-                and m.author_id.user_ids
-                and any(not u.share for u in m.author_id.user_ids)
-            )
+            internal = bool(m.author_id and m.author_id.user_ids and any(not u.share for u in m.author_id.user_ids))
             is_email = m.message_type == "email"
-            out.append({
-                "id": m.id,
-                "kind": _("Email") if is_email else _("Message"),
-                "ktype": "mail" if is_email else "msg",
-                "author": author,
-                "author_id": m.author_id.id if m.author_id else False,
-                "direction": "sendt" if internal else "mottatt",
-                "subject": subject[:90] or _("(no subject)"),
-                "date": m.date.strftime("%d.%m %H:%M") if m.date else "",
-                "model": m.model,
-                "res_id": m.res_id,
-                "element": element,
-            })
+            out.append(
+                {
+                    "id": m.id,
+                    "kind": _("Email") if is_email else _("Message"),
+                    "ktype": "mail" if is_email else "msg",
+                    "author": author,
+                    "author_id": m.author_id.id if m.author_id else False,
+                    "direction": "sendt" if internal else "mottatt",
+                    "subject": subject[:90] or _("(no subject)"),
+                    "date": m.date.strftime("%d.%m %H:%M") if m.date else "",
+                    "model": m.model,
+                    "res_id": m.res_id,
+                    "element": element,
+                }
+            )
         return out
 
     @api.model
@@ -1530,7 +1601,7 @@ class FiqControlRoomConfig(models.Model):
 
     # Candidate dashboards (Odoo's native analyses/dashboards). Shown ONLY if the xmlid exists
     # in the customer DB → safe across tenants (env.ref guard, no hard dependencies).
-    _DASHBOARD_CANDIDATES = [
+    _DASHBOARD_CANDIDATES: ClassVar[list] = [
         ("spreadsheet_dashboard.ir_actions_dashboard_action", "Dashboards (Odoo)"),
         ("sale.action_order_report_all", "Sales analysis"),
         ("account.action_account_invoice_report_all", "Invoice analysis"),
@@ -1565,7 +1636,7 @@ class FiqControlRoomConfig(models.Model):
         prefix = "fiq_gui_control.flate."
         out = []
         for param in ICP.search([("key", "=like", prefix + "%")]):
-            key = param.key[len(prefix):]
+            key = param.key[len(prefix) :]
             if not key:
                 continue
             try:
@@ -1576,15 +1647,18 @@ class FiqControlRoomConfig(models.Model):
                 # appeared, with nothing in the log to explain why. Reported by AI KR 18.07.2026.
                 _logger.warning(
                     "FIQ control room: skipping flate %r — its ir.config_parameter %r is not "
-                    "valid JSON. Expected {\"label\": ..., \"xmlid\": ..., \"sequence\": ...}.",
-                    key, param.key,
+                    'valid JSON. Expected {"label": ..., "xmlid": ..., "sequence": ...}.',
+                    key,
+                    param.key,
                 )
                 continue
             xmlid = spec.get("xmlid")
             if not xmlid:
                 _logger.warning(
                     "FIQ control room: skipping flate %r — no 'xmlid' in %r. The entry cannot "
-                    "open anything without one.", key, param.key,
+                    "open anything without one.",
+                    key,
+                    param.key,
                 )
                 continue
             if not self.env.ref(xmlid, raise_if_not_found=False):
@@ -1592,7 +1666,9 @@ class FiqControlRoomConfig(models.Model):
                 # the xmlid looks like, so say which one was dropped.
                 _logger.info(
                     "FIQ control room: skipping flate %r — action %r does not exist in this "
-                    "database (module not installed, or the xmlid is misspelled).", key, xmlid,
+                    "database (module not installed, or the xmlid is misspelled).",
+                    key,
+                    xmlid,
                 )
                 continue
             # Group gate (layer 1). Decided SERVER-side from the session's own user — never from
@@ -1606,16 +1682,20 @@ class FiqControlRoomConfig(models.Model):
                 except Exception:
                     _logger.warning(
                         "FIQ control room: hiding flate %r — its 'groups' could not be evaluated "
-                        "(%r). Fail-closed: hidden rather than shown.", key, groups,
+                        "(%r). Fail-closed: hidden rather than shown.",
+                        key,
+                        groups,
                     )
                     continue
-            out.append({
-                "key": key,
-                "label": self._flate_label(spec, key),
-                "xmlid": xmlid,
-                "icon": spec.get("icon") or False,
-                "sequence": int(spec.get("sequence") or 50),
-            })
+            out.append(
+                {
+                    "key": key,
+                    "label": self._flate_label(spec, key),
+                    "xmlid": xmlid,
+                    "icon": spec.get("icon") or False,
+                    "sequence": int(spec.get("sequence") or 50),
+                }
+            )
         # Layer 2: the user's own choice, on top of what layer 1 already allowed. «Sy ditt eget KR.»
         #
         # The order matters and is not negotiable: layer 1 (groups, above) decides what the user MAY
@@ -1650,7 +1730,7 @@ class FiqControlRoomConfig(models.Model):
         for flate in self.get_fiq_flater():
             if flate.get("skjult"):
                 continue
-            model_name = "fiq.gui.%s.data" % flate["key"]
+            model_name = "fiq.gui.{}.data".format(flate["key"])
             Model = self.env.get(model_name)
             if Model is None or not hasattr(Model, "get_kr_boks"):
                 continue
@@ -1671,23 +1751,27 @@ class FiqControlRoomConfig(models.Model):
                 # a white screen. Logged with the module name so the owner can find it.
                 _logger.warning(
                     "FIQ control room: box for flate %r failed (%s.get_kr_boks) — skipping it.",
-                    flate["key"], model_name, exc_info=True,
+                    flate["key"],
+                    model_name,
+                    exc_info=True,
                 )
                 continue
             if not boks:
                 continue
-            out.append({
-                "key": flate["key"],
-                "label": flate["label"],
-                "xmlid": flate["xmlid"],
-                "icon": flate.get("icon") or False,
-                "sequence": flate["sequence"],
-                "haster": int(boks.get("haster") or 0),
-                "i_dag": int(boks.get("i_dag") or 0),
-                "totalt": int(boks.get("totalt") or 0),
-                # Ro-budsjett: tall og korte linjer, aldri varsler som maser.
-                "linjer": (boks.get("linjer") or [])[:5],
-            })
+            out.append(
+                {
+                    "key": flate["key"],
+                    "label": flate["label"],
+                    "xmlid": flate["xmlid"],
+                    "icon": flate.get("icon") or False,
+                    "sequence": flate["sequence"],
+                    "haster": int(boks.get("haster") or 0),
+                    "i_dag": int(boks.get("i_dag") or 0),
+                    "totalt": int(boks.get("totalt") or 0),
+                    # Ro-budsjett: tall og korte linjer, aldri varsler som maser.
+                    "linjer": (boks.get("linjer") or [])[:5],
+                }
+            )
         return out
 
     # =====================================================================
@@ -1723,8 +1807,9 @@ class FiqControlRoomConfig(models.Model):
             alle = json.loads(rec.fold_state or "{}")
         except (ValueError, TypeError):
             # A corrupt preference must never break a view: everything shows, nothing is lost.
-            _logger.warning("FIQ control room: fold_state for user %s is not valid JSON — "
-                            "treating as empty.", self.env.uid)
+            _logger.warning(
+                "FIQ control room: fold_state for user %s is not valid JSON — treating as empty.", self.env.uid
+            )
             return []
         return list(alle.get(omraade) or [])
 
@@ -1795,8 +1880,7 @@ class FiqControlRoomConfig(models.Model):
             # line is often a stale string nobody has touched in years. Falling back to it would
             # show an outdated name as if it were current.
             lang = self.env.lang or "nb_NO"
-            return (label.get(lang) or label.get("nb_NO") or label.get("en_US")
-                    or next(iter(label.values()), key))
+            return label.get(lang) or label.get("nb_NO") or label.get("en_US") or next(iter(label.values()), key)
         if label:
             # Plain string: run it through gettext so labels listed in our own i18n/*.po translate.
             return _(label)  # pylint: disable=gettext-variable
@@ -1881,15 +1965,21 @@ class FiqControlRoomConfig(models.Model):
         try:
             with self.env.cr.savepoint():
                 today = fields.Date.context_today(self)
-                emp = self.env["hr.employee"].sudo().search(
-                    [("user_id", "=", self.user_id.id)], limit=1)
+                emp = self.env["hr.employee"].sudo().search([("user_id", "=", self.user_id.id)], limit=1)
                 if not emp:
                     return False
-                paa_ferie = self.env["hr.leave"].sudo().search_count([
-                    ("employee_id", "=", emp.id),
-                    ("state", "=", "validate"),
-                    ("date_from", "<=", today), ("date_to", ">=", today),
-                ])
+                paa_ferie = (
+                    self.env["hr.leave"]
+                    .sudo()
+                    .search_count(
+                        [
+                            ("employee_id", "=", emp.id),
+                            ("state", "=", "validate"),
+                            ("date_from", "<=", today),
+                            ("date_to", ">=", today),
+                        ]
+                    )
+                )
         except Exception:
             # hr_holidays er valgfri — mangler den, er ingen på ferie. Ikke en krasj.
             return False
@@ -1905,12 +1995,14 @@ class FiqControlRoomConfig(models.Model):
         🛑 KUN egen bruker — ingen kan endre en kollegas deling.
         """
         rec = self._get_or_create_current()
-        rec.sudo().write({
-            "del_posisjon": bool(paa),
-            # Nullstill varselet: har brukeren tatt stilling, skal hen ikke få beskjed
-            # om det samme igjen. Et varsel som gjentar seg blir støy og leses ikke.
-            "del_posisjon_auto_av": False,
-        })
+        rec.sudo().write(
+            {
+                "del_posisjon": bool(paa),
+                # Nullstill varselet: har brukeren tatt stilling, skal hen ikke få beskjed
+                # om det samme igjen. Et varsel som gjentar seg blir støy og leses ikke.
+                "del_posisjon_auto_av": False,
+            }
+        )
         return {"paa": bool(paa)}
 
     @api.model
@@ -1931,7 +2023,7 @@ class FiqControlRoomConfig(models.Model):
                 if f in felt:
                     vals[f] = False
             if vals:
-                bruker.sudo().write(vals)   # sudo: skriver KUN på seg selv, felt over
+                bruker.sudo().write(vals)  # sudo: skriver KUN på seg selv, felt over
             return {"tekst": "", "til": ""}
 
         if "out_of_office_message" not in felt:
@@ -1943,11 +2035,10 @@ class FiqControlRoomConfig(models.Model):
         if slutt:
             try:
                 s = str(slutt).strip()
-                if len(s) == 5 and ":" in s:            # «HH:MM» → i dag, brukerens tidssone
+                if len(s) == 5 and ":" in s:  # «HH:MM» → i dag, brukerens tidssone
                     t = datetime.strptime(s, "%H:%M").time()
                     lokal = fields.Datetime.context_timestamp(bruker, naa)
-                    kandidat = lokal.replace(hour=t.hour, minute=t.minute,
-                                             second=0, microsecond=0)
+                    kandidat = lokal.replace(hour=t.hour, minute=t.minute, second=0, microsecond=0)
                     # Er klokkeslettet passert i dag, mente brukeren i morgen.
                     if kandidat <= lokal:
                         kandidat += timedelta(days=1)
@@ -1955,7 +2046,7 @@ class FiqControlRoomConfig(models.Model):
                 else:
                     til = fields.Datetime.to_datetime(s)
             except Exception:
-                til = False                              # ugyldig tid → fall til `minutter`
+                til = False  # ugyldig tid → fall til `minutter`
         if not til and minutter:
             try:
                 til = naa + timedelta(minutes=int(minutter))
@@ -2039,8 +2130,17 @@ class FiqControlRoomConfig(models.Model):
         — en stille feil som først synes i grensesnittet.
         """
         return [
-            _("January"), _("February"), _("March"), _("April"), _("May"), _("June"),
-            _("July"), _("August"), _("September"), _("October"), _("November"),
+            _("January"),
+            _("February"),
+            _("March"),
+            _("April"),
+            _("May"),
+            _("June"),
+            _("July"),
+            _("August"),
+            _("September"),
+            _("October"),
+            _("November"),
             _("December"),
         ][mnd - 1]
 
@@ -2089,8 +2189,7 @@ class FiqControlRoomConfig(models.Model):
                 Move = selv.env["account.move"]
                 forfalte = Move.search_read(
                     [
-                        ("move_type", "in", ("out_invoice", "in_invoice",
-                                             "out_refund", "in_refund")),
+                        ("move_type", "in", ("out_invoice", "in_invoice", "out_refund", "in_refund")),
                         ("state", "=", "posted"),
                         ("payment_state", "in", ("not_paid", "partial")),
                         ("invoice_date_due", "<", i_dag),
@@ -2102,27 +2201,32 @@ class FiqControlRoomConfig(models.Model):
                 for m in forfalte:
                     dager = (i_dag - m["invoice_date_due"]).days if m["invoice_date_due"] else 0
                     kode = "fin" if m["move_type"] in ("out_invoice", "out_refund") else "rgs"
-                    rader.append({
-                        "kilde": selv._kr_kilde_etikett(kode),
-                        "kode": m["name"] or "—",
-                        "tekst": m["partner_id"][1] if m["partner_id"] else "—",
-                        "naar": _("%s days") % dager,
-                        "sort": dager,
-                        "model": "account.move",
-                        "res_id": m["id"],
-                    })
+                    rader.append(
+                        {
+                            "kilde": selv._kr_kilde_etikett(kode),
+                            "kode": m["name"] or "—",
+                            "tekst": m["partner_id"][1] if m["partner_id"] else "—",
+                            "naar": _("%s days") % dager,
+                            "sort": dager,
+                            "model": "account.move",
+                            "res_id": m["id"],
+                        }
+                    )
         except Exception:
             _logger.warning(
                 "FIQ KR-lister: «krever handling» — Finans/Regnskap feilet, hopper over "
-                "den kilden. Resten av seksjonen vises.", exc_info=True)
+                "den kilden. Resten av seksjonen vises.",
+                exc_info=True,
+            )
 
         # --- Kommunikasjon: ÉN samlerad, slik fasiten viser den ---------------
         try:
             with selv.env.cr.savepoint():
                 DATA = "fiq.meldingssenter.data"
                 if DATA in selv.env:
-                    meldinger = selv.env[DATA].get_messages(
-                        boks="uleste", firm=company_id or False, period="alle") or []
+                    meldinger = (
+                        selv.env[DATA].get_messages(boks="uleste", firm=company_id or False, period="alle") or []
+                    )
                     if meldinger:
                         naa_dt = fields.Datetime.now()
                         eldste_dager = 0
@@ -2137,19 +2241,21 @@ class FiqControlRoomConfig(models.Model):
                                 continue
                             if d:
                                 eldste_dager = max(eldste_dager, (naa_dt - d).days)
-                        rader.append({
-                            "kilde": selv._kr_kilde_etikett("comm"),
-                            "kode": "—",
-                            "tekst": _("%s messages awaiting reply") % len(meldinger),
-                            "naar": _("oldest %s days") % eldste_dager,
-                            "sort": eldste_dager,
-                            "model": False,
-                            "res_id": False,
-                        })
+                        rader.append(
+                            {
+                                "kilde": selv._kr_kilde_etikett("comm"),
+                                "kode": "—",
+                                "tekst": _("%s messages awaiting reply") % len(meldinger),
+                                "naar": _("oldest %s days") % eldste_dager,
+                                "sort": eldste_dager,
+                                "model": False,
+                                "res_id": False,
+                            }
+                        )
         except Exception:
             _logger.warning(
-                "FIQ KR-lister: «krever handling» — Kommunikasjon feilet, hopper over "
-                "den kilden.", exc_info=True)
+                "FIQ KR-lister: «krever handling» — Kommunikasjon feilet, hopper over den kilden.", exc_info=True
+            )
 
         # Eldst først: i denne seksjonen ER alder hastegraden.
         rader.sort(key=lambda r: r["sort"], reverse=True)
@@ -2181,18 +2287,19 @@ class FiqControlRoomConfig(models.Model):
                 if "code" in Task._fields:
                     felter.append("code")
                 for r in Task.search_read([], felter, order="write_date desc", limit=grense):
-                    rader.append({
-                        "kilde": selv._kr_kilde_etikett("prj"),
-                        "kode": r.get("code") or "—",
-                        "tekst": r.get("name") or "—",
-                        "naar": selv._kr_tid_tekst(naa, r.get("write_date")),
-                        "sort": r.get("write_date") or False,
-                        "model": "project.task",
-                        "res_id": r["id"],
-                    })
+                    rader.append(
+                        {
+                            "kilde": selv._kr_kilde_etikett("prj"),
+                            "kode": r.get("code") or "—",
+                            "tekst": r.get("name") or "—",
+                            "naar": selv._kr_tid_tekst(naa, r.get("write_date")),
+                            "sort": r.get("write_date") or False,
+                            "model": "project.task",
+                            "res_id": r["id"],
+                        }
+                    )
         except Exception:
-            _logger.warning("FIQ KR-lister: «siste aktivitet» — Prosjekt feilet.",
-                            exc_info=True)
+            _logger.warning("FIQ KR-lister: «siste aktivitet» — Prosjekt feilet.", exc_info=True)
 
         # --- Finans + Regnskap: sist bokførte fakturaer -----------------------
         try:
@@ -2200,47 +2307,52 @@ class FiqControlRoomConfig(models.Model):
                 rows = selv.env["account.move"].search_read(
                     [("state", "=", "posted")],
                     ["name", "partner_id", "write_date", "move_type"],
-                    order="write_date desc", limit=grense,
+                    order="write_date desc",
+                    limit=grense,
                 )
                 for r in rows:
                     kode = "fin" if r["move_type"] in ("out_invoice", "out_refund") else "rgs"
-                    rader.append({
-                        "kilde": selv._kr_kilde_etikett(kode),
-                        "kode": r["name"] or "—",
-                        "tekst": r["partner_id"][1] if r["partner_id"] else "—",
-                        "naar": selv._kr_tid_tekst(naa, r["write_date"]),
-                        "sort": r["write_date"] or False,
-                        "model": "account.move",
-                        "res_id": r["id"],
-                    })
+                    rader.append(
+                        {
+                            "kilde": selv._kr_kilde_etikett(kode),
+                            "kode": r["name"] or "—",
+                            "tekst": r["partner_id"][1] if r["partner_id"] else "—",
+                            "naar": selv._kr_tid_tekst(naa, r["write_date"]),
+                            "sort": r["write_date"] or False,
+                            "model": "account.move",
+                            "res_id": r["id"],
+                        }
+                    )
         except Exception:
-            _logger.warning("FIQ KR-lister: «siste aktivitet» — Finans/Regnskap feilet.",
-                            exc_info=True)
+            _logger.warning("FIQ KR-lister: «siste aktivitet» — Finans/Regnskap feilet.", exc_info=True)
 
         # --- Salg: sist endrede ordrer ----------------------------------------
         try:
             with selv.env.cr.savepoint():
                 if "sale.order" in selv.env:
                     rows = selv.env["sale.order"].search_read(
-                        [], ["name", "partner_id", "write_date"],
-                        order="write_date desc", limit=grense,
+                        [],
+                        ["name", "partner_id", "write_date"],
+                        order="write_date desc",
+                        limit=grense,
                     )
                     for r in rows:
-                        rader.append({
-                            "kilde": selv._kr_kilde_etikett("salg"),
-                            "kode": r["name"] or "—",
-                            "tekst": r["partner_id"][1] if r["partner_id"] else "—",
-                            "naar": selv._kr_tid_tekst(naa, r["write_date"]),
-                            "sort": r["write_date"] or False,
-                            "model": "sale.order",
-                            "res_id": r["id"],
-                        })
+                        rader.append(
+                            {
+                                "kilde": selv._kr_kilde_etikett("salg"),
+                                "kode": r["name"] or "—",
+                                "tekst": r["partner_id"][1] if r["partner_id"] else "—",
+                                "naar": selv._kr_tid_tekst(naa, r["write_date"]),
+                                "sort": r["write_date"] or False,
+                                "model": "sale.order",
+                                "res_id": r["id"],
+                            }
+                        )
         except Exception:
             _logger.warning("FIQ KR-lister: «siste aktivitet» — Salg feilet.", exc_info=True)
 
         # Nyest først. Rader uten dato havner sist i stedet for å krasje sorteringen.
-        rader.sort(key=lambda r: r["sort"] or fields.Datetime.to_datetime("1970-01-01 00:00:00"),
-                   reverse=True)
+        rader.sort(key=lambda r: r["sort"] or fields.Datetime.to_datetime("1970-01-01 00:00:00"), reverse=True)
         for r in rader:
             r.pop("sort", None)
         return {"totalt": len(rader), "rader": rader[:grense]}
@@ -2268,35 +2380,33 @@ class FiqControlRoomConfig(models.Model):
                 # for «denne fasen er ferdig» — vi finner ikke opp en egen statusliste.
                 domene = [("stage_id.fold", "=", False)]
                 if sok:
-                    domene += ["|", ("project_id.name", "ilike", sok),
-                               ("name", "ilike", sok)]
+                    domene += ["|", ("project_id.name", "ilike", sok), ("name", "ilike", sok)]
                 felter = ["name", "date_deadline", "project_id"]
                 if "code" in Task._fields:
                     felter.append("code")
                 # Nærmeste frist først; oppgaver uten frist sist (Odoo sorterer NULL sist
                 # på ASC i PostgreSQL).
-                for r in Task.search_read(domene, felter,
-                                          order="date_deadline asc, id asc", limit=grense):
+                for r in Task.search_read(domene, felter, order="date_deadline asc, id asc", limit=grense):
                     frist = r.get("date_deadline")
                     if frist:
                         # 🛑 `date_deadline` er Datetime i Odoo 19 — konverter FØR bruk,
                         # ellers formaterer vi et klokkeslett som om det var en dato.
-                        d = fields.Datetime.context_timestamp(
-                            selv, fields.Datetime.to_datetime(frist)).date()
+                        d = fields.Datetime.context_timestamp(selv, fields.Datetime.to_datetime(frist)).date()
                         naar = _("due %s") % d.strftime("%d.%m.%Y")
                     else:
                         naar = _("no due date")
-                    rader.append({
-                        "kilde": selv._kr_kilde_etikett("prj"),
-                        "kode": r.get("code") or "—",
-                        "tekst": r.get("name") or "—",
-                        "naar": naar,
-                        "model": "project.task",
-                        "res_id": r["id"],
-                    })
+                    rader.append(
+                        {
+                            "kilde": selv._kr_kilde_etikett("prj"),
+                            "kode": r.get("code") or "—",
+                            "tekst": r.get("name") or "—",
+                            "naar": naar,
+                            "model": "project.task",
+                            "res_id": r["id"],
+                        }
+                    )
         except Exception:
-            _logger.warning("FIQ KR-lister: «åpne oppgaver» feilet — seksjonen står tom.",
-                            exc_info=True)
+            _logger.warning("FIQ KR-lister: «åpne oppgaver» feilet — seksjonen står tom.", exc_info=True)
 
         return {"totalt": len(rader), "filter": sok, "rader": rader}
 
@@ -2333,7 +2443,8 @@ class FiqControlRoomConfig(models.Model):
         try:
             with selv.env.cr.savepoint():
                 akt = selv.env["mail.activity"].search_read(
-                    [("user_id", "=", selv.env.uid)], ["date_deadline"], limit=grense)
+                    [("user_id", "=", selv.env.uid)], ["date_deadline"], limit=grense
+                )
                 for a in akt:
                     frist = a.get("date_deadline")
                     if not frist:
@@ -2345,18 +2456,17 @@ class FiqControlRoomConfig(models.Model):
                         _botte("denne_uken", _("This week"), 100)
                     elif d.year == i_dag.year:
                         uke = d.isocalendar()[1]
-                        _botte("uke-%s-%s" % (d.year, uke),
-                               _("Week %(week)s · %(year)s", week=uke, year=d.year), 90)
+                        _botte(f"uke-{d.year}-{uke}", _("Week %(week)s · %(year)s", week=uke, year=d.year), 90)
                     elif d.year == i_dag.year - 1 and d.month >= 10:
-                        _botte("kv4-%s" % d.year,
-                               _("Q4 %(year)s", year=d.year), 50)
+                        _botte(f"kv4-{d.year}", _("Q4 %(year)s", year=d.year), 50)
                     else:
-                        _botte("mnd-%s-%s" % (d.year, d.month),
-                               _("%(month)s %(year)s",
-                                 month=selv._kr_maaned_navn(d.month), year=d.year), 70)
+                        _botte(
+                            f"mnd-{d.year}-{d.month}",
+                            _("%(month)s %(year)s", month=selv._kr_maaned_navn(d.month), year=d.year),
+                            70,
+                        )
         except Exception:
-            _logger.warning("FIQ KR-lister: periode-bottene feilet — høyre kolonne "
-                            "viser ingen grupper.", exc_info=True)
+            _logger.warning("FIQ KR-lister: periode-bottene feilet — høyre kolonne viser ingen grupper.", exc_info=True)
 
         botter.sort(key=lambda b: b["rang"], reverse=True)
         for b in botter:
