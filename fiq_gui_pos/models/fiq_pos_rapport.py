@@ -361,6 +361,12 @@ class FiqPosRapport(models.Model):
     def unlink(self):
         """§ 2-6(2)/(3): en avgitt Z-rapport er dokumentasjon og kan ikke fjernes."""
         if any(rapport.type == "z" for rapport in self):
+            # 🛑 E8140 (no-raise-unlink) er slått av MED VILJE — ikke ved et uhell.
+            # OCA-regelen finnes for å hindre at sletting blokkeres av teknisk gjeld.
+            # Her ER blokkeringen hele poenget: kassasystemforskrifta § 2-6 (2) og (3)
+            # krever at registreringene er sikra mot sletting. Å «rette» dette ville
+            # brutt et forskriftskrav for å tilfredsstille en stilregel.
+            # pylint: disable=no-raise-unlink
             raise UserError(
                 _(
                     "En Z-rapport kan ikke slettes. Kassasystemforskrifta krever at "

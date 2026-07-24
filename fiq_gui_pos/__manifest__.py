@@ -1,7 +1,7 @@
 # Part of FIQ AI. Norsk kassasystem — X- og Z-rapport (kassasystemforskrifta § 2-8-2 / § 2-8-3).
 {
     "name": "FIQ POS — Norsk kassasystem (X/Z-rapport)",
-    "version": "19.0.1.0.3",
+    "version": "19.0.1.0.4",
     "category": "Accounting/Localizations/Point of Sale",
     "summary": "X- og Z-rapport etter norsk kassasystemforskrift",
     "description": """
