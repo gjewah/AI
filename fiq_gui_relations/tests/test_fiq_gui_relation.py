@@ -251,8 +251,9 @@ class TestFiqGuiRelation(TransactionCase):
             )
 
     def test_type_code_unique(self):
-        from odoo.tools.misc import mute_logger
         from psycopg2 import IntegrityError
+
+        from odoo.tools.misc import mute_logger
 
         self.Type.create({"code": "test_unique", "name": "a", "name_inverse": "b"})
         with (
