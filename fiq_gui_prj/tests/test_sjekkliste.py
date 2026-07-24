@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tester for den generiske sjekkliste-motoren (fiq.sjekkliste + .punkt).
 
 Hvorfor disse testene finnes (GUI Prosjekt V0.02, 2026-07-18):
@@ -18,9 +17,8 @@ from odoo.exceptions import ValidationError
 from odoo.tests import TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install", "fiq_prj", 'fiq')
+@tagged("post_install", "-at_install", "fiq_prj", "fiq")
 class TestFiqSjekkliste(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -46,7 +44,7 @@ class TestFiqSjekkliste(TransactionCase):
         """2 av 4 utført = 50 %."""
         liste = self._lag_liste()
         for i in range(4):
-            self.Punkt.create({"sjekkliste_id": liste.id, "name": "P%d" % i})
+            self.Punkt.create({"sjekkliste_id": liste.id, "name": f"P{i}"})
         liste.punkt_ids[:2].write({"utfoert": True})
         self.assertEqual(liste.antall_punkt, 4)
         self.assertEqual(liste.antall_ok, 2)
@@ -66,9 +64,13 @@ class TestFiqSjekkliste(TransactionCase):
     def test_krav_dokument_blokkerer_til_dokument_er_lagt_ved(self):
         """FDV/klima = DOKUMENT. Kan ikke kvitteres før dokumentet finnes."""
         liste = self._lag_liste(type_liste="fdv")
-        p = self.Punkt.create({
-            "sjekkliste_id": liste.id, "name": "FDV-perm", "krav_dok": True,
-        })
+        p = self.Punkt.create(
+            {
+                "sjekkliste_id": liste.id,
+                "name": "FDV-perm",
+                "krav_dok": True,
+            }
+        )
         self.assertFalse(p.kan_kvitteres)
         self.assertEqual(p.mangler, "dokument")
         with self.assertRaises(ValidationError):
@@ -86,10 +88,15 @@ class TestFiqSjekkliste(TransactionCase):
         Avvik er nettopp tilfellet der begge kan gjelde samtidig.
         """
         liste = self._lag_liste(type_liste="avvik")
-        p = self.Punkt.create({
-            "sjekkliste_id": liste.id, "name": "Avvik tak",
-            "krav_dok": True, "krav_foto": True, "krav_sign": True,
-        })
+        p = self.Punkt.create(
+            {
+                "sjekkliste_id": liste.id,
+                "name": "Avvik tak",
+                "krav_dok": True,
+                "krav_foto": True,
+                "krav_sign": True,
+            }
+        )
         # Alle tre mangler -> alle tre nevnes
         self.assertFalse(p.kan_kvitteres)
         for ord_ in ("dokument", "foto", "signatur"):
@@ -97,9 +104,9 @@ class TestFiqSjekkliste(TransactionCase):
 
         att = self.env["ir.attachment"]
         p.kvitt_dok_id = att.create({"name": "rapport.pdf"})
-        self.assertFalse(p.kan_kvitteres)          # foto + signatur igjen
+        self.assertFalse(p.kan_kvitteres)  # foto + signatur igjen
         p.kvitt_foto_id = att.create({"name": "tak.jpg"})
-        self.assertFalse(p.kan_kvitteres)          # signatur igjen
+        self.assertFalse(p.kan_kvitteres)  # signatur igjen
         self.assertEqual(p.mangler, "signatur")
 
         p.kvitt_sign_dato = "2026-07-18 10:00:00"
@@ -109,9 +116,13 @@ class TestFiqSjekkliste(TransactionCase):
     def test_signatur_alene_er_nok_naar_bare_signatur_kreves(self):
         """Overlevering: kun signatur kreves — dokument skal ikke kreves implisitt."""
         liste = self._lag_liste(type_liste="arbeid")
-        p = self.Punkt.create({
-            "sjekkliste_id": liste.id, "name": "Overlevert", "krav_sign": True,
-        })
+        p = self.Punkt.create(
+            {
+                "sjekkliste_id": liste.id,
+                "name": "Overlevert",
+                "krav_sign": True,
+            }
+        )
         self.assertEqual(p.mangler, "signatur")
         p.kvitt_sign_dato = "2026-07-18 10:00:00"
         self.assertTrue(p.kan_kvitteres)
@@ -122,19 +133,27 @@ class TestFiqSjekkliste(TransactionCase):
         """Regelen må også holde ved create() — ikke bare ved write()."""
         liste = self._lag_liste()
         with self.assertRaises(ValidationError):
-            self.Punkt.create({
-                "sjekkliste_id": liste.id, "name": "Snarvei",
-                "krav_dok": True, "utfoert": True,
-            })
+            self.Punkt.create(
+                {
+                    "sjekkliste_id": liste.id,
+                    "name": "Snarvei",
+                    "krav_dok": True,
+                    "utfoert": True,
+                }
+            )
 
     def test_fjernet_kvittering_gjenaapner_kravet(self):
         """Fjernes dokumentet, skal punktet ikke lenger regnes som kvitterbart."""
         liste = self._lag_liste()
         att = self.env["ir.attachment"].create({"name": "d.pdf"})
-        p = self.Punkt.create({
-            "sjekkliste_id": liste.id, "name": "P", "krav_dok": True,
-            "kvitt_dok_id": att.id,
-        })
+        p = self.Punkt.create(
+            {
+                "sjekkliste_id": liste.id,
+                "name": "P",
+                "krav_dok": True,
+                "kvitt_dok_id": att.id,
+            }
+        )
         self.assertTrue(p.kan_kvitteres)
         p.kvitt_dok_id = False
         self.assertFalse(p.kan_kvitteres)

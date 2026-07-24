@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # FIQ AI KR (AI Kontrollrom) – data-lag, increment 2.01: oppgave-oversikt.
 # Samler ALLE AI-økter/oppgaver (Claude Code + Cowork) som er logget i Odoo, med
@@ -11,6 +10,8 @@
 # Snippet-tanken (firma → rolle → person) styrer SENERE hvordan delene settes
 # sammen; dette data-laget tar allerede et firma-filter så en firma-snippet virker.
 
+from typing import ClassVar
+
 from odoo import api, fields, models
 
 
@@ -21,7 +22,7 @@ class FiqGuiAiKrData(models.AbstractModel):
     # Kandidat-navn for rot-prosjektet, i prioritert rekkefølge. Første treff vinner.
     # «AI Økter (MP)» = det historisk seedede navnet. «8.50 AI (MP)» = AI-paraplyen som
     # faktisk finnes på fiqas Staging (verifisert 18.07.2026).
-    OKTER_ROT_KANDIDATER = ["AI Økter (MP)", "8.50 AI (MP)", "8.50 AI"]
+    OKTER_ROT_KANDIDATER: ClassVar = ["AI Økter (MP)", "8.50 AI (MP)", "8.50 AI"]
 
     # ── SAMLEBOKSER PÅ KR-FORSIDEN ──────────────────────────────────────────────
     # Gjermund 19.07.2026: «KR må egentlig være en samling av Samlebokser fra hver av de
@@ -101,16 +102,20 @@ class FiqGuiAiKrData(models.AbstractModel):
             if not (haster or i_dag or totalt):
                 continue  # ingenting å vise — ikke lag en tom boks
 
-            out.append({
-                "key": key,
-                "label": flate.get("label") or key,
-                "xmlid": xmlid,
-                "haster": haster,
-                "i_dag": i_dag,
-                "totalt": totalt,
-                "linjer": (boks.get("linjer") or [])[:5],  # topp 5, ikke en hel liste
-                "farge": "rod" if haster else ("gul" if i_dag else "nøytral"),
-            })
+            out.append(
+                {
+                    "key": key,
+                    "label": flate.get("label") or key,
+                    "xmlid": xmlid,
+                    "haster": haster,
+                    "i_dag": i_dag,
+                    "totalt": totalt,
+                    "linjer": (boks.get("linjer") or [])[
+                        :5
+                    ],  # topp 5, ikke en hel liste
+                    "farge": "rod" if haster else ("gul" if i_dag else "nøytral"),
+                }
+            )
 
         # Haster øverst, så dagens, så resten. Forsiden skal svare på «hva nå?».
         out.sort(key=lambda b: (-b["haster"], -b["i_dag"], b["label"]))
@@ -129,8 +134,12 @@ class FiqGuiAiKrData(models.AbstractModel):
         # 0 bokser for ALLE flater, inkludert min egen. Flaten så ut til å virke; den var tom.
         # Nok et tilfelle av «koden kjørte, resultatet var galt».
         prikk = key.replace("_", ".")
-        for navn in ("fiq.gui.%s.data" % prikk, "fiq.gui.%s.data" % key,
-                     "fiq.gui.%s" % prikk, "fiq.gui.%s" % key):
+        for navn in (
+            f"fiq.gui.{prikk}.data",
+            f"fiq.gui.{key}.data",
+            f"fiq.gui.{prikk}",
+            f"fiq.gui.{key}",
+        ):
             if navn in self.env and hasattr(self.env[navn], self.KR_BOKS_METODE):
                 return self.env[navn]
         return None
@@ -157,9 +166,7 @@ class FiqGuiAiKrData(models.AbstractModel):
         f = stage._fields
         if "is_closed" in f and stage.is_closed:
             return True
-        if "fold" in f and stage.fold:
-            return True
-        return False
+        return bool("fold" in f and stage.fold)
 
     def _delt_med(self, record):
         """Hvem posten er delt med = følgere som IKKE er vanlige interne brukere
@@ -182,14 +189,23 @@ class FiqGuiAiKrData(models.AbstractModel):
             return (False, False)
         nm = (stage.name or "").lower()
         sf = stage._fields
-        lukket = ("is_closed" in sf and stage.is_closed) or ("fold" in sf and stage.fold)
-        ferdig = lukket or "ferdig" in nm or "fullf" in nm or "done" in nm or "closed" in nm
+        lukket = ("is_closed" in sf and stage.is_closed) or (
+            "fold" in sf and stage.fold
+        )
+        ferdig = (
+            lukket or "ferdig" in nm or "fullf" in nm or "done" in nm or "closed" in nm
+        )
         kansellert = "kansel" in nm or "avlyst" in nm or "cancel" in nm
         return (bool(ferdig), bool(kansellert))
 
     @api.model
-    def get_ai_oppgaver(self, company_id=False, skjul_ferdig=False,
-                        skjul_kansellert=False, kun_kunde=False):
+    def get_ai_oppgaver(
+        self,
+        company_id=False,
+        skjul_ferdig=False,
+        skjul_kansellert=False,
+        kun_kunde=False,
+    ):
         """Oversikt over alle AI-økter/oppgaver (Claude Code + Cowork) logget i Odoo.
 
         Kjøres som brukeren → tilgangsregler styrer synlighet.
@@ -198,9 +214,12 @@ class FiqGuiAiKrData(models.AbstractModel):
         Returns: {root, groups[...], tot{...}, krever[...]}.
         """
         ICP = self.env["ir.config_parameter"].sudo()
-        out = {"root": "", "groups": [],
-               "tot": {"done": 0, "pag": 0, "vent": 0, "tot": 0, "pct": 0},
-               "krever": []}
+        out = {
+            "root": "",
+            "groups": [],
+            "tot": {"done": 0, "pag": 0, "vent": 0, "tot": 0, "pct": 0},
+            "krever": [],
+        }
         try:
             pid = int(ICP.get_param("fiq_gui_ai_kr.okter_project_id", "0") or 0)
         except (ValueError, TypeError):
@@ -231,8 +250,11 @@ class FiqGuiAiKrData(models.AbstractModel):
 
         projects = list(root)
         if "parent_id" in P._fields:
-            projects += list(P.search(
-                [("parent_id", "=", root.id), ("active", "=", True)], order="id"))
+            projects += list(
+                P.search(
+                    [("parent_id", "=", root.id), ("active", "=", True)], order="id"
+                )
+            )
 
         Task = self.env["project.task"]
         f = Task._fields
@@ -260,47 +282,62 @@ class FiqGuiAiKrData(models.AbstractModel):
                 stage = t.stage_id if "stage_id" in f and t.stage_id else False
                 st = "ferdig" if self._stage_is_done(stage) else "venter"
                 nm = (stage.name or "").lower() if stage else ""
-                if st != "ferdig" and ("pågår" in nm or "progress" in nm or "doing" in nm):
+                if st != "ferdig" and (
+                    "pågår" in nm or "progress" in nm or "doing" in nm
+                ):
                     st = "pagar"
                 if st == "ferdig":
                     done += 1
                 over = False
                 try:
-                    over = bool(t.date_deadline
-                                and fields.Date.to_date(str(t.date_deadline)[:10]) < today)
+                    over = bool(
+                        t.date_deadline
+                        and fields.Date.to_date(str(t.date_deadline)[:10]) < today
+                    )
                 except Exception:
                     over = False
                 delt_med = self._delt_med(t)
-                rows.append({
-                    "id": t.id,
-                    "no": (t.code if "code" in f else "") or "",
-                    "name": t.name or "",
-                    "who": "du" if t.user_ids else "ai",
-                    "st": st,
-                    "stage": stage.name if stage else "",
-                    "over": over,
-                    "frist": str(t.date_deadline)[:10] if t.date_deadline else "",
-                    # Åpne tilhørende element (alltid tilgjengelig fra oversikten)
-                    "aapne": {"model": "project.task", "id": t.id},
-                    # Delt-visning (project_shared/Loym): flagg + HVEM den er delt med
-                    "delt": bool(t.shared) if "shared" in f else bool(delt_med),
-                    "delt_med": delt_med,
-                })
+                rows.append(
+                    {
+                        "id": t.id,
+                        "no": (t.code if "code" in f else "") or "",
+                        "name": t.name or "",
+                        "who": "du" if t.user_ids else "ai",
+                        "st": st,
+                        "stage": stage.name if stage else "",
+                        "over": over,
+                        "frist": str(t.date_deadline)[:10] if t.date_deadline else "",
+                        # Åpne tilhørende element (alltid tilgjengelig fra oversikten)
+                        "aapne": {"model": "project.task", "id": t.id},
+                        # Delt-visning (project_shared/Loym): flagg + HVEM den er delt med
+                        "delt": bool(t.shared) if "shared" in f else bool(delt_med),
+                        "delt_med": delt_med,
+                    }
+                )
                 out["tot"]["tot"] += 1
                 out["tot"][stmap[st]] += 1
-            out["groups"].append({
-                "id": p.id,
-                "no": (p.sequence_code if "sequence_code" in P._fields else "") or "",
-                "name": p.name or "",
-                "done": done, "total": len(rows), "tasks": rows,
-            })
+            out["groups"].append(
+                {
+                    "id": p.id,
+                    "no": (p.sequence_code if "sequence_code" in P._fields else "")
+                    or "",
+                    "name": p.name or "",
+                    "done": done,
+                    "total": len(rows),
+                    "tasks": rows,
+                }
+            )
 
-        mine = [r for g in out["groups"] for r in g["tasks"]
-                if r["who"] == "du" and r["st"] != "ferdig"]
+        mine = [
+            r
+            for g in out["groups"]
+            for r in g["tasks"]
+            if r["who"] == "du" and r["st"] != "ferdig"
+        ]
         mine.sort(key=lambda r: (not r["over"], r["no"]))
         out["krever"] = mine[:5]
         tot = out["tot"]
-        tot["pct"] = int(round(tot["done"] * 100.0 / tot["tot"])) if tot["tot"] else 0
+        tot["pct"] = round(tot["done"] * 100.0 / tot["tot"]) if tot["tot"] else 0
         return out
 
     # En økt som ikke har meldt seg på så lenge er sannsynligvis død, ikke aktiv.
@@ -323,26 +360,30 @@ class FiqGuiAiKrData(models.AbstractModel):
         out = []
         Spor = self.env["fiq.ai.spor"]
         for s in Spor.search(dom, order="kode"):
-            out.append({
-                "id": s.id,
-                "kode": s.kode or "",
-                "navn": s.name or "",
-                "versjon": s.versjon or "",
-                "modul": s.modul or "",
-                "i_odoo": bool(s.modul_installert),
-                "modul_versjon": s.modul_versjon or "",
-                "status": s.status or "",
-                "aktive": s.aktive_okter,
-                "okter": s.antall_okter,
-                "beskrivelse": s.beskrivelse or "",
-                # UTEN EIER: ingen aktive oekter og status planlagt = hullet skal SYNES.
-                "uten_eier": bool(s.status == "planlagt" and not s.aktive_okter),
-                # HJEMLOEST: oppsamlingssporet for oekter som aldri meldte tilhoerighet.
-                # Skal alltid vaere TOMT. Er det ikke det, mangler noen en eier — og da
-                # skal flaten lyse roedt, ikke tie. (Gjermund 20.07: mykt krav, valg 2.)
-                "hjemlost": bool(s.kode == Spor.HJEMLOS_KODE),
-                "krever_opprydding": bool(s.kode == Spor.HJEMLOS_KODE and s.antall_okter),
-            })
+            out.append(
+                {
+                    "id": s.id,
+                    "kode": s.kode or "",
+                    "navn": s.name or "",
+                    "versjon": s.versjon or "",
+                    "modul": s.modul or "",
+                    "i_odoo": bool(s.modul_installert),
+                    "modul_versjon": s.modul_versjon or "",
+                    "status": s.status or "",
+                    "aktive": s.aktive_okter,
+                    "okter": s.antall_okter,
+                    "beskrivelse": s.beskrivelse or "",
+                    # UTEN EIER: ingen aktive oekter og status planlagt = hullet skal SYNES.
+                    "uten_eier": bool(s.status == "planlagt" and not s.aktive_okter),
+                    # HJEMLOEST: oppsamlingssporet for oekter som aldri meldte tilhoerighet.
+                    # Skal alltid vaere TOMT. Er det ikke det, mangler noen en eier — og da
+                    # skal flaten lyse roedt, ikke tie. (Gjermund 20.07: mykt krav, valg 2.)
+                    "hjemlost": bool(s.kode == Spor.HJEMLOS_KODE),
+                    "krever_opprydding": bool(
+                        s.kode == Spor.HJEMLOS_KODE and s.antall_okter
+                    ),
+                }
+            )
         return out
 
     @api.model
@@ -366,24 +407,29 @@ class FiqGuiAiKrData(models.AbstractModel):
             minutter = None
             if o.sist_aktiv:
                 minutter = int((naa - o.sist_aktiv).total_seconds() // 60)
-            out.append({
-                "id": o.id,
-                "navn": o.name or "",
-                "ref": o.okt_ref or "",
-                "kilde": o.kilde or "",
-                "firma": o.company_id.display_name if o.company_id else "",
-                "status": o.status or "",
-                "oppgave": o.task_id.display_name if o.task_id else "",
-                "sammendrag": o.sammendrag or "",
-                "sist_aktiv": o.sist_aktiv.strftime("%d.%m %H:%M") if o.sist_aktiv else "",
-                "minutter": minutter,
-                "alder": self._alder_tekst(minutter),
-                # STILLE = meldte seg som aktiv, men har ikke gitt lyd fra seg siden.
-                "stille": bool(
-                    o.status == "aktiv" and minutter is not None
-                    and minutter > self.STILLE_TIMER * 60
-                ),
-            })
+            out.append(
+                {
+                    "id": o.id,
+                    "navn": o.name or "",
+                    "ref": o.okt_ref or "",
+                    "kilde": o.kilde or "",
+                    "firma": o.company_id.display_name if o.company_id else "",
+                    "status": o.status or "",
+                    "oppgave": o.task_id.display_name if o.task_id else "",
+                    "sammendrag": o.sammendrag or "",
+                    "sist_aktiv": o.sist_aktiv.strftime("%d.%m %H:%M")
+                    if o.sist_aktiv
+                    else "",
+                    "minutter": minutter,
+                    "alder": self._alder_tekst(minutter),
+                    # STILLE = meldte seg som aktiv, men har ikke gitt lyd fra seg siden.
+                    "stille": bool(
+                        o.status == "aktiv"
+                        and minutter is not None
+                        and minutter > self.STILLE_TIMER * 60
+                    ),
+                }
+            )
         return out
 
     def _alder_tekst(self, minutter):
@@ -413,7 +459,10 @@ class FiqGuiAiKrData(models.AbstractModel):
             "i_dag": len(aktive) - len(stille),
             "totalt": len(aktive),
             "linjer": [
-                {"tekst": "%s — stille i %s" % (o["navn"], o["alder"]), "res_id": o["id"]}
+                {
+                    "tekst": "{} — stille i {}".format(o["navn"], o["alder"]),
+                    "res_id": o["id"],
+                }
                 for o in stille[:5]
             ],
         }
@@ -430,16 +479,20 @@ class FiqGuiAiKrData(models.AbstractModel):
             dom.append(("company_id", "in", [int(company_id), False]))
         roller = []
         for r in self.env["fiq.ai.rolle"].search(dom, order="omraade_kode, name"):
-            roller.append({
-                "id": r.id,
-                "navn": r.name or "",
-                "type": r.rolletype or "",
-                "omraade": r.omraade_kode or "",
-                "firma": r.company_id.display_name if r.company_id else "(generisk)",
-                "skill": r.skill_ref or "",
-                "radgivere": r.radgivere_ids.mapped("name"),
-                "ansvarlig": r.ansvarlig_id.display_name if r.ansvarlig_id else "",
-            })
+            roller.append(
+                {
+                    "id": r.id,
+                    "navn": r.name or "",
+                    "type": r.rolletype or "",
+                    "omraade": r.omraade_kode or "",
+                    "firma": r.company_id.display_name
+                    if r.company_id
+                    else "(generisk)",
+                    "skill": r.skill_ref or "",
+                    "radgivere": r.radgivere_ids.mapped("name"),
+                    "ansvarlig": r.ansvarlig_id.display_name if r.ansvarlig_id else "",
+                }
+            )
         return {"roller": roller, "installert": True}
 
     @api.model
@@ -470,7 +523,11 @@ class FiqGuiAiKrData(models.AbstractModel):
             if "checklist" in fname and getattr(fld, "type", "") == "one2many":
                 for line in t[fname]:
                     lf = line._fields
-                    navn = (line.name if "name" in lf else False) or line.display_name or ""
+                    navn = (
+                        (line.name if "name" in lf else False)
+                        or line.display_name
+                        or ""
+                    )
                     utfort = False
                     for dcand in ("done", "is_done", "checked"):
                         if dcand in lf:
@@ -481,35 +538,45 @@ class FiqGuiAiKrData(models.AbstractModel):
 
         # Kommunikasjonshistorikk på oppgaven (mail.message) — Meldingssenter-mønster.
         Msg = self.env["mail.message"]
-        msgs = Msg.search([
-            ("model", "=", "project.task"), ("res_id", "=", t.id),
-            ("message_type", "in", ["email", "comment"]),
-        ], order="date desc", limit=50)
+        msgs = Msg.search(
+            [
+                ("model", "=", "project.task"),
+                ("res_id", "=", t.id),
+                ("message_type", "in", ["email", "comment"]),
+            ],
+            order="date desc",
+            limit=50,
+        )
         komm = []
         for m in msgs:
             internal = bool(
-                m.author_id and m.author_id.user_ids
+                m.author_id
+                and m.author_id.user_ids
                 and any(not u.share for u in m.author_id.user_ids)
             )
-            komm.append({
-                "id": m.id,
-                "fra": m.author_id.display_name if m.author_id else (m.email_from or "—"),
-                "retning": "sendt" if internal else "mottatt",
-                "emne": (m.subject or m.preview or "").strip()[:120],
-                "dato": m.date.strftime("%d.%m %H:%M") if m.date else "",
-                "er_epost": m.message_type == "email",
-            })
+            komm.append(
+                {
+                    "id": m.id,
+                    "fra": m.author_id.display_name
+                    if m.author_id
+                    else (m.email_from or "—"),
+                    "retning": "sendt" if internal else "mottatt",
+                    "emne": (m.subject or m.preview or "").strip()[:120],
+                    "dato": m.date.strftime("%d.%m %H:%M") if m.date else "",
+                    "er_epost": m.message_type == "email",
+                }
+            )
 
         return {
             "id": t.id,
-            "navn": t.name or "",          # KUN lesing — aldri endret (D4)
+            "navn": t.name or "",  # KUN lesing — aldri endret (D4)
             "no": (t.code if "code" in f else "") or "",
             "beskrivelse": t.description or "",
             "ansvarlig": ansvarlig,
             "konsekvenser": konsekvens,
             "sjekkliste": sjekkliste,
             "kommunikasjon": komm,
-            "kan_svare": True,            # front-end åpner komposer på message_id (svar/svar alle)
+            "kan_svare": True,  # front-end åpner komposer på message_id (svar/svar alle)
             "aapne": {"model": "project.task", "id": t.id},
         }
 
@@ -533,32 +600,40 @@ class FiqGuiAiKrData(models.AbstractModel):
             dom.append(("company_id", "=", int(company_id)))
         if not vis_alle:
             # kanon ELLER usikker ELLER umerket ELLER bestridt (bestridte skjules aldri)
-            dom += ["|", "|", "|",
-                    ("er_kanon", "=", True),
-                    ("sikkerhet", "in", ["antatt", "uverifisert"]),
-                    ("uten_grunnlag", "=", True),
-                    ("status", "=", "bestridt")]
+            dom += [
+                "|",
+                "|",
+                "|",
+                ("er_kanon", "=", True),
+                ("sikkerhet", "in", ["antatt", "uverifisert"]),
+                ("uten_grunnlag", "=", True),
+                ("status", "=", "bestridt"),
+            ]
 
         ut = []
         for k in K.search(dom, limit=int(grense)):
-            ut.append({
-                "id": k.id,
-                "konklusjon": k.name or "",
-                "grunnlag": k.grunnlag or "",
-                "sikkerhet": k.sikkerhet or "",
-                "sikkerhet_tekst": dict(K.SIKKERHET).get(k.sikkerhet, "Ikke merket"),
-                "er_kanon": k.er_kanon,
-                "uten_grunnlag": k.uten_grunnlag,
-                "status": k.status,
-                "bestridt": k.status == "bestridt",
-                "bestridelse": k.bestridelse or "",
-                "spor": (k.spor_id.kode or k.spor_id.name) if k.spor_id else "",
-                "okt": k.okt_id.name if k.okt_id else "",
-                "task_id": k.task_id.id or False,
-                "oppgave": k.task_id.display_name if k.task_id else "",
-                "kilde": k.kilde or "",
-                "skrevet": k.skrevet.strftime("%d.%m %H:%M") if k.skrevet else "",
-            })
+            ut.append(
+                {
+                    "id": k.id,
+                    "konklusjon": k.name or "",
+                    "grunnlag": k.grunnlag or "",
+                    "sikkerhet": k.sikkerhet or "",
+                    "sikkerhet_tekst": dict(K.SIKKERHET).get(
+                        k.sikkerhet, "Ikke merket"
+                    ),
+                    "er_kanon": k.er_kanon,
+                    "uten_grunnlag": k.uten_grunnlag,
+                    "status": k.status,
+                    "bestridt": k.status == "bestridt",
+                    "bestridelse": k.bestridelse or "",
+                    "spor": (k.spor_id.kode or k.spor_id.name) if k.spor_id else "",
+                    "okt": k.okt_id.name if k.okt_id else "",
+                    "task_id": k.task_id.id or False,
+                    "oppgave": k.task_id.display_name if k.task_id else "",
+                    "kilde": k.kilde or "",
+                    "skrevet": k.skrevet.strftime("%d.%m %H:%M") if k.skrevet else "",
+                }
+            )
         return ut
 
     @api.model
@@ -569,8 +644,13 @@ class FiqGuiAiKrData(models.AbstractModel):
         return {
             "bestridt": K.search_count(dom + [("status", "=", "bestridt")]),
             "uten_grunnlag": K.search_count(dom + [("uten_grunnlag", "=", True)]),
-            "usikre": K.search_count(dom + [("sikkerhet", "in", ["antatt", "uverifisert"]),
-                                            ("status", "!=", "bestridt")]),
+            "usikre": K.search_count(
+                dom
+                + [
+                    ("sikkerhet", "in", ["antatt", "uverifisert"]),
+                    ("status", "!=", "bestridt"),
+                ]
+            ),
             "kanon": K.search_count(dom + [("er_kanon", "=", True)]),
             "totalt": K.search_count(dom),
         }
@@ -587,7 +667,7 @@ class FiqGuiAiKrData(models.AbstractModel):
         k = self.env["fiq.ai.konklusjon"].browse(int(konklusjon_id)).exists()
         if not k:
             return {"ok": False, "feil": "Konklusjonen finnes ikke."}
-        k.check_access("write")          # aldri stoppe noe i et firma du ikke ser
+        k.check_access("write")  # aldri stoppe noe i et firma du ikke ser
         k.bestrid(begrunnelse)
         return {"ok": True, "status": k.status}
 
@@ -620,7 +700,12 @@ class FiqGuiAiKrData(models.AbstractModel):
         KNAPPER = {
             "godkjenning": [
                 {"valg": "godkjent", "tekst": "🟢 Godkjent", "farge": "g"},
-                {"valg": "ja_men", "tekst": "🟠 Ja, men…", "farge": "o", "krever_tekst": True},
+                {
+                    "valg": "ja_men",
+                    "tekst": "🟠 Ja, men…",
+                    "farge": "o",
+                    "krever_tekst": True,
+                },
                 {"valg": "nei", "tekst": "🔴 Nei", "farge": "r"},
                 {"valg": "alltid", "tekst": "🟢⭐ Alltid", "farge": "s"},
             ],
@@ -630,30 +715,36 @@ class FiqGuiAiKrData(models.AbstractModel):
                 {"valg": "dropp", "tekst": "🔴 Dropp", "farge": "r"},
             ],
         }
-        MERKE = {"ai": "🤖 AI-økt", "menneske": "👤 Menneske-gate", "klokke": "👤 Klokke-oppgave"}
+        MERKE = {
+            "ai": "🤖 AI-økt",
+            "menneske": "👤 Menneske-gate",
+            "klokke": "👤 Klokke-oppgave",
+        }
 
         ut = []
         for g in G.search(dom, limit=int(grense)):
-            ut.append({
-                "id": g.id,
-                "sporsmaal": g.name or "",
-                "detalj": g.detalj or "",
-                "kilde": g.kilde,
-                "kilde_tekst": MERKE.get(g.kilde, ""),
-                "haster": g.haster,
-                "svar": g.svar or "",
-                "forbehold": g.forbehold or "",
-                "besvart": bool(g.svar),
-                "knapper": KNAPPER.get(g.art, KNAPPER["godkjenning"]),
-                "spor": (g.spor_id.kode or g.spor_id.name) if g.spor_id else "",
-                "okt": g.okt_id.name if g.okt_id else "",
-                "task_id": g.task_id.id or False,
-                # 🔑 «Alltid» er bare aerlig hvis den faktisk kan huske noe.
-                # Uten noekkel ville knappen lovet mer enn den holder.
-                "kan_alltid": bool(g.noekkel),
-                "firma": g.company_id.display_name if g.company_id else "",
-                "alder": self._alder(g.opprettet) if g.opprettet else "",
-            })
+            ut.append(
+                {
+                    "id": g.id,
+                    "sporsmaal": g.name or "",
+                    "detalj": g.detalj or "",
+                    "kilde": g.kilde,
+                    "kilde_tekst": MERKE.get(g.kilde, ""),
+                    "haster": g.haster,
+                    "svar": g.svar or "",
+                    "forbehold": g.forbehold or "",
+                    "besvart": bool(g.svar),
+                    "knapper": KNAPPER.get(g.art, KNAPPER["godkjenning"]),
+                    "spor": (g.spor_id.kode or g.spor_id.name) if g.spor_id else "",
+                    "okt": g.okt_id.name if g.okt_id else "",
+                    "task_id": g.task_id.id or False,
+                    # 🔑 «Alltid» er bare aerlig hvis den faktisk kan huske noe.
+                    # Uten noekkel ville knappen lovet mer enn den holder.
+                    "kan_alltid": bool(g.noekkel),
+                    "firma": g.company_id.display_name if g.company_id else "",
+                    "alder": self._alder(g.opprettet) if g.opprettet else "",
+                }
+            )
         return ut
 
     @api.model
@@ -662,7 +753,7 @@ class FiqGuiAiKrData(models.AbstractModel):
         g = self.env["fiq.ai.godkjenning"].browse(int(godkjenning_id)).exists()
         if not g:
             return {"ok": False, "feil": "Spørsmålet finnes ikke."}
-        g.check_access("write")     # aldri svare i et firma du ikke ser
+        g.check_access("write")  # aldri svare i et firma du ikke ser
         g.svar_paa(valg, forbehold)
         return {"ok": True, "svar": g.svar}
 
@@ -715,13 +806,15 @@ class FiqGuiAiKrData(models.AbstractModel):
             "stadier": self.env["fiq.ai.stadie"].stadie_liste(),
             "spor": self.get_spor(company_id=company_id),
             "oppgaver": self.get_styring_oppgaver(
-                company_id=company_id, spor_id=spor_id, skjul_ferdig=skjul_ferdig),
+                company_id=company_id, spor_id=spor_id, skjul_ferdig=skjul_ferdig
+            ),
             "sporsmaal": self.get_godkjenninger(company_id=company_id),
         }
 
     @api.model
-    def get_styring_oppgaver(self, company_id=False, spor_id=False,
-                             skjul_ferdig=False, grense=300):
+    def get_styring_oppgaver(
+        self, company_id=False, spor_id=False, skjul_ferdig=False, grense=300
+    ):
         """Oppgavene med stadium, firma og kommentartall.
 
         Kjoeres som BRUKEREN — ikke sudo. Han skal se det han har innsyn i, og
@@ -747,29 +840,42 @@ class FiqGuiAiKrData(models.AbstractModel):
 
         felt = Task._fields
         ut = []
-        for t in Task.search(dom, limit=int(grense), order="date_deadline asc, id desc"):
-            ut.append({
-                "id": t.id,
-                "nr": (t.code if "code" in felt else "") or "",
-                "navn": t.name or "",
-                "beskrivelse": t.description or "",
-                # user_ids tom = AI. Samme konvensjon som Prosjekt (00.03) bruker —
-                # avklart med dem 22.07 saa vi ikke viser ulike tall for samme sak.
-                "eier": ", ".join(t.user_ids.mapped("name")) if t.user_ids else "AI",
-                "er_ai": not bool(t.user_ids),
-                "stadium": t.stage_id.fiq_ai_kode or "",
-                "stadium_navn": t.stage_id.name or "",
-                "start": t.date_assign.strftime("%d.%m") if t.date_assign else "",
-                "frist": t.date_deadline.strftime("%d.%m") if t.date_deadline else "",
-                # Firma STYRER hvor arbeidet lagres — AI PK: «tenant-isolasjon i
-                # brukerflaten». Derfor med fra dag EN, ikke fase 2.
-                "firma": t.company_id.display_name if t.company_id else "",
-                "firma_id": t.company_id.id or False,
-                "spor": spor_per_prosjekt.get(t.project_id.id, ""),
-                "prosjekt": t.project_id.display_name if t.project_id else "",
-                "kommentarer": len(t.message_ids.filtered(
-                    lambda m: m.message_type in ("comment", "notification") and m.body)),
-            })
+        for t in Task.search(
+            dom, limit=int(grense), order="date_deadline asc, id desc"
+        ):
+            ut.append(
+                {
+                    "id": t.id,
+                    "nr": (t.code if "code" in felt else "") or "",
+                    "navn": t.name or "",
+                    "beskrivelse": t.description or "",
+                    # user_ids tom = AI. Samme konvensjon som Prosjekt (00.03) bruker —
+                    # avklart med dem 22.07 saa vi ikke viser ulike tall for samme sak.
+                    "eier": ", ".join(t.user_ids.mapped("name"))
+                    if t.user_ids
+                    else "AI",
+                    "er_ai": not bool(t.user_ids),
+                    "stadium": t.stage_id.fiq_ai_kode or "",
+                    "stadium_navn": t.stage_id.name or "",
+                    "start": t.date_assign.strftime("%d.%m") if t.date_assign else "",
+                    "frist": t.date_deadline.strftime("%d.%m")
+                    if t.date_deadline
+                    else "",
+                    # Firma STYRER hvor arbeidet lagres — AI PK: «tenant-isolasjon i
+                    # brukerflaten». Derfor med fra dag EN, ikke fase 2.
+                    "firma": t.company_id.display_name if t.company_id else "",
+                    "firma_id": t.company_id.id or False,
+                    "spor": spor_per_prosjekt.get(t.project_id.id, ""),
+                    "prosjekt": t.project_id.display_name if t.project_id else "",
+                    "kommentarer": len(
+                        t.message_ids.filtered(
+                            lambda m: (
+                                m.message_type in ("comment", "notification") and m.body
+                            )
+                        )
+                    ),
+                }
+            )
         return ut
 
     @api.model
@@ -784,20 +890,26 @@ class FiqGuiAiKrData(models.AbstractModel):
         if not t:
             return {"finnes": False}
         ut = []
-        for m in t.message_ids.filtered(lambda m: m.body)[:int(grense)]:
-            ut.append({
-                "id": m.id,
-                "fra": m.author_id.display_name if m.author_id else "System",
-                "naar": m.date.strftime("%d.%m.%Y %H:%M") if m.date else "",
-                "tekst": m.body or "",
-                "bilder": [
-                    {"id": a.id, "navn": a.name,
-                     "url": "/web/image/%d" % a.id}
-                    for a in m.attachment_ids if (a.mimetype or "").startswith("image/")
-                ],
-            })
-        return {"finnes": True, "navn": t.name or "",
-                "stadium": t.stage_id.fiq_ai_kode or "", "logg": ut}
+        for m in t.message_ids.filtered(lambda m: m.body)[: int(grense)]:
+            ut.append(
+                {
+                    "id": m.id,
+                    "fra": m.author_id.display_name if m.author_id else "System",
+                    "naar": m.date.strftime("%d.%m.%Y %H:%M") if m.date else "",
+                    "tekst": m.body or "",
+                    "bilder": [
+                        {"id": a.id, "navn": a.name, "url": "/web/image/%d" % a.id}
+                        for a in m.attachment_ids
+                        if (a.mimetype or "").startswith("image/")
+                    ],
+                }
+            )
+        return {
+            "finnes": True,
+            "navn": t.name or "",
+            "stadium": t.stage_id.fiq_ai_kode or "",
+            "logg": ut,
+        }
 
     @api.model
     def skriv_kommentar(self, task_id, tekst):
@@ -809,7 +921,7 @@ class FiqGuiAiKrData(models.AbstractModel):
         if not (tekst or "").strip():
             return {"ok": False, "feil": "Tom kommentar."}
         t.check_access("write")
-        merke = " <i>(%s)</i>" % t.stage_id.name if t.stage_id else ""
+        merke = f" <i>({t.stage_id.name})</i>" if t.stage_id else ""
         t.message_post(body=(tekst or "").strip() + merke)
         return {"ok": True}
 

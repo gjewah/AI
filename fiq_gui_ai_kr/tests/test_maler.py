@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """QWEB-MALENE — den ene feilklassen ingen annen test fanger.
 
 🔴 BAKGRUNN, 23.07.2026: `styring.xml` hadde `and not q.kan_alltid`.
@@ -19,17 +18,17 @@ det. Men den fanger uttrykk som gjør malen usyntaktisk før den når nettlesere
 
 import os
 import re
+from typing import ClassVar
 
 from odoo.tests.common import TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install", 'fiq')
+@tagged("post_install", "-at_install", "fiq")
 class TestMaler(TransactionCase):
-
     # Python-operatorer som IKKE finnes i JavaScript. QWeb oversetter `and`/`or`,
     # men lar disse stå — og da blir de lest som variabelnavn.
     # Ordgrense på begge sider, ellers treffer «not» inni «cannot», «notat» osv.
-    FORBUDT = [
+    FORBUDT: ClassVar = [
         (r"\bnot\s+", "not", "bruk ! i stedet"),
         (r"\bis\s+None\b", "is None", "bruk === undefined / === null"),
         (r"\bis\s+not\b", "is not", "bruk !== "),
@@ -51,7 +50,7 @@ class TestMaler(TransactionCase):
     # Derfor: bind til dobbeltfnutt, som er det XML faktisk bruker for attributter.
     UTTRYKKS_ATTR = re.compile(
         r'''t-(?:att-[\w-]+|if|elif|else|esc|out|foreach|key|value|on-\w+)\s*=\s*"([^"]*)"''',
-        re.S,
+        re.DOTALL,
     )
 
     def _mal_filer(self):
@@ -80,28 +79,32 @@ class TestMaler(TransactionCase):
                 innhold = fh.read()
             # Fjern XML-kommentarer først: forklaringen på HVORFOR `not` er
             # forbudt inneholder selv ordet, og skal ikke gi falsk alarm.
-            uten_kommentar = re.sub(r"<!--.*?-->", "", innhold, flags=re.S)
+            uten_kommentar = re.sub(r"<!--.*?-->", "", innhold, flags=re.DOTALL)
 
             for uttrykk in self.UTTRYKKS_ATTR.findall(uten_kommentar):
                 for monster, navn, rad in self.FORBUDT:
                     if re.search(monster, uttrykk):
-                        funn.append("%s: «%s» i «%s» — %s"
-                                    % (os.path.basename(sti), navn, uttrykk.strip()[:70], rad))
+                        funn.append(
+                            f"{os.path.basename(sti)}: «{navn}» i «{uttrykk.strip()[:70]}» — {rad}"
+                        )
 
         self.assertEqual(
-            funn, [],
+            funn,
+            [],
             "Python-syntaks i QWeb-uttrykk. Malen kompileres først i nettleseren, "
             "så ingen annen test fanger dette — men flaten blir HELT DØD:\n  "
-            + "\n  ".join(funn))
+            + "\n  ".join(funn),
+        )
 
     def test_malene_er_velformet_xml(self):
         """En uparsbar mal gir blank flate uten noe i serverloggen."""
         from xml.etree import ElementTree
+
         for sti in self._mal_filer():
             try:
                 ElementTree.parse(sti)
             except ElementTree.ParseError as e:
-                self.fail("%s er ikke velformet XML: %s" % (os.path.basename(sti), e))
+                self.fail(f"{os.path.basename(sti)} er ikke velformet XML: {e}")
 
     def test_ingen_if_i_inline_hendelser(self):
         """`if (…)` inne i t-on-* kompilerer ikke — hele malen dør.
@@ -112,9 +115,14 @@ class TestMaler(TransactionCase):
         funn = []
         for sti in self._mal_filer():
             with open(sti, encoding="utf-8") as fh:
-                uten_kommentar = re.sub(r"<!--.*?-->", "", fh.read(), flags=re.S)
-            for m in re.finditer(r"""t-on-\w+\s*=\s*["']([^"']*)["']""", uten_kommentar):
+                uten_kommentar = re.sub(r"<!--.*?-->", "", fh.read(), flags=re.DOTALL)
+            for m in re.finditer(
+                r"""t-on-\w+\s*=\s*["']([^"']*)["']""", uten_kommentar
+            ):
                 if re.search(r"\bif\s*\(", m.group(1)):
-                    funn.append("%s: %s" % (os.path.basename(sti), m.group(1)[:60]))
-        self.assertEqual(funn, [], "`if (` i inline t-on-* — malen kompilerer ikke:\n  "
-                                   + "\n  ".join(funn))
+                    funn.append(f"{os.path.basename(sti)}: {m.group(1)[:60]}")
+        self.assertEqual(
+            funn,
+            [],
+            "`if (` i inline t-on-* — malen kompilerer ikke:\n  " + "\n  ".join(funn),
+        )

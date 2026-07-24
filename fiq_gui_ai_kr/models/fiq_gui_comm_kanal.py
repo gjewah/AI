@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """AI-meldinger melder seg inn som KANAL i Kommunikasjon (Meldingssenteret).
 
 Gjermund 19.07.2026: «AI-meldinger skal også være tilgjengelig som egen flate for alle
@@ -16,7 +15,7 @@ Antallet er `krever_svar and not besvart` — det er de eneste meldingene som fa
 noe. Ro-budsjett: tallet skal bety «dette venter på deg», ikke «her er alt som finnes».
 """
 
-from odoo import api, models
+from odoo import models
 
 
 class FiqKommunikasjonDataAi(models.AbstractModel):
@@ -35,15 +34,17 @@ class FiqKommunikasjonDataAi(models.AbstractModel):
         except Exception:
             # En kanal som feiler skal aldri ta ned hele Kommunikasjon-flaten.
             antall = 0
-        kanaler.append({
-            "kode": "ai",
-            "navn": "AI-meldinger",
-            "ikon": "🤖",
-            "farge": "lilla",          # 8.50 AI = lilla i det kanoniske fargekartet
-            "action": "fiq_gui_ai_kr.action_fiq_ai_melding",
-            "antall": antall,
-            "sekvens": 20,
-        })
+        kanaler.append(
+            {
+                "kode": "ai",
+                "navn": "AI-meldinger",
+                "ikon": "🤖",
+                "farge": "lilla",  # 8.50 AI = lilla i det kanoniske fargekartet
+                "action": "fiq_gui_ai_kr.action_fiq_ai_melding",
+                "antall": antall,
+                "sekvens": 20,
+            }
+        )
         return kanaler
 
     def _ai_ubesvart_domene(self):
@@ -52,8 +53,11 @@ class FiqKommunikasjonDataAi(models.AbstractModel):
         🛑 Scope fra sesjonen: uten 000-rettighet ser man kun sine egne. Klienten kan
         ikke be seg til driftstrafikken ved å sende en parameter.
         """
-        dom = [("krever_svar", "=", True), ("besvart", "=", False),
-               ("filtrert_bort", "=", False)]
+        dom = [
+            ("krever_svar", "=", True),
+            ("besvart", "=", False),
+            ("filtrert_bort", "=", False),
+        ]
         Data = self.env.get("fiq.ai.melding.data")
         drift = bool(Data and Data._har_000())
         if not drift:

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tester for spor-tilhørighet — ingen økt skal være hjemløs i stillhet.
 
 Bakgrunn (Gjermund 20.07.2026): øktnummer-kaoset kostet over 100 timer.
@@ -16,9 +15,8 @@ speiler ekte datamønstre beviser ingenting — den gir falsk trygghet.
 from odoo.tests.common import TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install", 'fiq')
+@tagged("post_install", "-at_install", "fiq")
 class TestSporNormalisering(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -30,8 +28,9 @@ class TestSporNormalisering(TransactionCase):
         """«gui kr», «Kontrollrom» og «KR» er samme arbeid — ett spor, ikke tre."""
         for variant in ("KR", "kr", "gui kr", "GUI KR", "Kontrollrom", "kontrollrom"):
             self.assertEqual(
-                self.Spor.normaliser_kode(variant), "KR",
-                "«%s» skulle blitt kanonisk «KR» — ellers får vi spor-drift." % variant,
+                self.Spor.normaliser_kode(variant),
+                "KR",
+                f"«{variant}» skulle blitt kanonisk «KR» — ellers får vi spor-drift.",
             )
 
     def test_alias_dekker_de_levende_sporene(self):
@@ -55,8 +54,11 @@ class TestSporNormalisering(TransactionCase):
         forste = self.Spor._finn_eller_lag("gui kr")
         andre = self.Spor._finn_eller_lag("Kontrollrom")
         self.assertTrue(forste)
-        self.assertEqual(forste, andre,
-                         "To skrivemåter av samme spor ga to poster — kaoset flyttet seg.")
+        self.assertEqual(
+            forste,
+            andre,
+            "To skrivemåter av samme spor ga to poster — kaoset flyttet seg.",
+        )
 
     # ── 2. HJEMLØS-FANGST ───────────────────────────────────────────────────
     def test_okt_uten_spor_havner_i_uten_spor(self):
@@ -79,16 +81,20 @@ class TestSporNormalisering(TransactionCase):
         ref = "test-ref-beholder-spor"
         self.Okt.registrer_okt(name="Økt A", okt_ref=ref, spor_kode="PRJ")
         okt_id = self.Okt.registrer_okt(name="Økt A", okt_ref=ref, status="pause")
-        self.assertEqual(self.Okt.browse(okt_id).spor_id.kode, "PRJ",
-                         "Sporet gikk tapt ved en ren statusoppdatering.")
+        self.assertEqual(
+            self.Okt.browse(okt_id).spor_id.kode,
+            "PRJ",
+            "Sporet gikk tapt ved en ren statusoppdatering.",
+        )
 
     def test_hjemlost_spor_gjenbrukes(self):
         """Oppsamlingssporet skal finnes i ÉN utgave, uansett hvor mange som treffer det."""
         self.Okt.registrer_okt(name="Hjemløs 1")
         self.Okt.registrer_okt(name="Hjemløs 2")
         treff = self.Spor.search([("kode", "=", self.Spor.HJEMLOS_KODE)])
-        self.assertEqual(len(treff), 1,
-                         "Flere «Uten spor»-poster — da er oversikten verdiløs.")
+        self.assertEqual(
+            len(treff), 1, "Flere «Uten spor»-poster — da er oversikten verdiløs."
+        )
 
     # ── 3. SYNLIGHET I FLATEN ───────────────────────────────────────────────
     def test_flaten_flagger_at_opprydding_gjenstar(self):
@@ -97,8 +103,10 @@ class TestSporNormalisering(TransactionCase):
         rader = self.env["fiq.gui.ai.kr.data"].get_spor()
         hjemlose = [r for r in rader if r.get("hjemlost")]
         self.assertEqual(len(hjemlose), 1, "Oppsamlingssporet vises ikke i flaten.")
-        self.assertTrue(hjemlose[0]["krever_opprydding"],
-                        "Sporet har økter, men flaten sier ikke fra.")
+        self.assertTrue(
+            hjemlose[0]["krever_opprydding"],
+            "Sporet har økter, men flaten sier ikke fra.",
+        )
 
     def test_vanlig_spor_er_ikke_flagget(self):
         """Flagget skal treffe oppsamlingssporet — ikke ekte spor."""

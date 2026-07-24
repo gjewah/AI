@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tester for godkjenningskøen — det som fjerner klikkingen fra Gjermunds hverdag.
 
 Gjermund 22.07.2026: «Jeg rekker knapt gjøre annet enn å prøve å holde progresjon
@@ -13,9 +12,8 @@ from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install", 'fiq')
+@tagged("post_install", "-at_install", "fiq")
 class TestGodkjenning(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -37,10 +35,15 @@ class TestGodkjenning(TransactionCase):
         self.G.browse(f["id"]).svar_paa("alltid")
 
         andre = self.G.spor("Push til grenen igjen?", noekkel="push_gren")
-        self.assertEqual(andre["svar"], "godkjent",
-                         "«Alltid» virket ikke — spørsmålet kom tilbake til Gjermund.")
+        self.assertEqual(
+            andre["svar"],
+            "godkjent",
+            "«Alltid» virket ikke — spørsmålet kom tilbake til Gjermund.",
+        )
         self.assertTrue(andre["staaende"])
-        self.assertFalse(andre["id"], "Det ble laget en kø-rad likevel — da er den ikke stille.")
+        self.assertFalse(
+            andre["id"], "Det ble laget en kø-rad likevel — da er den ikke stille."
+        )
 
     def test_alltid_gjelder_kun_samme_noekkel(self):
         """Et ja på én ting er ikke et ja på alt."""
@@ -59,15 +62,21 @@ class TestGodkjenning(TransactionCase):
 
     def test_trekk_tilbake_gjor_at_systemet_spor_igjen(self):
         """En regel Gjermund ikke kan angre, er en regel han ikke kontrollerer."""
-        self.G.browse(self.G.spor("Push?", noekkel="angre_meg")["id"]).svar_paa("alltid")
+        self.G.browse(self.G.spor("Push?", noekkel="angre_meg")["id"]).svar_paa(
+            "alltid"
+        )
         self.assertEqual(self.G.spor("Push?", noekkel="angre_meg")["svar"], "godkjent")
 
         self.assertTrue(self.G.trekk_tilbake("angre_meg"))
-        self.assertIsNone(self.G.spor("Push?", noekkel="angre_meg")["svar"],
-                          "Regelen ble trukket tilbake, men systemet svarer fortsatt selv.")
+        self.assertIsNone(
+            self.G.spor("Push?", noekkel="angre_meg")["svar"],
+            "Regelen ble trukket tilbake, men systemet svarer fortsatt selv.",
+        )
 
     def test_staaende_regler_kan_listes(self):
-        self.G.browse(self.G.spor("X?", noekkel="synlig_regel")["id"]).svar_paa("alltid")
+        self.G.browse(self.G.spor("X?", noekkel="synlig_regel")["id"]).svar_paa(
+            "alltid"
+        )
         self.assertIn("synlig_regel", [r["noekkel"] for r in self.G.staaende_regler()])
 
     # ── «JA, MEN…» ──────────────────────────────────────────────────────────
@@ -80,7 +89,7 @@ class TestGodkjenning(TransactionCase):
         with self.assertRaises(UserError):
             g.svar_paa("ja_men")
         with self.assertRaises(UserError):
-            g.svar_paa("ja_men", "   ")          # bare mellomrom teller ikke
+            g.svar_paa("ja_men", "   ")  # bare mellomrom teller ikke
 
     def test_ja_men_med_forbehold_lagres(self):
         g = self.G.browse(self.G.spor("Med forbehold?")["id"])
@@ -101,8 +110,10 @@ class TestGodkjenning(TransactionCase):
         besvart = self.G.browse(self.G.spor("Alt besvart")["id"])
         besvart.svar_paa("godkjent")
         self.G.spor("Venter fortsatt")
-        self.assertFalse(self.G.search([], limit=1).svar,
-                         "Et besvart spørsmål lå øverst — da drukner det ubesvarte.")
+        self.assertFalse(
+            self.G.search([], limit=1).svar,
+            "Et besvart spørsmål lå øverst — da drukner det ubesvarte.",
+        )
 
     def test_koen_viser_kun_ubesvarte_som_default(self):
         self.G.browse(self.G.spor("Ferdig sak")["id"]).svar_paa("nei")
@@ -122,7 +133,9 @@ class TestGodkjenning(TransactionCase):
 
         op = [k["valg"] for k in rader["Skaff Admin-nøkkel?"]["knapper"]]
         self.assertEqual(op, ["jeg_gjor", "senere", "dropp"])
-        self.assertEqual(rader["Skaff Admin-nøkkel?"]["kilde_tekst"], "👤 Klokke-oppgave")
+        self.assertEqual(
+            rader["Skaff Admin-nøkkel?"]["kilde_tekst"], "👤 Klokke-oppgave"
+        )
 
     def test_kan_alltid_er_ærlig(self):
         """«Alltid»-knappen skal bare loves der den faktisk kan huske noe."""
@@ -147,13 +160,16 @@ class TestGodkjenning(TransactionCase):
     def test_sporsmaal_arver_spor_fra_okta(self):
         """Sporet eier spørsmålet — økta som spurte er borte om to dager."""
         self.env["fiq.ai.okt"].registrer_okt(
-            name="Spørrende økt", okt_ref="gk-arv-test", spor_kode="AI KR")
+            name="Spørrende økt", okt_ref="gk-arv-test", spor_kode="AI KR"
+        )
         g = self.G.browse(self.G.spor("Arver spor?", okt_ref="gk-arv-test")["id"])
         self.assertEqual(g.spor_id.kode, "AI KR")
 
     def test_eget_spor_vinner_over_oktas(self):
         self.env["fiq.ai.okt"].registrer_okt(
-            name="Økt 2", okt_ref="gk-eget-spor", spor_kode="AI KR")
-        g = self.G.browse(self.G.spor(
-            "Eget spor?", okt_ref="gk-eget-spor", spor_kode="PRJ")["id"])
+            name="Økt 2", okt_ref="gk-eget-spor", spor_kode="AI KR"
+        )
+        g = self.G.browse(
+            self.G.spor("Eget spor?", okt_ref="gk-eget-spor", spor_kode="PRJ")["id"]
+        )
         self.assertEqual(g.spor_id.kode, "PRJ")

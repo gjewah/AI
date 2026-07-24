@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """STADIENE — oppgaver flytter seg, de forsvinner ikke.
 
 Gjermund 22.07.2026, ordrett:
@@ -26,6 +25,8 @@ Rød på «Venter Avklaring» og grønn på «Ferdig» er uttrykkelig bestemt av
 Hvit uthevet skrift — grå tekst på farge er avvist.
 """
 
+from typing import ClassVar
+
 from odoo import api, fields, models
 
 
@@ -34,29 +35,34 @@ class ProjectTaskType(models.Model):
 
     # Teknisk nøkkel så flaten kan kjenne igjen stadiet uten å matche på navn.
     # Navn kan oversettes og endres av Gjermund; nøkkelen kan ikke.
-    fiq_ai_kode = fields.Selection([
-        ("ko", "I Kø"),
-        ("venter", "Venter Avklaring"),
-        ("arbeid", "I Arbeid"),
-        ("ks", "Kvalitetssikring"),
-        ("ferdig", "Ferdig"),
-    ], string="AI KR-stadium", index=True,
-       help="Setter stadiet inn i AI KRs rekkefølge. Tomt = vanlig Odoo-stadium.")
+    fiq_ai_kode = fields.Selection(
+        [
+            ("ko", "I Kø"),
+            ("venter", "Venter Avklaring"),
+            ("arbeid", "I Arbeid"),
+            ("ks", "Kvalitetssikring"),
+            ("ferdig", "Ferdig"),
+        ],
+        string="AI KR-stadium",
+        index=True,
+        help="Setter stadiet inn i AI KRs rekkefølge. Tomt = vanlig Odoo-stadium.",
+    )
 
 
 class FiqAiStadie(models.AbstractModel):
     """Oppslag og seeding av de fem stadiene."""
+
     _name = "fiq.ai.stadie"
     _description = "AI KR-stadier (seedes som native project.task.type)"
 
     # Rekkefølge, navn og farge — alt fra fasiten, alt Gjermunds ord.
     # Fargene brukes av flaten; hvit uthevet skrift oppå (grå er avvist).
-    STADIER = [
+    STADIER: ClassVar = [
         ("ko", "I Kø", 10, "#4a4560"),
-        ("venter", "Venter Avklaring", 20, "#c81414"),   # Gjermunds uttrykkelige valg
+        ("venter", "Venter Avklaring", 20, "#c81414"),  # Gjermunds uttrykkelige valg
         ("arbeid", "I Arbeid", 30, "#1565c0"),
         ("ks", "Kvalitetssikring", 40, "#6a3fc0"),
-        ("ferdig", "Ferdig", 50, "#00a844"),             # Gjermunds uttrykkelige valg
+        ("ferdig", "Ferdig", 50, "#00a844"),  # Gjermunds uttrykkelige valg
     ]
 
     @api.model
@@ -73,11 +79,15 @@ class FiqAiStadie(models.AbstractModel):
             if not t:
                 # Finnes stadiet med RIKTIG NAVN fra før (opprettet manuelt), merker
                 # vi det i stedet for å lage et duplikat ved siden av.
-                t = Type.search([("name", "=ilike", navn), ("fiq_ai_kode", "=", False)], limit=1)
+                t = Type.search(
+                    [("name", "=ilike", navn), ("fiq_ai_kode", "=", False)], limit=1
+                )
                 if t:
                     t.write({"fiq_ai_kode": kode})
                 else:
-                    t = Type.create({"name": navn, "sequence": seq, "fiq_ai_kode": kode})
+                    t = Type.create(
+                        {"name": navn, "sequence": seq, "fiq_ai_kode": kode}
+                    )
             if project_id and project_id not in t.project_ids.ids:
                 t.write({"project_ids": [(4, int(project_id))]})
             ut.append({"id": t.id, "kode": kode, "navn": t.name})
@@ -91,17 +101,19 @@ class FiqAiStadie(models.AbstractModel):
         ut = []
         for kode, navn, seq, farge in self.STADIER:
             t = Type.search([("fiq_ai_kode", "=", kode)], limit=1)
-            ut.append({
-                "kode": kode,
-                "navn": navn,
-                "id": t.id or False,
-                "farge": farge,
-                "sekvens": seq,
-                # Kjøres som BRUKEREN, ikke sudo: tellingen skal speile det han
-                # faktisk har innsyn i. Et tall som teller andres firmaer ville
-                # vært misvisende og et tenant-brudd i praksis.
-                "antall": Task.search_count([("stage_id", "=", t.id)]) if t else 0,
-            })
+            ut.append(
+                {
+                    "kode": kode,
+                    "navn": navn,
+                    "id": t.id or False,
+                    "farge": farge,
+                    "sekvens": seq,
+                    # Kjøres som BRUKEREN, ikke sudo: tellingen skal speile det han
+                    # faktisk har innsyn i. Et tall som teller andres firmaer ville
+                    # vært misvisende og et tenant-brudd i praksis.
+                    "antall": Task.search_count([("stage_id", "=", t.id)]) if t else 0,
+                }
+            )
         return ut
 
     @api.model
@@ -122,6 +134,6 @@ class FiqAiStadie(models.AbstractModel):
             self.sikre_stadier()
             st = Type.search([("fiq_ai_kode", "=", kode)], limit=1)
         if not st:
-            return {"ok": False, "feil": "Ukjent stadium: %s" % kode}
+            return {"ok": False, "feil": f"Ukjent stadium: {kode}"}
         t.write({"stage_id": st.id})
         return {"ok": True, "stadium": st.name, "kode": kode}

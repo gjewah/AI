@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """AI-KONKLUSJONER — det Gjermund skal kunne lese OG STOPPE.
 
 Gjermund 20.07.2026, ordrett:
@@ -31,6 +30,8 @@ galt, har han tapt tiden han prøver å redde. Stoppen venter ALDRI på forklari
 Relatert: `fiq.ai.spor` (sporet eier konklusjonen — økter kommer og går).
 """
 
+from typing import ClassVar
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
@@ -39,18 +40,21 @@ class FiqAiKonklusjon(models.Model):
     _name = "fiq.ai.konklusjon"
     _description = "AI-konklusjon (lesbar for mennesket — og mulig å stoppe)"
     _order = "bestridt_forst desc, skrevet desc, id desc"
-    _inherit = ["mail.thread"]
+    _inherit = ["mail.thread"]  # noqa: RUF012
 
     # Sikkerhetsgrader. Rekkefølgen er bevisst: det UTRYGGE står først, fordi det er
     # det Gjermund skal se. En liste som begynner med «verifisert» skjuler risikoen.
-    SIKKERHET = [
+    SIKKERHET: ClassVar = [
         ("uverifisert", "Uverifisert — ingen har sjekket"),
         ("antatt", "Antatt — bygger på en antakelse"),
         ("verifisert", "Verifisert — sjekket mot kilden"),
     ]
 
     name = fields.Char(
-        string="Konklusjon", required=True, index=True, tracking=True,
+        string="Konklusjon",
+        required=True,
+        index=True,
+        tracking=True,
         # 🔴 RETTET 23.07: eksempelet siterte AI PKs vedtak fra 19.07 om at
         # `fiq_prioritet` ikke skulle bygges. Det vedtaket ble OPPHEVET 23.07 —
         # feltet er nå bygget med tre nivåer. Hjelpeteksten sto igjen og beskrev
@@ -58,36 +62,58 @@ class FiqAiKonklusjon(models.Model):
         # nettopp det. Funnet av Prosjekts B-agent, som stoppet opp på den.
         # 🔑 Eksempler i hjelpetekster eldes som all annen dokumentasjon.
         # Velg et som ikke kan bli utdatert av en beslutning.
-        help="ÉN setning. «Nøkkelen må hentes fra Odoo.sh i denne økta, aldri fra minnet.»")
+        help="ÉN setning. «Nøkkelen må hentes fra Odoo.sh i denne økta, aldri fra minnet.»",
+    )
     grunnlag = fields.Text(
-        string="Grunnlag", tracking=True,
-        help="Hva konklusjonen bygger på. «Verifisert i project_task.py:154.»")
+        string="Grunnlag",
+        tracking=True,
+        help="Hva konklusjonen bygger på. «Verifisert i project_task.py:154.»",
+    )
 
     sikkerhet = fields.Selection(
-        SIKKERHET, string="Sikkerhet", index=True, tracking=True,
-        help="Settes av økta som konkluderer — ALDRI i etterkant.")
+        SIKKERHET,
+        string="Sikkerhet",
+        index=True,
+        tracking=True,
+        help="Settes av økta som konkluderer — ALDRI i etterkant.",
+    )
     er_kanon = fields.Boolean(
-        string="Kanon", index=True, tracking=True,
-        help="Andre økter skal bygge videre på dette.")
+        string="Kanon",
+        index=True,
+        tracking=True,
+        help="Andre økter skal bygge videre på dette.",
+    )
 
     # 🔴 UTEN GRUNNLAG: umerket konklusjon skal SYNES, ikke gjemme seg.
     # Samme mekanikk som «Uten spor» — og av samme grunn: en VALGFRI mekanisme
     # BRUKES IKKE. `spor_kode` var valgfri i to dager og ble aldri brukt én gang.
     uten_grunnlag = fields.Boolean(
-        string="Uten grunnlag", compute="_compute_uten_grunnlag", store=True,
-        help="Sikkerhetsgrad mangler. Økta som skrev den har ikke sagt hvor trygg den er.")
+        string="Uten grunnlag",
+        compute="_compute_uten_grunnlag",
+        store=True,
+        help="Sikkerhetsgrad mangler. Økta som skrev den har ikke sagt hvor trygg den er.",
+    )
 
-    status = fields.Selection([
-        ("staar", "Står"),
-        ("bestridt", "🛑 Bestridt — arbeid stoppet"),
-        ("korrigert", "Korrigert"),
-    ], string="Status", default="staar", required=True, index=True, tracking=True)
+    status = fields.Selection(
+        [
+            ("staar", "Står"),
+            ("bestridt", "🛑 Bestridt — arbeid stoppet"),
+            ("korrigert", "Korrigert"),
+        ],
+        string="Status",
+        default="staar",
+        required=True,
+        index=True,
+        tracking=True,
+    )
 
     bestridt_av = fields.Many2one("res.users", string="Bestridt av", readonly=True)
     bestridt_dato = fields.Datetime(string="Bestridt", readonly=True)
     bestridelse = fields.Text(
-        string="Hvorfor feil", tracking=True,
-        help="VALGFRI. Stoppen virker uten den — begrunnelsen kan komme etterpå.")
+        string="Hvorfor feil",
+        tracking=True,
+        help="VALGFRI. Stoppen virker uten den — begrunnelsen kan komme etterpå.",
+    )
 
     # Sorteringshjelper: bestridte konklusjoner skal ligge øverst uansett alder.
     bestridt_forst = fields.Boolean(compute="_compute_bestridt_forst", store=True)
@@ -96,23 +122,34 @@ class FiqAiKonklusjon(models.Model):
     # Sporet EIER konklusjonen. Økta som skrev den er borte om to dager; konklusjonen
     # skal stå, og ny økt må ARVE at Gjermund har bestridt den.
     spor_id = fields.Many2one(
-        "fiq.ai.spor", string="Spor", index=True, ondelete="set null", tracking=True)
+        "fiq.ai.spor", string="Spor", index=True, ondelete="set null", tracking=True
+    )
     okt_id = fields.Many2one(
-        "fiq.ai.okt", string="Skrevet av økt", index=True, ondelete="set null",
-        help="Hvem som konkluderte. Historikk — ikke eier.")
+        "fiq.ai.okt",
+        string="Skrevet av økt",
+        index=True,
+        ondelete="set null",
+        help="Hvem som konkluderte. Historikk — ikke eier.",
+    )
     task_id = fields.Many2one(
-        "project.task", string="Oppgave", index=True, ondelete="set null", tracking=True,
-        help="Ankeret. Uten oppgave får Gjermund verken varsel eller gjenfinning.")
+        "project.task",
+        string="Oppgave",
+        index=True,
+        ondelete="set null",
+        tracking=True,
+        help="Ankeret. Uten oppgave får Gjermund verken varsel eller gjenfinning.",
+    )
 
     kilde = fields.Char(
         string="Kilde",
         help="Fil/commit konklusjonen står i, for den som vil grave. "
-             "«brain/ai_ktrl_koordinering.md @ bfb604d»")
+        "«brain/ai_ktrl_koordinering.md @ bfb604d»",
+    )
 
     skrevet = fields.Datetime(string="Skrevet", default=fields.Datetime.now, index=True)
     company_id = fields.Many2one(
-        "res.company", string="Firma", index=True,
-        default=lambda self: self.env.company)
+        "res.company", string="Firma", index=True, default=lambda self: self.env.company
+    )
 
     @api.depends("sikkerhet")
     def _compute_uten_grunnlag(self):
@@ -145,8 +182,10 @@ class FiqAiKonklusjon(models.Model):
                 vals["bestridelse"] = begrunnelse
             k.write(vals)
             # Chatteren BÆRER — registeret peker. Én sannhet, ikke to kopier.
-            k._varsle("🛑 <b>BESTRIDT</b> — arbeid på denne konklusjonen skal stoppe.",
-                      begrunnelse)
+            k._varsle(
+                "🛑 <b>BESTRIDT</b> — arbeid på denne konklusjonen skal stoppe.",
+                begrunnelse,
+            )
         return True
 
     def korriger(self, ny_konklusjon, grunnlag=False):
@@ -164,7 +203,7 @@ class FiqAiKonklusjon(models.Model):
         if grunnlag:
             vals["grunnlag"] = grunnlag
         self.write(vals)
-        self._varsle("✅ <b>Korrigert.</b> Var: «%s»" % gammel)
+        self._varsle(f"✅ <b>Korrigert.</b> Var: «{gammel}»")
         return True
 
     def sporsmaal(self, tekst):
@@ -176,7 +215,7 @@ class FiqAiKonklusjon(models.Model):
         self.ensure_one()
         if not tekst:
             raise UserError(_("Skriv hva du lurer på."))
-        self._varsle("❓ <b>Spørsmål fra %s:</b>" % self.env.user.name, tekst)
+        self._varsle(f"❓ <b>Spørsmål fra {self.env.user.name}:</b>", tekst)
         return True
 
     def _varsle(self, overskrift, tekst=False):
@@ -187,7 +226,7 @@ class FiqAiKonklusjon(models.Model):
         uten Odoos egne varslingsveier.
         """
         self.ensure_one()
-        kropp = "%s<br/>%s" % (overskrift, tekst) if tekst else overskrift
+        kropp = f"{overskrift}<br/>{tekst}" if tekst else overskrift
         kropp += "<br/><i>Konklusjon: «%s»</i>" % (self.name or "")
         self.message_post(body=kropp)
         if self.task_id:
@@ -195,8 +234,17 @@ class FiqAiKonklusjon(models.Model):
 
     # ── SKRIVING FRA ØKTENE ─────────────────────────────────────────────────────
     @api.model
-    def logg(self, konklusjon, sikkerhet=False, er_kanon=False, grunnlag=False,
-             spor_kode=False, task_id=False, kilde=False, okt_ref=False):
+    def logg(
+        self,
+        konklusjon,
+        sikkerhet=False,
+        er_kanon=False,
+        grunnlag=False,
+        spor_kode=False,
+        task_id=False,
+        kilde=False,
+        okt_ref=False,
+    ):
         """Én økt logger én konklusjon. Kalles av øktene selv.
 
         AI PK vedtok 21.07 at merking er FELLES REGEL. Men regelen kan ikke hvile på

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """AI-MELDINGER — all AI-kommunikasjon i én modell, to nivåer.
 
 Gjermund 19.07.2026, ordrett:
@@ -32,55 +31,80 @@ class FiqAiMelding(models.Model):
     _name = "fiq.ai.melding"
     _description = "AI-melding (økt↔økt, bruker↔AI, rådgiver-forespørsel)"
     _order = "sendt desc, id desc"
-    _inherit = ["mail.thread"]          # gir oss tråd, følgere og logg gratis
+    # Odoos eget moenster: _inherit skal vaere en vanlig liste, ikke ClassVar.
+    _inherit = ["mail.thread"]  # noqa: RUF012
 
     name = fields.Char(string="Emne", required=True, index=True, tracking=True)
     innhold = fields.Text(string="Melding")
 
     # ── HVEM ────────────────────────────────────────────────────────────────────
-    fra_navn = fields.Char(string="Fra", index=True,
-                           help="Øktnavn, rollenavn eller personnavn. Navn — aldri ID.")
+    fra_navn = fields.Char(
+        string="Fra",
+        index=True,
+        help="Øktnavn, rollenavn eller personnavn. Navn — aldri ID.",
+    )
     til_navn = fields.Char(string="Til", index=True)
     fra_spor_id = fields.Many2one("fiq.ai.spor", string="Fra spor", ondelete="set null")
     til_spor_id = fields.Many2one("fiq.ai.spor", string="Til spor", ondelete="set null")
     # Brukeren meldingen GJELDER — nøkkelen til «mine forespørsler» i Meldingssenteret.
     bruker_id = fields.Many2one(
-        "res.users", string="Bruker", index=True,
-        help="Brukeren som spurte, eller som svaret gjelder. Tomt = ren drift mellom økter.")
+        "res.users",
+        string="Bruker",
+        index=True,
+        help="Brukeren som spurte, eller som svaret gjelder. Tomt = ren drift mellom økter.",
+    )
 
     # ── HVA SLAGS ───────────────────────────────────────────────────────────────
-    type_melding = fields.Selection([
-        ("foresporsel", "Forespørsel til AI"),      # bruker spør
-        ("svar", "Svar fra AI"),                    # AI svarer bruker
-        ("okt_okt", "Økt til økt"),                 # drift: koordinering
-        ("radgiver", "Rådgiver-forespørsel"),       # spørsmål til en AI-rolle
-        ("beslutning", "Beslutning"),               # noe ble avgjort — skal ALDRI filtreres
-        ("varsel", "Varsel"),
-    ], string="Type", default="okt_okt", required=True, index=True, tracking=True)
+    type_melding = fields.Selection(
+        [
+            ("foresporsel", "Forespørsel til AI"),  # bruker spør
+            ("svar", "Svar fra AI"),  # AI svarer bruker
+            ("okt_okt", "Økt til økt"),  # drift: koordinering
+            ("radgiver", "Rådgiver-forespørsel"),  # spørsmål til en AI-rolle
+            ("beslutning", "Beslutning"),  # noe ble avgjort — skal ALDRI filtreres
+            ("varsel", "Varsel"),
+        ],
+        string="Type",
+        default="okt_okt",
+        required=True,
+        index=True,
+        tracking=True,
+    )
 
-    viktighet = fields.Selection([
-        ("haster", "Haster nå"),
-        ("i_dag", "Viktig i dag"),
-        ("orientering", "Til orientering"),
-    ], string="Viktighet", default="orientering", index=True, tracking=True)
+    viktighet = fields.Selection(
+        [
+            ("haster", "Haster nå"),
+            ("i_dag", "Viktig i dag"),
+            ("orientering", "Til orientering"),
+        ],
+        string="Viktighet",
+        default="orientering",
+        index=True,
+        tracking=True,
+    )
 
     krever_svar = fields.Boolean(string="Krever svar", index=True, tracking=True)
     besvart = fields.Boolean(string="Besvart", tracking=True)
     # 🔴 Filtrert bort = NEDPRIORITERT, ikke slettet. Postmesteren kan ta feil, og da må
     # meldingen kunne finnes igjen. En stille filtrering er et tap forkledd som orden.
     filtrert_bort = fields.Boolean(
-        string="Filtrert bort", index=True,
+        string="Filtrert bort",
+        index=True,
         help="Postmesteren vurderte den som ren videresending. Skjult som standard, "
-             "men ALDRI slettet — den kan hentes fram med ett filter.")
+        "men ALDRI slettet — den kan hentes fram med ett filter.",
+    )
     filtrert_grunn = fields.Char(string="Hvorfor filtrert")
 
     sendt = fields.Datetime(string="Sendt", default=fields.Datetime.now, index=True)
-    company_id = fields.Many2one("res.company", string="Firma", index=True,
-                                 default=lambda self: self.env.company)
+    company_id = fields.Many2one(
+        "res.company", string="Firma", index=True, default=lambda self: self.env.company
+    )
 
     # Knytning til noe konkret — samme generiske mønster som sjekklista bruker.
     res_model = fields.Char(string="Gjelder (modell)", index=True)
-    res_id = fields.Many2oneReference(string="Gjelder (post)", model_field="res_model", index=True)
+    res_id = fields.Many2oneReference(
+        string="Gjelder (post)", model_field="res_model", index=True
+    )
 
     alder = fields.Char(string="Alder", compute="_compute_alder")
 
@@ -103,10 +127,22 @@ class FiqAiMelding(models.Model):
 
     # ── API: økter og roller fører seg selv ─────────────────────────────────────
     @api.model
-    def send_ai_melding(self, name, innhold=False, fra_navn=False, til_navn=False,
-                        type_melding="okt_okt", viktighet="orientering",
-                        krever_svar=False, bruker_id=False, company_id=False,
-                        fra_spor=False, til_spor=False, res_model=False, res_id=False):
+    def send_ai_melding(
+        self,
+        name,
+        innhold=False,
+        fra_navn=False,
+        til_navn=False,
+        type_melding="okt_okt",
+        viktighet="orientering",
+        krever_svar=False,
+        bruker_id=False,
+        company_id=False,
+        fra_spor=False,
+        til_spor=False,
+        res_model=False,
+        res_id=False,
+    ):
         """Én linje for en økt/rolle å melde noe. Returnerer record-id.
 
         Sporene slås opp på KODE og opprettes hvis de mangler — da faller ingen melding
@@ -143,6 +179,7 @@ class FiqAiMelding(models.Model):
 
 class FiqAiMeldingData(models.AbstractModel):
     """Data-lag for AI-meldingsflaten. TO NIVÅER — samme modell, ulik visning."""
+
     _name = "fiq.ai.melding.data"
     _description = "AI-meldinger – data-lag (to nivåer: bruker / drift)"
 
@@ -160,7 +197,7 @@ class FiqAiMeldingData(models.AbstractModel):
                 with self.env.cr.savepoint():
                     return bool(self.env[KR].har_000_rettighet())
             except Exception:
-                return False   # fail-closed: uten svar gis IKKE drifts-innsyn
+                return False  # fail-closed: uten svar gis IKKE drifts-innsyn
         return False
 
     @api.model
@@ -180,23 +217,29 @@ class FiqAiMeldingData(models.AbstractModel):
             dom.append(("filtrert_bort", "=", False))
 
         out = []
-        for m in self.env["fiq.ai.melding"].search(dom, order="sendt desc", limit=limit):
-            out.append({
-                "id": m.id,
-                "emne": m.name or "",
-                "innhold": m.innhold or "",
-                "fra": m.fra_navn or "",
-                "til": m.til_navn or "",
-                "type": m.type_melding or "",
-                "viktighet": m.viktighet or "",
-                "krever_svar": m.krever_svar,
-                "besvart": m.besvart,
-                "filtrert": m.filtrert_bort,
-                "filtrert_grunn": m.filtrert_grunn or "",
-                "sendt": m.sendt.strftime("%d.%m %H:%M") if m.sendt else "",
-                "alder": m.alder or "",
-                "spor": (m.fra_spor_id.kode or m.fra_spor_id.name) if m.fra_spor_id else "",
-            })
+        for m in self.env["fiq.ai.melding"].search(
+            dom, order="sendt desc", limit=limit
+        ):
+            out.append(
+                {
+                    "id": m.id,
+                    "emne": m.name or "",
+                    "innhold": m.innhold or "",
+                    "fra": m.fra_navn or "",
+                    "til": m.til_navn or "",
+                    "type": m.type_melding or "",
+                    "viktighet": m.viktighet or "",
+                    "krever_svar": m.krever_svar,
+                    "besvart": m.besvart,
+                    "filtrert": m.filtrert_bort,
+                    "filtrert_grunn": m.filtrert_grunn or "",
+                    "sendt": m.sendt.strftime("%d.%m %H:%M") if m.sendt else "",
+                    "alder": m.alder or "",
+                    "spor": (m.fra_spor_id.kode or m.fra_spor_id.name)
+                    if m.fra_spor_id
+                    else "",
+                }
+            )
         return {"meldinger": out, "drift": drift}
 
     @api.model
@@ -208,13 +251,27 @@ class FiqAiMeldingData(models.AbstractModel):
         M = self.env["fiq.ai.melding"]
         drift = self._har_000()
         grunn = [] if drift else [("bruker_id", "=", self.env.uid)]
-        ubesvart = M.search(grunn + [("krever_svar", "=", True), ("besvart", "=", False),
-                                     ("filtrert_bort", "=", False)], order="sendt desc")
+        ubesvart = M.search(
+            grunn
+            + [
+                ("krever_svar", "=", True),
+                ("besvart", "=", False),
+                ("filtrert_bort", "=", False),
+            ],
+            order="sendt desc",
+        )
         haster = ubesvart.filtered(lambda m: m.viktighet == "haster")
         return {
             "haster": len(haster),
             "i_dag": len(ubesvart) - len(haster),
             "totalt": M.search_count(grunn + [("filtrert_bort", "=", False)]),
-            "linjer": [{"tekst": "%s — fra %s (%s)" % (m.name, m.fra_navn or "?", m.alder),
-                        "res_id": m.id} for m in ubesvart[:5]],
+            "linjer": [
+                {
+                    "tekst": "{} — fra {} ({})".format(
+                        m.name, m.fra_navn or "?", m.alder
+                    ),
+                    "res_id": m.id,
+                }
+                for m in ubesvart[:5]
+            ],
         }

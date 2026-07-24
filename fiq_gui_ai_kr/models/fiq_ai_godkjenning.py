@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """GODKJENNINGSKØEN — det som fjerner klikkingen fra Gjermunds hverdag.
 
 Gjermund 22.07.2026, ordrett:
@@ -31,77 +30,116 @@ Relatert: [[fiq.ai.konklusjon]] (nødbremsen — stopp noe som ALT er konkludert
 denne modellen (svar FØR noe skjer).
 """
 
+from typing import ClassVar
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 
 class FiqAiGodkjenning(models.Model):
     _name = "fiq.ai.godkjenning"
-    _description = "Godkjenningskø (Gjermund svarer ÉN gang — «Alltid» stopper gjentakelsen)"
+    _description = (
+        "Godkjenningskø (Gjermund svarer ÉN gang — «Alltid» stopper gjentakelsen)"
+    )
     _order = "ubesvart desc, haster desc, opprettet desc, id desc"
-    _inherit = ["mail.thread"]
+    _inherit = ["mail.thread"]  # noqa: RUF012
 
     name = fields.Char(
-        string="Spørsmål", required=True, index=True, tracking=True,
+        string="Spørsmål",
+        required=True,
+        index=True,
+        tracking=True,
         help="Skrevet slik Gjermund kan svare uten å åpne noe annet. "
-             "«Push Meldingssenter v1 til grenen 19.0-ports?»")
+        "«Push Meldingssenter v1 til grenen 19.0-ports?»",
+    )
     detalj = fields.Text(
         string="Grunnlag",
-        help="Én linje under spørsmålet: «add-only, 0 slettinger verifisert».")
+        help="Én linje under spørsmålet: «add-only, 0 slettinger verifisert».",
+    )
 
     # 🤖 = AI kan utføre selv når svaret er ja · 👤 = Gjermund må gjøre det fysisk
-    kilde = fields.Selection([
-        ("ai", "🤖 AI-økt"),
-        ("menneske", "👤 Menneske-gate"),
-        ("klokke", "👤 Klokke-oppgave"),
-    ], string="Type", default="ai", required=True, index=True)
+    kilde = fields.Selection(
+        [
+            ("ai", "🤖 AI-økt"),
+            ("menneske", "👤 Menneske-gate"),
+            ("klokke", "👤 Klokke-oppgave"),
+        ],
+        string="Type",
+        default="ai",
+        required=True,
+        index=True,
+    )
 
     # Knapperaden. Fasiten har to varianter — samme kø, ulike ord.
-    art = fields.Selection([
-        ("godkjenning", "Godkjenning (Godkjent · Ja, men… · Nei · Alltid)"),
-        ("oppgave", "Oppgave til deg (Jeg gjør det · Senere · Dropp)"),
-    ], string="Svarform", default="godkjenning", required=True)
+    art = fields.Selection(
+        [
+            ("godkjenning", "Godkjenning (Godkjent · Ja, men… · Nei · Alltid)"),
+            ("oppgave", "Oppgave til deg (Jeg gjør det · Senere · Dropp)"),
+        ],
+        string="Svarform",
+        default="godkjenning",
+        required=True,
+    )
 
-    svar = fields.Selection([
-        ("godkjent", "🟢 Godkjent"),
-        ("ja_men", "🟠 Ja, men…"),
-        ("nei", "🔴 Nei"),
-        ("alltid", "🟢⭐ Alltid — slutt å spørre"),
-        ("jeg_gjor", "🟢 Jeg gjør det"),
-        ("senere", "🟠 Senere"),
-        ("dropp", "🔴 Dropp"),
-    ], string="Svar", index=True, tracking=True)
+    svar = fields.Selection(
+        [
+            ("godkjent", "🟢 Godkjent"),
+            ("ja_men", "🟠 Ja, men…"),
+            ("nei", "🔴 Nei"),
+            ("alltid", "🟢⭐ Alltid — slutt å spørre"),
+            ("jeg_gjor", "🟢 Jeg gjør det"),
+            ("senere", "🟠 Senere"),
+            ("dropp", "🔴 Dropp"),
+        ],
+        string="Svar",
+        index=True,
+        tracking=True,
+    )
     forbehold = fields.Text(
-        string="Forbehold", tracking=True,
-        help="«Ja, men…» uten tekst er verdiløst — økta må vite HVA forbeholdet er.")
+        string="Forbehold",
+        tracking=True,
+        help="«Ja, men…» uten tekst er verdiløst — økta må vite HVA forbeholdet er.",
+    )
 
     ubesvart = fields.Boolean(
-        string="Venter på deg", compute="_compute_ubesvart", store=True, index=True)
+        string="Venter på deg", compute="_compute_ubesvart", store=True, index=True
+    )
     haster = fields.Boolean(
-        string="Haster", default=False, index=True,
-        help="Blokkerer arbeid akkurat nå.")
+        string="Haster", default=False, index=True, help="Blokkerer arbeid akkurat nå."
+    )
 
     # ── HVEM SPØR ───────────────────────────────────────────────────────────────
-    okt_id = fields.Many2one("fiq.ai.okt", string="Fra økt", index=True, ondelete="set null")
+    okt_id = fields.Many2one(
+        "fiq.ai.okt", string="Fra økt", index=True, ondelete="set null"
+    )
     spor_id = fields.Many2one(
-        "fiq.ai.spor", string="Spor", index=True, ondelete="set null",
-        help="Sporet eier spørsmålet — økta som spurte er borte om to dager.")
-    task_id = fields.Many2one("project.task", string="Oppgave", index=True, ondelete="set null")
+        "fiq.ai.spor",
+        string="Spor",
+        index=True,
+        ondelete="set null",
+        help="Sporet eier spørsmålet — økta som spurte er borte om to dager.",
+    )
+    task_id = fields.Many2one(
+        "project.task", string="Oppgave", index=True, ondelete="set null"
+    )
 
     # 🔑 GJENTAKELSES-NØKKELEN — hele «Alltid» hviler på denne.
     # Samme nøkkel = samme SLAGS spørsmål. Svarer Gjermund «Alltid» på
     # «push_19_0_ports», svarer systemet automatisk neste gang noen spør om det samme.
     # Uten nøkkel kan «Alltid» ikke gjenkjenne noe, og knappen blir en løgn.
     noekkel = fields.Char(
-        string="Gjentakelsesnøkkel", index=True,
+        string="Gjentakelsesnøkkel",
+        index=True,
         help="Teknisk nøkkel for spørsmåls-TYPEN, f.eks. «push_gren» eller "
-             "«oppgrader_modul». Tom nøkkel = «Alltid» virker som «Godkjent».")
+        "«oppgrader_modul». Tom nøkkel = «Alltid» virker som «Godkjent».",
+    )
 
     opprettet = fields.Datetime(string="Spurt", default=fields.Datetime.now, index=True)
     besvart = fields.Datetime(string="Besvart", readonly=True)
     besvart_av = fields.Many2one("res.users", string="Besvart av", readonly=True)
     company_id = fields.Many2one(
-        "res.company", string="Firma", index=True, default=lambda self: self.env.company)
+        "res.company", string="Firma", index=True, default=lambda self: self.env.company
+    )
 
     @api.depends("svar")
     def _compute_ubesvart(self):
@@ -121,14 +159,20 @@ class FiqAiGodkjenning(models.Model):
         if valg not in gyldige:
             raise UserError(_("Ukjent svar: %s") % valg)
         if valg == "ja_men" and not (forbehold or "").strip():
-            raise UserError(_("«Ja, men…» må ha et forbehold — ellers vet ikke økta hva den skal ta hensyn til."))
+            raise UserError(
+                _(
+                    "«Ja, men…» må ha et forbehold — ellers vet ikke økta hva den skal ta hensyn til."
+                )
+            )
 
-        self.write({
-            "svar": valg,
-            "forbehold": forbehold or False,
-            "besvart": fields.Datetime.now(),
-            "besvart_av": self.env.user.id,
-        })
+        self.write(
+            {
+                "svar": valg,
+                "forbehold": forbehold or False,
+                "besvart": fields.Datetime.now(),
+                "besvart_av": self.env.user.id,
+            }
+        )
         if valg == "alltid" and self.noekkel:
             self._lagre_staaende()
         self._varsle(gyldige[valg], forbehold)
@@ -141,12 +185,12 @@ class FiqAiGodkjenning(models.Model):
     #
     # Et svar som ikke flytter noe, er et svar som forsvinner: spørsmålet blir
     # stående i køen og han svarer på det samme igjen i morgen.
-    SVAR_TIL_STADIUM = {
+    SVAR_TIL_STADIUM: ClassVar = {
         "godkjent": "arbeid",
-        "ja_men": "arbeid",       # forbeholdet står i chatteren, arbeidet fortsetter
+        "ja_men": "arbeid",  # forbeholdet står i chatteren, arbeidet fortsetter
         "alltid": "arbeid",
         "jeg_gjor": "arbeid",
-        "senere": "ko",           # tilbake i køen — ikke glemt, bare ikke nå
+        "senere": "ko",  # tilbake i køen — ikke glemt, bare ikke nå
         "nei": "ko",
         "dropp": "ko",
     }
@@ -178,7 +222,7 @@ class FiqAiGodkjenning(models.Model):
         """
         self.ensure_one()
         self.env["ir.config_parameter"].sudo().set_param(
-            "fiq_gui_ai_kr.alltid.%s.%s" % (self.company_id.id or 0, self.noekkel),
+            f"fiq_gui_ai_kr.alltid.{self.company_id.id or 0}.{self.noekkel}",
             "godkjent",
         )
 
@@ -189,17 +233,27 @@ class FiqAiGodkjenning(models.Model):
         én sannhet, ikke to kopier.
         """
         self.ensure_one()
-        kropp = "<b>%s</b> — «%s»" % (svartekst, self.name or "")
+        kropp = "<b>{}</b> — «{}»".format(svartekst, self.name or "")
         if forbehold:
-            kropp += "<br/><b>Forbehold:</b> %s" % forbehold
+            kropp += f"<br/><b>Forbehold:</b> {forbehold}"
         self.message_post(body=kropp)
         if self.task_id:
             self.task_id.message_post(body=kropp)
 
     # ── ØKTENE SPØR HER ─────────────────────────────────────────────────────────
     @api.model
-    def spor(self, sporsmaal, detalj=False, kilde="ai", art="godkjenning",
-             noekkel=False, spor_kode=False, okt_ref=False, task_id=False, haster=False):
+    def spor(
+        self,
+        sporsmaal,
+        detalj=False,
+        kilde="ai",
+        art="godkjenning",
+        noekkel=False,
+        spor_kode=False,
+        okt_ref=False,
+        task_id=False,
+        haster=False,
+    ):
         """En økt ber om godkjenning. Returnerer svaret HVIS det alt er gitt.
 
         🔑 Er det lagret et «Alltid» for nøkkelen, opprettes ingen kø-rad — økta får
@@ -210,8 +264,11 @@ class FiqAiGodkjenning(models.Model):
         """
         firma = self.env.company.id
         if noekkel:
-            staaende = self.env["ir.config_parameter"].sudo().get_param(
-                "fiq_gui_ai_kr.alltid.%s.%s" % (firma, noekkel))
+            staaende = (
+                self.env["ir.config_parameter"]
+                .sudo()
+                .get_param(f"fiq_gui_ai_kr.alltid.{firma}.{noekkel}")
+            )
             if staaende == "godkjent":
                 return {"svar": "godkjent", "id": False, "staaende": True}
 
@@ -256,19 +313,25 @@ class FiqAiGodkjenning(models.Model):
         En stående regel han ikke kan finne igjen, er en regel han ikke kontrollerer.
         """
         firma = int(company_id) if company_id else self.env.company.id
-        prefiks = "fiq_gui_ai_kr.alltid.%s." % firma
+        prefiks = f"fiq_gui_ai_kr.alltid.{firma}."
         ut = []
-        for p in self.env["ir.config_parameter"].sudo().search(
-                [("key", "=like", prefiks + "%")]):
-            ut.append({"noekkel": p.key[len(prefiks):], "verdi": p.value, "id": p.id})
+        for p in (
+            self.env["ir.config_parameter"]
+            .sudo()
+            .search([("key", "=like", prefiks + "%")])
+        ):
+            ut.append({"noekkel": p.key[len(prefiks) :], "verdi": p.value, "id": p.id})
         return ut
 
     @api.model
     def trekk_tilbake(self, noekkel, company_id=False):
         """Angre et «Alltid». Da spør systemet igjen neste gang."""
         firma = int(company_id) if company_id else self.env.company.id
-        p = self.env["ir.config_parameter"].sudo().search(
-            [("key", "=", "fiq_gui_ai_kr.alltid.%s.%s" % (firma, noekkel))], limit=1)
+        p = (
+            self.env["ir.config_parameter"]
+            .sudo()
+            .search([("key", "=", f"fiq_gui_ai_kr.alltid.{firma}.{noekkel}")], limit=1)
+        )
         if p:
             p.unlink()
             return True

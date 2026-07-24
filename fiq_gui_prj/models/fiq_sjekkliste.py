@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """FIQ Sjekkliste — generisk motor (core).
 
 Gjermund 2026-07-16: «Jeg sier IKKE et NEI til sjekklister, MEN JA. Det er bare snakk om
@@ -44,7 +43,9 @@ class FiqSjekkliste(models.Model):
             ("rom", "Rom / objekt"),
             ("leveranse", "Leveranse (UE)"),
         ],
-        string="Nivå", default="oppgave", required=True,
+        string="Nivå",
+        default="oppgave",
+        required=True,
         help="Hvor sjekklista henger. Oppgave-nivå er kjernen — der «færre oppgaver» realiseres.",
     )
     # TYPE — hva slags liste (Gjermunds «hvilke typer»)
@@ -59,7 +60,9 @@ class FiqSjekkliste(models.Model):
             ("avvik", "Avvik"),
             ("endring", "Endring"),
         ],
-        string="Type", default="arbeid", required=True,
+        string="Type",
+        default="arbeid",
+        required=True,
     )
     # ── GENERISK KOBLING — sjekklista kan henge på HVA SOM HELST ────────────────
     # Gjermund 19.07.2026: «både sjekkliste og steg for steg forklaringer skal være
@@ -72,16 +75,22 @@ class FiqSjekkliste(models.Model):
     # res_id, slik `ir.attachment` og `mail.activity` gjør det. En ny modul kobler seg
     # på uten en eneste kodelinje i denne motoren.
     res_model = fields.Char(
-        string="Knyttet til (modell)", index=True,
+        string="Knyttet til (modell)",
+        index=True,
         help="Teknisk modellnavn, f.eks. project.task, helpdesk.ticket, crm.lead. "
-             "Sjekklista kan henge på en hvilken som helst Odoo-post.",
+        "Sjekklista kan henge på en hvilken som helst Odoo-post.",
     )
     res_id = fields.Many2oneReference(
-        string="Knyttet til (post)", model_field="res_model", index=True,
+        string="Knyttet til (post)",
+        model_field="res_model",
+        index=True,
         help="Id på posten sjekklista hører til.",
     )
-    res_navn = fields.Char(string="Knyttet til", compute="_compute_res_navn",
-                           help="Menneskelig navn på posten — navn, ikke ID.")
+    res_navn = fields.Char(
+        string="Knyttet til",
+        compute="_compute_res_navn",
+        help="Menneskelig navn på posten — navn, ikke ID.",
+    )
 
     # ── BAKOVERKOMPATIBLE HJELPEFELT ────────────────────────────────────────────
     # 🔴 IKKE bare pynt: `project_task.fiq_sjekkliste_ids` er en One2many på task_id, og
@@ -90,18 +99,29 @@ class FiqSjekkliste(models.Model):
     # 19.07.2026). Ryker task_id, ryker WBS-treet samtidig.
     # Derfor: computed + STORE, slik at One2many, søk og gruppering virker som før.
     task_id = fields.Many2one(
-        "project.task", string="Oppgave", ondelete="cascade", index=True,
-        compute="_compute_koblinger", store=True, readonly=False,
+        "project.task",
+        string="Oppgave",
+        ondelete="cascade",
+        index=True,
+        compute="_compute_koblinger",
+        store=True,
+        readonly=False,
         help="Utledet av res_model/res_id når lista henger på en oppgave. "
-             "Beholdt så Odoos egne visninger og WBS-treet virker uendret.",
+        "Beholdt så Odoos egne visninger og WBS-treet virker uendret.",
     )
     project_id = fields.Many2one(
-        "project.project", string="Prosjekt", index=True,
-        compute="_compute_koblinger", store=True, readonly=False,
+        "project.project",
+        string="Prosjekt",
+        index=True,
+        compute="_compute_koblinger",
+        store=True,
+        readonly=False,
         help="Settes direkte når lista henger på et prosjekt, ellers arvet fra oppgaven.",
     )
     company_id = fields.Many2one(
-        "res.company", string="Firma", index=True,
+        "res.company",
+        string="Firma",
+        index=True,
         default=lambda self: self.env.company,
         help="Tenant-isolert. Scope hentes fra sesjonen — aldri fra klient.",
     )
@@ -110,11 +130,15 @@ class FiqSjekkliste(models.Model):
     # «FDV — produktdokumentasjon» skrives ÉN gang og gjenbrukes på 50 leiligheter.
     # Samme mønster som 0.90-malprosjektene. Kopien redigeres fritt uten å røre malen.
     er_mal = fields.Boolean(
-        string="Er mal", index=True,
+        string="Er mal",
+        index=True,
         help="Maler henger ikke på en post — de kopieres til en når de skal brukes.",
     )
     mal_id = fields.Many2one(
-        "fiq.sjekkliste", string="Laget fra mal", ondelete="set null", index=True,
+        "fiq.sjekkliste",
+        string="Laget fra mal",
+        ondelete="set null",
+        index=True,
         help="Hvilken mal denne kopien kom fra. Kopien er selvstendig og kan endres fritt.",
     )
     # 🔴 RETTET 23.07: teksten lovet «Kan rulles tilbake». Det KAN den ikke —
@@ -128,17 +152,24 @@ class FiqSjekkliste(models.Model):
     # ⏸ Ekte versjonering (historikk + tilbakerulling) er et ÅPENT spørsmål hos
     # Gjermund: «hvor mye skal denne dokumentasjonen tåle å bli utfordret?»
     # Blir den bygget, endres teksten da. Til da sier den sant.
-    versjon = fields.Char(string="Versjon", default="1.0", readonly=True,
-                          help="Bumpes ved hver endring (1.0 → 1.1). Forrige tilstand "
-                               "lagres ikke — tallet viser AT noe er endret, ikke HVA.")
-    punkt_ids = fields.One2many("fiq.sjekkliste.punkt", "sjekkliste_id", string="Punkter")
+    versjon = fields.Char(
+        string="Versjon",
+        default="1.0",
+        readonly=True,
+        help="Bumpes ved hver endring (1.0 → 1.1). Forrige tilstand "
+        "lagres ikke — tallet viser AT noe er endret, ikke HVA.",
+    )
+    punkt_ids = fields.One2many(
+        "fiq.sjekkliste.punkt", "sjekkliste_id", string="Punkter"
+    )
 
     antall_punkt = fields.Integer(compute="_compute_fremdrift", store=True)
     antall_ok = fields.Integer(compute="_compute_fremdrift", store=True)
     # NB: Odoo 19 bruker `aggregator=` — `group_operator=` er utgått (verifisert mot
     # addons/project/models/project_task.py i levende 19-installasjon 2026-07-16).
-    fremdrift = fields.Float(string="Utført (%)", compute="_compute_fremdrift", store=True,
-                             aggregator="avg")
+    fremdrift = fields.Float(
+        string="Utført (%)", compute="_compute_fremdrift", store=True, aggregator="avg"
+    )
 
     @api.depends("res_model", "res_id")
     def _compute_koblinger(self):
@@ -156,7 +187,9 @@ class FiqSjekkliste(models.Model):
                 s.project_id = oppgave.project_id.id or False
             elif s.res_model == "project.project" and s.res_id:
                 s.task_id = False
-                s.project_id = self.env["project.project"].browse(s.res_id).exists().id or False
+                s.project_id = (
+                    self.env["project.project"].browse(s.res_id).exists().id or False
+                )
             elif not s.res_model:
                 # Ingen generisk kobling satt — la eksisterende verdier stå (mal, eller
                 # rad opprettet før omleggingen).
@@ -177,7 +210,7 @@ class FiqSjekkliste(models.Model):
                 continue
             if s.res_model not in self.env:
                 # Modulen kan være avinstallert; da skal vi ikke krasje.
-                s.res_navn = "%s/%s" % (s.res_model, s.res_id)
+                s.res_navn = f"{s.res_model}/{s.res_id}"
                 continue
             post = self.env[s.res_model].browse(s.res_id).exists()
             s.res_navn = post.display_name if post else False
@@ -192,7 +225,11 @@ class FiqSjekkliste(models.Model):
         if vals.get("task_id") and not vals.get("res_model"):
             vals["res_model"] = "project.task"
             vals["res_id"] = vals["task_id"]
-        elif vals.get("project_id") and not vals.get("res_model") and not vals.get("task_id"):
+        elif (
+            vals.get("project_id")
+            and not vals.get("res_model")
+            and not vals.get("task_id")
+        ):
             vals["res_model"] = "project.project"
             vals["res_id"] = vals["project_id"]
         return vals
@@ -243,30 +280,36 @@ class FiqSjekkliste(models.Model):
         """
         self.ensure_one()
         if res_model not in self.env:
-            raise ValidationError("Ukjent modell «%s»." % res_model)
+            raise ValidationError(
+                self.env._("Ukjent modell «%(modell)s».", modell=res_model)
+            )
         if not self.env[res_model].browse(res_id).exists():
-            raise ValidationError("Fant ikke posten det skal kopieres til.")
+            raise ValidationError(self.env._("Fant ikke posten det skal kopieres til."))
 
-        ny = self.copy({
-            "name": self.name,
-            "er_mal": False,
-            "mal_id": self.id if self.er_mal else (self.mal_id.id or False),
-            "res_model": res_model,
-            "res_id": res_id,
-            "versjon": "1.0",
-            "punkt_ids": False,   # punktene kopieres eksplisitt under, uten kvitteringer
-        })
+        ny = self.copy(
+            {
+                "name": self.name,
+                "er_mal": False,
+                "mal_id": self.id if self.er_mal else (self.mal_id.id or False),
+                "res_model": res_model,
+                "res_id": res_id,
+                "versjon": "1.0",
+                "punkt_ids": False,  # punktene kopieres eksplisitt under, uten kvitteringer
+            }
+        )
         for p in self.punkt_ids:
-            self.env["fiq.sjekkliste.punkt"].create({
-                "sjekkliste_id": ny.id,
-                "sequence": p.sequence,
-                "name": p.name,
-                "beskrivelse": p.beskrivelse,
-                "krav_dok": p.krav_dok,
-                "krav_foto": p.krav_foto,
-                "krav_sign": p.krav_sign,
-                # utfoert/kvitt_* med vilje IKKE kopiert — se docstring.
-            })
+            self.env["fiq.sjekkliste.punkt"].create(
+                {
+                    "sjekkliste_id": ny.id,
+                    "sequence": p.sequence,
+                    "name": p.name,
+                    "beskrivelse": p.beskrivelse,
+                    "krav_dok": p.krav_dok,
+                    "krav_foto": p.krav_foto,
+                    "krav_sign": p.krav_sign,
+                    # utfoert/kvitt_* med vilje IKKE kopiert — se docstring.
+                }
+            )
         return ny
 
     def apne_flate(self):
@@ -292,7 +335,9 @@ class FiqSjekklistePunkt(models.Model):
     _description = "FIQ Sjekkliste-punkt"
     _order = "sequence, id"
 
-    sjekkliste_id = fields.Many2one("fiq.sjekkliste", required=True, ondelete="cascade", index=True)
+    sjekkliste_id = fields.Many2one(
+        "fiq.sjekkliste", required=True, ondelete="cascade", index=True
+    )
     sequence = fields.Integer(default=10)
     # Flerspråk: punktene MÅ være oversettbare — ellers får den polske snekkeren norsk.
     # Samme feil som Vidir 2382: engelsk sjargong til norske eksterne -> 0 dokumenter levert.
@@ -310,16 +355,26 @@ class FiqSjekklistePunkt(models.Model):
     kvitt_foto_id = fields.Many2one("ir.attachment", string="Foto")
     kvitt_sign_av = fields.Char(string="Signert av")
     kvitt_sign_dato = fields.Datetime(string="Signert")
-    kvitt_av = fields.Char(string="Kvittert av",
-                           help="Kan være arbeider uten Odoo-lisens (portal) — derfor Char, ikke res.users.")
+    kvitt_av = fields.Char(
+        string="Kvittert av",
+        help="Kan være arbeider uten Odoo-lisens (portal) — derfor Char, ikke res.users.",
+    )
     kvitt_dato = fields.Datetime(string="Kvittert")
 
-    kan_kvitteres = fields.Boolean(compute="_compute_kan_kvitteres",
-                                   help="Alle krav innfridd? Punktet kan ikke lukkes før.")
+    kan_kvitteres = fields.Boolean(
+        compute="_compute_kan_kvitteres",
+        help="Alle krav innfridd? Punktet kan ikke lukkes før.",
+    )
     mangler = fields.Char(compute="_compute_kan_kvitteres", string="Venter på")
 
-    @api.depends("krav_dok", "krav_foto", "krav_sign",
-                 "kvitt_dok_id", "kvitt_foto_id", "kvitt_sign_dato")
+    @api.depends(
+        "krav_dok",
+        "krav_foto",
+        "krav_sign",
+        "kvitt_dok_id",
+        "kvitt_foto_id",
+        "kvitt_sign_dato",
+    )
     def _compute_kan_kvitteres(self):
         for p in self:
             m = []
@@ -338,13 +393,24 @@ class FiqSjekklistePunkt(models.Model):
         for p in self:
             if p.utfoert and not p.kan_kvitteres:
                 raise ValidationError(
-                    "«%s» kan ikke kvitteres ut — venter %s." % (p.name, p.mangler)
+                    self.env._(
+                        "«%(punkt)s» kan ikke kvitteres ut — venter %(mangler)s.",
+                        punkt=p.name,
+                        mangler=p.mangler,
+                    )
                 )
 
     def write(self, vals):
         res = super().write(vals)
         # Enhver endring teller opp listas versjon. Se _bump_versjon:
         # dette er en teller, ikke ekte versjonering.
-        if {"utfoert", "krav_dok", "krav_foto", "krav_sign", "name", "beskrivelse"} & set(vals):
+        if {
+            "utfoert",
+            "krav_dok",
+            "krav_foto",
+            "krav_sign",
+            "name",
+            "beskrivelse",
+        } & set(vals):
             self.mapped("sjekkliste_id")._bump_versjon()
         return res

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # AI Øktregister (AI KR D5): bakenforliggende tabell som CLAUDE fører selv.
 # Gjermund rører den ALDRI — den gir AI KR oversikt over alle økter (Claude Code +
@@ -14,28 +13,46 @@ class FiqAiOkt(models.Model):
     _order = "sist_aktiv desc, id desc"
 
     name = fields.Char(string="Økt", required=True, index=True)
-    okt_ref = fields.Char(string="Økt-ID / pin", index=True,
-                          help="Sesjons-id eller pin-kode Claude bruker for å finne igjen økta.")
-    kilde = fields.Selection([
-        ("claude_code", "Claude Code"),
-        ("cowork", "Cowork"),
-        ("annet", "Annet"),
-    ], string="Kilde", default="claude_code", index=True)
+    okt_ref = fields.Char(
+        string="Økt-ID / pin",
+        index=True,
+        help="Sesjons-id eller pin-kode Claude bruker for å finne igjen økta.",
+    )
+    kilde = fields.Selection(
+        [
+            ("claude_code", "Claude Code"),
+            ("cowork", "Cowork"),
+            ("annet", "Annet"),
+        ],
+        string="Kilde",
+        default="claude_code",
+        index=True,
+    )
     company_id = fields.Many2one(
-        "res.company", string="Firma", index=True,
-        default=lambda self: self.env.company)
-    status = fields.Selection([
-        ("aktiv", "Aktiv"),
-        ("pause", "Pause"),
-        ("ferdig", "Ferdig"),
-        ("feilet", "Feilet"),
-    ], string="Status", default="aktiv", index=True)
+        "res.company", string="Firma", index=True, default=lambda self: self.env.company
+    )
+    status = fields.Selection(
+        [
+            ("aktiv", "Aktiv"),
+            ("pause", "Pause"),
+            ("ferdig", "Ferdig"),
+            ("feilet", "Feilet"),
+        ],
+        string="Status",
+        default="aktiv",
+        index=True,
+    )
     task_id = fields.Many2one(
-        "project.task", string="Knyttet oppgave", ondelete="set null",
-        help="AI Økter-oppgaven denne økta rapporterer på (valgfri).")
+        "project.task",
+        string="Knyttet oppgave",
+        ondelete="set null",
+        help="AI Økter-oppgaven denne økta rapporterer på (valgfri).",
+    )
     sammendrag = fields.Text(string="Hva økta gjør")
     start = fields.Datetime(string="Startet", default=fields.Datetime.now)
-    sist_aktiv = fields.Datetime(string="Sist aktiv", default=fields.Datetime.now, index=True)
+    sist_aktiv = fields.Datetime(
+        string="Sist aktiv", default=fields.Datetime.now, index=True
+    )
 
     # ── SPOR-TILHØRIGHET (Gjermund 19.07) ───────────────────────────────────────
     # «Alle økter bør klassifiseres og samles inn under respektive prosjektspor.
@@ -43,15 +60,26 @@ class FiqAiOkt(models.Model):
     # Valgt modell: ETT hovedspor + gjestespor. Entydig eierskap, synlig overlapp —
     # så ingen tror to spor eier det samme. Vises som «AI KR (+ Prosjekt)».
     spor_id = fields.Many2one(
-        "fiq.ai.spor", string="Hovedspor", index=True, ondelete="set null",
-        help="Sporet økta hører hjemme i. Den varige enheten — økter kommer og går.")
+        "fiq.ai.spor",
+        string="Hovedspor",
+        index=True,
+        ondelete="set null",
+        help="Sporet økta hører hjemme i. Den varige enheten — økter kommer og går.",
+    )
     gjestespor_ids = fields.Many2many(
-        "fiq.ai.spor", "fiq_ai_okt_gjestespor_rel", "okt_id", "spor_id",
+        "fiq.ai.spor",
+        "fiq_ai_okt_gjestespor_rel",
+        "okt_id",
+        "spor_id",
         string="Jobber også i",
         help="Andre spor økta skriver i. Eksempel: AI KR eier sjekkliste-motoren "
-             "som ligger i Prosjekt-modulen.")
-    spor_visning = fields.Char(string="Spor", compute="_compute_spor_visning",
-                               help="«AI KR (+ Prosjekt)» — hovedspor med gjestespor bak.")
+        "som ligger i Prosjekt-modulen.",
+    )
+    spor_visning = fields.Char(
+        string="Spor",
+        compute="_compute_spor_visning",
+        help="«AI KR (+ Prosjekt)» — hovedspor med gjestespor bak.",
+    )
 
     @api.depends("spor_id", "spor_id.name", "gjestespor_ids", "gjestespor_ids.name")
     def _compute_spor_visning(self):
@@ -61,12 +89,23 @@ class FiqAiOkt(models.Model):
                 continue
             navn = o.spor_id.kode or o.spor_id.name
             gjester = [g.kode or g.name for g in o.gjestespor_ids if g != o.spor_id]
-            o.spor_visning = "%s (+ %s)" % (navn, ", ".join(gjester)) if gjester else navn
+            o.spor_visning = (
+                "{} (+ {})".format(navn, ", ".join(gjester)) if gjester else navn
+            )
 
     @api.model
-    def registrer_okt(self, name, okt_ref=False, kilde="claude_code",
-                      status="aktiv", sammendrag=False, task_id=False, company_id=False,
-                      spor_kode=False, gjestespor_koder=False):
+    def registrer_okt(
+        self,
+        name,
+        okt_ref=False,
+        kilde="claude_code",
+        status="aktiv",
+        sammendrag=False,
+        task_id=False,
+        company_id=False,
+        spor_kode=False,
+        gjestespor_koder=False,
+    ):
         """Claude fører øktregisteret selv (get-or-update på okt_ref, ellers navn).
         Ett kall pr. checkpoint → holder AI KR à jour uten menneske-inngripen.
         Returnerer record-id."""

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """AI PROSJEKTSPOR — økter samles under spor, ikke omvendt.
 
 Gjermund 19.07.2026, ordrett:
@@ -25,12 +24,16 @@ Vises som «AI KR (+ Prosjekt)». Entydig eierskap, synlig overlapp — så inge
 to spor eier det samme.
 """
 
+from typing import ClassVar
+
 from odoo import api, fields, models
 
 
 class FiqAiSpor(models.Model):
     _name = "fiq.ai.spor"
-    _description = "AI Prosjektspor (den varige enheten — økter er arbeidsperioder i den)"
+    _description = (
+        "AI Prosjektspor (den varige enheten — økter er arbeidsperioder i den)"
+    )
     _order = "kode, id"
 
     # Koden til oppsamlingssporet for økter som ikke har meldt tilhørighet.
@@ -41,51 +44,98 @@ class FiqAiSpor(models.Model):
     # Uten dette blir «KR» / «kr» / «GUI KR» / «Kontrollrom» FIRE spor for samme
     # arbeid — og da har vi flyttet øktkaoset til sporene i stedet for å fjerne
     # det. Meldt av KR-kjernen 20.07.2026; verifisert i koden før den ble rettet.
-    KODE_ALIAS = {
-        "KR": "KR", "GUIKR": "KR", "KONTROLLROM": "KR", "GUIKONTROLLROM": "KR",
-        "AIKR": "AI KR", "AIKONTROLLROM": "AI KR", "AIRMM": "AI KR",
-        "PRJ": "PRJ", "PROSJEKT": "PRJ", "GUIPRJ": "PRJ", "PROSJEKTOVERSIKT": "PRJ",
-        "KOMM": "KOMM", "KOMMUNIKASJON": "KOMM", "MELDINGSSENTER": "KOMM",
-        "MELDINGSSENTERET": "KOMM", "EPOST": "KOMM",
-        "REL": "REL", "RELASJONER": "REL", "RELASJON": "REL",
-        "FIN": "FIN", "FINANS": "FIN", "RGS": "FIN", "REGNSKAP": "FIN",
-        "ROLLER": "ROLLER", "ROLLE": "ROLLER", "AIROLLE": "ROLLER",
-        "CRM": "CRM", "SALG": "CRM", "SA": "CRM",
-        "IQ": "IQ", "AIPK": "IQ", "PK": "IQ",
+    KODE_ALIAS: ClassVar = {
+        "KR": "KR",
+        "GUIKR": "KR",
+        "KONTROLLROM": "KR",
+        "GUIKONTROLLROM": "KR",
+        "AIKR": "AI KR",
+        "AIKONTROLLROM": "AI KR",
+        "AIRMM": "AI KR",
+        "PRJ": "PRJ",
+        "PROSJEKT": "PRJ",
+        "GUIPRJ": "PRJ",
+        "PROSJEKTOVERSIKT": "PRJ",
+        "KOMM": "KOMM",
+        "KOMMUNIKASJON": "KOMM",
+        "MELDINGSSENTER": "KOMM",
+        "MELDINGSSENTERET": "KOMM",
+        "EPOST": "KOMM",
+        "REL": "REL",
+        "RELASJONER": "REL",
+        "RELASJON": "REL",
+        "FIN": "FIN",
+        "FINANS": "FIN",
+        "RGS": "FIN",
+        "REGNSKAP": "FIN",
+        "ROLLER": "ROLLER",
+        "ROLLE": "ROLLER",
+        "AIROLLE": "ROLLER",
+        "CRM": "CRM",
+        "SALG": "CRM",
+        "SA": "CRM",
+        "IQ": "IQ",
+        "AIPK": "IQ",
+        "PK": "IQ",
     }
 
-    name = fields.Char(string="Spor", required=True, index=True,
-                       help="F.eks. «AI Kontrollrom», «Prosjekt», «Kommunikasjon».")
-    kode = fields.Char(string="Kode", index=True,
-                       help="Kort kode brukt i øktnavn, f.eks. «AI KR», «PRJ», «KOMM».")
-    modul = fields.Char(string="Odoo-modul", index=True,
-                        help="Teknisk modulnavn sporet bygger, f.eks. fiq_gui_ai_kr. "
-                             "Brukes til å detektere milepælen automatisk.")
+    name = fields.Char(
+        string="Spor",
+        required=True,
+        index=True,
+        help="F.eks. «AI Kontrollrom», «Prosjekt», «Kommunikasjon».",
+    )
+    kode = fields.Char(
+        string="Kode",
+        index=True,
+        help="Kort kode brukt i øktnavn, f.eks. «AI KR», «PRJ», «KOMM».",
+    )
+    modul = fields.Char(
+        string="Odoo-modul",
+        index=True,
+        help="Teknisk modulnavn sporet bygger, f.eks. fiq_gui_ai_kr. "
+        "Brukes til å detektere milepælen automatisk.",
+    )
     beskrivelse = fields.Text(string="Hva sporet leverer")
 
     # ── VERSJON ─────────────────────────────────────────────────────────────────
     versjon_hoved = fields.Integer(
-        string="Milepæl", default=0,
-        help="00 = ikke i Odoo ennå · 01 = står og virker i Odoo · videre mot ferdig.")
+        string="Milepæl",
+        default=0,
+        help="00 = ikke i Odoo ennå · 01 = står og virker i Odoo · videre mot ferdig.",
+    )
     versjon_lop = fields.Integer(
-        string="Løpenr", default=0,
-        help="Teller opp for hver ny økt innenfor samme milepæl.")
-    versjon = fields.Char(string="Versjon", compute="_compute_versjon", store=True,
-                          help="«00.03» — vises i øktnavnet.")
+        string="Løpenr",
+        default=0,
+        help="Teller opp for hver ny økt innenfor samme milepæl.",
+    )
+    versjon = fields.Char(
+        string="Versjon",
+        compute="_compute_versjon",
+        store=True,
+        help="«00.03» — vises i øktnavnet.",
+    )
 
     modul_installert = fields.Boolean(
-        string="Står i Odoo", compute="_compute_modul_status",
-        help="Leses fra ir.module.module. Utløser milepæl 01 første gang den er sann.")
+        string="Står i Odoo",
+        compute="_compute_modul_status",
+        help="Leses fra ir.module.module. Utløser milepæl 01 første gang den er sann.",
+    )
     modul_versjon = fields.Char(string="Modulversjon", compute="_compute_modul_status")
 
-    status = fields.Selection([
-        ("planlagt", "Planlagt"),
-        ("bygges", "Bygges"),
-        ("i_odoo", "Står i Odoo"),
-        ("testet", "Testet"),
-        ("produksjon", "I Production"),
-        ("godkjent", "Godkjent ferdig"),
-    ], string="Status", default="bygges", index=True)
+    status = fields.Selection(
+        [
+            ("planlagt", "Planlagt"),
+            ("bygges", "Bygges"),
+            ("i_odoo", "Står i Odoo"),
+            ("testet", "Testet"),
+            ("produksjon", "I Production"),
+            ("godkjent", "Godkjent ferdig"),
+        ],
+        string="Status",
+        default="bygges",
+        index=True,
+    )
 
     # ── KOBLING TIL ET EKTE ODOO-PROSJEKT ───────────────────────────────────────
     # Gjermund 19.07.2026: «Kan jeg ikke bruke prosjekter og så kan claude gjøre hva det
@@ -99,18 +149,26 @@ class FiqAiSpor(models.Model):
     # 🛑 KANON STÅR: prosjekter opprettes ALDRI maskinelt (wizarden eier flyten). Feltet
     # PEKER på et prosjekt som allerede finnes — det oppretter aldri noe.
     project_id = fields.Many2one(
-        "project.project", string="Prosjekt", index=True, ondelete="set null",
+        "project.project",
+        string="Prosjekt",
+        index=True,
+        ondelete="set null",
         help="Odoo-prosjektet dette sporet arbeider i. Sporet vises da som et prosjekt "
-             "med fremdrift og oppgaver — ikke som en økt med nummer.")
-    project_navn = fields.Char(string="Prosjekt (navn)", related="project_id.display_name",
-                               readonly=True,
-                               help="Navn, aldri ID — jf. husets navnekonvensjon.")
+        "med fremdrift og oppgaver — ikke som en økt med nummer.",
+    )
+    project_navn = fields.Char(
+        string="Prosjekt (navn)",
+        related="project_id.display_name",
+        readonly=True,
+        help="Navn, aldri ID — jf. husets navnekonvensjon.",
+    )
 
     okt_ids = fields.One2many("fiq.ai.okt", "spor_id", string="Økter i sporet")
     antall_okter = fields.Integer(compute="_compute_okter", store=True)
     aktive_okter = fields.Integer(compute="_compute_okter", store=True)
-    company_id = fields.Many2one("res.company", string="Firma", index=True,
-                                 default=lambda self: self.env.company)
+    company_id = fields.Many2one(
+        "res.company", string="Firma", index=True, default=lambda self: self.env.company
+    )
 
     # 🔴 ODOO 19: `_sql_constraints` er UTGÅTT — gir «Model attribute '_sql_constraints'
     # is no longer supported» og gjør bygget oransje. Riktig form er `models.Constraint`
@@ -189,7 +247,7 @@ class FiqAiSpor(models.Model):
                     break
             if treff:
                 s.project_id = treff.id
-                koblet.append("%s -> %s" % (s.kode or s.name, treff.display_name))
+                koblet.append(f"{s.kode or s.name} -> {treff.display_name}")
         return koblet
 
     @api.model
@@ -204,19 +262,21 @@ class FiqAiSpor(models.Model):
         dom = [("company_id", "=", int(company_id))] if company_id else []
         out = []
         for s in self.search(dom, order="kode"):
-            out.append({
-                "id": s.id,
-                "navn": s.name or "",
-                "kode": s.kode or "",
-                "versjon": s.versjon or "",
-                "status": s.status or "",
-                "modul": s.modul or "",
-                "i_odoo": bool(s.modul_installert),
-                "project_id": s.project_id.id or False,
-                "prosjekt": s.project_id.display_name if s.project_id else "",
-                "aktive_okter": s.aktive_okter,
-                "beskrivelse": s.beskrivelse or "",
-            })
+            out.append(
+                {
+                    "id": s.id,
+                    "navn": s.name or "",
+                    "kode": s.kode or "",
+                    "versjon": s.versjon or "",
+                    "status": s.status or "",
+                    "modul": s.modul or "",
+                    "i_odoo": bool(s.modul_installert),
+                    "project_id": s.project_id.id or False,
+                    "prosjekt": s.project_id.display_name if s.project_id else "",
+                    "aktive_okter": s.aktive_okter,
+                    "beskrivelse": s.beskrivelse or "",
+                }
+            )
         return out
 
     @api.model
@@ -265,13 +325,15 @@ class FiqAiSpor(models.Model):
         spor = self.search([("kode", "=", self.HJEMLOS_KODE)], limit=1)
         if spor:
             return spor
-        return self.create({
-            "name": "Uten spor",
-            "kode": self.HJEMLOS_KODE,
-            "status": "planlagt",
-            "beskrivelse": "Økter som ikke har meldt hvilket spor de hører til. "
-                           "Skal alltid være tom — hver økt her mangler eier.",
-        })
+        return self.create(
+            {
+                "name": "Uten spor",
+                "kode": self.HJEMLOS_KODE,
+                "status": "planlagt",
+                "beskrivelse": "Økter som ikke har meldt hvilket spor de hører til. "
+                "Skal alltid være tom — hver økt her mangler eier.",
+            }
+        )
 
     def neste_okt_navn(self):
         """Navnet neste økt i sporet skal ha — «0.00 8.50 AI KR (01.02)».
@@ -282,5 +344,8 @@ class FiqAiSpor(models.Model):
         """
         self.ensure_one()
         neste = (self.versjon_lop or 0) + 1
-        return "0.00 8.50 %s (%02d.%02d)" % (self.kode or self.name,
-                                             self.versjon_hoved or 0, neste)
+        return "0.00 8.50 %s (%02d.%02d)" % (
+            self.kode or self.name,
+            self.versjon_hoved or 0,
+            neste,
+        )

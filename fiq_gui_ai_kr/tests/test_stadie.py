@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tester for stadiene — oppgaver flytter seg, de forsvinner ikke.
 
 Gjermund 22.07.2026: «må flyttes fra et stadie til neste eller blir jo listen
@@ -12,9 +11,8 @@ i køen, og han svarer på det samme igjen i morgen.
 from odoo.tests.common import TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install", 'fiq')
+@tagged("post_install", "-at_install", "fiq")
 class TestStadie(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -23,8 +21,9 @@ class TestStadie(TransactionCase):
         cls.Type = cls.env["project.task.type"]
         cls.S.sikre_stadier()
         cls.prosjekt = cls.env["project.project"].create({"name": "Stadie-test"})
-        cls.oppgave = cls.env["project.task"].create({
-            "name": "Testoppgave", "project_id": cls.prosjekt.id})
+        cls.oppgave = cls.env["project.task"].create(
+            {"name": "Testoppgave", "project_id": cls.prosjekt.id}
+        )
 
     # ── SEEDING ─────────────────────────────────────────────────────────────
     def test_alle_fem_stadier_finnes(self):
@@ -69,15 +68,19 @@ class TestStadie(TransactionCase):
         self.assertTrue(fantes, "setUpClass seedet ikke «Kvalitetssikring».")
         antall_for = self.Type.search_count([("name", "=ilike", "Kvalitetssikring")])
 
-        fantes.write({"fiq_ai_kode": False})     # nå ser det ut som et vanlig Odoo-stadium
+        fantes.write({"fiq_ai_kode": False})  # nå ser det ut som et vanlig Odoo-stadium
         self.S.sikre_stadier()
 
         self.assertEqual(
-            self.Type.search_count([("name", "=ilike", "Kvalitetssikring")]), antall_for,
-            "Det ble laget et duplikat av et stadium som allerede fantes.")
+            self.Type.search_count([("name", "=ilike", "Kvalitetssikring")]),
+            antall_for,
+            "Det ble laget et duplikat av et stadium som allerede fantes.",
+        )
         self.assertEqual(
-            fantes.fiq_ai_kode, "ks",
-            "Det eksisterende stadiet ble ikke merket — da er gjenbruken bare tilsynelatende.")
+            fantes.fiq_ai_kode,
+            "ks",
+            "Det eksisterende stadiet ble ikke merket — da er gjenbruken bare tilsynelatende.",
+        )
 
     # ── FLYTTING ────────────────────────────────────────────────────────────
     def test_flytt_setter_native_stage_id(self):
@@ -101,16 +104,16 @@ class TestStadie(TransactionCase):
     # ── SVAR → FLYTTING (kjernen) ───────────────────────────────────────────
     def test_svar_flytter_oppgaven(self):
         """🔑 «Svarer han → oppgaven flyttes til I Arbeid.»"""
-        g = self.G.browse(self.G.spor(
-            "Skal vi kjøre?", task_id=self.oppgave.id)["id"])
+        g = self.G.browse(self.G.spor("Skal vi kjøre?", task_id=self.oppgave.id)["id"])
         g.svar_paa("godkjent")
         self.assertEqual(self.oppgave.stage_id.fiq_ai_kode, "arbeid")
 
     def test_senere_legger_tilbake_i_ko(self):
         """«Senere» er ikke «nei» — den skal tilbake i køen, ikke forsvinne."""
         self.S.flytt_til(self.oppgave.id, "arbeid")
-        g = self.G.browse(self.G.spor(
-            "Skaff nøkkel?", art="oppgave", task_id=self.oppgave.id)["id"])
+        g = self.G.browse(
+            self.G.spor("Skaff nøkkel?", art="oppgave", task_id=self.oppgave.id)["id"]
+        )
         g.svar_paa("senere")
         self.assertEqual(self.oppgave.stage_id.fiq_ai_kode, "ko")
 
@@ -143,7 +146,9 @@ class TestStadie(TransactionCase):
         self.assertTrue(Data.skriv_kommentar(t.id, "Dette er en test")["ok"])
         logg = Data.get_kommentarlogg(t.id)
         self.assertTrue(logg["finnes"])
-        self.assertTrue(any("Dette er en test" in (l["tekst"] or "") for l in logg["logg"]))
+        self.assertTrue(
+            any("Dette er en test" in (l["tekst"] or "") for l in logg["logg"])
+        )
 
     def test_tom_kommentar_avvises(self):
         Data = self.env["fiq.gui.ai.kr.data"]
@@ -153,9 +158,14 @@ class TestStadie(TransactionCase):
     def test_oppgave_uten_eier_merkes_som_ai(self):
         """user_ids tom = AI. Samme konvensjon som Prosjekt (00.03) — avklart 22.07
         så vi ikke viser ulike tall for samme sak."""
-        t = self.env["project.task"].create({"name": "AI-oppgave", "user_ids": [(5, 0, 0)]})
-        rad = [o for o in self.env["fiq.gui.ai.kr.data"].get_styring_oppgaver()
-               if o["id"] == t.id]
+        t = self.env["project.task"].create(
+            {"name": "AI-oppgave", "user_ids": [(5, 0, 0)]}
+        )
+        rad = [
+            o
+            for o in self.env["fiq.gui.ai.kr.data"].get_styring_oppgaver()
+            if o["id"] == t.id
+        ]
         self.assertTrue(rad)
         self.assertTrue(rad[0]["er_ai"])
         self.assertEqual(rad[0]["eier"], "AI")

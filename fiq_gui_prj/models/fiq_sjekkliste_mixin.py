@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Mixin: gir en hvilken som helst modell sjekklister.
 
 Gjermund 19.07.2026: «denne funksjonen kan være på det meste».
@@ -35,15 +34,19 @@ class FiqSjekklisteMixin(models.AbstractModel):
     # domain=[('res_model','=','account.move')]), og `mail_activity_mixin.py:49` samme
     # med bypass_search_access. Vi følger begge.
     fiq_sjekkliste_ids = fields.One2many(
-        "fiq.sjekkliste", "res_id", string="Sjekklister",
+        "fiq.sjekkliste",
+        "res_id",
+        string="Sjekklister",
         domain=lambda self: [("res_model", "=", self._name)],
         bypass_search_access=True,
     )
     fiq_sjekkliste_antall = fields.Integer(
-        string="Antall sjekklister", compute="_compute_fiq_sjekkliste",
+        string="Antall sjekklister",
+        compute="_compute_fiq_sjekkliste",
     )
     fiq_sjekkliste_fremdrift = fields.Float(
-        string="Sjekkliste utført (%)", compute="_compute_fiq_sjekkliste",
+        string="Sjekkliste utført (%)",
+        compute="_compute_fiq_sjekkliste",
         aggregator="avg",
         help="Snitt av sjekklistenes fremdrift.",
     )

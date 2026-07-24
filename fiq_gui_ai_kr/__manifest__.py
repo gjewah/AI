@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
+# ruff: noqa: B018 — Odoos manifest ER en ordbok paa toppnivaa, ikke et uttrykk paa avveie
 {
     "name": "FIQ AI KR – AI Kontrollrom",
-    "version": "19.0.3.2.2",
+    "version": "19.0.3.2.3",
     "summary": "FIQ AI Kontrollrom (AI KR) – operatør-cockpit: oversikt over alle AI-økter "
-               "(Claude Code + Cowork), AI-organisasjonskart, redigerbare roller/skills, "
-               "ressursbruk og ROI. Snippet-basert (firma → rolle → person).",
+    "(Claude Code + Cowork), AI-organisasjonskart, redigerbare roller/skills, "
+    "ressursbruk og ROI. Snippet-basert (firma → rolle → person).",
     "description": """
 FIQ AI KR – AI Kontrollrom
 ==========================
@@ -41,7 +41,14 @@ som flate i det delte skallet (Vei C).
     # 🛑 `fiq_gui_shell` er IKKE valgfri: skall-registreringen i ai_kr.js kjører mot
     # registryet skallet eier. Uten avhengigheten er lasterekkefølgen udefinert — det
     # var rotårsaken til blank skjerm 18.07.2026 (meldt av fiq_gui_control 22.07).
-    "depends": ["fiq_gui_control", "fiq_gui_shell", "fiq_gui_comm", "web", "project", "mail"],
+    "depends": [
+        "fiq_gui_control",
+        "fiq_gui_shell",
+        "fiq_gui_comm",
+        "web",
+        "project",
+        "mail",
+    ],
     "data": [
         "security/ir.model.access.csv",
         "views/ai_kr_action.xml",
@@ -63,7 +70,6 @@ som flate i det delte skallet (Vei C).
             "fiq_gui_ai_kr/static/src/styring/styring.js",
             "fiq_gui_ai_kr/static/src/ai_kr.xml",
             "fiq_gui_ai_kr/static/src/styring/styring.xml",
-
         ],
     },
     "application": False,

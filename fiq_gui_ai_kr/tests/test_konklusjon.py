@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tester for konklusjons-loggen — det Gjermund skal kunne lese OG STOPPE.
 
 🛑 DEN VIKTIGSTE TESTEN I FILA: `test_bestrid_uten_begrunnelse_virker`.
@@ -14,9 +13,8 @@ Testene bruker DEFAULTS og skitne verdier, ikke pene tall jeg selv har valgt
 from odoo.tests.common import TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install", 'fiq')
+@tagged("post_install", "-at_install", "fiq")
 class TestKonklusjon(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -27,9 +25,12 @@ class TestKonklusjon(TransactionCase):
     def test_bestrid_uten_begrunnelse_virker(self):
         """🛑 KJERNEN: «Feil» alene skal stoppe arbeidet. Ingen tekst påkrevd."""
         k = self.K.create({"name": "En konklusjon som er gal"})
-        k.bestrid()                                   # ingen begrunnelse i det hele tatt
-        self.assertEqual(k.status, "bestridt",
-                         "Nødbremsen krevde en begrunnelse — da virker den ikke når det haster.")
+        k.bestrid()  # ingen begrunnelse i det hele tatt
+        self.assertEqual(
+            k.status,
+            "bestridt",
+            "Nødbremsen krevde en begrunnelse — da virker den ikke når det haster.",
+        )
         self.assertTrue(k.bestridt_dato)
         self.assertEqual(k.bestridt_av, self.env.user)
 
@@ -53,8 +54,11 @@ class TestKonklusjon(TransactionCase):
         gammel = self.K.create({"name": "Gammel konklusjon"})
         self.K.create({"name": "Fersk konklusjon"})
         gammel.bestrid()
-        self.assertEqual(self.K.search([], limit=1), gammel,
-                         "Bestridt konklusjon havnet ikke øverst.")
+        self.assertEqual(
+            self.K.search([], limit=1),
+            gammel,
+            "Bestridt konklusjon havnet ikke øverst.",
+        )
 
     # ── UTEN GRUNNLAG ───────────────────────────────────────────────────────
     def test_umerket_konklusjon_synes(self):
@@ -74,8 +78,11 @@ class TestKonklusjon(TransactionCase):
     def test_logg_oppretter_spor_hvis_det_mangler(self):
         kid = self.K.logg("Testkonklusjon", sikkerhet="antatt", spor_kode="gui kr")
         k = self.K.browse(kid)
-        self.assertEqual(k.spor_id.kode, "KR",
-                         "Sporkoden ble ikke normalisert — da får vi spor-drift.")
+        self.assertEqual(
+            k.spor_id.kode,
+            "KR",
+            "Sporkoden ble ikke normalisert — da får vi spor-drift.",
+        )
         self.assertEqual(k.sikkerhet, "antatt")
 
     def test_logg_uten_sikkerhet_havner_uten_grunnlag(self):
@@ -91,7 +98,8 @@ class TestKonklusjon(TransactionCase):
     def test_konklusjon_arver_spor_fra_okta(self):
         """Oppgir økta ikke spor på konklusjonen, arves øktas eget."""
         self.env["fiq.ai.okt"].registrer_okt(
-            name="Testøkt", okt_ref="test-arv-spor", spor_kode="PRJ")
+            name="Testøkt", okt_ref="test-arv-spor", spor_kode="PRJ"
+        )
         k = self.K.browse(self.K.logg("Uten eget spor", okt_ref="test-arv-spor"))
         self.assertEqual(k.spor_id.kode, "PRJ")
 
@@ -101,14 +109,17 @@ class TestKonklusjon(TransactionCase):
         self.K.logg("KANON-sak", sikkerhet="verifisert", er_kanon=True)
         self.K.logg("Usikker sak", sikkerhet="antatt")
         self.K.logg("Umerket sak")
-        self.K.logg("Rutine-detalj", sikkerhet="verifisert")     # skal IKKE vises
+        self.K.logg("Rutine-detalj", sikkerhet="verifisert")  # skal IKKE vises
 
         tekster = [r["konklusjon"] for r in self.Data.get_konklusjoner()]
         self.assertIn("KANON-sak", tekster)
         self.assertIn("Usikker sak", tekster)
         self.assertIn("Umerket sak", tekster)
-        self.assertNotIn("Rutine-detalj", tekster,
-                         "Verifisert rutine-detalj skapte støy i Gjermunds liste.")
+        self.assertNotIn(
+            "Rutine-detalj",
+            tekster,
+            "Verifisert rutine-detalj skapte støy i Gjermunds liste.",
+        )
 
     def test_vis_alle_tar_med_de_verifiserte(self):
         self.K.logg("Rutine-detalj 2", sikkerhet="verifisert")
@@ -149,4 +160,5 @@ class TestKonklusjon(TransactionCase):
         self.assertEqual(k.name, "Ny riktig konklusjon")
         self.assertTrue(
             any("Gammel gal konklusjon" in (m.body or "") for m in k.message_ids),
-            "Den gamle teksten forsvant — historikken er ikke til å stole på.")
+            "Den gamle teksten forsvant — historikken er ikke til å stole på.",
+        )
