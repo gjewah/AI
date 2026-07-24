@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 {
     "name": "FIQ Befaring — mobil befaring → romskjema → tilbud → prosjekt",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.1.1",
     "summary": "Backend-fundament for befaring på salgsmulighet: befaring · rom/romskjema · "
-               "funn/avvik. Kobler crm.lead → tilbud (sale.order) → prosjekt (project.project) "
-               "med oppgaven «Befaring». Generisk for alle FIQ-kunder, tenant-isolert (company_id "
-               "+ record rules), config-drevet. Mobil-flate (PWA/OWL) bygges oppå senere.",
+    "funn/avvik. Kobler crm.lead → tilbud (sale.order) → prosjekt (project.project) "
+    "med oppgaven «Befaring». Generisk for alle FIQ-kunder, tenant-isolert (company_id "
+    "+ record rules), config-drevet. Mobil-flate (PWA/OWL) bygges oppå senere.",
     "description": """
 FIQ Befaring — fundament
 ==========================
@@ -30,7 +29,7 @@ GENERISK KJERNE. Bransjelag (rom-struktur/kalkulator/Excel for entreprenør = SD
 mobil PWA-fangst legges som EGNE moduler oppå denne (fiq_befaring_sdv, PWA). Ingen kunde-fork.
 Tenant-isolert: hver modell har company_id (default aktivt firma) + global multi-company record rule.
 """,
-    "author": "FIQ AS",
+    "author": "FIQ as",
     "website": "https://fiq.no",
     "category": "Sales/FIQ",
     "license": "OPL-1",

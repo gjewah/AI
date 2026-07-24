@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Befarings-økt (befaring_module_spec, Gjermund 2026-06-21).
 # Starter i SALGSPROSESSEN: knyttes til en salgsmulighet (crm.lead), fanger rom + funn,
@@ -6,7 +5,7 @@
 # under oppgaven «Befaring». GENERISK kjerne for alle FIQ-kunder — bransjelag legges oppå.
 # Tenant-isolert: company_id (default aktivt firma) + global multi-company record rule.
 
-from odoo import api, fields, models, _
+from odoo import _, api, fields, models
 
 
 class FiqBefaring(models.Model):
@@ -16,48 +15,91 @@ class FiqBefaring(models.Model):
     _order = "dato desc, id desc"
 
     name = fields.Char(
-        string="Befaring", required=True, index=True, copy=False,
-        default=lambda self: _("Ny befaring"), tracking=True,
-        help="Navn på befaringen — navn, ikke ID.")
+        string="Befaring",
+        required=True,
+        index=True,
+        copy=False,
+        default=lambda self: _("Ny befaring"),
+        tracking=True,
+        help="Navn på befaringen — navn, ikke ID.",
+    )
     company_id = fields.Many2one(
-        "res.company", string="Firma", required=True, index=True,
+        "res.company",
+        string="Firma",
+        required=True,
+        index=True,
         default=lambda self: self.env.company,
-        help="Firmaet (tenant) befaringen tilhører. Styrer tenant-isolasjon.")
+        help="Firmaet (tenant) befaringen tilhører. Styrer tenant-isolasjon.",
+    )
     lead_id = fields.Many2one(
-        "crm.lead", string="Salgsmulighet", index=True, tracking=True,
-        help="Salgsmuligheten befaringen starter fra (befaring i salgsprosessen).")
+        "crm.lead",
+        string="Salgsmulighet",
+        index=True,
+        tracking=True,
+        help="Salgsmuligheten befaringen starter fra (befaring i salgsprosessen).",
+    )
     partner_id = fields.Many2one(
-        "res.partner", string="Kunde", index=True, tracking=True,
-        help="Kunden befaringen gjelder — arves fra salgsmuligheten.")
+        "res.partner",
+        string="Kunde",
+        index=True,
+        tracking=True,
+        help="Kunden befaringen gjelder — arves fra salgsmuligheten.",
+    )
     sale_order_id = fields.Many2one(
-        "sale.order", string="Tilbud", index=True, tracking=True,
-        help="Tilbudet (sale.order) befaringen fyller / er koblet til.")
+        "sale.order",
+        string="Tilbud",
+        index=True,
+        tracking=True,
+        help="Tilbudet (sale.order) befaringen fyller / er koblet til.",
+    )
     project_id = fields.Many2one(
-        "project.project", string="Prosjekt", index=True, tracking=True,
-        help="Prosjektet befaringen overføres til ved aksept.")
+        "project.project",
+        string="Prosjekt",
+        index=True,
+        tracking=True,
+        help="Prosjektet befaringen overføres til ved aksept.",
+    )
     befaring_task_id = fields.Many2one(
-        "project.task", string="Oppgave «Befaring»",
-        help="Oppgaven på prosjektet der befarings-dokumentene samles.")
+        "project.task",
+        string="Oppgave «Befaring»",
+        help="Oppgaven på prosjektet der befarings-dokumentene samles.",
+    )
     dato = fields.Date(
-        string="Befaringsdato", default=fields.Date.context_today, tracking=True)
+        string="Befaringsdato", default=fields.Date.context_today, tracking=True
+    )
     utfort_av_id = fields.Many2one(
-        "res.users", string="Befarer", default=lambda self: self.env.user, tracking=True,
-        help="Den som utfører befaringen.")
-    state = fields.Selection([
-        ("utkast", "Utkast"),
-        ("pagaar", "Pågår"),
-        ("fullfort", "Fullført"),
-        ("overfort", "Overført til prosjekt"),
-    ], string="Status", default="utkast", required=True, index=True, tracking=True)
+        "res.users",
+        string="Befarer",
+        default=lambda self: self.env.user,
+        tracking=True,
+        help="Den som utfører befaringen.",
+    )
+    state = fields.Selection(
+        [
+            ("utkast", "Utkast"),
+            ("pagaar", "Pågår"),
+            ("fullfort", "Fullført"),
+            ("overfort", "Overført til prosjekt"),
+        ],
+        string="Status",
+        default="utkast",
+        required=True,
+        index=True,
+        tracking=True,
+    )
     notat = fields.Text(string="Generelt notat")
 
-    rom_ids = fields.One2many("fiq.befaring.rom", "befaring_id", string="Rom")
-    funn_ids = fields.One2many("fiq.befaring.funn", "befaring_id", string="Funn / avvik")
+    rom_ids = fields.One2many("fiq.befaring.rom", "befaring_id")
+    funn_ids = fields.One2many(
+        "fiq.befaring.funn", "befaring_id", string="Funn / avvik"
+    )
 
     rom_antall = fields.Integer(
-        string="Antall rom", compute="_compute_antall", store=True)
+        string="Antall rom", compute="_compute_antall", store=True
+    )
     funn_antall = fields.Integer(
-        string="Antall funn", compute="_compute_antall", store=True)
+        string="Antall funn", compute="_compute_antall", store=True
+    )
 
     @api.depends("rom_ids", "funn_ids")
     def _compute_antall(self):
@@ -97,20 +139,26 @@ class FiqBefaring(models.Model):
             "befaring": self.name,
             "kunde": self.partner_id.display_name or "",
             "dato": self.dato and fields.Date.to_string(self.dato) or "",
-            "rom": [{
-                "rom": r.name,
-                "etasje": r.etasje or "",
-                "areal": r.areal,
-                "tiltak": r.tiltak or "",
-                "ai_tiltak_no": r.ai_tiltak_no or "",
-                "ai_tiltak_en": r.ai_tiltak_en or "",
-                "funn": [{
-                    "navn": f.name,
-                    "type": f.type,
-                    "alvorlighet": f.alvorlighet,
-                    "status": f.status,
-                } for f in r.funn_ids],
-            } for r in self.rom_ids.sorted(key=lambda x: (x.sequence, x.id))],
+            "rom": [
+                {
+                    "rom": r.name,
+                    "etasje": r.etasje or "",
+                    "areal": r.areal,
+                    "tiltak": r.tiltak or "",
+                    "ai_tiltak_no": r.ai_tiltak_no or "",
+                    "ai_tiltak_en": r.ai_tiltak_en or "",
+                    "funn": [
+                        {
+                            "navn": f.name,
+                            "type": f.type,
+                            "alvorlighet": f.alvorlighet,
+                            "status": f.status,
+                        }
+                        for f in r.funn_ids
+                    ],
+                }
+                for r in self.rom_ids.sorted(key=lambda x: (x.sequence, x.id))
+            ],
         }
 
     def populer_kalkulator_data(self):
@@ -123,13 +171,15 @@ class FiqBefaring(models.Model):
             tekst = r.ai_tiltak_no or r.tiltak or ""
             if not tekst:
                 continue
-            etikett = r.name if not r.etasje else "%s (%s)" % (r.name, r.etasje)
-            linjer.append({
-                "rom_id": r.id,
-                "post": etikett,
-                "beskrivelse": tekst,
-                "areal": r.areal,
-            })
+            etikett = r.name if not r.etasje else f"{r.name} ({r.etasje})"
+            linjer.append(
+                {
+                    "rom_id": r.id,
+                    "post": etikett,
+                    "beskrivelse": tekst,
+                    "areal": r.areal,
+                }
+            )
         return linjer
 
     def overfor_til_prosjekt(self):
@@ -143,16 +193,21 @@ class FiqBefaring(models.Model):
         Task = self.env["project.task"]
         task = self.befaring_task_id
         if not task or task.project_id != self.project_id:
-            task = Task.search([
-                ("project_id", "=", self.project_id.id),
-                ("name", "=", _("Befaring")),
-            ], limit=1)
+            task = Task.search(
+                [
+                    ("project_id", "=", self.project_id.id),
+                    ("name", "=", _("Befaring")),
+                ],
+                limit=1,
+            )
         if not task:
-            task = Task.create({
-                "name": _("Befaring"),
-                "project_id": self.project_id.id,
-                "company_id": self.company_id.id,
-            })
+            task = Task.create(
+                {
+                    "name": _("Befaring"),
+                    "project_id": self.project_id.id,
+                    "company_id": self.company_id.id,
+                }
+            )
         self.befaring_task_id = task.id
         self.state = "overfort"
         return task.id

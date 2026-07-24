@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tester for befarings-broen (fiq.befaring + .rom + .funn).
 
 Hvorfor de finnes (2026-07-23): modulen hadde NULL tester på 262 linjer
@@ -22,7 +21,6 @@ from odoo.tests import TransactionCase, tagged
 
 @tagged("post_install", "-at_install", "fiq_befaring")
 class TestFiqBefaring(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -44,29 +42,49 @@ class TestFiqBefaring(TransactionCase):
     # påkrevde felt bare må rettes ett sted.
 
     def _lag_lead(self, **vals):
-        return self.Lead.create(dict({
-            "name": "TEST Salgsmulighet befaring",
-            "partner_id": self.kunde.id,
-            "company_id": self.company.id,
-        }, **vals))
+        return self.Lead.create(
+            dict(
+                {
+                    "name": "TEST Salgsmulighet befaring",
+                    "partner_id": self.kunde.id,
+                    "company_id": self.company.id,
+                },
+                **vals,
+            )
+        )
 
     def _lag_befaring(self, **vals):
-        return self.Befaring.create(dict({
-            "name": "TEST Befaring",
-            "company_id": self.company.id,
-        }, **vals))
+        return self.Befaring.create(
+            dict(
+                {
+                    "name": "TEST Befaring",
+                    "company_id": self.company.id,
+                },
+                **vals,
+            )
+        )
 
     def _lag_rom(self, befaring, **vals):
-        return self.Rom.create(dict({
-            "befaring_id": befaring.id,
-            "name": "Stue",
-        }, **vals))
+        return self.Rom.create(
+            dict(
+                {
+                    "befaring_id": befaring.id,
+                    "name": "Stue",
+                },
+                **vals,
+            )
+        )
 
     def _lag_prosjekt(self, **vals):
-        return self.Project.create(dict({
-            "name": "TEST Prosjekt befaring",
-            "company_id": self.company.id,
-        }, **vals))
+        return self.Project.create(
+            dict(
+                {
+                    "name": "TEST Prosjekt befaring",
+                    "company_id": self.company.id,
+                },
+                **vals,
+            )
+        )
 
     # ==================================================================
     # opprett_fra_lead — inngangen fra salgsprosessen
@@ -87,8 +105,9 @@ class TestFiqBefaring(TransactionCase):
         self.assertTrue(bef.exists(), "Befaringen ble ikke faktisk opprettet")
         self.assertEqual(bef.state, "pagaar")
         self.assertEqual(bef.lead_id, lead)
-        self.assertEqual(bef.partner_id, self.kunde,
-                         "Kunden skal arves fra salgsmuligheten")
+        self.assertEqual(
+            bef.partner_id, self.kunde, "Kunden skal arves fra salgsmuligheten"
+        )
 
     def test_opprett_fra_lead_arver_navnet_fra_salgsmuligheten(self):
         """Navn, ikke ID: befaringen skal kunne leses av et menneske.
@@ -99,14 +118,18 @@ class TestFiqBefaring(TransactionCase):
         """
         lead = self._lag_lead(name="TEST Rehab Storgata 5")
         bef = self.Befaring.browse(self.Befaring.opprett_fra_lead(lead.id))
-        self.assertIn("TEST Rehab Storgata 5", bef.name,
-                      "Salgsmulighetens navn skal stå i befaringens navn")
+        self.assertIn(
+            "TEST Rehab Storgata 5",
+            bef.name,
+            "Salgsmulighetens navn skal stå i befaringens navn",
+        )
 
     def test_opprett_fra_lead_respekterer_eksplisitt_navn(self):
         """Oppgir kalleren et navn, skal det brukes — ikke overstyres."""
         lead = self._lag_lead()
         bef = self.Befaring.browse(
-            self.Befaring.opprett_fra_lead(lead.id, name="TEST Eget navn"))
+            self.Befaring.opprett_fra_lead(lead.id, name="TEST Eget navn")
+        )
         self.assertEqual(bef.name, "TEST Eget navn")
 
     def test_opprett_fra_lead_ukjent_lead_gir_False(self):
@@ -148,9 +171,10 @@ class TestFiqBefaring(TransactionCase):
         lead = self._lag_lead(company_id=annet.id)
         bef = self.Befaring.browse(self.Befaring.opprett_fra_lead(lead.id))
         self.assertEqual(
-            bef.company_id, annet,
-            "Befaringen skal arve leadets firma (%s), ikke sesjonens (%s)"
-            % (annet.name, self.company.name),
+            bef.company_id,
+            annet,
+            f"Befaringen skal arve leadets firma ({annet.name}), "
+            f"ikke sesjonens ({self.company.name})",
         )
 
     def test_company_id_faller_tilbake_til_sesjonen_uten_firma_paa_lead(self):
@@ -173,9 +197,13 @@ class TestFiqBefaring(TransactionCase):
         annet = self.env["res.company"].create({"name": "TEST Firma C befaring"})
         bef = self._lag_befaring(company_id=annet.id)
         rom = self._lag_rom(bef)
-        funn = self.Funn.create({
-            "befaring_id": bef.id, "rom_id": rom.id, "name": "Fuktskade",
-        })
+        funn = self.Funn.create(
+            {
+                "befaring_id": bef.id,
+                "rom_id": rom.id,
+                "name": "Fuktskade",
+            }
+        )
         self.assertEqual(rom.company_id, annet, "Rommet arvet ikke firmaet")
         self.assertEqual(funn.company_id, annet, "Funnet arvet ikke firmaet")
 
@@ -202,7 +230,8 @@ class TestFiqBefaring(TransactionCase):
         bef.lead_id = lead
         bef._onchange_lead_id()
         self.assertEqual(
-            bef.partner_id, self.kunde,
+            bef.partner_id,
+            self.kunde,
             "Onchangen slettet en kunde befareren hadde satt selv",
         )
 
@@ -230,11 +259,13 @@ class TestFiqBefaring(TransactionCase):
         """
         bef = self._lag_befaring()
         for i in range(3):
-            self._lag_rom(bef, name="Rom %d" % i, sequence=10 + i)
-        self.Funn.create([
-            {"befaring_id": bef.id, "name": "Funn A"},
-            {"befaring_id": bef.id, "name": "Funn B"},
-        ])
+            self._lag_rom(bef, name=f"Rom {i}", sequence=10 + i)
+        self.Funn.create(
+            [
+                {"befaring_id": bef.id, "name": "Funn A"},
+                {"befaring_id": bef.id, "name": "Funn B"},
+            ]
+        )
         bef.invalidate_recordset(["rom_antall", "funn_antall"])
         self.assertEqual(bef.rom_antall, 3)
         self.assertEqual(bef.funn_antall, 2)
@@ -277,16 +308,21 @@ class TestFiqBefaring(TransactionCase):
         Rettingen eies av sporene, ikke av testrunden — derfor dokumentert her.
         """
         from psycopg2.errors import NotNullViolation
+
         from odoo.tools.misc import mute_logger
 
         bef = self._lag_befaring()
         with self.assertRaises(NotNullViolation), mute_logger("odoo.sql_db"):
             with self.cr.savepoint():
-                self.Rom.create({
-                    "befaring_id": bef.id,
-                    "name": "Kjøkken",
-                    "funn_ids": [(0, 0, {"name": "Sprekk i flis", "type": "avvik"})],
-                })
+                self.Rom.create(
+                    {
+                        "befaring_id": bef.id,
+                        "name": "Kjøkken",
+                        "funn_ids": [
+                            (0, 0, {"name": "Sprekk i flis", "type": "avvik"})
+                        ],
+                    }
+                )
 
     def test_funn_med_eksplisitt_befaring_id_virker(self):
         """Veien som FAKTISK virker i dag: sett `befaring_id` selv.
@@ -295,19 +331,27 @@ class TestFiqBefaring(TransactionCase):
         det er kun den inline fix-up-løkka som er død kode.
         """
         bef = self._lag_befaring()
-        rom = self.Rom.create({
-            "befaring_id": bef.id,
-            "name": "Kjøkken",
-            "funn_ids": [(0, 0, {
-                "name": "Sprekk i flis", "type": "avvik",
+        rom = self.Rom.create(
+            {
                 "befaring_id": bef.id,
-            })],
-        })
+                "name": "Kjøkken",
+                "funn_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "name": "Sprekk i flis",
+                            "type": "avvik",
+                            "befaring_id": bef.id,
+                        },
+                    )
+                ],
+            }
+        )
         self.assertEqual(len(rom.funn_ids), 1)
         self.assertEqual(rom.funn_ids.befaring_id, bef)
         bef.invalidate_recordset(["funn_ids", "funn_antall"])
-        self.assertEqual(bef.funn_antall, 1,
-                         "Inline funn telles ikke på befaringen")
+        self.assertEqual(bef.funn_antall, 1, "Inline funn telles ikke på befaringen")
 
     # ==================================================================
     # get_romskjema_data
@@ -337,8 +381,11 @@ class TestFiqBefaring(TransactionCase):
         data = bef.get_romskjema_data()
         self.assertEqual(len(data["rom"]), 1)
         self.assertEqual(data["rom"][0]["rom"], "Gang")
-        self.assertEqual(data["rom"][0]["funn"], [],
-                         "Rom uten funn skal gi tom liste, ikke mangle nøkkelen")
+        self.assertEqual(
+            data["rom"][0]["funn"],
+            [],
+            "Rom uten funn skal gi tom liste, ikke mangle nøkkelen",
+        )
 
     def test_get_romskjema_data_tar_med_funn_per_rom(self):
         """Funnene skal ligge under RIKTIG rom — ikke i en felles bøtte.
@@ -349,10 +396,15 @@ class TestFiqBefaring(TransactionCase):
         bef = self._lag_befaring()
         stue = self._lag_rom(bef, name="Stue", sequence=10)
         bad = self._lag_rom(bef, name="Bad", sequence=20)
-        self.Funn.create({
-            "befaring_id": bef.id, "rom_id": bad.id,
-            "name": "Fukt bak dusj", "type": "avvik", "alvorlighet": "hoy",
-        })
+        self.Funn.create(
+            {
+                "befaring_id": bef.id,
+                "rom_id": bad.id,
+                "name": "Fukt bak dusj",
+                "type": "avvik",
+                "alvorlighet": "hoy",
+            }
+        )
 
         data = bef.get_romskjema_data()
         per_rom = {r["rom"]: r for r in data["rom"]}
@@ -361,7 +413,8 @@ class TestFiqBefaring(TransactionCase):
         self.assertEqual(per_rom["Bad"]["funn"][0]["alvorlighet"], "hoy")
         self.assertEqual(per_rom["Bad"]["funn"][0]["status"], "apen")
         self.assertNotIn(
-            stue.id, [f.get("rom_id") for f in per_rom["Bad"]["funn"]],
+            stue.id,
+            [f.get("rom_id") for f in per_rom["Bad"]["funn"]],
             "Funn lekket mellom rom",
         )
 
@@ -378,7 +431,8 @@ class TestFiqBefaring(TransactionCase):
         self._lag_rom(bef, name="Stue", sequence=20)
         data = bef.get_romskjema_data()
         self.assertEqual(
-            [r["rom"] for r in data["rom"]], ["Kjeller", "Stue", "Loft"],
+            [r["rom"] for r in data["rom"]],
+            ["Kjeller", "Stue", "Loft"],
             "Romskjemaet følger ikke sequence",
         )
 
@@ -389,8 +443,9 @@ class TestFiqBefaring(TransactionCase):
         befaring skal kunne leses av et norsk og et engelsk arbeidslag.
         """
         bef = self._lag_befaring()
-        self._lag_rom(bef, name="Bad", ai_tiltak_no="Rive flis",
-                      ai_tiltak_en="Remove tiles")
+        self._lag_rom(
+            bef, name="Bad", ai_tiltak_no="Rive flis", ai_tiltak_en="Remove tiles"
+        )
         rad = bef.get_romskjema_data()["rom"][0]
         self.assertEqual(rad["ai_tiltak_no"], "Rive flis")
         self.assertEqual(rad["ai_tiltak_en"], "Remove tiles")
@@ -406,9 +461,10 @@ class TestFiqBefaring(TransactionCase):
         rad = bef.get_romskjema_data()["rom"][0]
         for felt in ("etasje", "tiltak", "ai_tiltak_no", "ai_tiltak_en"):
             self.assertIsInstance(
-                rad[felt], str,
-                "«%s» er %r — tomme felt må være tom streng i eksporten"
-                % (felt, rad[felt]),
+                rad[felt],
+                str,
+                f"«{felt}» er {rad[felt]!r} — tomme felt må være tom streng "
+                "i eksporten",
             )
 
     def test_get_romskjema_data_dato_er_ren_datostreng(self):
@@ -453,17 +509,26 @@ class TestFiqBefaring(TransactionCase):
 
         self.assertTrue(linjer, "Metoden skal returnere kandidat-linjer")
         self.assertEqual(
-            SOL.search_count([]), antall_linjer_for,
+            SOL.search_count([]),
+            antall_linjer_for,
             "populer_kalkulator_data OPPRETTET tilbudslinjer — den skal være skrivfri",
         )
-        self.assertEqual(self.Rom.search_count([]), antall_rom_for,
-                         "Metoden opprettet/slettet rom")
-        self.assertEqual(self.Befaring.search_count([]), antall_bef_for,
-                         "Metoden opprettet befaringer")
-        self.assertEqual(bef.state, state_for,
-                         "Metoden endret status — den skal ikke røre tilstanden")
-        self.assertEqual(bef.sale_order_id, so_for,
-                         "Metoden koblet et tilbud på egen hånd")
+        self.assertEqual(
+            self.Rom.search_count([]), antall_rom_for, "Metoden opprettet/slettet rom"
+        )
+        self.assertEqual(
+            self.Befaring.search_count([]),
+            antall_bef_for,
+            "Metoden opprettet befaringer",
+        )
+        self.assertEqual(
+            bef.state,
+            state_for,
+            "Metoden endret status — den skal ikke røre tilstanden",
+        )
+        self.assertEqual(
+            bef.sale_order_id, so_for, "Metoden koblet et tilbud på egen hånd"
+        )
 
     def test_populer_kalkulator_data_kan_kalles_flere_ganger(self):
         """Idempotent: to kall gir samme svar, ikke doble linjer.
@@ -494,8 +559,9 @@ class TestFiqBefaring(TransactionCase):
     def test_populer_kalkulator_data_foretrekker_ai_tiltak(self):
         """AI-teksten er den strukturerte — den slår fritekst når begge finnes."""
         bef = self._lag_befaring()
-        self._lag_rom(bef, name="Bad", tiltak="fritekst",
-                      ai_tiltak_no="Rive og flislegge bad")
+        self._lag_rom(
+            bef, name="Bad", tiltak="fritekst", ai_tiltak_no="Rive og flislegge bad"
+        )
         linjer = bef.populer_kalkulator_data()
         self.assertEqual(linjer[0]["beskrivelse"], "Rive og flislegge bad")
 
@@ -507,7 +573,8 @@ class TestFiqBefaring(TransactionCase):
         bef = self._lag_befaring()
         self._lag_rom(bef, name="Bod", tiltak="Rydde og male")
         self.assertEqual(
-            bef.populer_kalkulator_data()[0]["beskrivelse"], "Rydde og male")
+            bef.populer_kalkulator_data()[0]["beskrivelse"], "Rydde og male"
+        )
 
     def test_populer_kalkulator_data_etikett_med_etasje(self):
         """Posten må skille «Bad (1)» fra «Bad (2)» i et bygg med flere etasjer.
@@ -520,8 +587,9 @@ class TestFiqBefaring(TransactionCase):
         self._lag_rom(bef, name="Bod", tiltak="Male", sequence=20)
         linjer = bef.populer_kalkulator_data()
         self.assertEqual(linjer[0]["post"], "Bad (2)")
-        self.assertEqual(linjer[1]["post"], "Bod",
-                         "Uten etasje skal etiketten være romnavnet alene")
+        self.assertEqual(
+            linjer[1]["post"], "Bod", "Uten etasje skal etiketten være romnavnet alene"
+        )
 
     def test_populer_kalkulator_data_baerer_rom_id_og_areal(self):
         """Overlaget må kunne spore linja tilbake til rommet og regne på areal."""
@@ -554,8 +622,9 @@ class TestFiqBefaring(TransactionCase):
         """
         bef = self._lag_befaring(state="fullfort")
         bef.action_start()
-        self.assertEqual(bef.state, "fullfort",
-                         "action_start rullet en fullført befaring tilbake")
+        self.assertEqual(
+            bef.state, "fullfort", "action_start rullet en fullført befaring tilbake"
+        )
 
     def test_action_fullfor_setter_fullfort(self):
         bef = self._lag_befaring(state="pagaar")
@@ -613,11 +682,11 @@ class TestFiqBefaring(TransactionCase):
 
         self.assertIs(res, False, "Uten prosjekt skal metoden gi False")
         self.assertEqual(
-            bef.state, "fullfort",
-            "Status ble flyttet til «%s» uten at et prosjekt fantes" % bef.state,
+            bef.state,
+            "fullfort",
+            f"Status ble flyttet til «{bef.state}» uten at et prosjekt fantes",
         )
-        self.assertFalse(bef.befaring_task_id,
-                         "Det ble laget en oppgave uten prosjekt")
+        self.assertFalse(bef.befaring_task_id, "Det ble laget en oppgave uten prosjekt")
 
     def test_overfor_til_prosjekt_oppretter_oppgaven_Befaring(self):
         """Ankeret i prosjektet: oppgaven «Befaring» opprettes om den mangler."""
@@ -632,8 +701,9 @@ class TestFiqBefaring(TransactionCase):
         self.assertEqual(task.project_id, prosjekt)
         self.assertEqual(bef.befaring_task_id, task)
         self.assertEqual(bef.state, "overfort")
-        self.assertEqual(task.company_id, bef.company_id,
-                         "Oppgaven skal arve befaringens firma")
+        self.assertEqual(
+            task.company_id, bef.company_id, "Oppgaven skal arve befaringens firma"
+        )
 
     def test_overfor_til_prosjekt_gjenbruker_eksisterende_oppgave(self):
         """🔑 To befaringer på samme prosjekt skal dele oppgaven «Befaring».
@@ -642,22 +712,31 @@ class TestFiqBefaring(TransactionCase):
         dokumentene spres på tre oppgaver ingen finner igjen.
         """
         prosjekt = self._lag_prosjekt()
-        eksisterende = self.Task.create({
-            "name": "Befaring", "project_id": prosjekt.id,
-            "company_id": self.company.id,
-        })
+        eksisterende = self.Task.create(
+            {
+                "name": "Befaring",
+                "project_id": prosjekt.id,
+                "company_id": self.company.id,
+            }
+        )
         bef = self._lag_befaring(state="fullfort", project_id=prosjekt.id)
 
         task_id = bef.overfor_til_prosjekt()
 
         self.assertEqual(
-            task_id, eksisterende.id,
+            task_id,
+            eksisterende.id,
             "Det ble laget en NY «Befaring»-oppgave selv om en fantes",
         )
         self.assertEqual(
-            self.Task.search_count([
-                ("project_id", "=", prosjekt.id), ("name", "=", "Befaring"),
-            ]), 1, "Prosjektet fikk dublett-oppgaver",
+            self.Task.search_count(
+                [
+                    ("project_id", "=", prosjekt.id),
+                    ("name", "=", "Befaring"),
+                ]
+            ),
+            1,
+            "Prosjektet fikk dublett-oppgaver",
         )
 
     def test_overfor_til_prosjekt_er_idempotent(self):
@@ -674,9 +753,14 @@ class TestFiqBefaring(TransactionCase):
 
         self.assertEqual(forste, andre, "Andre kall ga en annen oppgave")
         self.assertEqual(
-            self.Task.search_count([
-                ("project_id", "=", prosjekt.id), ("name", "=", "Befaring"),
-            ]), 1, "Gjentatt overføring laget dublett",
+            self.Task.search_count(
+                [
+                    ("project_id", "=", prosjekt.id),
+                    ("name", "=", "Befaring"),
+                ]
+            ),
+            1,
+            "Gjentatt overføring laget dublett",
         )
 
     def test_overfor_til_prosjekt_bytter_oppgave_naar_prosjektet_byttes(self):
@@ -694,8 +778,9 @@ class TestFiqBefaring(TransactionCase):
         bef.project_id = prosjekt_b
         task_b = self.Task.browse(bef.overfor_til_prosjekt())
 
-        self.assertNotEqual(task_a, task_b,
-                            "Ankeret ble hengende i det gamle prosjektet")
+        self.assertNotEqual(
+            task_a, task_b, "Ankeret ble hengende i det gamle prosjektet"
+        )
         self.assertEqual(task_b.project_id, prosjekt_b)
         self.assertEqual(bef.befaring_task_id, task_b)
 
@@ -729,14 +814,31 @@ class TestFiqBefaring(TransactionCase):
         lead = self._lag_lead(name="TEST Rehab Kabelgata 12")
         bef = self.Befaring.browse(self.Befaring.opprett_fra_lead(lead.id))
 
-        stue = self._lag_rom(bef, name="Stue", etasje="1", areal=30.0,
-                             ai_tiltak_no="Male vegger og tak", sequence=10)
-        self._lag_rom(bef, name="Bad", etasje="2", areal=6.0,
-                      tiltak="Rive og flislegge", sequence=20)
-        self.Funn.create({
-            "befaring_id": bef.id, "rom_id": stue.id,
-            "name": "Sprekk i vegg", "type": "avvik", "alvorlighet": "middels",
-        })
+        stue = self._lag_rom(
+            bef,
+            name="Stue",
+            etasje="1",
+            areal=30.0,
+            ai_tiltak_no="Male vegger og tak",
+            sequence=10,
+        )
+        self._lag_rom(
+            bef,
+            name="Bad",
+            etasje="2",
+            areal=6.0,
+            tiltak="Rive og flislegge",
+            sequence=20,
+        )
+        self.Funn.create(
+            {
+                "befaring_id": bef.id,
+                "rom_id": stue.id,
+                "name": "Sprekk i vegg",
+                "type": "avvik",
+                "alvorlighet": "middels",
+            }
+        )
 
         # Salgsfasen
         bef.invalidate_recordset(["rom_antall", "funn_antall"])
@@ -748,15 +850,19 @@ class TestFiqBefaring(TransactionCase):
         # Overgangen til prosjektsporet
         bef.action_fullfor()
         self.assertEqual(bef.state, "fullfort")
-        self.assertIs(bef.overfor_til_prosjekt(), False,
-                      "Uten prosjekt skal broen være stengt")
+        self.assertIs(
+            bef.overfor_til_prosjekt(), False, "Uten prosjekt skal broen være stengt"
+        )
 
         bef.project_id = self._lag_prosjekt(name="TEST Kabelgata 12")
         task = self.Task.browse(bef.overfor_til_prosjekt())
         self.assertEqual(bef.state, "overfort")
         self.assertEqual(task.project_id, bef.project_id)
-        self.assertEqual(bef.company_id, lead.company_id,
-                         "Firmaet skal ha fulgt hele veien fra salgsmuligheten")
+        self.assertEqual(
+            bef.company_id,
+            lead.company_id,
+            "Firmaet skal ha fulgt hele veien fra salgsmuligheten",
+        )
 
     # ==================================================================
     # DOKUMENTERT MANGEL — ikke fikset her (Salg eier feltet)
@@ -776,7 +882,8 @@ class TestFiqBefaring(TransactionCase):
         leser.
         """
         self.assertNotIn(
-            "tilstand", self.Rom._fields,
+            "tilstand",
+            self.Rom._fields,
             "Tilstandsfeltet «God/Slitt/Må rives» er nå lagt til av Salg — "
             "snu denne testen til en ekte test av verdiene og fjern notisen.",
         )
