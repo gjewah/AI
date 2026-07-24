@@ -173,8 +173,9 @@ class TestPrjData(TransactionCase):
         drill = self.Data.get_oppgaver(p["id"])
         self.assertEqual(
             len(drill["oppgaver"]), p["antall_oppgaver"],
-            "«%s»: oversikten sier %d oppgaver, drill viser %d"
-            % (p["navn"], p["antall_oppgaver"], len(drill["oppgaver"])),
+            "«{}»: oversikten sier {} oppgaver, drill viser {}".format(
+                p["navn"], p["antall_oppgaver"], len(drill["oppgaver"])
+            ),
         )
 
     # ---------- WBS-TREET (kravspek batch 15) ----------
@@ -199,8 +200,9 @@ class TestPrjData(TransactionCase):
             self.skipTest("Ingen prosjekter med oppgaver å teste mot")
         self.assertTrue(
             tre["noder"],
-            "Prosjektet «%s» har %d oppgaver, men WBS-treet er tomt."
-            % (tre["prosjekt"]["navn"], tre["antall_noder"]),
+            "Prosjektet «{}» har {} oppgaver, men WBS-treet er tomt.".format(
+                tre["prosjekt"]["navn"], tre["antall_noder"]
+            ),
         )
 
     def test_wbs_tre_teller_alle_oppgaver_inkludert_underoppgaver(self):
@@ -219,8 +221,9 @@ class TestPrjData(TransactionCase):
 
         self.assertEqual(
             tell(tre["noder"]), tre["antall_noder"],
-            "«%s»: %d oppgaver i basen, men %d noder i treet — noe falt ut."
-            % (tre["prosjekt"]["navn"], tre["antall_noder"], tell(tre["noder"])),
+            "«{}»: {} oppgaver i basen, men {} noder i treet — noe falt ut.".format(
+                tre["prosjekt"]["navn"], tre["antall_noder"], tell(tre["noder"])
+            ),
         )
 
     def test_wbs_rollup_summerer_barnas_timer(self):
@@ -499,10 +502,12 @@ class TestPrjData(TransactionCase):
         udaterte = [o for o in res["oppgaver"] if not o["fra"] and not o["frist"]]
         self.assertFalse(
             udaterte,
-            "%d av %d oppgaver mangler BÅDE start og frist og kan ikke tegnes. "
-            "Første: «%s». Udaterte oppgaver hører hjemme i Liste/Kanban, ikke i Gantt."
-            % (len(udaterte), len(res["oppgaver"]),
-               udaterte[0]["navn"] if udaterte else ""),
+            "{} av {} oppgaver mangler BÅDE start og frist og kan ikke tegnes. "
+            "Første: «{}». Udaterte oppgaver hører hjemme i Liste/Kanban, ikke i Gantt.".format(
+                len(udaterte),
+                len(res["oppgaver"]),
+                udaterte[0]["navn"] if udaterte else "",
+            ),
         )
 
     # ---------- SJEKKLISTE-PANELET ----------
