@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
@@ -16,20 +15,25 @@ class ResPartner(models.Model):
     _inherit = "res.partner"
 
     fiq_relation_a_ids = fields.One2many(
-        "fiq.gui.relation", "partner_a_id", string="Relations (from)")
+        "fiq.gui.relation", "partner_a_id", string="Relations (from)"
+    )
     fiq_relation_b_ids = fields.One2many(
-        "fiq.gui.relation", "partner_b_id", string="Relations (to)")
+        "fiq.gui.relation", "partner_b_id", string="Relations (to)"
+    )
     fiq_relation_count = fields.Integer(
-        compute="_compute_fiq_relation_count", string="Relations")
+        compute="_compute_fiq_relation_count", string="Relations"
+    )
 
     # Absorbed from partner_short_name (Loym) 24.07.2026, per the consolidation map.
     # It belongs here rather than in a module of its own: a short name is what a
     # relation graph shows on a node. "SDV Prosjekt as" does not fit in a box; "SDVp"
     # does. Keeping an 18-line module alive for one field is upkeep without benefit.
     short_name = fields.Char(
-        "Short name", index=True,
+        "Short name",
+        index=True,
         help="Compact name used where the full one does not fit - graph nodes, cards, "
-             "narrow columns. Falls back to the ordinary name when empty.")
+        "narrow columns. Falls back to the ordinary name when empty.",
+    )
 
     # Search-only fields: they hold nothing and display nothing. Their whole purpose is
     # to let a user filter contacts BY their relations - "everyone employed at Pecunia",
@@ -58,7 +62,7 @@ class ResPartner(models.Model):
         compute=lambda self: self.update({"fiq_search_relation_date": False}),
         search="_search_fiq_relation_date",
         help="Contacts holding a relation that was in force on this date. A relation "
-             "with no start date counts as always started; no end date as ongoing.",
+        "with no start date counts as always started; no end date as ongoing.",
     )
 
     @api.depends("fiq_relation_a_ids", "fiq_relation_b_ids")
@@ -67,8 +71,9 @@ class ResPartner(models.Model):
         rows where this partner is on the B side, which is exactly the half that the
         native parent_id cannot express."""
         for partner in self:
-            partner.fiq_relation_count = (
-                len(partner.fiq_relation_a_ids) + len(partner.fiq_relation_b_ids))
+            partner.fiq_relation_count = len(partner.fiq_relation_a_ids) + len(
+                partner.fiq_relation_b_ids
+            )
 
     def _fiq_partners_from_relations(self, domain):
         """Partner ids taking part in any relation matching `domain`, from EITHER side.
@@ -78,15 +83,22 @@ class ResPartner(models.Model):
         implementation detail of the row, never a property of the question being asked.
         """
         relations = self.env["fiq.gui.relation"].search(domain)
-        return list({
-            pid
-            for rel in relations
-            for pid in (rel.partner_a_id.id, rel.partner_b_id.id)
-        })
+        return list(
+            {
+                pid
+                for rel in relations
+                for pid in (rel.partner_a_id.id, rel.partner_b_id.id)
+            }
+        )
 
     def _search_fiq_relation_type_id(self, operator, value):
-        return [("id", "in", self._fiq_partners_from_relations(
-            [("type_id", operator, value)]))]
+        return [
+            (
+                "id",
+                "in",
+                self._fiq_partners_from_relations([("type_id", operator, value)]),
+            )
+        ]
 
     def _search_fiq_relation_partner_id(self, operator, value):
         """Contacts that have a relation TO the given partner.
@@ -95,9 +107,13 @@ class ResPartner(models.Model):
         excluded from the result. Asking "who has a relation with Pecunia" should not
         return Pecunia itself, even though it takes part in every one of those rows.
         """
-        relations = self.env["fiq.gui.relation"].search([
-            "|", ("partner_a_id", operator, value), ("partner_b_id", operator, value),
-        ])
+        relations = self.env["fiq.gui.relation"].search(
+            [
+                "|",
+                ("partner_a_id", operator, value),
+                ("partner_b_id", operator, value),
+            ]
+        )
         wanted = set()
         for rel in relations:
             wanted.add(rel.partner_a_id.id)
@@ -115,12 +131,22 @@ class ResPartner(models.Model):
         that silently ignores its own operator is worse than one that refuses.
         """
         if operator not in ("=", "!="):
-            raise UserError(_(
-                'Search on "Had relation on" supports = and != only, not "%s".', operator))
-        ids = self._fiq_partners_from_relations([
-            "|", ("date_start", "=", False), ("date_start", "<=", value),
-            "|", ("date_end", "=", False), ("date_end", ">=", value),
-        ])
+            raise UserError(
+                _(
+                    'Search on "Had relation on" supports = and != only, not "%s".',
+                    operator,
+                )
+            )
+        ids = self._fiq_partners_from_relations(
+            [
+                "|",
+                ("date_start", "=", False),
+                ("date_start", "<=", value),
+                "|",
+                ("date_end", "=", False),
+                ("date_end", ">=", value),
+            ]
+        )
         return [("id", "in" if operator == "=" else "not in", ids)]
 
     def action_fiq_relations(self):
@@ -131,7 +157,10 @@ class ResPartner(models.Model):
             "name": _("Relations - %s", self.display_name),
             "res_model": "fiq.gui.relation",
             "view_mode": "list,form",
-            "domain": ["|", ("partner_a_id", "=", self.id),
-                       ("partner_b_id", "=", self.id)],
+            "domain": [
+                "|",
+                ("partner_a_id", "=", self.id),
+                ("partner_b_id", "=", self.id),
+            ],
             "context": {"default_partner_a_id": self.id},
         }

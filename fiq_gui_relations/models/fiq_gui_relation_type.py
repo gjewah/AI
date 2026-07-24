@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
@@ -19,31 +18,47 @@ class FiqGuiRelationType(models.Model):
     _order = "sequence, name"
 
     name = fields.Char(
-        "Forward name", required=True, translate=True,
-        help='Read A -> B, e.g. "is general manager of".')
+        "Forward name",
+        required=True,
+        translate=True,
+        help='Read A -> B, e.g. "is general manager of".',
+    )
     name_inverse = fields.Char(
-        "Reverse name", translate=True,
+        "Reverse name",
+        translate=True,
         help='Read B -> A, e.g. "has as general manager". '
-             'Left empty on a symmetric type, where the forward name is used both ways.')
+        "Left empty on a symmetric type, where the forward name is used both ways.",
+    )
     code = fields.Char(
-        "Code", required=True,
+        "Code",
+        required=True,
         help="Stable technical key. Referenced by data and integrations, so it should "
-             "not change once the type is in use.")
+        "not change once the type is in use.",
+    )
     sequence = fields.Integer(default=10)
     symmetric = fields.Boolean(
         "Symmetric",
         help='Both directions read the same, e.g. "collaborates with". '
-             "The reverse name is then not used.")
+        "The reverse name is then not used.",
+    )
     partner_a_kind = fields.Selection(
         [("person", "Person"), ("company", "Company"), ("both", "Both")],
-        string="A side", default="both", required=True)
+        string="A side",
+        default="both",
+        required=True,
+    )
     partner_b_kind = fields.Selection(
         [("person", "Person"), ("company", "Company"), ("both", "Both")],
-        string="B side", default="both", required=True)
+        string="B side",
+        default="both",
+        required=True,
+    )
     active = fields.Boolean(default=True)
     company_ids = fields.Many2many(
-        "res.company", string="Enabled for",
-        help="Companies where this type is offered. Empty = available to all.")
+        "res.company",
+        string="Enabled for",
+        help="Companies where this type is offered. Empty = available to all.",
+    )
 
     # Odoo 19: models.Constraint, not the deprecated _sql_constraints list. The old form
     # still creates the constraint, but warns on every registry load - which turns the
@@ -61,10 +76,14 @@ class FiqGuiRelationType(models.Model):
         the UI, so it is blocked at write time instead."""
         for rec in self:
             if not rec.symmetric and not rec.name_inverse:
-                raise ValidationError(_(
-                    'The relation type "%s" needs a reverse name, or must be marked '
-                    "symmetric. Without it the relation has no readable label when seen "
-                    "from the other side.", rec.name))
+                raise ValidationError(
+                    _(
+                        'The relation type "%s" needs a reverse name, or must be marked '
+                        "symmetric. Without it the relation has no readable label when seen "
+                        "from the other side.",
+                        rec.name,
+                    )
+                )
 
     def label_for_direction(self, forward=True):
         """Return the label to display. Symmetric types read the same both ways."""

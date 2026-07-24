@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 {
     "name": "FIQ Relations",
     "version": "19.0.1.8.0",
     "summary": "Typed, directed relations between contacts, companies, properties and "
-               "projects. One person, many affiliations - without duplicate contacts.",
+    "projects. One person, many affiliations - without duplicate contacts.",
     "description": """
 FIQ Relations - one contact, many affiliations
 ===============================================
@@ -54,7 +53,6 @@ rewritten.
             "fiq_gui_relations/static/src/relations.scss",
             "fiq_gui_relations/static/src/relations.js",
             "fiq_gui_relations/static/src/relations.xml",
-
         ],
     },
     "installable": True,

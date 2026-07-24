@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
@@ -16,7 +15,6 @@ from odoo.tests import TransactionCase, tagged
 # Odoo core does the same thing - project/tests/test_project_mail_features.py:9.
 @tagged("-at_install", "post_install", "fiq")
 class TestFiqGuiRelation(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -56,10 +54,14 @@ class TestFiqGuiRelation(TransactionCase):
         states honestly that the condition could not be produced here, which is worth
         more than a test that fails for reasons having nothing to do with relations.
         """
-        other = self.env["res.company"].search([("id", "!=", self.env.company.id)], limit=1)
+        other = self.env["res.company"].search(
+            [("id", "!=", self.env.company.id)], limit=1
+        )
         if not other:
-            self.skipTest("needs a second company; creating one is blocked by "
-                          "documents_project on this database")
+            self.skipTest(
+                "needs a second company; creating one is blocked by "
+                "documents_project on this database"
+            )
         return other
 
     def _uten_000(self):
@@ -72,7 +74,8 @@ class TestFiqGuiRelation(TransactionCase):
         true by accident is the kind that silently stops being true.
         """
         group = self.env.ref(
-            "fiq_gui_control.group_000_kryss_firma", raise_if_not_found=False)
+            "fiq_gui_control.group_000_kryss_firma", raise_if_not_found=False
+        )
         if group and group in self.env.user.all_group_ids:
             self.env.user.write({"group_ids": [(3, group.id)]})
 
@@ -81,35 +84,42 @@ class TestFiqGuiRelation(TransactionCase):
     def test_one_person_many_companies(self):
         """The whole reason the module exists: a person holds several affiliations at
         once, each with its own job title, without being duplicated as a contact."""
-        self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-            "note": "Backoffice",
-        })
-        self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_b.id,
-            "type_id": self.env.ref("fiq_gui_relations.type_general_manager").id,
-            "note": "General Manager",
-        })
+        self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+                "note": "Backoffice",
+            }
+        )
+        self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_b.id,
+                "type_id": self.env.ref("fiq_gui_relations.type_general_manager").id,
+                "note": "General Manager",
+            }
+        )
         rels = self.Relation.relations_for_partner(self.person.id)
         self.assertEqual(len(rels), 2)
         notes = sorted(r["note"] for r in rels)
         self.assertEqual(notes, ["Backoffice", "General Manager"])
         # The person is still ONE contact - that is the point.
         self.assertEqual(
-            self.env["res.partner"].search_count([("name", "=", "Test Person")]), 1)
+            self.env["res.partner"].search_count([("name", "=", "Test Person")]), 1
+        )
 
     def test_parent_id_untouched(self):
         """The module must not disturb the native address book. A relation is added
         alongside parent_id, never instead of it."""
         self.person.parent_id = self.company_a
-        self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_b.id,
-            "type_id": self.type_employee.id,
-        })
+        self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_b.id,
+                "type_id": self.type_employee.id,
+            }
+        )
         self.assertEqual(self.person.parent_id, self.company_a)
 
     # ---- reading from both sides ---------------------------------------------------
@@ -117,11 +127,13 @@ class TestFiqGuiRelation(TransactionCase):
     def test_read_from_both_sides(self):
         """One stored row, read correctly from either end: forward from A, inverted
         from B. This is what a plain Many2many cannot do - it has no direction."""
-        self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-        })
+        self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+            }
+        )
         from_person = self.Relation.relations_for_partner(self.person.id)
         from_company = self.Relation.relations_for_partner(self.company_a.id)
 
@@ -134,11 +146,13 @@ class TestFiqGuiRelation(TransactionCase):
         self.assertEqual(from_company[0]["partner_id"], self.person.id)
 
     def test_symmetric_reads_same_both_ways(self):
-        rel = self.Relation.create({
-            "partner_a_id": self.company_a.id,
-            "partner_b_id": self.company_b.id,
-            "type_id": self.type_partner.id,
-        })
+        rel = self.Relation.create(
+            {
+                "partner_a_id": self.company_a.id,
+                "partner_b_id": self.company_b.id,
+                "type_id": self.type_partner.id,
+            }
+        )
         self.assertTrue(rel.type_id.symmetric)
         a = self.Relation.relations_for_partner(self.company_a.id)[0]
         b = self.Relation.relations_for_partner(self.company_b.id)[0]
@@ -146,11 +160,13 @@ class TestFiqGuiRelation(TransactionCase):
 
     def test_relation_stored_once(self):
         """No mirror row is written. Two copies of the same fact drift apart."""
-        self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-        })
+        self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+            }
+        )
         self.assertEqual(self.Relation.search_count([]), 1)
 
     # ---- validity period -----------------------------------------------------------
@@ -158,96 +174,113 @@ class TestFiqGuiRelation(TransactionCase):
     def test_ended_relation_keeps_person(self):
         """A relation that ends is dated, not deleted - and the person stays active.
         Explicit requirement: never archive someone because they changed employer."""
-        rel = self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-            "date_start": "2020-01-01",
-            "date_end": "2021-01-01",
-        })
+        rel = self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+                "date_start": "2020-01-01",
+                "date_end": "2021-01-01",
+            }
+        )
         self.assertFalse(rel.is_current)
         self.assertTrue(rel.exists())
         self.assertTrue(self.person.active)
         # It still shows in history, just not among the current ones.
         self.assertEqual(len(self.Relation.relations_for_partner(self.person.id)), 1)
         self.assertEqual(
-            len(self.Relation.relations_for_partner(self.person.id, only_current=True)), 0)
+            len(self.Relation.relations_for_partner(self.person.id, only_current=True)),
+            0,
+        )
 
     def test_open_ended_is_current(self):
-        rel = self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-            "date_start": "2020-01-01",
-        })
+        rel = self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+                "date_start": "2020-01-01",
+            }
+        )
         self.assertTrue(rel.is_current)
 
     def test_end_before_start_rejected(self):
         with self.assertRaises(ValidationError):
-            self.Relation.create({
-                "partner_a_id": self.person.id,
-                "partner_b_id": self.company_a.id,
-                "type_id": self.type_employee.id,
-                "date_start": "2021-01-01",
-                "date_end": "2020-01-01",
-            })
+            self.Relation.create(
+                {
+                    "partner_a_id": self.person.id,
+                    "partner_b_id": self.company_a.id,
+                    "type_id": self.type_employee.id,
+                    "date_start": "2021-01-01",
+                    "date_end": "2020-01-01",
+                }
+            )
 
     # ---- guards --------------------------------------------------------------------
 
     def test_self_relation_rejected(self):
         with self.assertRaises(ValidationError):
-            self.Relation.create({
-                "partner_a_id": self.person.id,
-                "partner_b_id": self.person.id,
-                "type_id": self.type_partner.id,
-            })
+            self.Relation.create(
+                {
+                    "partner_a_id": self.person.id,
+                    "partner_b_id": self.person.id,
+                    "type_id": self.type_partner.id,
+                }
+            )
 
     def test_person_company_kind_enforced(self):
-        """"is employed by" expects a person on the A side. A company there is a
+        """ "is employed by" expects a person on the A side. A company there is a
         catalogue mistake and should fail loudly at write time."""
         with self.assertRaises(ValidationError):
-            self.Relation.create({
-                "partner_a_id": self.company_a.id,
-                "partner_b_id": self.company_b.id,
-                "type_id": self.type_employee.id,
-            })
+            self.Relation.create(
+                {
+                    "partner_a_id": self.company_a.id,
+                    "partner_b_id": self.company_b.id,
+                    "type_id": self.type_employee.id,
+                }
+            )
 
     def test_type_needs_inverse_unless_symmetric(self):
         with self.assertRaises(ValidationError):
-            self.Type.create({
-                "code": "test_no_inverse",
-                "name": "points at",
-                "symmetric": False,
-            })
+            self.Type.create(
+                {
+                    "code": "test_no_inverse",
+                    "name": "points at",
+                    "symmetric": False,
+                }
+            )
 
     def test_type_code_unique(self):
-        from psycopg2 import IntegrityError
         from odoo.tools.misc import mute_logger
-        self.Type.create({
-            "code": "test_unique", "name": "a", "name_inverse": "b"})
+        from psycopg2 import IntegrityError
+
+        self.Type.create({"code": "test_unique", "name": "a", "name_inverse": "b"})
         with (
             mute_logger("odoo.sql_db"),
             self.assertRaises(IntegrityError),
             self.env.cr.savepoint(),
         ):
-            self.Type.create({
-                "code": "test_unique", "name": "c", "name_inverse": "d"})
+            self.Type.create({"code": "test_unique", "name": "c", "name_inverse": "d"})
 
     # ---- partner counters ----------------------------------------------------------
 
     def test_count_includes_both_sides(self):
         """The count must include relations where the partner is the B side - that is
         precisely the half native parent_id cannot express."""
-        self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-        })
-        self.Relation.create({
-            "partner_a_id": self.person_b.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-        })
+        self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+            }
+        )
+        self.Relation.create(
+            {
+                "partner_a_id": self.person_b.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+            }
+        )
         self.assertEqual(self.person.fiq_relation_count, 1)
         self.assertEqual(self.company_a.fiq_relation_count, 2)
 
@@ -259,51 +292,64 @@ class TestFiqGuiRelation(TransactionCase):
         Only searching partner_a_id would return half the answer - the stored direction
         is a property of the row, not of the question.
         """
-        self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-        })
+        self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+            }
+        )
         Partner = self.env["res.partner"]
-        found = Partner.search([
-            ("fiq_search_relation_type_id", "=", self.type_employee.id)])
+        found = Partner.search(
+            [("fiq_search_relation_type_id", "=", self.type_employee.id)]
+        )
         self.assertIn(self.person, found)
         self.assertIn(self.company_a, found)
         self.assertNotIn(self.person_b, found)
 
     def test_search_by_partner_excludes_the_target(self):
-        """"Who has a relation with Alpha AS" must not return Alpha AS itself, even
+        """ "Who has a relation with Alpha AS" must not return Alpha AS itself, even
         though it appears in every one of those rows."""
-        self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-        })
-        found = self.env["res.partner"].search([
-            ("fiq_search_relation_partner_id", "=", self.company_a.id)])
+        self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+            }
+        )
+        found = self.env["res.partner"].search(
+            [("fiq_search_relation_partner_id", "=", self.company_a.id)]
+        )
         self.assertIn(self.person, found)
         self.assertNotIn(self.company_a, found)
 
     def test_search_by_date_respects_the_window(self):
-        self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-            "date_start": "2020-01-01",
-            "date_end": "2021-01-01",
-        })
+        self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+                "date_start": "2020-01-01",
+                "date_end": "2021-01-01",
+            }
+        )
         Partner = self.env["res.partner"]
-        self.assertIn(self.person, Partner.search([
-            ("fiq_search_relation_date", "=", "2020-06-01")]))
-        self.assertNotIn(self.person, Partner.search([
-            ("fiq_search_relation_date", "=", "2022-06-01")]))
+        self.assertIn(
+            self.person,
+            Partner.search([("fiq_search_relation_date", "=", "2020-06-01")]),
+        )
+        self.assertNotIn(
+            self.person,
+            Partner.search([("fiq_search_relation_date", "=", "2022-06-01")]),
+        )
 
     def test_search_by_date_rejects_unsupported_operator(self):
         """A filter that silently ignores its own operator is worse than one that
         refuses: the user would trust a result that answered a different question."""
         with self.assertRaises(UserError):
-            self.env["res.partner"].search([
-                ("fiq_search_relation_date", ">", "2020-01-01")])
+            self.env["res.partner"].search(
+                [("fiq_search_relation_date", ">", "2020-01-01")]
+            )
 
     def test_search_fields_hold_nothing(self):
         """Search-only fields must never appear to carry data - they exist to filter."""
@@ -315,11 +361,13 @@ class TestFiqGuiRelation(TransactionCase):
 
     def test_graf_returns_nodes_and_edges(self):
         """Both parties become nodes; the relation becomes one edge."""
-        self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-        })
+        self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+            }
+        )
         graf = self.Relation.get_graf()
         ids = {n["id"] for n in graf["noder"]}
         self.assertIn(self.person.id, ids)
@@ -328,18 +376,22 @@ class TestFiqGuiRelation(TransactionCase):
 
     def test_graf_labels_each_side_correctly(self):
         """Each node carries the relation worded from ITS side, not the stored side."""
-        self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-        })
+        self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+            }
+        )
         graf = self.Relation.get_graf()
         by_id = {n["id"]: n for n in graf["noder"]}
         self.assertEqual(
-            by_id[self.person.id]["relasjoner"][0]["label"], self.type_employee.name)
+            by_id[self.person.id]["relasjoner"][0]["label"], self.type_employee.name
+        )
         self.assertEqual(
             by_id[self.company_a.id]["relasjoner"][0]["label"],
-            self.type_employee.name_inverse)
+            self.type_employee.name_inverse,
+        )
 
     def test_graf_counts_what_it_cannot_show(self):
         """The key honesty guarantee: a relation the user may not see is COUNTED, not
@@ -347,17 +399,21 @@ class TestFiqGuiRelation(TransactionCase):
         """
         other = self._foreign_company()
         self._uten_000()
-        self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-        })
-        self.Relation.create({
-            "partner_a_id": self.person_b.id,
-            "partner_b_id": self.company_b.id,
-            "type_id": self.type_employee.id,
-            "company_id": other.id,
-        })
+        self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+            }
+        )
+        self.Relation.create(
+            {
+                "partner_a_id": self.person_b.id,
+                "partner_b_id": self.company_b.id,
+                "type_id": self.type_employee.id,
+                "company_id": other.id,
+            }
+        )
         graf = self.Relation.get_graf()
         self.assertEqual(len(graf["kanter"]), 1, "only the in-scope relation is shown")
         self.assertEqual(graf["utenfor"], 1, "the hidden one must still be counted")
@@ -367,24 +423,28 @@ class TestFiqGuiRelation(TransactionCase):
         has no access to must not reveal it."""
         other = self._foreign_company()
         self._uten_000()
-        self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-            "company_id": other.id,
-        })
+        self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+                "company_id": other.id,
+            }
+        )
         graf = self.Relation.get_graf(firma_id=other.id)
         self.assertEqual(len(graf["kanter"]), 0)
         self.assertEqual(graf["utenfor"], 1)
 
     def test_graf_excludes_ended_relations(self):
-        self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-            "date_start": "2020-01-01",
-            "date_end": "2021-01-01",
-        })
+        self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+                "date_start": "2020-01-01",
+                "date_end": "2021-01-01",
+            }
+        )
         self.assertEqual(len(self.Relation.get_graf()["kanter"]), 0)
 
     # ---- short name (absorbed from partner_short_name) ------------------------------
@@ -400,26 +460,32 @@ class TestFiqGuiRelation(TransactionCase):
         must still travel with the node, or the detail panel would show the abbreviation
         as if it were the real name."""
         self.company_a.short_name = "Alpha"
-        self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-        })
-        node = next(n for n in self.Relation.get_graf()["noder"]
-                    if n["id"] == self.company_a.id)
+        self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+            }
+        )
+        node = next(
+            n for n in self.Relation.get_graf()["noder"] if n["id"] == self.company_a.id
+        )
         self.assertEqual(node["navn"], "Alpha")
         self.assertEqual(node["fullt_navn"], self.company_a.display_name)
 
     def test_graph_falls_back_to_full_name(self):
         """Most contacts will never get a short name. They must not render blank."""
         self.assertFalse(self.company_b.short_name)
-        self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_b.id,
-            "type_id": self.type_employee.id,
-        })
-        node = next(n for n in self.Relation.get_graf()["noder"]
-                    if n["id"] == self.company_b.id)
+        self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_b.id,
+                "type_id": self.type_employee.id,
+            }
+        )
+        node = next(
+            n for n in self.Relation.get_graf()["noder"] if n["id"] == self.company_b.id
+        )
         self.assertEqual(node["navn"], self.company_b.display_name)
 
     # ---- the card view --------------------------------------------------------------
@@ -427,18 +493,23 @@ class TestFiqGuiRelation(TransactionCase):
     def _forvalter_oppsett(self):
         """Manager -> property, property -> owner. The shape the card view renders."""
         eiendom = self.env["res.partner"].create(
-            {"name": "Oscarsgate 20", "is_company": True})
+            {"name": "Oscarsgate 20", "is_company": True}
+        )
         eier = self.env["res.partner"].create({"name": "Bufetat", "is_company": True})
-        self.Relation.create({
-            "partner_a_id": self.company_a.id,
-            "partner_b_id": eiendom.id,
-            "type_id": self.env.ref("fiq_gui_relations.type_property_manager").id,
-        })
-        self.Relation.create({
-            "partner_a_id": eier.id,
-            "partner_b_id": eiendom.id,
-            "type_id": self.env.ref("fiq_gui_relations.type_owner").id,
-        })
+        self.Relation.create(
+            {
+                "partner_a_id": self.company_a.id,
+                "partner_b_id": eiendom.id,
+                "type_id": self.env.ref("fiq_gui_relations.type_property_manager").id,
+            }
+        )
+        self.Relation.create(
+            {
+                "partner_a_id": eier.id,
+                "partner_b_id": eiendom.id,
+                "type_id": self.env.ref("fiq_gui_relations.type_owner").id,
+            }
+        )
         return eiendom, eier
 
     def test_kort_shows_manager_with_properties(self):
@@ -447,7 +518,8 @@ class TestFiqGuiRelation(TransactionCase):
         managers = [f for f in kort["forvaltere"] if f["id"] == self.company_a.id]
         self.assertEqual(len(managers), 1)
         self.assertEqual(
-            [e["adresse"] for e in managers[0]["eiendommer"]], [eiendom.display_name])
+            [e["adresse"] for e in managers[0]["eiendommer"]], [eiendom.display_name]
+        )
 
     def test_kort_separates_manager_from_owner(self):
         """The whole reason this view exists: the manager is rarely the owner. If the
@@ -466,17 +538,19 @@ class TestFiqGuiRelation(TransactionCase):
         other = self._foreign_company()
         self._uten_000()
         eiendom = self.env["res.partner"].create(
-            {"name": "Hidden Property", "is_company": True})
-        self.Relation.create({
-            "partner_a_id": self.company_b.id,
-            "partner_b_id": eiendom.id,
-            "type_id": self.env.ref("fiq_gui_relations.type_property_manager").id,
-            "company_id": other.id,
-        })
+            {"name": "Hidden Property", "is_company": True}
+        )
+        self.Relation.create(
+            {
+                "partner_a_id": self.company_b.id,
+                "partner_b_id": eiendom.id,
+                "type_id": self.env.ref("fiq_gui_relations.type_property_manager").id,
+                "company_id": other.id,
+            }
+        )
         kort = self.Relation.get_kort()
         self.assertEqual(kort["utenfor"], 1)
-        self.assertNotIn(
-            self.company_b.id, [f["id"] for f in kort["forvaltere"]])
+        self.assertNotIn(self.company_b.id, [f["id"] for f in kort["forvaltere"]])
 
     def test_kort_empty_without_managers(self):
         self.assertEqual(self.Relation.get_kort()["forvaltere"], [])
@@ -487,18 +561,24 @@ class TestFiqGuiRelation(TransactionCase):
         """A stored compute does not recalculate because the calendar moved. Without the
         cron, a relation that ended last night keeps reading as current - and searches
         and groupings quietly return yesterday's truth."""
-        rel = self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-            "date_start": "2020-01-01",
-        })
+        rel = self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+                "date_start": "2020-01-01",
+            }
+        )
         self.assertTrue(rel.is_current)
         # End it behind the compute's back, exactly as the passage of time would.
         self.env.cr.execute(
-            "UPDATE fiq_gui_relation SET date_end = '2021-01-01' WHERE id = %s", (rel.id,))
+            "UPDATE fiq_gui_relation SET date_end = '2021-01-01' WHERE id = %s",
+            (rel.id,),
+        )
         rel.invalidate_recordset(["date_end"])
-        self.assertTrue(rel.is_current, "stale value should persist until the cron runs")
+        self.assertTrue(
+            rel.is_current, "stale value should persist until the cron runs"
+        )
 
         self.Relation._cron_recompute_is_current()
         self.assertFalse(rel.is_current)
@@ -506,19 +586,23 @@ class TestFiqGuiRelation(TransactionCase):
     def test_cron_leaves_correct_rows_alone(self):
         """Only rows that actually disagree with today are touched, so the job stays
         cheap on a table that is mostly settled history."""
-        self.Relation.create({
-            "partner_a_id": self.person.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-            "date_start": "2020-01-01",
-        })
-        self.Relation.create({
-            "partner_a_id": self.person_b.id,
-            "partner_b_id": self.company_a.id,
-            "type_id": self.type_employee.id,
-            "date_start": "2020-01-01",
-            "date_end": "2021-01-01",
-        })
+        self.Relation.create(
+            {
+                "partner_a_id": self.person.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+                "date_start": "2020-01-01",
+            }
+        )
+        self.Relation.create(
+            {
+                "partner_a_id": self.person_b.id,
+                "partner_b_id": self.company_a.id,
+                "type_id": self.type_employee.id,
+                "date_start": "2020-01-01",
+                "date_end": "2021-01-01",
+            }
+        )
         self.assertEqual(self.Relation._cron_recompute_is_current(), 0)
 
     def test_no_relations_returns_empty(self):
