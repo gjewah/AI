@@ -1183,9 +1183,45 @@ class TestRgsData(TransactionCase):
         TypeError. Koden har en «—»-fallback; denne testen låser at den virker.
         Et bilag uten motpart er uvanlig, men det finnes — og en flate som
         krasjer på ett rart bilag viser ingenting for de andre nitten.
+
+        🔴 RETTET 24.07 (feller CI-gaten, kjøring 30098301610):
+        Første versjon bokførte bilaget og fjernet motparten etterpå:
+            faktura.sudo().write({"partner_id": False})
+            → UserError: You cannot modify the following readonly fields
+                         on a posted move: partner_id
+        `partner_id` er SKRIVEBESKYTTET på bokførte bilag — Odoo verner
+        bilagets identitet etter bokføring, og det er riktig oppførsel.
+        `sudo()` hjelper ikke: dette er en forretningsregel, ikke en rettighet.
+
+        🔑 Testen måtte bygges om, ikke slakkes: bilaget opprettes UTEN motpart
+        og bokføres i den tilstanden. Det speiler også virkeligheten bedre —
+        et bilag uten motpart oppstår ved import eller maskinell postering,
+        ikke ved at noen fjerner motparten fra et bokført bilag.
         """
-        faktura = self._faktura(-20, belop=7000.0)
-        faktura.sudo().write({"partner_id": False})
+        forfall = fields.Date.add(self.i_dag, days=-20)
+        faktura = self.Move.create(
+            {
+                "move_type": "out_invoice",
+                "invoice_date": self.i_dag,
+                "invoice_date_due": forfall,
+                "invoice_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "product_id": self.produkt.id,
+                            "quantity": 1,
+                            "price_unit": 7000.0,
+                            "tax_ids": [(6, 0, [])],
+                        },
+                    )
+                ],
+            }
+        )
+        faktura.action_post()
+        self.assertFalse(
+            faktura.partner_id, "Forutsetning: bilaget skal være uten motpart"
+        )
 
         poster = self.Data.hent_kritiske_poster()
         mine = [p for p in poster if p["nummer"] == faktura.name]
