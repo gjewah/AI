@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tester for Finansflatens datalag (fiq.gui.fin.data) — kredittrisiko per kunde.
 
 2.70 svarer på et ANNET spørsmål enn 2.80: ikke «hva forfaller», men «hvilke KUNDER
@@ -14,17 +13,18 @@ from odoo.tests import TransactionCase, tagged
 
 @tagged("post_install", "-at_install", "fiq_fin")
 class TestFinData(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.Data = cls.env["fiq.gui.fin.data"]
         cls.Move = cls.env["account.move"]
         cls.i_dag = fields.Date.context_today(cls.Data)
-        cls.produkt = cls.env["product.product"].create({
-            "name": "FIQ Testtjeneste FIN",
-            "type": "service",
-        })
+        cls.produkt = cls.env["product.product"].create(
+            {
+                "name": "FIQ Testtjeneste FIN",
+                "type": "service",
+            }
+        )
 
     @classmethod
     def _kunde(cls, navn):
@@ -32,23 +32,31 @@ class TestFinData(TransactionCase):
 
     @classmethod
     def _faktura(cls, kunde, dager_til_forfall, belop):
-        faktura = cls.Move.create({
-            "move_type": "out_invoice",
-            "partner_id": kunde.id,
-            "invoice_date": cls.i_dag,
-            "invoice_date_due": fields.Date.add(cls.i_dag, days=dager_til_forfall),
-            "invoice_line_ids": [(0, 0, {
-                "product_id": cls.produkt.id,
-                "quantity": 1,
-                "price_unit": belop,
-                "tax_ids": [(6, 0, [])],
-            })],
-        })
+        faktura = cls.Move.create(
+            {
+                "move_type": "out_invoice",
+                "partner_id": kunde.id,
+                "invoice_date": cls.i_dag,
+                "invoice_date_due": fields.Date.add(cls.i_dag, days=dager_til_forfall),
+                "invoice_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "product_id": cls.produkt.id,
+                            "quantity": 1,
+                            "price_unit": belop,
+                            "tax_ids": [(6, 0, [])],
+                        },
+                    )
+                ],
+            }
+        )
         faktura.action_post()
         return faktura
 
     def _faresignal_navn(self):
-        return " ".join(l["tekst"] for l in self.Data.get_kr_boks()["linjer"])
+        return " ".join(linje["tekst"] for linje in self.Data.get_kr_boks()["linjer"])
 
     # ---------- TERSKELEN: BEGGE VILKÅR MÅ VÆRE OPPFYLT ----------
 
@@ -78,7 +86,7 @@ class TestFinData(TransactionCase):
     def test_kr_boks_har_kontraktens_felter(self):
         b = self.Data.get_kr_boks()
         for felt in ("haster", "i_dag", "totalt", "linjer"):
-            self.assertIn(felt, b, "get_kr_boks mangler kontraktsfeltet %r" % felt)
+            self.assertIn(felt, b, f"get_kr_boks mangler kontraktsfeltet {felt!r}")
         self.assertIsInstance(b["haster"], int)
 
     def test_kr_boks_taaler_tom_base(self):
@@ -106,10 +114,14 @@ class TestFinData(TransactionCase):
         res = self.Data.hent_kpi_valg()
         self.assertTrue(res["rapporter"], "Ingen KPI-rapporter funnet i basen")
         for r in res["rapporter"]:
-            self.assertTrue(r["xmlid"].startswith("account_reports."),
-                            "KPI må peke på Odoos egen rapport, ikke vår egen")
-            self.assertTrue(self.env.ref(r["xmlid"], raise_if_not_found=False),
-                            "xmlid %s finnes ikke i basen" % r["xmlid"])
+            self.assertTrue(
+                r["xmlid"].startswith("account_reports."),
+                "KPI må peke på Odoos egen rapport, ikke vår egen",
+            )
+            self.assertTrue(
+                self.env.ref(r["xmlid"], raise_if_not_found=False),
+                f"xmlid {r['xmlid']} finnes ikke i basen",
+            )
 
     def test_kpi_hopper_over_manglende_rapporter(self):
         """En rapport som ikke er installert skal utelates, ikke krasje.
@@ -125,7 +137,9 @@ class TestFinData(TransactionCase):
     def test_kpi_valg_lagres_per_bruker_og_firma(self):
         """Brukerens valg skal overleve — og ikke lekke til andre firmaer."""
         self.Data.sett_valgte_kpier(["balanse"])
-        valgte = [r["key"] for r in self.Data.hent_kpi_valg()["rapporter"] if r["valgt"]]
+        valgte = [
+            r["key"] for r in self.Data.hent_kpi_valg()["rapporter"] if r["valgt"]
+        ]
         self.assertEqual(valgte, ["balanse"])
 
     def test_kpi_forkaster_ukjente_nokler(self):
@@ -135,13 +149,17 @@ class TestFinData(TransactionCase):
         kunne hva som helst havnet i `ir.config_parameter`.
         """
         self.Data.sett_valgte_kpier(["balanse", "noe_tull", "../../etc/passwd"])
-        valgte = [r["key"] for r in self.Data.hent_kpi_valg()["rapporter"] if r["valgt"]]
+        valgte = [
+            r["key"] for r in self.Data.hent_kpi_valg()["rapporter"] if r["valgt"]
+        ]
         self.assertEqual(valgte, ["balanse"], "Ukjente nøkler skal forkastes")
 
     def test_kpi_tomt_valg_gir_standard(self):
         """Ny bruker skal se de tre viktigste, ikke en tom flate eller alle åtte."""
         self.Data.sett_valgte_kpier([])
-        valgte = [r["key"] for r in self.Data.hent_kpi_valg()["rapporter"] if r["valgt"]]
+        valgte = [
+            r["key"] for r in self.Data.hent_kpi_valg()["rapporter"] if r["valgt"]
+        ]
         self.assertEqual(set(valgte), set(self.Data.STANDARD_VALG))
 
     def test_apne_kpi_gir_gyldig_handling(self):
@@ -149,27 +167,35 @@ class TestFinData(TransactionCase):
         handling = self.Data.apne_kpi("balanse")
         self.assertTrue(handling, "apne_kpi returnerte ingenting")
         self.assertIn("type", handling)
-        self.assertFalse(self.Data.apne_kpi("finnes_ikke"),
-                         "Ukjent nøkkel skal gi False, ikke en tilfeldig handling")
+        self.assertFalse(
+            self.Data.apne_kpi("finnes_ikke"),
+            "Ukjent nøkkel skal gi False, ikke en tilfeldig handling",
+        )
 
     # ---------- TENANT ----------
 
     def test_kun_eget_firma(self):
         """🛑 Kredittdata om kunder er forretningssensitivt — aldri kryss-firma."""
         domene = self.Data._kunde_domene(self.Data)
-        firma_ledd = [d for d in domene if isinstance(d, (list, tuple))
-                      and d[0] == "company_id"]
+        firma_ledd = [
+            d for d in domene if isinstance(d, (list, tuple)) and d[0] == "company_id"
+        ]
         self.assertTrue(firma_ledd, "Mangler company_id — tenant-lekkasje")
         self.assertEqual(firma_ledd[0][2], self.env.company.id)
 
     def test_kun_bokforte_kundefakturaer(self):
         """Leverandørfakturaer hører til 2.80 (likviditet), ikke 2.70 (kredittrisiko)."""
         domene = self.Data._kunde_domene(self.Data)
-        type_ledd = [d for d in domene if isinstance(d, (list, tuple))
-                     and d[0] == "move_type"]
+        type_ledd = [
+            d for d in domene if isinstance(d, (list, tuple)) and d[0] == "move_type"
+        ]
         self.assertTrue(type_ledd)
-        self.assertNotIn("in_invoice", type_ledd[0][2],
-                         "Leverandørfaktura hører ikke i kredittrisiko per kunde")
-        state_ledd = [d for d in domene if isinstance(d, (list, tuple))
-                      and d[0] == "state"]
+        self.assertNotIn(
+            "in_invoice",
+            type_ledd[0][2],
+            "Leverandørfaktura hører ikke i kredittrisiko per kunde",
+        )
+        state_ledd = [
+            d for d in domene if isinstance(d, (list, tuple)) and d[0] == "state"
+        ]
         self.assertEqual(state_ledd[0][2], "posted", "Kun bokførte tall")

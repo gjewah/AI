@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 {
     "name": "FIQ Finans",
     "version": "19.0.1.8.0",
     "summary": "AI GUI Finans (2.70) — visningen av AI Finans-Rådgiveren: analyse, "
-               "framskrivning, simulator (fortid/nåtid/fremtid), KPI og POG.",
+    "framskrivning, simulator (fortid/nåtid/fremtid), KPI og POG.",
     "description": """
 FIQ GUI Finans — flate 2.70
 =============================
@@ -41,7 +40,6 @@ Harde regler innebygd i flaten:
             "fiq_gui_fin/static/src/fin.scss",
             "fiq_gui_fin/static/src/fin.js",
             "fiq_gui_fin/static/src/fin.xml",
-
         ],
     },
     "application": True,

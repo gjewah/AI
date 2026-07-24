@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Datakilde for AI GUI Finans (2.70) — samleboks til Kontrollrommet.
 
 Rolle bak, flate foran: VISNINGEN av «0.00 2.70 AI Finans-Rådgiver».
@@ -70,7 +69,7 @@ class FiqGuiFinData(models.AbstractModel):
         Samme mønster som KRs `skjulte_flater` — serverlagret, ikke localStorage,
         så valget følger brukeren mellom maskiner.
         """
-        param = "fiq_gui_fin.kpi.%s.%s" % (self.env.user.id, self.env.company.id)
+        param = f"fiq_gui_fin.kpi.{self.env.user.id}.{self.env.company.id}"
         raw = self.env["ir.config_parameter"].sudo().get_param(param, "")
         if not raw:
             return list(self.STANDARD_VALG)
@@ -83,7 +82,7 @@ class FiqGuiFinData(models.AbstractModel):
         skal ikke kunne skrive vilkårlige verdier inn i konfigurasjonen."""
         gyldige = {n for n, _x in self.KPI_RAPPORTER}
         rene = [k for k in (valgte or []) if k in gyldige]
-        param = "fiq_gui_fin.kpi.%s.%s" % (self.env.user.id, self.env.company.id)
+        param = f"fiq_gui_fin.kpi.{self.env.user.id}.{self.env.company.id}"
         self.env["ir.config_parameter"].sudo().set_param(param, ",".join(rene))
         return True
 
@@ -101,12 +100,14 @@ class FiqGuiFinData(models.AbstractModel):
             handling = self.env.ref(xmlid, raise_if_not_found=False)
             if not handling:
                 continue  # ikke installert i denne basen — hopp over, ikke krasj
-            ut.append({
-                "key": navn,
-                "label": handling.name,      # Odoos eget navn, allerede oversatt
-                "xmlid": xmlid,
-                "valgt": navn in valgte,
-            })
+            ut.append(
+                {
+                    "key": navn,
+                    "label": handling.name,  # Odoos eget navn, allerede oversatt
+                    "xmlid": xmlid,
+                    "valgt": navn in valgte,
+                }
+            )
         return {"rapporter": ut, "antall_valgt": len(valgte)}
 
     @api.model
@@ -157,12 +158,15 @@ class FiqGuiFinData(models.AbstractModel):
         linjer = []
         for partner, sum_rest, eldste in faresignal[:5]:
             dager = (i_dag - eldste).days
-            linjer.append({
-                "tekst": "%s skylder %s kr — eldste %s dager" % (
-                    partner.display_name, int(sum_rest), dager,
-                ),
-                "res_id": partner.id,
-            })
+            linjer.append(
+                {
+                    "tekst": (
+                        f"{partner.display_name} skylder {int(sum_rest)} kr "
+                        f"— eldste {dager} dager"
+                    ),
+                    "res_id": partner.id,
+                }
+            )
 
         return {
             "haster": len(faresignal),
