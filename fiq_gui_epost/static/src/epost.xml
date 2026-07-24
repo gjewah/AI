@@ -209,9 +209,19 @@
                                 </button>
                                 <t t-if="!state.kollaps[g.key]">
                                     <button t-foreach="g.items" t-as="m" t-key="m.id"
-                                            t-att-class="'mi' + (state.valgt?.id===m.id?' on':'') + (m.ulest?' un':'')"
+                                            t-att-class="'mi' + (state.valgt?.id===m.id?' on':'') + (m.ulest?' un':'') + (m.pinnet?' pin':'')"
                                             t-on-click="() => this.velgMelding(m)">
-                                        <div class="r1"><span class="fr" t-esc="m.fra"/><span class="tm" t-esc="m.dato"/></div>
+                                        <div class="r1">
+                                            <span class="fr" t-esc="m.fra"/>
+                                            <!-- Pinn: personlig merke som holder meldingen øverst.
+                                                 `t-on-click` stopper videre klikk i vekslPinn(), så
+                                                 man ikke åpner meldingen ved å pinne den. -->
+                                            <span class="pinbtn" t-att-class="'pinbtn' + (m.pinnet?' on':'')"
+                                                  t-on-click="(ev) => this.vekslPinn(m, ev)"
+                                                  t-att-title="m.pinnet ? 'Løsne' : 'Fest øverst'"
+                                                  t-esc="m.pinnet ? '📌' : '📍'"/>
+                                            <span class="tm" t-esc="m.dato"/>
+                                        </div>
                                         <div class="su" t-esc="m.emne"/>
                                         <div class="pv" t-esc="m.preview"/>
                                         <div class="r3" t-if="m.status || m.element || m.risiko || (state.kryss_firma &amp;&amp; m.firma)">
@@ -241,7 +251,58 @@
                                 <button class="tbtn">Videresend</button>
                                 <button class="tbtn">Arkivér</button>
                                 <button class="tbtn">Tildel ansvarlig</button>
-                                <button class="tbtn ai">✦ AI</button>
+                                <!-- ✦ AI sto som en DØD knapp fram til 24.07 — samme
+                                     mønster som paringsfeltene: den så ut som en
+                                     funksjon og gjorde ingenting. -->
+                                <button class="tbtn ai" t-on-click="vekslAi"
+                                        t-att-class="'tbtn ai' + (state.ai.apen ? ' on' : '')">✦ AI</button>
+                            </div>
+
+                            <!-- AI-panel (masterspec §C.6/§C.13). Alt her VISER tekst;
+                                 kun «Legg inn» skriver, og bare etter at mennesket har
+                                 sett forslaget. -->
+                            <div class="aipanel" t-if="state.ai.apen">
+                                <div class="aitools">
+                                    <button class="tbtn" t-on-click="aiSammendrag">Sammendrag av tråden</button>
+                                    <button class="tbtn" t-on-click="aiOppsummer">Oppsummer denne</button>
+                                    <button class="tbtn" t-on-click="aiPlan">Steg-for-steg-plan</button>
+                                    <button class="tbtn" t-on-click="aiSjekkliste">Forslag til sjekkliste</button>
+                                </div>
+
+                                <div class="aiask">
+                                    <input placeholder="Spør om denne tråden …"
+                                           t-att-value="state.ai.sporsmal"
+                                           t-on-input="(ev) => this.state.ai.sporsmal = ev.target.value"
+                                           t-on-keydown="(ev) => ev.key === 'Enter' &amp;&amp; this.aiFritekst()"/>
+                                    <button class="tbtn pri" t-on-click="aiFritekst">Spør</button>
+                                </div>
+
+                                <div class="ailaster" t-if="state.ai.laster">Tenker …</div>
+                                <div class="aifeil" t-if="state.ai.feil" t-esc="state.ai.feil"/>
+
+                                <t t-if="!state.ai.laster">
+                                    <div class="aihode" t-if="state.ai.hva" t-esc="state.ai.hva"/>
+                                    <!-- 🔑 Si fra når tråden er avkortet. Et sammendrag som
+                                         stille bygger på halve tråden er verre enn ingen. -->
+                                    <div class="aiavkort" t-if="state.ai.utelatt">
+                                        Tråden er lang — <t t-esc="state.ai.utelatt"/> eldre melding(er)
+                                        er ikke med i grunnlaget.
+                                    </div>
+                                    <div class="aitekst" t-if="state.ai.tekst" t-esc="state.ai.tekst"/>
+
+                                    <!-- Forslag til sjekkliste: ikke lagret ennå -->
+                                    <div class="aipunkter" t-if="state.ai.punkter.length">
+                                        <div class="aipf">Forslag — fjern det du ikke vil ha, og legg inn resten:</div>
+                                        <div class="aip" t-foreach="state.ai.punkter" t-as="p" t-key="p_index">
+                                            <span t-esc="p"/>
+                                            <button class="aipx" t-on-click="() => this.fjernPunkt(p_index)"
+                                                    title="Fjern dette punktet">✕</button>
+                                        </div>
+                                        <button class="tbtn pri" t-on-click="lagreSjekkliste">
+                                            Legg inn <t t-esc="state.ai.punkter.length"/> punkt på oppgaven
+                                        </button>
+                                    </div>
+                                </t>
                             </div>
                             <div class="rbody">
                                 <h3 class="rsub" t-esc="state.valgt.emne"/>

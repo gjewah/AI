@@ -329,6 +329,7 @@ class FiqMeldingssenterData(models.AbstractModel):
             ] + dom
         msgs = Msg.search(dom, order="date desc", limit=limit)
         status_map = self._status_map(msgs.ids)
+        pinnet = self._pinn_sett(msgs.ids)
         out = []
         for m in msgs:
             internal = bool(
@@ -399,8 +400,13 @@ class FiqMeldingssenterData(models.AbstractModel):
                     "status": status_map.get(m.id, ""),
                     "status_navn": self._STATUS_NAVN.get(status_map.get(m.id), ""),
                     "risiko": self._risiko(m.subject, m.email_from, m.preview),
+                    "pinnet": m.id in pinnet,
                 }
             )
+        # Pinnede øverst — ellers hjelper ikke pinnen mot nettopp det den skal løse:
+        # at meldingen forsvinner i mengden. Innbyrdes rekkefølge er uendret (nyest
+        # først), fordi `sorted` i Python er stabil.
+        out.sort(key=lambda r: not r["pinnet"])
         return out
 
     # ---- Crawl / sortering: legg hver e-post i riktige bokser ------------------------
@@ -670,6 +676,45 @@ class FiqMeldingssenterData(models.AbstractModel):
     # Søket er defensivt: det kjører som brukeren (record rules gjelder) OG snevres til firmaene
     # brukeren lovlig ser (`_tillatte_firmaer`). Ingen kryss-tenant-lekkasje via et søkefelt.
 
+    @staticmethod
+    def _nummerterm(term):
+        """Gjør brukerens søketekst om til et SQL-mønster for nummerfeltet.
+
+        Gjermund 24.07.2026: «det må komme opp en kortere og kortere liste etter hvert
+        som du skriver nn*nn».
+
+        Tre ting skjer her:
+
+        1. **`*` blir `%`** — brukerens jokertegn. `25*63` finner «25_063».
+
+        2. **Skilletegn blir jokertegn.** 🔴 Målt i Production 24.07: nummereringen er
+           IKKE konsistent. Eldre prosjekter bruker understrek («25_063»), nyere bruker
+           bindestrek («26-018»). Skriver du «25-063» finner du derfor ingenting i dag,
+           selv om prosjektet finnes — og du har ingen måte å vite hvilket skilletegn
+           som gjelder for akkurat ditt år. Vi normaliserer begge til `_`, som er SQL-
+           jokertegn for ÉTT tegn, så begge skrivemåter treffer begge formene.
+
+        3. **Etterstilt `%`** — søket snevrer inn mens du skriver: «25» gir alle i 2025,
+           «25_0» færre, «25_063» ett treff. Uten den ville du måttet skrive nummeret
+           helt ut før noe dukket opp.
+
+        `%` fra brukeren fjernes: den er ikke et tegn i noe FIQ-nummer, og ville gjort
+        et søk til «vis alt» uten at brukeren skjønte hvorfor.
+        """
+        t = (term or "").strip().replace("%", "")
+        if not t:
+            # 🛑 Skrev brukeren BARE «%», står vi igjen med tom streng — og «» + «%»
+            # ville blitt «vis alt». `sok_mal()` avviser tomt søk før vi kommer hit,
+            # men en tom streng kan også oppstå HER, etter at vi har strippet. Da må
+            # svaret være et mønster som ikke treffer noe, ikke et som treffer alt.
+            return "__ingen_treff__"
+        t = t.replace("*", "%")
+        # `_` er SQL-joker for ett tegn — nettopp derfor egner den seg her: den treffer
+        # både «_» og «-» i de faktiske numrene.
+        for skilletegn in ("-", ".", " ", "/"):
+            t = t.replace(skilletegn, "_")
+        return t + "%"
+
     @api.model
     def sok_mal(self, term, slag="prosjekt", firm=False, limit=10):
         """Søk etter paringsmål mens brukeren skriver. `slag`: prosjekt|oppgave|ansvarlig.
@@ -703,9 +748,10 @@ class FiqMeldingssenterData(models.AbstractModel):
             if (slag == "oppgave" and "code" in f)
             else ("sequence_code" if "sequence_code" in f else False)
         )
+        nrterm = self._nummerterm(term)
         dom = ["|", ("name", "ilike", term)] if nrfelt else [("name", "ilike", term)]
         if nrfelt:
-            dom.append((nrfelt, "ilike", term))
+            dom.append((nrfelt, "=ilike", nrterm))
         if "company_id" in f:
             # 🔴 FANGET AV EGEN TEST 22.07: `company_id in [1]` utelukker poster med
             # TOMT firma — og et prosjekt uten firma er synlig for ALLE (det er hele
@@ -963,6 +1009,51 @@ class FiqMeldingssenterData(models.AbstractModel):
                 }
             )
         return True
+
+    def _pinn_sett(self, message_ids):
+        """Hvilke av disse meldingene har INNLOGGET bruker pinnet? → set med id-er.
+
+        Kun egne: record-rulen på modellen filtrerer allerede på `user_id`, men vi
+        spør eksplisitt også — da er det synlig i koden at pinnen er personlig, og
+        ikke noe man må lese sikkerhetsreglene for å oppdage.
+        """
+        if not message_ids:
+            return set()
+        recs = self.env["fiq.meldingssenter.pinn"].search(
+            [
+                ("message_id", "in", list(message_ids)),
+                ("user_id", "=", self.env.uid),
+            ]
+        )
+        return set(recs.mapped("message_id").ids)
+
+    @api.model
+    def sett_pinn(self, message_id, paa=True):
+        """Fest/løsne en melding øverst — Gjermund 24.07: «et Pinn som hindrer at
+        mailen forsvinner i mengden».
+
+        Pinnen er personlig (se modellen). Idempotent: å pinne noe som alt er pinnet
+        er ikke en feil, og å løsne noe som ikke er pinnet er heller ikke det —
+        knappen skal aldri kunne havne i utakt med det brukeren ser.
+        """
+        m = self.env["mail.message"].browse(int(message_id)).exists()
+        if not m:
+            return False
+        P = self.env["fiq.meldingssenter.pinn"]
+        rec = P.search(
+            [("message_id", "=", m.id), ("user_id", "=", self.env.uid)], limit=1
+        )
+        if paa and not rec:
+            P.create(
+                {
+                    "message_id": m.id,
+                    "user_id": self.env.uid,
+                    "company_id": self._melding_firma(m.id),
+                }
+            )
+        elif not paa and rec:
+            rec.unlink()
+        return bool(paa)
 
     @api.model
     def get_tverr_valg(self):

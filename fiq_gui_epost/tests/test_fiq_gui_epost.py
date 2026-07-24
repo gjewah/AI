@@ -405,6 +405,204 @@ class TestEpost(TransactionCase):
         self.assertTrue(fv["kan_vises"], "PDF skal kunne vises i nettleseren")
         self.assertNotIn("raw", fv)
 
+    # ---- AI-funksjonene (masterspec §C.6/§C.13, Gjermund 24.07) --------------------
+    #
+    # 🛑 Testene kaller ALDRI den ekte AI-tjenesten: den koster penger, krever nøkkel
+    # og gir ulikt svar hver gang. Det som testes er VÅR logikk rundt kallet —
+    # trådhenting, avkorting, opprydding av svaret og tilgangsvakten. Det er der
+    # feilene våre bor; modellens formuleringer er ikke vårt ansvar.
+
+    def test_ai_traad_henter_hele_kjeden_ikke_bare_meldingen(self):
+        """«Sammendrag av mailkjede» må se HELE kjeden.
+
+        Svar i Odoo henger på samme element, ikke nødvendigvis via parent_id. Ser vi
+        bare på parent-kjeden, oppsummerer vi én melding og kaller det en tråd."""
+        Ai = self.env["fiq.meldingssenter.ai"]
+        prosjekt = self.env["project.project"].create({"name": "TEST AI-tråd"})
+        laget = []
+        for i in range(3):
+            laget.append(
+                self.env["mail.message"].create(
+                    {
+                        "subject": f"TEST kjede {i}",
+                        "message_type": "email",
+                        "model": "project.project",
+                        "res_id": prosjekt.id,
+                        "body": f"<p>melding {i}</p>",
+                    }
+                )
+            )
+        traad = Ai._traad_meldinger(laget[0].id)
+        for m in laget:
+            self.assertIn(m, traad, "alle meldinger på elementet hører til tråden")
+
+    def test_ai_upart_melding_gir_bare_seg_selv(self):
+        """En melding uten element har ingen kjede — da er den sin egen tråd.
+        Uten dette ville `model`/`res_id` = False gitt et søk som traff ALT."""
+        Ai = self.env["fiq.meldingssenter.ai"]
+        m = self.env["mail.message"].create(
+            {"subject": "TEST upart AI", "message_type": "email", "body": "<p>x</p>"}
+        )
+        traad = Ai._traad_meldinger(m.id)
+        self.assertEqual(len(traad), 1)
+        self.assertEqual(traad.id, m.id)
+
+    def test_ai_lang_traad_avkortes_OG_SIER_IFRA(self):
+        """🔴 Kjernen: et sammendrag som stille bygger på halve tråden er verre enn
+        ingen sammendrag — leseren tror hun har fått med alt.
+
+        Avkortingen i seg selv er riktig (lange tråder koster og treffer dårligere).
+        Det som ikke er akseptabelt, er å gjøre det uten å si det."""
+        Ai = self.env["fiq.meldingssenter.ai"]
+        self.env["ir.config_parameter"].sudo().set_param(
+            "fiq_gui_epost.ai_maks_tegn", "2000"
+        )
+        prosjekt = self.env["project.project"].create({"name": "TEST AI lang"})
+        for i in range(12):
+            self.env["mail.message"].create(
+                {
+                    "subject": f"TEST lang {i}",
+                    "message_type": "email",
+                    "model": "project.project",
+                    "res_id": prosjekt.id,
+                    "body": "<p>" + ("innhold " * 60) + "</p>",
+                }
+            )
+        traad = Ai._traad_meldinger(
+            self.env["mail.message"]
+            .search([("model", "=", "project.project"), ("res_id", "=", prosjekt.id)])[
+                0
+            ]
+            .id
+        )
+        tekst, utelatt = Ai._som_tekst(traad)
+        self.assertTrue(utelatt, "med 2000 tegn og 12 lange meldinger MÅ noe utelates")
+        self.assertIn(
+            "utelatt",
+            tekst,
+            "avkortingen må stå i teksten AI-en leser — ellers oppsummerer den "
+            "halve tråden som om den var hel",
+        )
+
+    def test_ai_sjekkliste_krever_skriverett_paa_oppgaven(self):
+        """🛑 `res_id` kommer fra klienten. Uten tilgangssjekk kunne en gjettet id
+        lagt punkter inn i et prosjekt brukeren ikke har noe med."""
+        Ai = self.env["fiq.meldingssenter.ai"]
+        self.assertFalse(
+            Ai.lag_sjekkliste(999999999, ["TEST punkt"]),
+            "ukjent oppgave skal gi False, ikke opprette noe",
+        )
+
+    def test_ai_sjekkliste_lagrer_ingenting_uten_punkter(self):
+        """Tom liste = ingen deloppgaver. Et AI-svar kan være tomt, og da skal vi
+        ikke lage en oppgave som heter ingenting."""
+        Ai = self.env["fiq.meldingssenter.ai"]
+        prosjekt = self.env["project.project"].create({"name": "TEST AI sjekkliste"})
+        oppgave = self.env["project.task"].create(
+            {"name": "TEST oppgave", "project_id": prosjekt.id}
+        )
+        self.assertFalse(Ai.lag_sjekkliste(oppgave.id, []))
+        self.assertFalse(Ai.lag_sjekkliste(oppgave.id, ["   ", ""]))
+        self.assertFalse(oppgave.child_ids, "ingen deloppgaver skal ha blitt laget")
+
+    def test_ai_sjekkliste_legger_punkter_som_deloppgaver(self):
+        """Sjekklista skal bruke Odoos EGEN mekanikk (deloppgaver), ikke en egen
+        modell ved siden av — ellers skiller de to visningene lag."""
+        Ai = self.env["fiq.meldingssenter.ai"]
+        prosjekt = self.env["project.project"].create({"name": "TEST AI sjekkliste 2"})
+        oppgave = self.env["project.task"].create(
+            {"name": "TEST oppgave 2", "project_id": prosjekt.id}
+        )
+        r = Ai.lag_sjekkliste(oppgave.id, ["Punkt A", "Punkt B"])
+        self.assertEqual(r["antall"], 2)
+        navn = oppgave.child_ids.mapped("name")
+        self.assertIn("Punkt A", navn)
+        self.assertIn("Punkt B", navn)
+        self.assertEqual(
+            oppgave.child_ids[0].project_id,
+            prosjekt,
+            "deloppgaven må arve prosjektet — ellers havner den utenfor",
+        )
+
+    def test_ai_fritekst_uten_sporsmaal_kaller_ikke_tjenesten(self):
+        """Tomt spørsmål skal ikke koste et AI-kall. Returnerer tom tekst uten å
+        røre tjenesten — som ikke finnes i testmiljøet."""
+        Ai = self.env["fiq.meldingssenter.ai"]
+        m = self.env["mail.message"].create(
+            {"subject": "TEST fritekst", "message_type": "email", "body": "<p>x</p>"}
+        )
+        self.assertEqual(Ai.fritekst(m.id, "")["tekst"], "")
+        self.assertEqual(Ai.fritekst(m.id, "   ")["tekst"], "")
+
+    # ---- Pinn (Gjermund 24.07: «et Pinn som hindrer at mailen forsvinner») ---------
+
+    def test_pinn_er_personlig_ikke_felles(self):
+        """🔑 En pinn betyr «JEG må ikke miste denne av syne». Var den felles, ville
+        flaten fylles av andres påminnelser og funksjonen blitt ubrukelig."""
+        m = self.env["mail.message"].create(
+            {"subject": "TEST pinn", "message_type": "email", "body": "<p>x</p>"}
+        )
+        self.Data.sett_pinn(m.id, True)
+        self.assertIn(m.id, self.Data._pinn_sett([m.id]))
+        felt = self.env["fiq.meldingssenter.pinn"]._fields
+        self.assertIn("user_id", felt, "pinnen MÅ bære hvem som satte den")
+
+    def test_pinn_er_idempotent_begge_veier(self):
+        """Knappen skal aldri kunne havne i utakt med det brukeren ser: å pinne noe
+        som alt er pinnet — eller løsne noe som ikke er det — er ikke en feil."""
+        m = self.env["mail.message"].create(
+            {"subject": "TEST pinn 2", "message_type": "email", "body": "<p>x</p>"}
+        )
+        self.Data.sett_pinn(m.id, True)
+        self.Data.sett_pinn(m.id, True)
+        self.assertEqual(
+            self.env["fiq.meldingssenter.pinn"].search_count(
+                [("message_id", "=", m.id), ("user_id", "=", self.env.uid)]
+            ),
+            1,
+            "to klikk skal ikke gi to rader",
+        )
+        self.Data.sett_pinn(m.id, False)
+        self.Data.sett_pinn(m.id, False)
+        self.assertNotIn(m.id, self.Data._pinn_sett([m.id]))
+
+    # ---- Søk med nn*nn (Gjermund 24.07) -------------------------------------------
+
+    def test_nummersok_snevrer_inn_mens_du_skriver(self):
+        """«en kortere og kortere liste etter hvert som du skriver»."""
+        self.assertEqual(self.Data._nummerterm("25"), "25%")
+        self.assertEqual(self.Data._nummerterm("25_0"), "25_0%")
+
+    def test_nummersok_stjerne_er_brukerens_joker(self):
+        """Gjermunds `nn*nn` — stjerne midt i nummeret."""
+        self.assertEqual(self.Data._nummerterm("25*63"), "25%63%")
+
+    def test_nummersok_taaler_BEGGE_skilletegn(self):
+        """🔴 Målt i Production 24.07: nummereringen er IKKE konsistent — eldre
+        prosjekter bruker «25_063», nyere «26-018». Skriver du bindestrek der basen
+        har understrek, finner du ingenting, og du har ingen måte å vite hvilket
+        skilletegn som gjelder for året ditt.
+
+        `_` er SQL-joker for ett tegn, så begge skrivemåter treffer begge formene."""
+        self.assertEqual(self.Data._nummerterm("26-018"), "26_018%")
+        self.assertEqual(self.Data._nummerterm("25_063"), "25_063%")
+        self.assertEqual(self.Data._nummerterm("26.018"), "26_018%")
+
+    def test_nummersok_fjerner_prosent_fra_brukeren(self):
+        """`%` er ikke et tegn i noe FIQ-nummer. Slapp den gjennom, ville et søk
+        blitt til «vis alt» uten at brukeren skjønte hvorfor."""
+        self.assertEqual(self.Data._nummerterm("25%"), "25%")
+
+    def test_nummersok_bare_prosent_treffer_INGENTING(self):
+        """🔴 Fanget da testen over ble skrevet: «%» alene blir tom streng etter
+        strippingen, og «» + «%» er «vis alt» — stikk i strid med det stripping
+        skulle oppnå. En vakt som slår tilbake til det den skulle hindre."""
+        self.assertNotIn(
+            self.Data._nummerterm("%"),
+            ("%", ""),
+            "bare-prosent skal aldri bli et mønster som treffer alt",
+        )
+
     # ---- Dekning av `mail_message_search_global` (konsolidering, modul 1) ----------
     #
     # Modulen har ÉN metode — `action_open_related()` — som bygger en act_window mot

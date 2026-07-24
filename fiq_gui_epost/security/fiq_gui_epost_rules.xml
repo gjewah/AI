@@ -12,6 +12,16 @@
         <field name="model_id" ref="model_fiq_meldingssenter_note"/>
         <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
     </record>
+    <!-- Pinn er PERSONLIG: hver bruker ser kun sine egne.
+         🛑 Her holder det ikke med firma-scoping som for de andre. En pinn betyr
+         «jeg må ikke miste denne av syne» — så en delt pinneliste ville fylt flaten
+         med andres påminnelser og gjort funksjonen ubrukelig. Derfor user_id, ikke
+         company_id, som skille. -->
+    <record id="rule_msg_pinn_egen" model="ir.rule">
+        <field name="name">Meldingssenter pinn: kun egne</field>
+        <field name="model_id" ref="model_fiq_meldingssenter_pinn"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+    </record>
     <record id="rule_partner_relation_company" model="ir.rule">
         <field name="name">Kontakt-relasjon: firma-scoping</field>
         <field name="model_id" ref="model_fiq_partner_relation"/>

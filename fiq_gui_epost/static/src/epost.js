@@ -8,6 +8,9 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
 const DATA = "fiq.meldingssenter.data";
+// AI-handlingene ligger i en EGEN modell, ikke i datamodellen: de har et annet
+// ansvar (kaller en ekstern tjeneste, koster penger, kan feile på andre måter).
+const AI = "fiq.meldingssenter.ai";
 
 export class FiqMeldingssenter extends Component {
     static template = "fiq_gui_epost.MsgSenter";
@@ -49,6 +52,12 @@ export class FiqMeldingssenter extends Component {
                 oppgave: { nr: "", tekst: "", treff: [], valgt: false },
                 ansvarlig: { tekst: "", treff: [], valgt: false },
                 frist: "", apen: "", msg: "",
+            },
+            // AI-panel (masterspec §C.6/§C.13). `punkter` er FORSLAG som ikke er
+            // lagret ennå — de lagres først når mennesket trykker «Legg inn».
+            ai: {
+                apen: false, laster: false, hva: "", tekst: "",
+                punkter: [], sporsmal: "", feil: "", utelatt: 0,
             },
         });
         onWillStart(async () => {
@@ -576,6 +585,127 @@ export class FiqMeldingssenter extends Component {
         this.state.pkomm = { meldinger: [], laster: true };
         const r = await this.orm.call(DATA, "get_person_kommunikasjon", [this.state.person.id]);
         this.state.pkomm = { ...r, laster: false };
+    }
+
+    // ---- AI-hjelp på den valgte meldingen (masterspec §C.6/§C.13) -------------------
+    //
+    // 🛑 Alt her VISER tekst. Ingenting lagres uten at mennesket trykker en egen
+    // knapp etterpå — se `lagreSjekkliste()`. En AI som skriver rett inn i noen
+    // andres prosjekt lager arbeid ingen har bestilt.
+
+    vekslAi() {
+        this.state.ai.apen = !this.state.ai.apen;
+    }
+
+    /** Felles kjøring for de fire tekst-handlingene. Én vei inn = én vei å feile på. */
+    async kjorAi(hva, metode) {
+        if (!this.state.valgt) { return; }
+        const a = this.state.ai;
+        a.apen = true; a.laster = true; a.hva = hva;
+        a.tekst = ""; a.punkter = []; a.feil = ""; a.utelatt = 0;
+        try {
+            const r = await this.orm.call(AI, metode, [this.state.valgt.id]);
+            a.tekst = (r && r.tekst) || "";
+            a.utelatt = (r && r.utelatt) || 0;
+        } catch (e) {
+            // Vis feilen. Et tomt panel ser ut som «AI-en hadde ingenting å si».
+            a.feil = (e && e.message && e.message.data && e.message.data.message)
+                || (e && e.message) || "AI-tjenesten svarte ikke.";
+        } finally {
+            a.laster = false;
+        }
+    }
+
+    aiSammendrag() { return this.kjorAi("Sammendrag av tråden", "sammendrag_traad"); }
+    aiOppsummer() { return this.kjorAi("Oppsummering", "oppsummer"); }
+    aiPlan() { return this.kjorAi("Steg-for-steg-plan", "steg_for_steg"); }
+
+    /** Sjekkliste: hent FORSLAG. Lagring er en egen, bevisst handling. */
+    async aiSjekkliste() {
+        if (!this.state.valgt) { return; }
+        const a = this.state.ai;
+        a.apen = true; a.laster = true; a.hva = "Forslag til sjekkliste";
+        a.tekst = ""; a.punkter = []; a.feil = "";
+        try {
+            const r = await this.orm.call(AI, "forslag_sjekkliste", [this.state.valgt.id]);
+            a.punkter = (r && r.punkter) || [];
+            if (!a.punkter.length) { a.tekst = "Fant ingen konkrete punkter i denne tråden."; }
+        } catch (e) {
+            a.feil = (e && e.message && e.message.data && e.message.data.message)
+                || (e && e.message) || "AI-tjenesten svarte ikke.";
+        } finally {
+            a.laster = false;
+        }
+    }
+
+    /** Fjern et foreslått punkt før det lagres — mennesket redigerer forslaget. */
+    fjernPunkt(i) {
+        this.state.ai.punkter.splice(i, 1);
+    }
+
+    /** Lagre de godkjente punktene som deloppgaver. Krever at en OPPGAVE er valgt:
+     *  en sjekkliste hører hjemme på en oppgave, ikke på et helt prosjekt. */
+    async lagreSjekkliste() {
+        const a = this.state.ai;
+        const valgt = this.state.paring.oppgave.valgt;
+        const m = this.state.valgt;
+        // Enten en oppgave valgt i paringsfeltet, eller meldingen er alt paret med en.
+        const oppgaveId = (valgt && valgt.id)
+            || (m && m.model === "project.task" ? m.res_id : false);
+        if (!oppgaveId) {
+            a.feil = "Velg en oppgave først — en sjekkliste hører hjemme på en oppgave.";
+            return;
+        }
+        if (!a.punkter.length) { return; }
+        a.laster = true; a.feil = "";
+        try {
+            const r = await this.orm.call(AI, "lag_sjekkliste", [oppgaveId, a.punkter]);
+            if (r && r.antall) {
+                a.punkter = [];
+                a.tekst = r.antall + " punkt lagt inn på «" + (r.oppgave || "oppgaven") + "».";
+            } else {
+                a.feil = "Kunne ikke legge inn punktene. Har du skrivetilgang til oppgaven?";
+            }
+        } catch (e) {
+            a.feil = (e && e.message) || "Kunne ikke legge inn punktene.";
+        } finally {
+            a.laster = false;
+        }
+    }
+
+    /** Fritt spørsmål om DENNE tråden. «Spør AI» i Kontrollrommet er den generelle
+     *  inngangen; her er poenget at svaret handler om saken foran deg. */
+    async aiFritekst() {
+        const a = this.state.ai;
+        const q = (a.sporsmal || "").trim();
+        if (!q || !this.state.valgt) { return; }
+        a.laster = true; a.hva = "Svar"; a.tekst = ""; a.punkter = []; a.feil = "";
+        try {
+            const r = await this.orm.call(AI, "fritekst", [this.state.valgt.id, q]);
+            a.tekst = (r && r.tekst) || "";
+        } catch (e) {
+            a.feil = (e && e.message && e.message.data && e.message.data.message)
+                || (e && e.message) || "AI-tjenesten svarte ikke.";
+        } finally {
+            a.laster = false;
+        }
+    }
+
+    // ---- Pinn (Gjermund 24.07: «hindrer at mailen forsvinner i mengden») ------------
+
+    /** Fest/løsne. Oppdaterer raden med én gang — en pinne-knapp som «tenker» før
+     *  den viser noe, føles ødelagt. Backend er idempotent, så vi kan trygt speile. */
+    async vekslPinn(m, ev) {
+        if (ev) { ev.stopPropagation(); }   // ikke velg meldingen når man pinner den
+        const ny = !m.pinnet;
+        m.pinnet = ny;
+        try {
+            await this.orm.call(DATA, "sett_pinn", [m.id, ny]);
+        } catch (e) {
+            m.pinnet = !ny;                 // slå tilbake: vis sannheten, ikke ønsket
+        }
+        // Pinnede øverst — det er hele poenget med en pinn.
+        this.state.meldinger.sort((a, b) => (a.pinnet === b.pinnet) ? 0 : (a.pinnet ? -1 : 1));
     }
 
     /** Klikk en melding i personens historikk → åpne den der den hører hjemme.

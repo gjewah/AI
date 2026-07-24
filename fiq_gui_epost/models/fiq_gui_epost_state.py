@@ -42,6 +42,46 @@ class FiqMeldingssenterState(models.Model):
     tverr_av = fields.Many2one("res.users", string="Overstyrt av", readonly=True)
     tverr_dato = fields.Datetime(string="Overstyrt", readonly=True)
 
+    # --- Pinn (Gjermund 24.07.2026) --------------------------------------------
+    # «et Pinn som hindrer at mailen forsvinner i mengden»
+    #
+    # 🔑 Pinn er PERSONLIG, ikke felles. Arbeidsstatus og gruppe sier noe om SAKEN og
+    # deles av teamet; en pinn sier «jeg må ikke miste denne av syne» og gjelder bare
+    # den som satte den. Ville vi delt den, ville to personer overskrevet hverandre —
+    # og en pinn du ikke har satt selv er bare støy.
+    #
+    # Derfor egen sidecar-modell nedenfor (unik per melding+bruker), ikke et felt her:
+    # denne posten er DELT per melding, og et `pinnet`-felt her ville vært felles.
+
+
+class FiqMeldingssenterPinn(models.Model):
+    """Én pinn = én bruker har festet én melding øverst.
+
+    Egen modell fordi pinnen er per BRUKER: `fiq.meldingssenter.state` er delt per
+    melding, så et felt der ville gjort pinnen felles for hele teamet.
+    """
+
+    _name = "fiq.meldingssenter.pinn"
+    _description = "Meldingssenter – pinnet melding (per bruker)"
+    _order = "create_date desc"
+
+    message_id = fields.Many2one(
+        "mail.message", required=True, ondelete="cascade", index=True
+    )
+    user_id = fields.Many2one(
+        "res.users", default=lambda self: self.env.user, required=True, index=True
+    )
+    company_id = fields.Many2one(
+        "res.company", default=lambda self: self.env.company, index=True
+    )
+
+    # Én pinn per melding per bruker. Uten skranken ville gjentatte klikk på
+    # pinne-knappen lagt igjen en rad hver gang.
+    _melding_bruker_uniq = models.Constraint(
+        "unique(message_id, user_id)",
+        "Meldingen er allerede pinnet av denne brukeren.",
+    )
+
 
 class FiqMeldingssenterNote(models.Model):
     _name = "fiq.meldingssenter.note"

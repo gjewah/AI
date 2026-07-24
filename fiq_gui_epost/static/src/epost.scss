@@ -431,4 +431,42 @@
   .kv .kk.salg{background:var(--gronn)}.kv .kk.opg{background:var(--blaa)}.kv .kk.hd{background:var(--oransje)}.kv .kk.kal{background:var(--lilla)}
   .kv .kn{flex:1;min-width:0}
   .kv .kd{color:var(--muted);font-family:var(--mono);font-size:10px;flex:none}
+
+  // ---- Pinn (Gjermund 24.07) ---------------------------------------------------
+  // Pinnen skal SES i en lang liste — det er hele hensikten. Derfor en tydelig
+  // venstrekant på raden, ikke bare et lite ikon.
+  .mi.pin{border-left:3px solid var(--oransje);background:var(--surface-2)}
+  .pinbtn{cursor:pointer;opacity:.25;font-size:12px;line-height:1;padding:0 4px;flex:none}
+  .pinbtn:hover{opacity:.75}
+  .pinbtn.on{opacity:1}
+  .mi .r1{display:flex;align-items:center;gap:6px}
+  .mi .r1 .fr{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  // ---- AI-panel (masterspec §C.6/§C.13) ----------------------------------------
+  .tbtn.ai.on{background:var(--lilla);color:#fff;border-color:var(--lilla)}
+  .aipanel{border:1px solid var(--line);border-radius:10px;background:var(--surface-2);
+           padding:11px;margin:0 12px 10px;display:flex;flex-direction:column;gap:9px}
+  .aitools{display:flex;flex-wrap:wrap;gap:6px}
+  .aiask{display:flex;gap:6px}
+  .aiask input{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;
+               padding:6px 9px;font-size:12.5px;background:var(--surface);color:var(--ink)}
+  .ailaster{font-size:12px;color:var(--muted);font-style:italic}
+  .aifeil{font-size:12px;color:#fff;background:var(--rod);border-radius:8px;padding:7px 9px}
+  .aihode{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;
+          color:var(--muted);font-family:var(--mono)}
+  // Avkortings-varselet skal IKKE se ut som pynt: leseren må forstå at grunnlaget
+  // er ufullstendig før hun stoler på sammendraget.
+  .aiavkort{font-size:11.5px;color:var(--ink);background:var(--oransje);
+            border-radius:8px;padding:6px 9px;font-weight:600}
+  // `pre-wrap`: svaret kommer med linjeskift og punktlister som skal overleve.
+  .aitekst{font-size:12.5px;line-height:1.55;white-space:pre-wrap;color:var(--ink)}
+  .aipunkter{display:flex;flex-direction:column;gap:5px}
+  .aipf{font-size:11.5px;color:var(--muted)}
+  .aip{display:flex;align-items:flex-start;gap:7px;font-size:12.5px;
+       background:var(--surface);border:1px solid var(--line-soft);
+       border-radius:8px;padding:6px 9px}
+  .aip span{flex:1;min-width:0}
+  .aipx{border:none;background:none;color:var(--muted);cursor:pointer;
+        font-size:12px;line-height:1;padding:0 2px;flex:none}
+  .aipx:hover{color:var(--rod)}
 }
