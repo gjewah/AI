@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """FIQ AI — tynn shim mot Odoo 19 native AI, grunnet med FIQ-kontekst.
 
 Kontrollrommet («Spør AI») kaller ``self.env["fiq.ai"].chat(q)``. Vi delegerer
@@ -13,6 +12,7 @@ holdes ren for Meldingssenter/Salg. Config-drevet: overstyrbar systemparam
 ``fiq_ai.system_context`` med modul-konstant ``FIQ_SPORAI_CONTEXT`` som durabel
 fallback.
 """
+
 import logging
 
 from odoo import api, models
@@ -54,8 +54,12 @@ class FiqAi(models.AbstractModel):
         if not q:
             return ""
         if system is None:
-            system = (self.env["ir.config_parameter"].sudo()
-                      .get_param("fiq_ai.system_context") or FIQ_SPORAI_CONTEXT)
+            system = (
+                self.env["ir.config_parameter"]
+                .sudo()
+                .get_param("fiq_ai.system_context")
+                or FIQ_SPORAI_CONTEXT
+            )
         # Importeres lokalt så modul-lasting ikke feiler om «ai» ikke er klar ved import.
         from odoo.addons.ai.utils.llm_api_service import LLMApiService
 

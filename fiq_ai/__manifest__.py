@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 {
     "name": "FIQ AI (shim → native Odoo 19 AI)",
     "summary": "Tynn fiq.ai.chat(q)→str som delegerer til Odoo 19 native AI (Anthropic via fiq_ai_claude).",
@@ -14,7 +13,7 @@ Nøkkel/base-URL settes som systemparametere (Gjermund): ``ai.anthropic_key`` /
 ``ai.anthropic_base_url``. Uten nøkkel kaster native-tjenesten UserError, som
 «Spør AI» viser i klartekst.
 """,
-    "version": "19.0.1.3.0",
+    "version": "19.0.1.3.1",
     "category": "Productivity/AI",
     "author": "FIQ AS",
     "license": "OPL-1",

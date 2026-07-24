@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
 """FIQ AI — 2-stegs oppsett-wizard for Claude-nøkkelen.
 
 Steg 1: lenke til Anthropic Console for å hente en API-nøkkel.
 Steg 2: lim inn nøkkelen → lagres i systemparameteren ``ai.anthropic_key`` +
         valgfri live-test mot Claude.
 """
-from odoo import api, fields, models, _
+
+from odoo import _, fields, models
 from odoo.exceptions import UserError
 
 KEY_PARAM = "ai.anthropic_key"
@@ -18,7 +18,9 @@ class FiqAiSetupWizard(models.TransientModel):
 
     state = fields.Selection(
         [("step1", "Steg 1 — hent nøkkel"), ("step2", "Steg 2 — lim inn nøkkel")],
-        default="step1", string="Steg")
+        default="step1",
+        string="Steg",
+    )
     anthropic_key = fields.Char(string="Claude API-nøkkel")
     key_is_set = fields.Boolean(string="Nøkkel alt satt", compute="_compute_key_is_set")
     test_result = fields.Text(string="Resultat", readonly=True)
@@ -57,7 +59,9 @@ class FiqAiSetupWizard(models.TransientModel):
         self.env["ir.config_parameter"].sudo().set_param(KEY_PARAM, key)
         try:
             ans = self.env["fiq.ai"].chat(_("Svar med nøyaktig denne teksten: OK"))
-            self.test_result = _("✅ Nøkkel lagret. Claude svarte: «%s». «Spør AI» er nå aktiv.") % ans
+            self.test_result = (
+                _("✅ Nøkkel lagret. Claude svarte: «%s». «Spør AI» er nå aktiv.") % ans
+            )
         except Exception as exc:  # noqa: BLE001 — vis feilen til brukeren
             # 🔴 SIKKERHET (funnet av enhetstesten 2026-07-23): Anthropics
             # 401-svar kan ekko-e nøkkelen. `test_result` lagres i basen og vises
