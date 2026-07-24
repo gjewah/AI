@@ -4,22 +4,28 @@ from odoo import fields, models
 class ResCompany(models.Model):
     _inherit = "res.company"
 
-    # Per-company branding for the Control room. Generic: every company shares the same
-    # dark-grey sidebar; only the accent color + logo vary.
+    # Merkevare per firma i Kontrollrommet. Generisk: alle firmaer deler den samme
+    # mørkegrå sidemenyen; bare aksentfargen og logoen varierer.
+    #
+    # 🔑 NORSK ER KILDESPRÅKET — engelsk er oversettelsen ([[norsk-spraklinje-er-fasit]]).
+    # Etikettene sto på engelsk fram til 24.07.2026, en rest etter 18→19-oppgraderingen.
+    # De VIRKET (nb_NO.po hadde treff på alle), men brøt husregelen: norsk bokmål er
+    # hovedspråk i alle baser, og den norske linja er fasit. Er engelsk kilden, blir norsk
+    # en avledning — og en engelsk streng ingen har rørt på år blir sannheten koden leser.
     fiq_control_accent = fields.Char(
-        string="Control room accent color",
+        string="Aksentfarge i Kontrollrommet",
         default="#38B44A",
-        help="Hex color used as the accent in the Control room (active menu, KPI, progress).",
+        help="Hex-farge brukt som aksent i Kontrollrommet (aktiv meny, nøkkeltall, fremdrift).",
     )
     fiq_control_logo = fields.Binary(
-        string="Control room logo (light variant)",
-        help="Logo shown in the Control room top bar and sidebar. Use a variant that reads "
-        "on a dark background (white/silver) for the sidebar.",
+        string="Logo i Kontrollrommet (lys variant)",
+        help="Logo som vises i Kontrollrommets topplinje og sidemeny. Bruk en variant som er "
+        "lesbar mot mørk bakgrunn (hvit/sølv) til sidemenyen.",
     )
     fiq_control_as_home = fields.Boolean(
-        string="Start in Control room",
+        string="Start i Kontrollrommet",
         default=False,
-        help="When ON: internal users in this company get the Control room as their start page. "
-        "When OFF: users keep/get back Odoo's standard start page (unlocks). "
-        "Admin-controlled — turn on only once the dashboard is verified stable.",
+        help="Slått PÅ: interne brukere i dette firmaet får Kontrollrommet som startside. "
+        "Slått AV: brukerne beholder eller får tilbake Odoos standard startside. "
+        "Styres av administrator — slå på først når flaten er verifisert stabil.",
     )

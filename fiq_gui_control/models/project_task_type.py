@@ -10,8 +10,10 @@ class ProjectTaskType(models.Model):
 
     _inherit = "project.task.type"
 
+    # 🔑 Norsk er kildespråket — engelsk er oversettelsen ([[norsk-spraklinje-er-fasit]]).
+    # Sto på engelsk fram til 24.07.2026, en rest etter 18→19-oppgraderingen.
     fiq_ai_stage = fields.Boolean(
-        string="AI Stage",
-        help="Mark this stage as part of the FIQ AI workflow. "
-        "The Control room can then show/select the AI stages. Does not change any tasks.",
+        string="AI-stadium",
+        help="Merk dette stadiet som en del av FIQ AI-arbeidsflyten. "
+        "Kontrollrommet kan da vise og velge AI-stadiene. Endrer ingen oppgaver.",
     )

@@ -40,12 +40,18 @@ class FiqControlRoomConfig(models.Model):
         index=True,
         default=lambda s: s.env.company,
     )
+    # 🔑 Norsk er kildespråket — engelsk er oversettelsen ([[norsk-spraklinje-er-fasit]]).
+    # Etikett og valgverdier sto på engelsk fram til 24.07.2026 (rest etter 18→19).
     level = fields.Selection(
-        [("pulse", "Pulse (summary)"), ("balansert", "Balanced"), ("detaljert", "Detailed")],
-        string="Detail level",
+        [
+            ("pulse", "Puls (sammendrag)"),
+            ("balansert", "Balansert"),
+            ("detaljert", "Detaljert"),
+        ],
+        string="Detaljnivå",
         default="balansert",
         required=True,
-        help="Role-based detail level: Pulse (executive) · Balanced (project manager) · Detailed (power).",
+        help="Rollestyrt detaljnivå: Puls (ledelse) · Balansert (prosjektleder) · Detaljert (superbruker).",
     )
     # ── POSISJONSDELING — ÉN BRYTER FOR BEGGE FLATER (Gjermund 20.07) ──────────────────
     #

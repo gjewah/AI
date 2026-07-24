@@ -115,3 +115,74 @@ msgstr "Person"
 #: model:ir.model.fields.selection,name:fiq_gui_control.selection__fiq_gui_suggestion__kilde__ai
 msgid "AI"
 msgstr "AI"
+
+#. ════════════════════════════════════════════════════════════════════════════════
+#. FELT SOM STO PÅ ENGELSK FRAM TIL 24.07.2026 — rest etter 18→19-oppgraderingen.
+#. Norsk er nå kilden, dette er den engelske oversettelsen.
+#. Gjermund 24.07: «det var 18-19 oppgraderingen som gjorde feilen.»
+#. ════════════════════════════════════════════════════════════════════════════════
+
+#. module: fiq_gui_control
+#: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__level
+msgid "Detaljnivå"
+msgstr "Detail level"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields.selection,name:fiq_gui_control.selection__fiq_gui_control_config__level__pulse
+msgid "Puls (sammendrag)"
+msgstr "Pulse (summary)"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields.selection,name:fiq_gui_control.selection__fiq_gui_control_config__level__balansert
+msgid "Balansert"
+msgstr "Balanced"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields.selection,name:fiq_gui_control.selection__fiq_gui_control_config__level__detaljert
+msgid "Detaljert"
+msgstr "Detailed"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields,field_description:fiq_gui_control.field_project_task__fiq_manual_pct
+msgid "Manuell fremdrift (%)"
+msgstr "Manual progress (%)"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields,field_description:fiq_gui_control.field_project_task__fiq_pct_mode
+msgid "Overstyring av fremdrift"
+msgstr "Progress override"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields.selection,name:fiq_gui_control.selection__project_task__fiq_pct_mode__av
+msgid "Av (kun timer)"
+msgstr "Off (hours only)"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields.selection,name:fiq_gui_control.selection__project_task__fiq_pct_mode__erstatt
+msgid "Erstatter den timebaserte fremdriften"
+msgstr "Replaces the hour-based progress"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields.selection,name:fiq_gui_control.selection__project_task__fiq_pct_mode__adder
+msgid "Legges til den timebaserte fremdriften"
+msgstr "Added on top of the hour-based progress"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields,field_description:fiq_gui_control.field_project_task_type__fiq_ai_stage
+msgid "AI-stadium"
+msgstr "AI Stage"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields,field_description:fiq_gui_control.field_res_company__fiq_control_accent
+msgid "Aksentfarge i Kontrollrommet"
+msgstr "Control room accent color"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields,field_description:fiq_gui_control.field_res_company__fiq_control_logo
+msgid "Logo i Kontrollrommet (lys variant)"
+msgstr "Control room logo (light variant)"
+
+#. module: fiq_gui_control
+#: model:ir.model.fields,field_description:fiq_gui_control.field_res_company__fiq_control_as_home
+msgid "Start i Kontrollrommet"
+msgstr "Start in Control room"

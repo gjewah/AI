@@ -147,11 +147,6 @@ msgid "AI Copilot"
 msgstr "AI Copilot"
 
 #. module: fiq_gui_control
-#: model:ir.model.fields,field_description:fiq_gui_control.field_project_task_type__fiq_ai_stage
-msgid "AI Stage"
-msgstr "AI-stadium"
-
-#. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "AI error: "
@@ -315,11 +310,6 @@ msgid "Back to the Control room"
 msgstr "Tilbake til Kontrollrommet"
 
 #. module: fiq_gui_control
-#: model:ir.model.fields.selection,name:fiq_gui_control.selection__fiq_gui_control_config__level__balansert
-msgid "Balanced"
-msgstr "Balansert"
-
-#. module: fiq_gui_control
 #: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__widget_order
 msgid "Block order"
 msgstr "Blokk-rekkefølge"
@@ -472,16 +462,6 @@ msgid "Control room Admin"
 msgstr "Kontrollrom-admin"
 
 #. module: fiq_gui_control
-#: model:ir.model.fields,field_description:fiq_gui_control.field_res_company__fiq_control_accent
-msgid "Control room accent color"
-msgstr "Kontrollrommets aksentfarge"
-
-#. module: fiq_gui_control
-#: model:ir.model.fields,field_description:fiq_gui_control.field_res_company__fiq_control_logo
-msgid "Control room logo (light variant)"
-msgstr "Kontrollrom-logo (lys variant)"
-
-#. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.js:0
 msgid "Could not change status — "
@@ -569,16 +549,6 @@ msgstr "Desember"
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Decision support"
 msgstr "Beslutningsstøtte"
-
-#. module: fiq_gui_control
-#: model:ir.model.fields,field_description:fiq_gui_control.field_fiq_gui_control_config__level
-msgid "Detail level"
-msgstr "Detaljnivå"
-
-#. module: fiq_gui_control
-#: model:ir.model.fields.selection,name:fiq_gui_control.selection__fiq_gui_control_config__level__detaljert
-msgid "Detailed"
-msgstr "Detaljert"
 
 #. module: fiq_gui_control
 #. odoo-javascript
@@ -1358,11 +1328,6 @@ msgid "Projects"
 msgstr "Prosjekt"
 
 #. module: fiq_gui_control
-#: model:ir.model.fields.selection,name:fiq_gui_control.selection__fiq_gui_control_config__level__pulse
-msgid "Pulse (summary)"
-msgstr "Puls (sammendrag)"
-
-#. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "QA"
@@ -1662,11 +1627,6 @@ msgstr "Sortér på frist"
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Stage"
 msgstr "Stadium"
-
-#. module: fiq_gui_control
-#: model:ir.model.fields,field_description:fiq_gui_control.field_res_company__fiq_control_as_home
-msgid "Start in Control room"
-msgstr "Start i Kontrollrommet"
 
 #. module: fiq_gui_control
 #. odoo-javascript
@@ -2710,13 +2670,6 @@ msgstr "Førte timer"
 #. module: fiq_gui_control
 #. odoo-javascript
 #: code:addons/fiq_gui_control/static/src/control_room.xml:0
-#: model:ir.model.fields,field_description:fiq_gui_control.field_project_task__fiq_manual_pct
-msgid "Manual progress (%)"
-msgstr "Manuell fremdrift (%)"
-
-#. module: fiq_gui_control
-#. odoo-javascript
-#: code:addons/fiq_gui_control/static/src/control_room.xml:0
 msgid "Applies as"
 msgstr "Gjelder som"
 
@@ -2780,29 +2733,9 @@ msgid "Manually assessed progress for this task. Applied according to the progre
 msgstr "Manuelt vurdert fremdrift for denne oppgaven. Brukes i henhold til overstyringsmodusen."
 
 #. module: fiq_gui_control
-#: model:ir.model.fields,field_description:fiq_gui_control.field_project_task__fiq_pct_mode
-msgid "Progress override"
-msgstr "Fremdrifts-overstyring"
-
-#. module: fiq_gui_control
 #: model:ir.model.fields,help:fiq_gui_control.field_project_task__fiq_pct_mode
 msgid "How the manual percentage is combined with logged/estimated hours in the Control room."
 msgstr "Hvordan den manuelle prosenten kombineres med førte/estimerte timer i Kontrollrommet."
-
-#. module: fiq_gui_control
-#: model:ir.model.fields.selection,name:fiq_gui_control.selection__project_task__fiq_pct_mode__av
-msgid "Off (hours only)"
-msgstr "Av (kun timer)"
-
-#. module: fiq_gui_control
-#: model:ir.model.fields.selection,name:fiq_gui_control.selection__project_task__fiq_pct_mode__erstatt
-msgid "Replaces the hour-based progress"
-msgstr "Erstatter timebasert fremdrift"
-
-#. module: fiq_gui_control
-#: model:ir.model.fields.selection,name:fiq_gui_control.selection__project_task__fiq_pct_mode__adder
-msgid "Added on top of the hour-based progress"
-msgstr "Legges til timebasert fremdrift"
 
 #. module: fiq_gui_control
 #. odoo-javascript
