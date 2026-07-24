@@ -1005,6 +1005,147 @@ class TestRgsData(TransactionCase):
         self.assertIn("41", f["begrunnelse"])
         self.assertIn("6", f["grunnlag"])
 
+    # ---------- KRITISKE POSTER — hadde NULL dekning før 24.07 ----------
+
+    def test_kritiske_poster_viser_kun_forfalte(self):
+        """«Kritisk» betyr FORFALT. Et bilag som ikke har forfalt hører ikke hjemme.
+
+        Uten denne grensa ville lista blandet «gjør noe nå» med «følg med», og
+        daglig leder mister skillet. Samme skille som bøttene i grunnbildet —
+        men her på HVILKE poster, ikke bare hvor mye.
+        """
+        forfalt = self._faktura(-30, belop=15000.0)
+        self._faktura(30, belop=99000.0)  # langt fram — skal IKKE med
+
+        numre = [p["nummer"] for p in self.Data.hent_kritiske_poster()]
+        self.assertIn(forfalt.name, numre, "Forfalt bilag mangler i kritiske poster")
+        self.assertEqual(
+            len([n for n in numre if n]),
+            len(numre),
+            "Alle poster må ha bilagsnummer",
+        )
+        for post in self.Data.hent_kritiske_poster():
+            self.assertLess(
+                post["forfall"],
+                fields.Date.context_today(self.Data),
+                f"Post {post['nummer']} har ikke forfalt og skal ikke være «kritisk»",
+            )
+
+    def test_kritiske_poster_taaler_bilag_uten_motpart(self):
+        """🔴 KANT: et bilag UTEN partner skal ikke felle flaten.
+
+        `p["partner_id"]` er `False` når motparten mangler, og `False[1]` gir
+        TypeError. Koden har en «—»-fallback; denne testen låser at den virker.
+        Et bilag uten motpart er uvanlig, men det finnes — og en flate som
+        krasjer på ett rart bilag viser ingenting for de andre nitten.
+        """
+        faktura = self._faktura(-20, belop=7000.0)
+        faktura.sudo().write({"partner_id": False})
+
+        poster = self.Data.hent_kritiske_poster()
+        mine = [p for p in poster if p["nummer"] == faktura.name]
+        self.assertTrue(mine, "Bilag uten motpart forsvant helt fra lista")
+        self.assertEqual(
+            mine[0]["motpart"], "—", "Manglende motpart må vises som «—», ikke tomt"
+        )
+
+    def test_kritiske_poster_respekterer_grensen(self):
+        """`grense` må faktisk begrense — ellers laster flaten hele reskontroen.
+
+        Standard er 10. Med 12 forfalte bilag skal vi få 10, ikke 12. En flate
+        som henter alt bruker minutter på en base med tusenvis av bilag.
+        """
+        for i in range(12):
+            self._faktura(-40 - i, belop=1000.0 + i)
+
+        self.assertLessEqual(
+            len(self.Data.hent_kritiske_poster()), 10, "Standardgrensen på 10 brytes"
+        )
+        self.assertLessEqual(
+            len(self.Data.hent_kritiske_poster(grense=3)),
+            3,
+            "Eksplisitt grense respekteres ikke",
+        )
+
+    def test_kritiske_poster_sorterer_stoerst_foerst(self):
+        """Rekkefølgen er ikke kosmetikk — den avgjør hva som vises innenfor grensa.
+
+        Med `limit=10` og feil sortering forsvinner de STØRSTE postene ut av
+        lista. Da ser daglig leder ti småbeløp og tror det er hele bildet.
+        """
+        for i in range(12):
+            self._faktura(-40 - i, belop=1000.0 * (i + 1))
+
+        belop = [p["belop"] for p in self.Data.hent_kritiske_poster()]
+        self.assertEqual(
+            belop, sorted(belop, reverse=True), "Postene er ikke sortert største først"
+        )
+
+    def test_kritiske_poster_skiller_inn_og_ut(self):
+        """En kundefaktura og en leverandørfaktura er motsatte pengestrømmer.
+
+        Blandes retningen, ser daglig leder penger som skal INN som noe vi
+        skylder — eller motsatt. `retning` er flatens eneste signal om hvilken
+        vei pengene går.
+        """
+        inn = self._faktura(-25, belop=8000.0, type_="out_invoice")
+        ut = self._faktura(-25, belop=6000.0, type_="in_invoice")
+
+        retning = {p["nummer"]: p["retning"] for p in self.Data.hent_kritiske_poster()}
+        self.assertEqual(retning.get(inn.name), "inn", "Kundefaktura er penger INN")
+        self.assertEqual(retning.get(ut.name), "ut", "Leverandørfaktura er penger UT")
+
+    # ---------- BANKAVSTEMMING — hadde NULL dekning før 24.07 ----------
+
+    def test_bankavstemming_teller_journaler_i_eget_firma(self):
+        """🛑 TENANT: banktilstanden i ET ANNET firma er ikke vår sak.
+
+        `hent_bankavstemming` teller bankjournaler. Uten firmagrense ville en
+        bruker sett at «avstemming er mulig» fordi et helt annet selskap har
+        satt opp bankkobling. Det er feil svar på et spørsmål om EGET firma.
+        """
+        b = self.Data.hent_bankavstemming()
+        egne = self.env["account.journal"].search_count(
+            [("type", "=", "bank"), ("company_id", "=", self.env.company.id)]
+        )
+        self.assertEqual(
+            b["bankjournaler"], egne, "Teller journaler utenfor eget firma"
+        )
+
+    def test_bankavstemming_uten_kilde_kan_ikke_bekrefte(self):
+        """🔴 Målt på fiqas Production 23.07: kilde «undefined», 0 utskriftslinjer.
+
+        Er ingen kilde valgt, KAN ingen betaling bekreftes mot bank. Da må
+        `avstemming_mulig` være False — og merknaden må forklare hvorfor.
+        Uten forklaringen leses «19 bilag venter» som slurv, når årsaken er at
+        bankkoblingen aldri er satt opp. Det er to helt ulike samtaler.
+        """
+        journaler = self.env["account.journal"].search(
+            [("type", "=", "bank"), ("company_id", "=", self.env.company.id)]
+        )
+        journaler.sudo().write({"bank_statements_source": "undefined"})
+
+        b = self.Data.hent_bankavstemming()
+        self.assertFalse(
+            b["avstemming_mulig"], "Uten kilde skal avstemming være umulig"
+        )
+        self.assertTrue(
+            b["merknad"], "Umulig avstemming MÅ forklares, ikke bare flagges"
+        )
+        self.assertEqual(
+            b["uten_kilde"], b["bankjournaler"], "Alle journaler mangler kilde her"
+        )
+
+    def test_bankavstemming_oppgir_alltid_basen(self):
+        """Samme regel som ellers: et tall uten base-merke kan leses som ekte.
+
+        Banktilstanden er miljøavhengig — demodata har annen journaloppsett enn
+        Production. Uten `base` kan et skjermbilde fra Dev tolkes som FIQ AS.
+        """
+        b = self.Data.hent_bankavstemming()
+        self.assertIn("url", b["base"], "Base-merket må oppgi server-URL")
+        self.assertIn("firma", b["base"])
+
     def test_base_merket_oppgir_server_ikke_bare_firma(self):
         """🔑 LÆRDOM 22.07: firmanavn identifiserer INNHOLD, ikke SERVER.
 
