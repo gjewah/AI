@@ -119,11 +119,11 @@ class FiqAiMelding(models.Model):
             if minutter < 1:
                 m.alder = "nå"
             elif minutter < 60:
-                m.alder = "%d min" % minutter
+                m.alder = f"{minutter:d} min"
             elif minutter < 60 * 24:
-                m.alder = "%d t" % (minutter // 60)
+                m.alder = f"{minutter // 60:d} t"
             else:
-                m.alder = "%d d" % (minutter // (60 * 24))
+                m.alder = f"{minutter // (60 * 24):d} d"
 
     # ── API: økter og roller fører seg selv ─────────────────────────────────────
     @api.model

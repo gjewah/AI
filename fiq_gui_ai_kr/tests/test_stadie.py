@@ -147,7 +147,7 @@ class TestStadie(TransactionCase):
         logg = Data.get_kommentarlogg(t.id)
         self.assertTrue(logg["finnes"])
         self.assertTrue(
-            any("Dette er en test" in (l["tekst"] or "") for l in logg["logg"])
+            any("Dette er en test" in (rad["tekst"] or "") for rad in logg["logg"])
         )
 
     def test_tom_kommentar_avvises(self):

@@ -439,10 +439,10 @@ class FiqGuiAiKrData(models.AbstractModel):
         if minutter < 1:
             return "nå"
         if minutter < 60:
-            return "%d min" % minutter
+            return f"{minutter:d} min"
         if minutter < 60 * 24:
-            return "%d t" % (minutter // 60)
-        return "%d d" % (minutter // (60 * 24))
+            return f"{minutter // 60:d} t"
+        return f"{minutter // (60 * 24):d} d"
 
     @api.model
     def get_kr_boks(self, company_id=False):
@@ -778,10 +778,10 @@ class FiqGuiAiKrData(models.AbstractModel):
         if m < 1:
             return "nå"
         if m < 60:
-            return "%d min" % m
+            return f"{m:d} min"
         if m < 1440:
-            return "%d t" % (m // 60)
-        return "%d d" % (m // 1440)
+            return f"{m // 60:d} t"
+        return f"{m // 1440:d} d"
 
     # ════════════════════════════════════════════════════════════════════════
     # STYRINGSFLATEN — fase 1. Fasit: artifact 72aae7c9, bygget av AI PK sammen
@@ -898,7 +898,7 @@ class FiqGuiAiKrData(models.AbstractModel):
                     "naar": m.date.strftime("%d.%m.%Y %H:%M") if m.date else "",
                     "tekst": m.body or "",
                     "bilder": [
-                        {"id": a.id, "navn": a.name, "url": "/web/image/%d" % a.id}
+                        {"id": a.id, "navn": a.name, "url": f"/web/image/{a.id:d}"}
                         for a in m.attachment_ids
                         if (a.mimetype or "").startswith("image/")
                     ],

@@ -183,7 +183,7 @@ class FiqAiSpor(models.Model):
     @api.depends("versjon_hoved", "versjon_lop")
     def _compute_versjon(self):
         for s in self:
-            s.versjon = "%02d.%02d" % (s.versjon_hoved or 0, s.versjon_lop or 0)
+            s.versjon = f"{s.versjon_hoved or 0:02d}.{s.versjon_lop or 0:02d}"
 
     @api.depends("okt_ids", "okt_ids.status")
     def _compute_okter(self):
@@ -344,8 +344,7 @@ class FiqAiSpor(models.Model):
         """
         self.ensure_one()
         neste = (self.versjon_lop or 0) + 1
-        return "0.00 8.50 %s (%02d.%02d)" % (
-            self.kode or self.name,
-            self.versjon_hoved or 0,
-            neste,
+        return (
+            f"0.00 8.50 {self.kode or self.name} "
+            f"({self.versjon_hoved or 0:02d}.{neste:02d})"
         )

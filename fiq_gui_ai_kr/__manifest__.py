@@ -1,11 +1,28 @@
 # ruff: noqa: B018 — Odoos manifest ER en ordbok paa toppnivaa, ikke et uttrykk paa avveie
 {
     "name": "FIQ AI KR – AI Kontrollrom",
-    "version": "19.0.3.2.3",
+    "version": "19.0.3.2.4",
     "summary": "FIQ AI Kontrollrom (AI KR) – operatør-cockpit: oversikt over alle AI-økter "
     "(Claude Code + Cowork), AI-organisasjonskart, redigerbare roller/skills, "
     "ressursbruk og ROI. Snippet-basert (firma → rolle → person).",
-    "description": """
+    "description": """19.0.3.2.4 - LINT REN: 13 funn rettet (AI PK maalte dem i gaten):
+* 12 UP031 (%-formatering) + 1 E741 (variabelnavnet `l`). AI PK la modulen inn
+  i apps-ai, kjorte port 1, og tok den UT igjen - den var ikke klar.
+* 🔴 NULLPOLSTRINGEN BEVART, og BEVIST: %02d -> :02d. Uten den ville «01.03»
+  blitt «1.3» og oektnavnet sluttet aa matche registeret. Lint ville vaert HELT
+  STILLE. Kjort som sammenlikning for/etter paa ekte verdier:
+      versjon:  '01.03' == '01.03'
+      oektnavn: '0.00 8.50 AI KR (01.03)' == samme
+      alder:    likt for 5/90/3000 minutter · bilde-url likt
+* 🔑 TUPPEL-FELLA SJEKKET FOERST (AI PKs advarsel): alle 12 hoyresider er
+  eksplisitte uttrykk, ingen funksjonskall som kan gi tuppel. Hadde en av dem
+  vaert det, ville f-strengen gitt «(2026, 30)» i stedet for «2026-30».
+* E741: BEGGE forekomstene paa linja byttet samtidig (`l` -> `rad`). Kommunikasjon
+  byttet loekkevariabelen og lot `l.name` staa - NameError ved kjoering, ruff stille.
+* Rekkefolgen AI PK krevde: format -> check EEN GANG TIL (UP031-kjeden gir UP032).
+  Resultat: All checks passed · 18 files already formatted.
+
+
 FIQ AI KR – AI Kontrollrom
 ==========================
 Operatør-cockpit for FIQ AI-plattformen. Bygger VIDERE på eksisterende grunnlag
