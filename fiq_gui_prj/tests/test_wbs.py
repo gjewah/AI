@@ -98,7 +98,7 @@ class TestFiqWbs(TransactionCase):
         """
         mor = self._task("Mor")
         # ALLE med samme sequence — nøyaktig som Odoos default i virkeligheten
-        barn = [self._task("B%d" % i, parent=mor, sequence=10) for i in range(5)]
+        barn = [self._task(f"B{i}", parent=mor, sequence=10) for i in range(5)]
         numre = [b.fiq_wbs_number for b in barn]
         self.assertEqual(
             len(set(numre)), len(barn),
@@ -108,7 +108,7 @@ class TestFiqWbs(TransactionCase):
 
     def test_toppnivaa_med_lik_sequence_faar_ulike_nummer(self):
         """Samme regresjon på toppnivå — der de 66 duplikatene faktisk oppsto."""
-        toppnivaa = [self._task("T%d" % i, sequence=10) for i in range(5)]
+        toppnivaa = [self._task(f"T{i}", sequence=10) for i in range(5)]
         numre = [t.fiq_wbs_number for t in toppnivaa]
         self.assertEqual(
             len(set(numre)), len(toppnivaa),

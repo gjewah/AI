@@ -372,13 +372,13 @@ class FiqGuiPrjData(models.AbstractModel):
         if naermeste_frist:
             dager = (naermeste_frist - i_dag).days
             if dager < 0:
-                deler.append("frist passert for %d dager siden" % abs(dager))
+                deler.append(f"frist passert for {abs(dager)} dager siden")
             elif dager == 0:
                 deler.append("frist i dag")
             elif dager == 1:
                 deler.append("frist i morgen")
             elif dager <= 3:
-                deler.append("frist om %d dager" % dager)
+                deler.append(f"frist om {dager} dager")
 
         if budsjett > 0:
             brukt = (fort / budsjett) * 100.0
@@ -438,9 +438,9 @@ class FiqGuiPrjData(models.AbstractModel):
             if oppløsning == "mnd":
                 _, sluttuke = self._iso_uke(k_slutt)
                 etikett = k_start.strftime("%b")
-                under = "uke %d–%d · %d" % (uke, sluttuke, aar)
+                under = f"uke {uke}–{sluttuke} · {aar}"
             else:
-                etikett = "Uke %d" % uke
+                etikett = f"Uke {uke}"
                 under = str(aar)
             kolonner.append({
                 "etikett": etikett,
@@ -573,13 +573,18 @@ class FiqGuiPrjData(models.AbstractModel):
         )
         ai_gjort = sum(1 for r in rader if r["er_ai"] and r["ferdig"])
         ai_totalt = sum(1 for r in rader if r["er_ai"])
+        fra_aar, fra_uke_nr = self._iso_uke(start)
 
         return {
             "kolonner": kolonner,
             "oppgaver": rader,
             "opplosning": oppløsning,
             "grupper": grupper,
-            "fra_uke": "%d-%d" % self._iso_uke(start),
+            # 🔑 `_iso_uke` gir en TUPPEL (år, uke). `%`-operatoren pakket den ut
+            # automatisk; en f-streng gjør ikke det — verdiene må hentes hver for
+            # seg, ellers ville hele tuppelen blitt skrevet som «(2026, 30)».
+            # Rekkefølgen er år-uke, samme som før: «2026-30».
+            "fra_uke": f"{fra_aar}-{fra_uke_nr}",
             "i_dag": fields.Date.to_string(i_dag),
             "kpi": {
                 "i_rute": i_rute,

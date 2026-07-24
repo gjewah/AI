@@ -289,7 +289,7 @@ class TestPrjData(TransactionCase):
             firmaer = set(self.env["project.task"].browse(ider).mapped("company_id").ids)
             self.assertTrue(
                 firmaer.issubset(tillatte | {False}),
-                "WBS-treet viser oppgaver fra firmaer utenfor sesjonen: %s" % (firmaer - tillatte),
+                f"WBS-treet viser oppgaver fra firmaer utenfor sesjonen: {firmaer - tillatte}",
             )
 
     # ---------- AI-ARBEID SOM PROSJEKT (Gjermund-direktiv 20.07) ----------
@@ -722,7 +722,7 @@ class TestPrjData(TransactionCase):
             self.skipTest("Ingen prosjekter å teste mot")
 
         i_dag = fields.Date.context_today(self.Data)
-        self.env["project.task"].create([
+        egne = self.env["project.task"].create([
             {"name": "KPI passert", "project_id": prosjekt.id,
              "date_deadline": fields.Datetime.to_datetime(i_dag - timedelta(days=2))},
             {"name": "KPI naer", "project_id": prosjekt.id,
@@ -736,6 +736,24 @@ class TestPrjData(TransactionCase):
             res["oppgaver"],
             "To oppgaver med frister i vinduet ble opprettet, men datasettet er "
             "tomt — koblingen mellom domenet og flaten svikter",
+        )
+
+        # 🔴 SKJERPET 24.07 etter at tre spor falt på samme feilklasse i natt:
+        # testen målte hva som tilfeldigvis lå i basen, ikke koden.
+        #
+        # Her sto bare «kritisk + følg opp > 0». I en base med mange oppgaver
+        # ville ANDRES oppgaver gitt grønt selv om MINE to falt utenfor
+        # grensen — `get_oppgaver_over_tid` henter 400 rader sortert på
+        # `project_id, fiq_wbs_number, sequence, id`, så nye oppgaver havner
+        # bakerst. Testen ville bestått av feil grunn.
+        #
+        # 🔑 KRs mønster: avgrens til DINE egne rader framfor å heve grensen.
+        # «Et høyere tall ville bare flyttet den samme antakelsen lenger ut.»
+        mine = [r for r in res["oppgaver"] if r["id"] in egne.ids]
+        self.assertEqual(
+            len(mine), 2,
+            "De to opprettede oppgavene kom ikke med i datasettet — de har "
+            f"frister i vinduet og skal alltid være der. Fant {len(mine)} av 2.",
         )
         self.assertGreater(
             (kpi.get("kritisk") or 0) + (kpi.get("folg_opp") or 0), 0,
