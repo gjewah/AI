@@ -281,7 +281,117 @@ class TestFinData(TransactionCase):
             "Tre fakturaer fra SAMME kunde er ÉN kunde med faresignal",
         )
 
+    # ---------- FRAVÆR: flaten skal TIE når grunnlaget mangler ----------
+
+    def test_ingen_faresignal_gir_tom_liste_ikke_plassholder(self):
+        """🔴 FRAVÆR: uten kunder over terskelen skal `linjer` være TOM.
+
+        Fanger: at noen legger inn en «Ingen faresignaler»-linje i datalaget for
+        å fylle boksen. KR ville da vist én rad som ser ut som et funn. Tomhet
+        skal komme fram som tomhet — visningen bestemmer hvordan den formuleres,
+        ikke datalaget.
+        """
+        self._faktura(self._kunde("FIQ Test Bare Ferskt AS"), -1, 50000.0)
+        boks = self.Data.get_kr_boks()
+        self.assertEqual(boks["haster"], 0)
+        self.assertEqual(boks["linjer"], [], "Tomt skal være tomt, ikke en plassholder")
+
+    def test_kunde_uten_forfallsdato_faller_ikke_gjennom_som_faresignal(self):
+        """🔴 En faktura uten forfallsdato har ingen alder — den kan ikke være «gammel».
+
+        Fanger: at `eldste and` fjernes fra vilkåret. `None` ville da sammenlignet
+        seg til True i noen Python-varianter, og en fersk faktura uten forfall
+        ville dukket opp som kredittrisiko. Feil kunde ringt, uten feilmelding.
+        """
+        kunde = self._kunde("FIQ Test Uten Forfall AS")
+        faktura = self.Move.create(
+            {
+                "move_type": "out_invoice",
+                "partner_id": kunde.id,
+                "invoice_date": self.i_dag,
+                "invoice_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "product_id": self.produkt.id,
+                            "quantity": 1,
+                            "price_unit": 99000.0,
+                            "tax_ids": [(6, 0, [])],
+                        },
+                    )
+                ],
+            }
+        )
+        faktura.action_post()
+        self.assertNotIn("FIQ Test Uten Forfall AS", self._faresignal_navn())
+
     # ---------- TENANT ----------
+
+    def test_company_id_fra_kr_kan_ikke_hente_annet_firmas_tall(self):
+        """🛑 HARD GRENSE: KR sender `company_id` som parameter til `get_kr_boks`.
+
+        Fanger: at `with_company()` byttes til å sette `company_id` direkte i
+        domenet. Da ville en klient kunnet be om et hvilket som helst firmas
+        kredittdata ved å sende inn en annen id. `with_company()` beholder
+        Odoos `ir.rule`-håndheving; et rått domene gjør det ikke.
+
+        Testen: be om et firma brukeren IKKE har tilgang til, og verifiser at
+        vi ikke får det firmaets tall.
+        """
+        annet = self.env["res.company"].create({"name": "FIQ Testfirma Uten Tilgang"})
+        # Brukeren har ikke dette firmaet i company_ids.
+        self.assertNotIn(annet.id, self.env.user.company_ids.ids)
+
+        kunde = self._kunde("FIQ Test Annet Firma AS")
+        faktura = self.Move.with_company(annet).create(
+            {
+                "move_type": "out_invoice",
+                "partner_id": kunde.id,
+                "invoice_date": self.i_dag,
+                "invoice_date_due": fields.Date.add(self.i_dag, days=-90),
+                "company_id": annet.id,
+                "invoice_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "product_id": self.produkt.id,
+                            "quantity": 1,
+                            "price_unit": 80000.0,
+                            "tax_ids": [(6, 0, [])],
+                        },
+                    )
+                ],
+            }
+        )
+        faktura.action_post()
+
+        # Kallet skal ikke lekke det andre firmaets kunde inn i boksen.
+        tekster = " ".join(
+            linje["tekst"] for linje in self.Data.get_kr_boks()["linjer"]
+        )
+        self.assertNotIn(
+            "FIQ Test Annet Firma AS",
+            tekster,
+            "Et annet firmas kredittdata lakk inn i boksen",
+        )
+
+    def test_kpi_valg_er_bundet_til_bruker_og_firma(self):
+        """🔴 Parameternøkkelen MÅ inneholde både bruker-id og firma-id.
+
+        Fanger: at nøkkelen forenkles til én global verdi. Da ville alle brukere
+        i alle firmaer delt samme KPI-valg — én brukers oppsett ville overskrevet
+        alle andres, stille.
+        """
+        self.Data.sett_valgte_kpier(["balanse"])
+        param = self.env["ir.config_parameter"].sudo()
+        forventet = f"fiq_gui_fin.kpi.{self.env.user.id}.{self.env.company.id}"
+        self.assertEqual(
+            param.get_param(forventet),
+            "balanse",
+            "KPI-valget skal ligge under en nøkkel med både bruker og firma",
+        )
 
     def test_kun_eget_firma(self):
         """🛑 Kredittdata om kunder er forretningssensitivt — aldri kryss-firma."""
