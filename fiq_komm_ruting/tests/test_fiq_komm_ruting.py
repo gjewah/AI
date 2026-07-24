@@ -19,9 +19,13 @@ from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 
-# `fiq`-taggen er PÅKREVD: CI kjører --test-tags=fiq. Uten den kjøres testene aldri,
-# og gaten melder «0 of 0 tests» som grønt. post_install fordi andre moduler legger
-# NOT NULL-kolonner på res.company/res.users under installasjon.
+# Taggene: `post_install` fordi andre moduler legger NOT NULL-kolonner på
+# res.company/res.users under installasjon — under `at_install` er de feltene ukjente
+# for registryet.
+# `fiq`-taggen står igjen fra da CI filtrerte på den. Gaten filtrerer nå på MODULNAVN
+# (`--test-tags=/fiq_komm_ruting`, verifisert i odoo/tests/tag_selector.py:20), som tar
+# ALLE tester i modulen uansett tagg. Taggen skader ikke og beholdes — men den er ikke
+# lenger det som avgjør om testene kjøres.
 @tagged("post_install", "-at_install", "fiq")
 class TestKommRuting(TransactionCase):
 
@@ -128,8 +132,3 @@ class TestKommRuting(TransactionCase):
         self.Profil.create({"mailbox": "delt@testruting.no", "company_id": self.firma_a.id})
         p2 = self.Profil.create({"mailbox": "delt@testruting.no", "company_id": self.firma_b.id})
         self.assertTrue(p2.exists(), "samme adresse i to ULIKE firmaer skal være lov")
-
-    def test_BEVIS_skal_feile_fjernes_etterpaa(self):
-        """MIDLERTIDIG bevis-test (AI IQs metode): hvis denne IKKE feiler, treffer
-        kjøringen ikke koden min i det hele tatt. Fjernes så snart den har feilt én gang."""
-        self.assertEqual(1, 2, "BEVIS: kjøringen treffer koden min")
